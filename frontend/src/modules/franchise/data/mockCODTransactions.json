@@ -1,0 +1,36 @@
+{
+    "summary": {
+        "totalCollectedToday": 15700,
+        "pendingDeposit": 6450,
+        "depositedToday": 9250
+    },
+    "transactions": [
+        {
+            "id": "TXN-COD-001",
+            "orderId": "ORD-HTL-104",
+            "hotelName": "South Indian Tiffin",
+            "amount": 3200,
+            "collectedBy": "Raj Kumar",
+            "timestamp": "2026-01-28T08:15:00Z",
+            "status": "Pending Deposit"
+        },
+        {
+            "id": "TXN-COD-002",
+            "orderId": "ORD-HTL-105",
+            "hotelName": "Spice Garden",
+            "amount": 3250,
+            "collectedBy": "Amit Singh",
+            "timestamp": "2026-01-28T11:30:00Z",
+            "status": "Pending Deposit"
+        },
+        {
+            "id": "TXN-COD-003",
+            "orderId": "ORD-HTL-100",
+            "hotelName": "Biryani House",
+            "amount": 9250,
+            "collectedBy": "Suresh Pal",
+            "timestamp": "2026-01-28T07:45:00Z",
+            "status": "Deposited"
+        }
+    ]
+}

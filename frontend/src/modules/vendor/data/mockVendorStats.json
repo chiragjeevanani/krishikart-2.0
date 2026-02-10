@@ -1,0 +1,20 @@
+{
+    "stats": {
+        "availableProduce": 42,
+        "stockQuantity": 1250,
+        "ordersAssigned": 8,
+        "pendingDispatch": 3,
+        "completedDeliveries": 156
+    },
+    "performance": {
+        "fulfillmentRate": 98.4,
+        "avgPrepTime": "45m",
+        "revenue": 45280,
+        "monthlyRevenue": 452800,
+        "commission": {
+            "percentage": 12.5,
+            "monthlyEarnings": 56600,
+            "netPayout": 396200
+        }
+    }
+}

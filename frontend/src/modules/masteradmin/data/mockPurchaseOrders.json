@@ -1,0 +1,96 @@
+{
+    "purchaseOrders": [
+        {
+            "id": "PO-9901",
+            "vendorId": null,
+            "vendorName": "Multiple Sources Required",
+            "franchiseId": "F-001",
+            "franchiseName": "KrishiKart New Delhi",
+            "items": [
+                {
+                    "productId": "P-101",
+                    "productName": "Shimla Potatoes",
+                    "requiredQty": 100,
+                    "availableStock": 20,
+                    "orderQty": 80,
+                    "unit": "kg",
+                    "pricePerUnit": 22,
+                    "totalPrice": 1760
+                },
+                {
+                    "productId": "P-102",
+                    "productName": "Hybrid Tomatoes",
+                    "requiredQty": 100,
+                    "availableStock": 30,
+                    "orderQty": 70,
+                    "unit": "kg",
+                    "pricePerUnit": 45,
+                    "totalPrice": 3150
+                },
+                {
+                    "productId": "P-103",
+                    "productName": "Organic Onions",
+                    "requiredQty": 50,
+                    "availableStock": 10,
+                    "orderQty": 40,
+                    "unit": "kg",
+                    "pricePerUnit": 35,
+                    "totalPrice": 1400
+                }
+            ],
+            "totalAmount": 6310,
+            "status": "pending_approval",
+            "createdAt": "2026-01-30T10:00:00Z",
+            "approvedBy": null,
+            "dispatchStatus": null
+        },
+        {
+            "id": "PO-2001",
+            "vendorId": "V-001",
+            "vendorName": "Green Valley Farms",
+            "franchiseId": "F-001",
+            "franchiseName": "KrishiKart New Delhi",
+            "items": [
+                {
+                    "productId": "P-123",
+                    "productName": "Tomatoes",
+                    "requiredQty": 50,
+                    "availableStock": 20,
+                    "orderQty": 30,
+                    "unit": "kg",
+                    "pricePerUnit": 40,
+                    "totalPrice": 1200
+                }
+            ],
+            "totalAmount": 5400,
+            "status": "pending_approval",
+            "createdAt": "2026-01-28T10:30:00Z",
+            "approvedBy": null,
+            "dispatchStatus": null
+        },
+        {
+            "id": "PO-2002",
+            "vendorId": "V-002",
+            "vendorName": "Nature Fresh",
+            "franchiseId": "F-002",
+            "franchiseName": "KrishiKart Mumbai",
+            "items": [
+                {
+                    "productId": "P-456",
+                    "productName": "Potatoes",
+                    "requiredQty": 100,
+                    "availableStock": 40,
+                    "orderQty": 60,
+                    "unit": "kg",
+                    "pricePerUnit": 25,
+                    "totalPrice": 1500
+                }
+            ],
+            "totalAmount": 8200,
+            "status": "approved",
+            "createdAt": "2026-01-27T15:45:00Z",
+            "approvedBy": "Master Admin",
+            "dispatchStatus": "ready_for_pickup"
+        }
+    ]
+}

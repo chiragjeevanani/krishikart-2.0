@@ -1,0 +1,55 @@
+{
+    "hotelLedger": [
+        {
+            "id": "HL-001",
+            "hotelId": "H-001",
+            "hotelName": "Taj Vivanta MG Road",
+            "date": "2026-01-28T10:00:00Z",
+            "orderId": "ORD-1234",
+            "type": "debit",
+            "amount": 12500,
+            "balance": 425000,
+            "status": "outstanding",
+            "paymentMethod": "credit"
+        }
+    ],
+    "vendorLedger": [
+        {
+            "id": "VL-001",
+            "vendorId": "V-001",
+            "vendorName": "Green Valley Farms",
+            "date": "2026-01-27T14:30:00Z",
+            "poId": "PO-001",
+            "type": "credit",
+            "amount": 5400,
+            "balance": 54000,
+            "status": "pending_payment",
+            "dueDate": "2026-02-10T00:00:00Z"
+        }
+    ],
+    "franchiseLedger": [
+        {
+            "id": "FL-001",
+            "franchiseId": "F-003",
+            "franchiseName": "KrishiKart Koramangala",
+            "date": "2026-01-28T12:00:00Z",
+            "orderId": "ORD-5678",
+            "type": "credit",
+            "amount": 450,
+            "balance": 12500,
+            "status": "pending_deposit",
+            "commissionRate": 3
+        }
+    ],
+    "companyLedger": [
+        {
+            "id": "CL-001",
+            "date": "2026-01-28T15:00:00Z",
+            "type": "revenue",
+            "source": "hotel_orders",
+            "amount": 125000,
+            "balance": 2500000,
+            "status": "received"
+        }
+    ]
+}

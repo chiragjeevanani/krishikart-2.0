@@ -1,0 +1,157 @@
+[
+    {
+        "id": "ORD-HTL-101",
+        "hotelName": "The Grand Palace",
+        "customer": "Manager - Grand Palace",
+        "items": [
+            {
+                "id": "PROD-001",
+                "name": "Hybrid Tomatoes",
+                "quantity": 50,
+                "price": 40,
+                "unit": "kg"
+            },
+            {
+                "id": "PROD-009",
+                "name": "Potatoes (Table)",
+                "quantity": 100,
+                "price": 25,
+                "unit": "kg"
+            }
+        ],
+        "total": 4500,
+        "status": "new",
+        "paymentMode": "Credit",
+        "deliverySlot": "06:00 AM - 09:00 AM",
+        "timestamp": "2026-01-28T05:30:00Z",
+        "address": "12/A, Civil Lines, New Delhi",
+        "timeline": [
+            {
+                "status": "Order Placed",
+                "time": "2026-01-28T05:30:00Z",
+                "completed": true
+            }
+        ]
+    },
+    {
+        "id": "ORD-HTL-102",
+        "hotelName": "Green Chilli Bistro",
+        "customer": "Chef Rajesh",
+        "items": [
+            {
+                "id": "PROD-002",
+                "name": "Red Onions",
+                "quantity": 30,
+                "price": 35,
+                "unit": "kg"
+            },
+            {
+                "id": "PROD-005",
+                "name": "Organic Spinach",
+                "quantity": 10,
+                "price": 60,
+                "unit": "kg"
+            }
+        ],
+        "total": 1650,
+        "status": "preparing",
+        "paymentMode": "COD",
+        "deliverySlot": "09:00 AM - 12:00 PM",
+        "timestamp": "2026-01-28T07:15:00Z",
+        "address": "Shop 4, Market Square, Rohini",
+        "timeline": [
+            {
+                "status": "Order Placed",
+                "time": "2026-01-28T07:15:00Z",
+                "completed": true
+            },
+            {
+                "status": "Accepted",
+                "time": "2026-01-28T07:45:00Z",
+                "completed": true
+            },
+            {
+                "status": "Packing Started",
+                "time": "2026-01-28T08:30:00Z",
+                "completed": true
+            }
+        ]
+    },
+    {
+        "id": "ORD-HTL-103",
+        "hotelName": "Ocean Blue Resorts",
+        "customer": "Purchase Mgr - Sunil",
+        "items": [
+            {
+                "id": "PROD-003",
+                "name": "Shimla Apples",
+                "quantity": 25,
+                "price": 180,
+                "unit": "kg"
+            },
+            {
+                "id": "PROD-004",
+                "name": "Alphonso Mangoes",
+                "quantity": 5,
+                "price": 450,
+                "unit": "box"
+            }
+        ],
+        "total": 6750,
+        "status": "out_for_delivery",
+        "paymentMode": "Prepaid",
+        "deliverySlot": "12:00 PM - 03:00 PM",
+        "timestamp": "2026-01-28T06:00:00Z",
+        "assignedTo": "Rajesh Kumar (Delivery Boy)",
+        "address": "Resort complex, Gurgaon Sector 44",
+        "timeline": [
+            {
+                "status": "Order Placed",
+                "time": "2026-01-28T06:00:00Z",
+                "completed": true
+            },
+            {
+                "status": "Ready for Dispatch",
+                "time": "2026-01-28T09:00:00Z",
+                "completed": true
+            },
+            {
+                "status": "In Transit",
+                "time": "2026-01-28T10:15:00Z",
+                "completed": true
+            }
+        ]
+    },
+    {
+        "id": "ORD-HTL-104",
+        "hotelName": "South Indian Tiffin",
+        "customer": "Venkatesh Rao",
+        "items": [
+            {
+                "id": "PROD-002",
+                "name": "Red Onions",
+                "quantity": 100,
+                "price": 32,
+                "unit": "kg"
+            }
+        ],
+        "total": 3200,
+        "status": "delivered",
+        "paymentMode": "COD",
+        "deliverySlot": "06:00 AM - 09:00 AM",
+        "timestamp": "2026-01-28T04:00:00Z",
+        "address": "45, Karol Bagh, New Delhi",
+        "timeline": [
+            {
+                "status": "Order Placed",
+                "time": "2026-01-28T04:00:00Z",
+                "completed": true
+            },
+            {
+                "status": "Delivered",
+                "time": "2026-01-28T08:15:00Z",
+                "completed": true
+            }
+        ]
+    }
+]

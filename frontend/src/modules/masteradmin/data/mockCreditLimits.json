@@ -1,0 +1,71 @@
+{
+    "hotelCredits": [
+        {
+            "hotelId": "H-001",
+            "hotelName": "Taj Vivanta MG Road",
+            "creditLimit": 500000,
+            "usedCredit": 425000,
+            "remainingCredit": 75000,
+            "utilizationPercent": 85,
+            "isFrozen": false,
+            "allowPrepaid": true,
+            "lastTransaction": "2026-01-28T09:15:00Z",
+            "transactions": [
+                {
+                    "id": "TXN-001",
+                    "orderId": "ORD-1234",
+                    "amount": 12500,
+                    "date": "2026-01-28T09:15:00Z",
+                    "type": "debit"
+                },
+                {
+                    "id": "TXN-002",
+                    "orderId": "ORD-1235",
+                    "amount": 8000,
+                    "date": "2026-01-27T14:20:00Z",
+                    "type": "debit"
+                }
+            ]
+        },
+        {
+            "hotelId": "H-002",
+            "hotelName": "The Oberoi",
+            "creditLimit": 1000000,
+            "usedCredit": 300000,
+            "remainingCredit": 700000,
+            "utilizationPercent": 30,
+            "isFrozen": false,
+            "allowPrepaid": true,
+            "lastTransaction": "2026-01-28T11:00:00Z",
+            "transactions": [
+                {
+                    "id": "TXN-003",
+                    "orderId": "ORD-2234",
+                    "amount": 45000,
+                    "date": "2026-01-28T11:00:00Z",
+                    "type": "debit"
+                }
+            ]
+        },
+        {
+            "hotelId": "H-003",
+            "hotelName": "JW Marriott",
+            "creditLimit": 800000,
+            "usedCredit": 750000,
+            "remainingCredit": 50000,
+            "utilizationPercent": 93,
+            "isFrozen": true,
+            "allowPrepaid": true,
+            "lastTransaction": "2026-01-28T08:30:00Z",
+            "transactions": [
+                {
+                    "id": "TXN-004",
+                    "orderId": "ORD-3345",
+                    "amount": 25000,
+                    "date": "2026-01-28T08:30:00Z",
+                    "type": "debit"
+                }
+            ]
+        }
+    ]
+}

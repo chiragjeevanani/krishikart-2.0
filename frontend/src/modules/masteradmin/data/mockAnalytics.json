@@ -1,0 +1,60 @@
+{
+    "revenueGrowth": [
+        {
+            "month": "Jan",
+            "amount": 42000
+        },
+        {
+            "month": "Feb",
+            "amount": 38000
+        },
+        {
+            "month": "Mar",
+            "amount": 56000
+        },
+        {
+            "month": "Apr",
+            "amount": 49000
+        },
+        {
+            "month": "May",
+            "amount": 62400
+        }
+    ],
+    "regionalPerformance": [
+        {
+            "region": "North Hub",
+            "efficiency": 94
+        },
+        {
+            "region": "West Zone",
+            "efficiency": 88
+        },
+        {
+            "region": "South Station",
+            "efficiency": 91
+        },
+        {
+            "region": "East Node",
+            "efficiency": 85
+        }
+    ],
+    "categoryDistribution": [
+        {
+            "category": "Grains",
+            "share": 35
+        },
+        {
+            "category": "Vegetables",
+            "share": 25
+        },
+        {
+            "category": "Fruits",
+            "share": 20
+        },
+        {
+            "category": "Dairy",
+            "share": 20
+        }
+    ]
+}

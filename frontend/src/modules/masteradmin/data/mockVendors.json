@@ -1,0 +1,151 @@
+[
+    {
+        "id": "VEN-IND-001",
+        "name": "KrishiKart Indore",
+        "category": "Primary Mock Vendor",
+        "rating": 5.0,
+        "capacity": 100,
+        "status": "active",
+        "ordersFulfilled": 500,
+        "pendingWorkload": 2,
+        "monthlyTurnover": [
+            {
+                "month": "Jan",
+                "amount": 250000
+            }
+        ],
+        "totalTurnover": 250000
+    },
+    {
+        "id": "VEN-001",
+        "name": "Fresh Farm Vendors",
+        "category": "Organic",
+        "rating": 4.8,
+        "capacity": 85,
+        "status": "active",
+        "ordersFulfilled": 1240,
+        "pendingWorkload": 5,
+        "monthlyTurnover": [
+            {
+                "month": "Sep",
+                "amount": 125000
+            },
+            {
+                "month": "Oct",
+                "amount": 142000
+            },
+            {
+                "month": "Nov",
+                "amount": 158000
+            },
+            {
+                "month": "Dec",
+                "amount": 175000
+            },
+            {
+                "month": "Jan",
+                "amount": 185000
+            }
+        ],
+        "totalTurnover": 785000
+    },
+    {
+        "id": "VEN-002",
+        "name": "Green Valley Logistics",
+        "category": "Logistics",
+        "rating": 4.5,
+        "capacity": 70,
+        "status": "active",
+        "ordersFulfilled": 850,
+        "pendingWorkload": 12,
+        "monthlyTurnover": [
+            {
+                "month": "Sep",
+                "amount": 85000
+            },
+            {
+                "month": "Oct",
+                "amount": 92000
+            },
+            {
+                "month": "Nov",
+                "amount": 105000
+            },
+            {
+                "month": "Dec",
+                "amount": 98000
+            },
+            {
+                "month": "Jan",
+                "amount": 112000
+            }
+        ],
+        "totalTurnover": 492000
+    },
+    {
+        "id": "VEN-003",
+        "name": "Quick Mart Delivery",
+        "category": "Last Mile",
+        "rating": 4.2,
+        "capacity": 90,
+        "status": "active",
+        "ordersFulfilled": 2100,
+        "pendingWorkload": 8,
+        "monthlyTurnover": [
+            {
+                "month": "Sep",
+                "amount": 210000
+            },
+            {
+                "month": "Oct",
+                "amount": 225000
+            },
+            {
+                "month": "Nov",
+                "amount": 240000
+            },
+            {
+                "month": "Dec",
+                "amount": 265000
+            },
+            {
+                "month": "Jan",
+                "amount": 280000
+            }
+        ],
+        "totalTurnover": 1220000
+    },
+    {
+        "id": "VEN-004",
+        "name": "Local Farm Select",
+        "category": "Aggregator",
+        "rating": 4.9,
+        "capacity": 40,
+        "status": "inactive",
+        "ordersFulfilled": 420,
+        "pendingWorkload": 0,
+        "monthlyTurnover": [
+            {
+                "month": "Sep",
+                "amount": 45000
+            },
+            {
+                "month": "Oct",
+                "amount": 52000
+            },
+            {
+                "month": "Nov",
+                "amount": 38000
+            },
+            {
+                "month": "Dec",
+                "amount": 0
+            },
+            {
+                "month": "Jan",
+                "amount": 0
+            }
+        ],
+        "totalTurnover": 135000
+    }
+]

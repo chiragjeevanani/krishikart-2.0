@@ -1,0 +1,199 @@
+{
+    "metrics": {
+        "totalOrders": {
+            "value": 1248,
+            "label": "Total Orders Today",
+            "change": 12.5,
+            "trend": "up"
+        },
+        "pendingAssignments": {
+            "value": 42,
+            "label": "Pending Assignments",
+            "change": -5.2,
+            "trend": "down"
+        },
+        "activeVendors": {
+            "value": 156,
+            "label": "Active Vendors",
+            "change": 3.8,
+            "trend": "up"
+        },
+        "activeFranchises": {
+            "value": 24,
+            "label": "Active Franchises",
+            "change": 0,
+            "trend": "neutral"
+        },
+        "deliveriesInProgress": {
+            "value": 89,
+            "label": "Deliveries in Progress",
+            "change": 8.4,
+            "trend": "up"
+        },
+        "revenueSummary": {
+            "value": 45280,
+            "label": "Revenue Summary",
+            "change": 15.2,
+            "trend": "up",
+            "currency": "₹"
+        },
+        "creditOutstanding": {
+            "value": 125000,
+            "label": "Credit Outstanding",
+            "change": 8.5,
+            "trend": "up",
+            "currency": "₹"
+        },
+        "vendorPayable": {
+            "value": 84200,
+            "label": "Vendor Payable",
+            "change": 12.4,
+            "trend": "up",
+            "currency": "₹"
+        },
+        "franchisePayable": {
+            "value": 32500,
+            "label": "Franchise Payable",
+            "change": 5.2,
+            "trend": "up",
+            "currency": "₹"
+        },
+        "cashPendingDeposit": {
+            "value": 15800,
+            "label": "Cash Pending Deposit",
+            "change": -2.5,
+            "trend": "down",
+            "currency": "₹"
+        }
+    },
+    "orderFlow": [
+        {
+            "name": "Mon",
+            "orders": 400,
+            "fulfillment": 380
+        },
+        {
+            "name": "Tue",
+            "orders": 300,
+            "fulfillment": 290
+        },
+        {
+            "name": "Wed",
+            "orders": 600,
+            "fulfillment": 550
+        },
+        {
+            "name": "Thu",
+            "orders": 800,
+            "fulfillment": 780
+        },
+        {
+            "name": "Fri",
+            "orders": 500,
+            "fulfillment": 490
+        },
+        {
+            "name": "Sat",
+            "orders": 900,
+            "fulfillment": 880
+        },
+        {
+            "name": "Sun",
+            "orders": 700,
+            "fulfillment": 680
+        }
+    ],
+    "revenueFlow": [
+        {
+            "name": "Mon",
+            "revenue": 2400
+        },
+        {
+            "name": "Tue",
+            "revenue": 1398
+        },
+        {
+            "name": "Wed",
+            "revenue": 9800
+        },
+        {
+            "name": "Thu",
+            "revenue": 3908
+        },
+        {
+            "name": "Fri",
+            "revenue": 4800
+        },
+        {
+            "name": "Sat",
+            "revenue": 3800
+        },
+        {
+            "name": "Sun",
+            "revenue": 4300
+        }
+    ],
+    "kpis": [
+        {
+            "label": "Revenue Summary",
+            "value": "₹4.5M",
+            "change": 15.2,
+            "trend": "up"
+        },
+        {
+            "label": "Total Orders",
+            "value": "1,248",
+            "change": 12.5,
+            "trend": "up"
+        },
+        {
+            "label": "Active Vendors",
+            "value": "156",
+            "change": 3.8,
+            "trend": "up"
+        },
+        {
+            "label": "Deliveries In-Progress",
+            "value": "89",
+            "change": 8.4,
+            "trend": "up"
+        }
+    ],
+    "recentSettlements": [
+        {
+            "id": "SET-9401",
+            "vendor": "Green Growers Co.",
+            "amount": 84200,
+            "status": "Paid",
+            "date": "10:45 AM"
+        },
+        {
+            "id": "SET-9402",
+            "vendor": "Fresh Valley Farms",
+            "amount": 52100,
+            "status": "Pending",
+            "date": "11:20 AM"
+        },
+        {
+            "id": "SET-9403",
+            "vendor": "Organic Roots Ltd.",
+            "amount": 124000,
+            "status": "Paid",
+            "date": "12:15 PM"
+        },
+        {
+            "id": "SET-9404",
+            "vendor": "Metro Micro-Hub",
+            "amount": 32500,
+            "status": "Pending",
+            "date": "01:05 PM"
+        },
+        {
+            "id": "SET-9405",
+            "vendor": "Indore Agri-Node",
+            "amount": 18900,
+            "status": "Paid",
+            "date": "02:30 PM"
+        }
+    ]
+}

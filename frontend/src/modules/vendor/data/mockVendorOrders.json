@@ -1,0 +1,76 @@
+[
+    {
+        "id": "ORD-V-2004",
+        "franchiseName": "North Gate Node",
+        "items": [
+            {
+                "name": "Basmati Rice",
+                "quantity": 100,
+                "unit": "kg",
+                "image": "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80&w=200"
+            }
+        ],
+        "total": 6500,
+        "status": "assigned",
+        "deadline": "2024-10-26T10:00:00",
+        "priority": "high",
+        "timestamp": "2024-10-25T14:30:00"
+    },
+    {
+        "id": "ORD-V-2001",
+        "franchiseName": "South Delhi Hub",
+        "items": [
+            {
+                "name": "Organic Tomatoes",
+                "quantity": 20,
+                "unit": "kg",
+                "image": "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&q=80&w=200"
+            },
+            {
+                "name": "Fresh Spinach",
+                "quantity": 10,
+                "unit": "bunch",
+                "image": "https://images.unsplash.com/photo-1576045057995-568f588f82fb?auto=format&fit=crop&q=80&w=200"
+            }
+        ],
+        "total": 1100,
+        "status": "accepted",
+        "deadline": "2024-10-25T16:00:00",
+        "priority": "high",
+        "timestamp": "2024-10-25T10:30:00"
+    },
+    {
+        "id": "ORD-V-2002",
+        "franchiseName": "Gurgaon West",
+        "items": [
+            {
+                "name": "Alphonso Mangoes",
+                "quantity": 2,
+                "unit": "dozen",
+                "image": "https://images.unsplash.com/photo-1553279768-865429fa0078?auto=format&fit=crop&q=80&w=200"
+            }
+        ],
+        "total": 900,
+        "status": "preparing",
+        "deadline": "2024-10-25T18:00:00",
+        "priority": "medium",
+        "timestamp": "2024-10-25T11:15:00"
+    },
+    {
+        "id": "ORD-V-1998",
+        "franchiseName": "Noida East",
+        "items": [
+            {
+                "name": "Green Apples",
+                "quantity": 15,
+                "unit": "kg",
+                "image": "https://images.unsplash.com/photo-1567306226416-28f0efdc88ce?auto=format&fit=crop&q=80&w=200"
+            }
+        ],
+        "total": 2700,
+        "status": "completed",
+        "deadline": "2024-10-24T14:00:00",
+        "priority": "low",
+        "timestamp": "2024-10-24T09:00:00"
+    }
+]

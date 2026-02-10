@@ -1,0 +1,86 @@
+[
+    {
+        "id": "fruits",
+        "name": "Fruits",
+        "icon": "Apple",
+        "image": "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=400&q=80",
+        "color": "bg-emerald-50 text-emerald-600"
+    },
+    {
+        "id": "vegetables",
+        "name": "Vegetables",
+        "icon": "Carrot",
+        "image": "https://images.unsplash.com/photo-1579113800032-c38bd7635818?w=400&q=80",
+        "color": "bg-emerald-50 text-emerald-600"
+    },
+    {
+        "id": "leafy-greens",
+        "name": "Leafy Greens",
+        "icon": "Leaf",
+        "image": "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&q=80",
+        "color": "bg-emerald-50 text-emerald-600"
+    },
+    {
+        "id": "exotic",
+        "name": "Exotic",
+        "icon": "Grape",
+        "image": "https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?w=400&q=80",
+        "color": "bg-emerald-50 text-emerald-600"
+    },
+    {
+        "id": "herbs",
+        "name": "Herbs",
+        "icon": "Flower2",
+        "image": "https://images.unsplash.com/photo-1508747703725-719777637510?w=400&q=80",
+        "color": "bg-emerald-50 text-emerald-600"
+    },
+    {
+        "id": "seasonal",
+        "name": "Seasonal",
+        "icon": "Sun",
+        "image": "https://images.unsplash.com/photo-1523472721958-978152f4d69b?w=400&q=80",
+        "color": "bg-emerald-50 text-emerald-600"
+    },
+    {
+        "id": "citrus",
+        "name": "Citrus",
+        "icon": "Citrus",
+        "image": "https://images.unsplash.com/photo-1557800636-894a64c1696f?w=400&q=80",
+        "color": "bg-emerald-50 text-emerald-600"
+    },
+    {
+        "id": "berries",
+        "name": "Berries",
+        "icon": "Cherry",
+        "image": "https://images.unsplash.com/photo-1518635017498-87f514b751ba?w=400&q=80",
+        "color": "bg-emerald-50 text-emerald-600"
+    },
+    {
+        "id": "roots",
+        "name": "Roots",
+        "icon": "Carrot",
+        "image": "https://images.unsplash.com/photo-1556934776-9ce92a5ce665?w=400&q=80",
+        "color": "bg-emerald-50 text-emerald-600"
+    },
+    {
+        "id": "organic",
+        "name": "Organic",
+        "icon": "Sprout",
+        "image": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&q=80",
+        "color": "bg-emerald-50 text-emerald-600"
+    },
+    {
+        "id": "smoothie",
+        "name": "Smoothie",
+        "icon": "Banana",
+        "image": "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?w=400&q=80",
+        "color": "bg-emerald-50 text-emerald-600"
+    },
+    {
+        "id": "deals",
+        "name": "Hot Deals",
+        "icon": "Zap",
+        "image": "https://images.unsplash.com/photo-1553531384-cc64ac80f931?w=400&q=80",
+        "color": "bg-emerald-50 text-emerald-600"
+    }
+]

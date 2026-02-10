@@ -1,0 +1,10 @@
+export const LoginScreen = () => <div className="p-10"><h1>Vendor Login Placeholder</h1></div>;
+export const DashboardScreen = () => <div className="p-10"><h1>Vendor Dashboard Placeholder</h1></div>;
+export const InventoryScreen = () => <div className="p-10"><h1>Inventory Management Placeholder</h1></div>;
+export const MarketplacePreviewScreen = () => <div className="p-10"><h1>Marketplace Preview Placeholder</h1></div>;
+export const OrdersScreen = () => <div className="p-10"><h1>Assigned Orders Placeholder</h1></div>;
+export const OrderDetailScreen = () => <div className="p-10"><h1>Order Detail Placeholder</h1></div>;
+export const PackingScreen = () => <div className="p-10"><h1>Packing & Dispatch Placeholder</h1></div>;
+export const StockAlertsScreen = () => <div className="p-10"><h1>Stock Alerts Placeholder</h1></div>;
+export const HistoryScreen = () => <div className="p-10"><h1>History & Reports Placeholder</h1></div>;
+export const ProfileScreen = () => <div className="p-10"><h1>Profile & Settings Placeholder</h1></div>;

@@ -1,0 +1,43 @@
+[
+    {
+        "id": "doc-1",
+        "name": "PAN Card",
+        "status": "verified",
+        "fileName": "pan_card_gvf.pdf",
+        "uploadDate": "2023-10-15",
+        "type": "identity"
+    },
+    {
+        "id": "doc-2",
+        "name": "Aadhaar Card",
+        "status": "verified",
+        "fileName": "aadhaar_gvf.jpg",
+        "uploadDate": "2023-10-15",
+        "type": "identity"
+    },
+    {
+        "id": "doc-3",
+        "name": "FSSAI License",
+        "status": "expiring_soon",
+        "fileName": "fssai_cert.pdf",
+        "uploadDate": "2023-11-20",
+        "type": "compliance",
+        "expiryDate": "2024-11-20"
+    },
+    {
+        "id": "doc-4",
+        "name": "Bank Passbook/Cheque",
+        "status": "verified",
+        "fileName": "bank_details.pdf",
+        "uploadDate": "2023-10-16",
+        "type": "financial"
+    },
+    {
+        "id": "doc-5",
+        "name": "Business Proof (GST)",
+        "status": "pending",
+        "fileName": "gst_cert_updated.pdf",
+        "uploadDate": "2024-10-20",
+        "type": "legal"
+    }
+]

@@ -1,0 +1,839 @@
+[
+    {
+        "id": "p1",
+        "name": "Shimla Royal Apple",
+        "price": 180,
+        "unit": "kg",
+        "category": "fruits",
+        "image": "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?q=80&w=800&auto=format&fit=crop",
+        "rating": 4.8,
+        "reviews": 1240,
+        "stock": 450,
+        "supplier": "Shimla Orchards",
+        "description": "Crisp, sweet and juicy Royal Delicious apples directly from the orchards of Shimla. Rich in antioxidants and fiber.",
+        "tags": [
+            "Best Seller",
+            "Fresh"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 10,
+                "price": 165
+            },
+            {
+                "minQty": 50,
+                "price": 150
+            },
+            {
+                "minQty": 100,
+                "price": 135
+            }
+        ]
+    },
+    {
+        "id": "p2",
+        "name": "Organic Spinach (Palak)",
+        "price": 40,
+        "unit": "250g",
+        "category": "leafy-greens",
+        "image": "https://images.unsplash.com/photo-1576045057995-568f588f82fb?q=80&w=800&auto=format&fit=crop",
+        "rating": 4.9,
+        "reviews": 850,
+        "stock": 120,
+        "supplier": "Green Earth Farm",
+        "description": "Farm-fresh organic spinach leaves, rich in iron and vitamins. Harvested daily for maximum freshness.",
+        "tags": [
+            "Organic",
+            "Daily Essential"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 20,
+                "price": 35
+            },
+            {
+                "minQty": 100,
+                "price": 30
+            }
+        ]
+    },
+    {
+        "id": "p3",
+        "name": "Alphonso Mango (Ratnagiri)",
+        "price": 1200,
+        "unit": "doz",
+        "category": "fruits",
+        "image": "https://images.unsplash.com/photo-1553279768-865429fa0078?q=80&w=800&auto=format&fit=crop",
+        "rating": 5.0,
+        "reviews": 3200,
+        "stock": 80,
+        "supplier": "Konkan Farms",
+        "description": "The King of Mangoes! Authentic Ratnagiri Alphonso mangoes known for their rich aroma and sweet pulp.",
+        "tags": [
+            "Premium",
+            "Seasonal"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 5,
+                "price": 1100
+            },
+            {
+                "minQty": 10,
+                "price": 1000
+            },
+            {
+                "minQty": 25,
+                "price": 900
+            }
+        ]
+    },
+    {
+        "id": "p4",
+        "name": "Fresh Broccoli",
+        "price": 90,
+        "unit": "500g",
+        "category": "vegetables",
+        "image": "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=800&q=80",
+        "rating": 4.7,
+        "reviews": 560,
+        "stock": 200,
+        "supplier": "Valley Fresh",
+        "description": "High-quality fresh broccoli with dense florets. A superfood packed with vitamin C and K.",
+        "tags": [
+            "Superfood"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 10,
+                "price": 82
+            },
+            {
+                "minQty": 50,
+                "price": 75
+            }
+        ]
+    },
+    {
+        "id": "p5",
+        "name": "Red Bell Pepper",
+        "price": 120,
+        "unit": "500g",
+        "category": "exotic",
+        "image": "https://images.unsplash.com/photo-1593677720987-69c291d6028f?w=800&q=80",
+        "rating": 4.6,
+        "reviews": 420,
+        "stock": 150,
+        "supplier": "Hydroponic Greens",
+        "description": "Sweet and crunchy hydroponically grown red bell peppers. Perfect for salads and stir-fries.",
+        "tags": [
+            "Exotic"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 5,
+                "price": 110
+            },
+            {
+                "minQty": 20,
+                "price": 100
+            }
+        ]
+    },
+    {
+        "id": "p6",
+        "name": "Fresh Cilantro (Dhaniya)",
+        "price": 15,
+        "unit": "bunch",
+        "category": "herbs",
+        "image": "https://images.unsplash.com/photo-1723810315251-eeca9b7ee1a8?w=800&q=80",
+        "rating": 4.9,
+        "reviews": 2100,
+        "stock": 500,
+        "supplier": "Local Farmers Co.",
+        "description": "Aromatic fresh cilantro bunch. Essential for garnishing and adding flavor to every Indian dish.",
+        "tags": [
+            "Must Have"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 50,
+                "price": 12
+            },
+            {
+                "minQty": 200,
+                "price": 10
+            }
+        ]
+    },
+    {
+        "id": "p7",
+        "name": "Carrot (Orange)",
+        "price": 60,
+        "unit": "kg",
+        "category": "vegetables",
+        "image": "https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?q=80&w=800&auto=format&fit=crop",
+        "rating": 4.8,
+        "reviews": 980,
+        "stock": 600,
+        "supplier": "Hillside Farms",
+        "description": "Fresh and crunchy carrots, perfect for juicing or raw consumption. Sourced from high-altitude farms.",
+        "tags": [
+            "Farm Fresh"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 20,
+                "price": 55
+            },
+            {
+                "minQty": 100,
+                "price": 48
+            }
+        ]
+    },
+    {
+        "id": "p8",
+        "name": "Cavendish Banana",
+        "price": 60,
+        "unit": "doz",
+        "category": "fruits",
+        "image": "https://images.unsplash.com/photo-1543218024-57a703287ae3?w=800&q=80",
+        "rating": 4.8,
+        "reviews": 1500,
+        "stock": 300,
+        "supplier": "Golden Harvest",
+        "description": "Premium quality Cavendish bananas, perfectly ripened and sweet. Rich in potassium.",
+        "tags": [
+            "Energy Booster"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 5,
+                "price": 55
+            }
+        ]
+    },
+    {
+        "id": "p9",
+        "name": "Fresh Tomato",
+        "price": 40,
+        "unit": "kg",
+        "category": "vegetables",
+        "image": "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=800&q=80",
+        "rating": 4.7,
+        "reviews": 2200,
+        "stock": 800,
+        "supplier": "Local Farms",
+        "description": "Juicy and red farm-fresh tomatoes. Essential for every kitchen.",
+        "tags": [
+            "Daily Essential"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 10,
+                "price": 35
+            }
+        ]
+    },
+    {
+        "id": "p10",
+        "name": "Romaine Lettuce",
+        "price": 80,
+        "unit": "head",
+        "category": "leafy-greens",
+        "image": "https://images.unsplash.com/photo-1556801712-76c826639c28?w=800&q=80",
+        "rating": 4.6,
+        "reviews": 320,
+        "stock": 100,
+        "supplier": "Hydroponic Greens",
+        "description": "Crisp and fresh Romaine lettuce, perfect for Caesar salads.",
+        "tags": [
+            "Fresh",
+            "Salad"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 10,
+                "price": 70
+            }
+        ]
+    },
+    {
+        "id": "p11",
+        "name": "Fenugreek (Methi)",
+        "price": 20,
+        "unit": "bunch",
+        "category": "leafy-greens",
+        "image": "https://images.unsplash.com/photo-1628155987541-696e1fd6b280?w=800&q=80",
+        "rating": 4.8,
+        "reviews": 1100,
+        "stock": 400,
+        "supplier": "Traditional Farms",
+        "description": "Zesty and bitter-sweet fenugreek leaves. Very healthy and flavorful.",
+        "tags": [
+            "Healthy"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 20,
+                "price": 15
+            }
+        ]
+    },
+    {
+        "id": "p12",
+        "name": "Hass Avocado",
+        "price": 250,
+        "unit": "pc",
+        "category": "exotic",
+        "image": "https://images.unsplash.com/photo-1523038793306-258096d0df1c?w=800&q=80",
+        "rating": 4.9,
+        "reviews": 600,
+        "stock": 50,
+        "supplier": "Imported Picks",
+        "description": "Creamy and rich Hass avocados. Perfect for toast and guacamole.",
+        "tags": [
+            "Premium",
+            "Exotic"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 5,
+                "price": 230
+            }
+        ]
+    },
+    {
+        "id": "p13",
+        "name": "Dragon Fruit",
+        "price": 150,
+        "unit": "pc",
+        "category": "exotic",
+        "image": "https://images.unsplash.com/photo-1527325678964-54921661f888?w=800&q=80",
+        "rating": 4.7,
+        "reviews": 450,
+        "stock": 70,
+        "supplier": "Tropical Treats",
+        "description": "Vibrant and exotic dragon fruit with white speckled flesh.",
+        "tags": [
+            "Superfood"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 5,
+                "price": 140
+            }
+        ]
+    },
+    {
+        "id": "p14",
+        "name": "Fresh Mint (Pudina)",
+        "price": 10,
+        "unit": "bunch",
+        "category": "herbs",
+        "image": "https://images.unsplash.com/photo-1572522033621-e0e641756570?w=800&q=80",
+        "rating": 4.9,
+        "reviews": 1800,
+        "stock": 400,
+        "supplier": "Local Herb Garden",
+        "description": "Cool and refreshing mint leaves. Great for chutneys and drinks.",
+        "tags": [
+            "Aromatic"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 50,
+                "price": 8
+            }
+        ]
+    },
+    {
+        "id": "p15",
+        "name": "Italian Basil",
+        "price": 50,
+        "unit": "50g",
+        "category": "herbs",
+        "image": "https://images.unsplash.com/photo-1618164435735-413d3b066c9a?w=800&q=80",
+        "rating": 4.8,
+        "reviews": 250,
+        "stock": 100,
+        "supplier": "Continental Greens",
+        "description": "Fragrant Italian basil leaves, essential for pesto and pizzas.",
+        "tags": [
+            "Gourmet"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 10,
+                "price": 45
+            }
+        ]
+    },
+    {
+        "id": "p16",
+        "name": "Summer Watermelon",
+        "price": 30,
+        "unit": "kg",
+        "category": "seasonal",
+        "image": "https://images.unsplash.com/photo-1589927986089-35812388d1f4?w=800&q=80",
+        "rating": 4.8,
+        "reviews": 1200,
+        "stock": 200,
+        "supplier": "Seasonal Bliss",
+        "description": "Sweet, red and juicy watermelon. The perfect summer cooler.",
+        "tags": [
+            "Hydrating",
+            "Seasonal"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 10,
+                "price": 25
+            }
+        ]
+    },
+    {
+        "id": "p17",
+        "name": "Custard Apple (Sitaphal)",
+        "price": 120,
+        "unit": "kg",
+        "category": "seasonal",
+        "image": "https://images.unsplash.com/photo-1625902422792-710e6bc4842d?w=800&q=80",
+        "rating": 4.7,
+        "reviews": 540,
+        "stock": 100,
+        "supplier": "Hill Farms",
+        "description": "Sweet and creamy custard apples. A seasonal delicacy.",
+        "tags": [
+            "Natural Sweetener"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 5,
+                "price": 110
+            }
+        ]
+    },
+    {
+        "id": "p18",
+        "name": "Fresh Strawberries",
+        "price": 180,
+        "unit": "250g",
+        "category": "seasonal",
+        "image": "https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=800&q=80",
+        "rating": 4.9,
+        "reviews": 890,
+        "stock": 150,
+        "supplier": "Mahabaleshwar Picks",
+        "description": "Grown in Mahabaleshwar, these strawberries are exceptionally sweet and fresh.",
+        "tags": [
+            "Premium Berry"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 5,
+                "price": 165
+            }
+        ]
+    },
+    {
+        "id": "p19",
+        "name": "Nagpur Orange",
+        "price": 100,
+        "unit": "kg",
+        "category": "citrus",
+        "image": "https://images.unsplash.com/photo-1582967788606-a171c1080cb0?w=800&q=80",
+        "rating": 4.8,
+        "reviews": 1450,
+        "stock": 500,
+        "supplier": "Orange Belt Farms",
+        "description": "Famous Nagpur oranges, known for their thin skin and sweet-tangy juice.",
+        "tags": [
+            "Vitamin C"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 10,
+                "price": 90
+            }
+        ]
+    },
+    {
+        "id": "p20",
+        "name": "Seedless Lemon",
+        "price": 200,
+        "unit": "kg",
+        "category": "citrus",
+        "image": "https://images.unsplash.com/photo-1590505681534-42b6824f7ad3?w=800&q=80",
+        "rating": 4.7,
+        "reviews": 620,
+        "stock": 200,
+        "supplier": "Citrus Grove",
+        "description": "Juicy and seedless lemons, high in vitamin C. Perfect for beverages.",
+        "tags": [
+            "Freshness"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 5,
+                "price": 185
+            }
+        ]
+    },
+    {
+        "id": "p21",
+        "name": "Ruby Red Grapefruit",
+        "price": 150,
+        "unit": "pc",
+        "category": "citrus",
+        "image": "https://images.unsplash.com/photo-1577234286642-fc512a5f8f11?w=800&q=80",
+        "rating": 4.6,
+        "reviews": 310,
+        "stock": 80,
+        "supplier": "Imported Citrus",
+        "description": "Tangy and sweet Ruby Red grapefruits, packed with nutrients.",
+        "tags": [
+            "Breakfast"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 5,
+                "price": 140
+            }
+        ]
+    },
+    {
+        "id": "p22",
+        "name": "Blueberries (Imported)",
+        "price": 350,
+        "unit": "125g",
+        "category": "berries",
+        "image": "https://images.unsplash.com/photo-1498557850523-fd3d118b962e?w=800&q=80",
+        "rating": 4.9,
+        "reviews": 1100,
+        "stock": 120,
+        "supplier": "Premium Imports",
+        "description": "Super-fresh and plump blueberries from the best global orchards.",
+        "tags": [
+            "Antioxidants"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 4,
+                "price": 320
+            }
+        ]
+    },
+    {
+        "id": "p23",
+        "name": "Raspberries",
+        "price": 400,
+        "unit": "125g",
+        "category": "berries",
+        "image": "https://images.unsplash.com/photo-1577069861033-55d04ca4ef5c?w=800&q=80",
+        "rating": 4.8,
+        "reviews": 450,
+        "stock": 60,
+        "supplier": "Berry Berry",
+        "description": "Delicate and sweet raspberries, hand-picked for perfection.",
+        "tags": [
+            "Superfood"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 2,
+                "price": 380
+            }
+        ]
+    },
+    {
+        "id": "p24",
+        "name": "Blackberries",
+        "price": 450,
+        "unit": "125g",
+        "category": "berries",
+        "image": "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=800&q=80",
+        "rating": 4.7,
+        "reviews": 280,
+        "stock": 40,
+        "supplier": "Wild Picks",
+        "description": "Bold and juicy blackberries, rich in vitamins and fiber.",
+        "tags": [
+            "Healthy Snacking"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 2,
+                "price": 430
+            }
+        ]
+    },
+    {
+        "id": "p25",
+        "name": "Russet Potato",
+        "price": 40,
+        "unit": "kg",
+        "category": "roots",
+        "image": "https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=800&q=80",
+        "rating": 4.8,
+        "reviews": 2100,
+        "stock": 1000,
+        "supplier": "Root Farms",
+        "description": "Perfectly starchy Russet potatoes, ideal for baking and fries.",
+        "tags": [
+            "Cooking Essential"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 20,
+                "price": 35
+            }
+        ]
+    },
+    {
+        "id": "p26",
+        "name": "Red Onion",
+        "price": 50,
+        "unit": "kg",
+        "category": "roots",
+        "image": "https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=800&q=80",
+        "rating": 4.7,
+        "reviews": 3200,
+        "stock": 1500,
+        "supplier": "Local Wholesale",
+        "description": "High-quality red onions, essential flavoring for Indian cooking.",
+        "tags": [
+            "Must Have"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 50,
+                "price": 42
+            }
+        ]
+    },
+    {
+        "id": "p27",
+        "name": "Fresh Ginger",
+        "price": 120,
+        "unit": "kg",
+        "category": "roots",
+        "image": "https://images.unsplash.com/photo-1599940824399-b87987ceb72a?w=800&q=80",
+        "rating": 4.8,
+        "reviews": 1100,
+        "stock": 300,
+        "supplier": "Spice Farms",
+        "description": "Zesty and potent fresh ginger roots, great for tea and cooking.",
+        "tags": [
+            "Immunity Booster"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 5,
+                "price": 110
+            }
+        ]
+    },
+    {
+        "id": "p28",
+        "name": "Organic Wildflower Honey",
+        "price": 350,
+        "unit": "500g",
+        "category": "organic",
+        "image": "https://images.unsplash.com/photo-1471943311424-646960669fbc?w=800&q=80",
+        "rating": 4.9,
+        "reviews": 1500,
+        "stock": 250,
+        "supplier": "Pure Organics",
+        "description": "Raw, unfiltered and certified organic honey from wildflowers.",
+        "tags": [
+            "Organic",
+            "Healthy"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 10,
+                "price": 320
+            }
+        ]
+    },
+    {
+        "id": "p29",
+        "name": "Organic Green Tea",
+        "price": 250,
+        "unit": "100g",
+        "category": "organic",
+        "image": "https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?w=800&q=80",
+        "rating": 4.8,
+        "reviews": 890,
+        "stock": 400,
+        "supplier": "Assam Organics",
+        "description": "Premium whole leaf green tea, certified organic and rich in antioxidants.",
+        "tags": [
+            "Detox"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 10,
+                "price": 230
+            }
+        ]
+    },
+    {
+        "id": "p30",
+        "name": "Organic Brown Rice",
+        "price": 110,
+        "unit": "kg",
+        "category": "organic",
+        "image": "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800&q=80",
+        "rating": 4.8,
+        "reviews": 760,
+        "stock": 600,
+        "supplier": "Heritage Grains",
+        "description": "Nutrient-dense organic brown rice, high in fiber and gluten-free.",
+        "tags": [
+            "Daily Grain"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 20,
+                "price": 100
+            }
+        ]
+    },
+    {
+        "id": "p31",
+        "name": "Berry Blast Smoothie Mix",
+        "price": 450,
+        "unit": "500g",
+        "category": "smoothie",
+        "image": "https://images.unsplash.com/photo-1628557044797-f21a177fe37a?w=800&q=80",
+        "rating": 4.7,
+        "reviews": 420,
+        "stock": 100,
+        "supplier": "Healthy Blends",
+        "description": "Ready-to-blend mix of frozen strawberries, blueberries and raspberries.",
+        "tags": [
+            "Quick & Healthy"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 5,
+                "price": 420
+            }
+        ]
+    },
+    {
+        "id": "p32",
+        "name": "Plant Protein Powder",
+        "price": 1200,
+        "unit": "500g",
+        "category": "smoothie",
+        "image": "https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=800&q=80",
+        "rating": 4.9,
+        "reviews": 350,
+        "stock": 80,
+        "supplier": "Vegan Muscle",
+        "description": "Vanilla flavored organic pea protein. Perfect addition to any smoothie.",
+        "tags": [
+            "High Protein"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 2,
+                "price": 1100
+            }
+        ]
+    },
+    {
+        "id": "p33",
+        "name": "Frozen Mixed Berries",
+        "price": 380,
+        "unit": "500g",
+        "category": "smoothie",
+        "image": "https://images.unsplash.com/photo-1502741224143-90386d7f8c82?w=800&q=80",
+        "rating": 4.8,
+        "reviews": 290,
+        "stock": 150,
+        "supplier": "Chill Picks",
+        "description": "Premium frozen mixed berries, perfect for smoothies and desserts.",
+        "tags": [
+            "Smoothie Essential"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 5,
+                "price": 350
+            }
+        ]
+    },
+    {
+        "id": "p34",
+        "name": "Weekly Veggie Combo",
+        "price": 499,
+        "unit": "pack",
+        "category": "deals",
+        "image": "https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80",
+        "rating": 4.9,
+        "reviews": 2100,
+        "stock": 100,
+        "supplier": "Combo Delights",
+        "description": "A curated box of 7 essential vegetables, fulfilling your weekly needs.",
+        "tags": [
+            "Value Saver",
+            "Best Deal"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 2,
+                "price": 450
+            }
+        ]
+    },
+    {
+        "id": "p35",
+        "name": "Fruit Basket (Small)",
+        "price": 599,
+        "unit": "basket",
+        "category": "deals",
+        "image": "https://images.unsplash.com/photo-1519996529931-28324d5a630e?w=800&q=80",
+        "rating": 4.8,
+        "reviews": 850,
+        "stock": 50,
+        "supplier": "Fresh Harvest",
+        "description": "Seasonal fruit basket with 5 types of premium fruits.",
+        "tags": [
+            "Gifting",
+            "Value"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 5,
+                "price": 550
+            }
+        ]
+    },
+    {
+        "id": "p36",
+        "name": "Salad Combo Pack",
+        "price": 199,
+        "unit": "pack",
+        "category": "deals",
+        "image": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=80",
+        "rating": 4.7,
+        "reviews": 1200,
+        "stock": 200,
+        "supplier": "Green Quickies",
+        "description": "Combination of lettuce, cucumber, tomato and carrot. Ready for salad.",
+        "tags": [
+            "Healthy Combo"
+        ],
+        "bulkPricing": [
+            {
+                "minQty": 10,
+                "price": 180
+            }
+        ]
+    }
+]

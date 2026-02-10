@@ -1,0 +1,38 @@
+[
+    {
+        "id": "FRA-001",
+        "name": "New Delhi Central",
+        "region": "North India",
+        "performance": 94,
+        "orderVolume": 12500,
+        "status": "active",
+        "activeOrders": 45
+    },
+    {
+        "id": "FRA-002",
+        "name": "Mumbai West",
+        "region": "West India",
+        "performance": 88,
+        "orderVolume": 9800,
+        "status": "active",
+        "activeOrders": 32
+    },
+    {
+        "id": "FRA-003",
+        "name": "Bangalore North",
+        "region": "South India",
+        "performance": 91,
+        "orderVolume": 11200,
+        "status": "active",
+        "activeOrders": 28
+    },
+    {
+        "id": "FRA-004",
+        "name": "Kolkata East",
+        "region": "East India",
+        "performance": 82,
+        "orderVolume": 7500,
+        "status": "inactive",
+        "activeOrders": 0
+    }
+]

@@ -1,0 +1,32 @@
+{
+    "currentRates": {
+        "vendorCommission": 3.0,
+        "franchiseCommission": 2.0
+    },
+    "preview": {
+        "sampleOrderAmount": 10000,
+        "vendorEarning": 300,
+        "franchiseEarning": 200,
+        "companyMargin": 9500
+    },
+    "history": [
+        {
+            "id": "CH-001",
+            "date": "2026-01-15T10:00:00Z",
+            "entityType": "vendor",
+            "previousRate": 2.5,
+            "newRate": 3.0,
+            "modifiedBy": "Admin User",
+            "reason": "Market rate adjustment"
+        },
+        {
+            "id": "CH-002",
+            "date": "2026-01-10T11:30:00Z",
+            "entityType": "franchise",
+            "previousRate": 1.8,
+            "newRate": 2.0,
+            "modifiedBy": "Admin User",
+            "reason": "New year policy update"
+        }
+    ]
+}

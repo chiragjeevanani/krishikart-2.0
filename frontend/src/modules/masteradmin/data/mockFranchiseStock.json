@@ -1,0 +1,124 @@
+{
+    "franchises": [
+        {
+            "franchiseId": "F-001",
+            "franchiseName": "KrishiKart New Delhi",
+            "location": "North Zone",
+            "manager": "Amit Sharma",
+            "stock": [
+                {
+                    "productId": "P-111",
+                    "productName": "Apples",
+                    "currentStock": 5,
+                    "mbq": 100,
+                    "unit": "kg",
+                    "alertStatus": "critical",
+                    "deficit": 95,
+                    "suggestedVendor": "V-003",
+                    "lastRestocked": "2026-01-20T09:00:00Z"
+                },
+                {
+                    "productId": "P-112",
+                    "productName": "Bananas",
+                    "currentStock": 120,
+                    "mbq": 100,
+                    "unit": "doz",
+                    "alertStatus": "ok",
+                    "deficit": 0,
+                    "suggestedVendor": "V-003",
+                    "lastRestocked": "2026-01-28T09:00:00Z"
+                }
+            ]
+        },
+        {
+            "franchiseId": "F-003",
+            "franchiseName": "KrishiKart Koramangala",
+            "location": "South Zone",
+            "manager": "Rahul Varma",
+            "stock": [
+                {
+                    "productId": "P-123",
+                    "productName": "Tomatoes",
+                    "currentStock": 15,
+                    "mbq": 50,
+                    "unit": "kg",
+                    "alertStatus": "critical",
+                    "deficit": 35,
+                    "suggestedVendor": "V-001",
+                    "lastRestocked": "2026-01-26T08:00:00Z"
+                },
+                {
+                    "productId": "P-124",
+                    "productName": "Onions",
+                    "currentStock": 45,
+                    "mbq": 50,
+                    "unit": "kg",
+                    "alertStatus": "low",
+                    "deficit": 5,
+                    "suggestedVendor": "V-001",
+                    "lastRestocked": "2026-01-27T10:00:00Z"
+                },
+                {
+                    "productId": "P-125",
+                    "productName": "Potatoes",
+                    "currentStock": 80,
+                    "mbq": 50,
+                    "unit": "kg",
+                    "alertStatus": "ok",
+                    "deficit": 0,
+                    "suggestedVendor": "V-002",
+                    "lastRestocked": "2026-01-27T12:00:00Z"
+                }
+            ]
+        },
+        {
+            "franchiseId": "F-004",
+            "franchiseName": "KrishiKart Whitefield",
+            "location": "South Zone",
+            "manager": "Sneha Roy",
+            "stock": [
+                {
+                    "productId": "P-150",
+                    "productName": "Spinach",
+                    "currentStock": 200,
+                    "mbq": 300,
+                    "unit": "kg",
+                    "alertStatus": "low",
+                    "deficit": 100,
+                    "suggestedVendor": "V-005",
+                    "lastRestocked": "2026-01-29T11:00:00Z"
+                },
+                {
+                    "productId": "P-151",
+                    "productName": "Carrots",
+                    "currentStock": 400,
+                    "mbq": 350,
+                    "unit": "kg",
+                    "alertStatus": "ok",
+                    "deficit": 0,
+                    "suggestedVendor": "V-006",
+                    "lastRestocked": "2026-01-28T14:00:00Z"
+                }
+            ]
+        },
+        {
+            "franchiseId": "F-005",
+            "franchiseName": "KrishiKart Indiranagar",
+            "location": "South Zone",
+            "manager": "Vikram Singh",
+            "stock": [
+                {
+                    "productId": "P-160",
+                    "productName": "Milk",
+                    "currentStock": 10,
+                    "mbq": 100,
+                    "unit": "L",
+                    "alertStatus": "critical",
+                    "deficit": 90,
+                    "suggestedVendor": "V-010",
+                    "lastRestocked": "2026-01-30T06:00:00Z"
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,122 @@
+[
+    {
+        "id": "PROD-001",
+        "name": "Hybrid Tomatoes",
+        "category": "Vegetables",
+        "currentStock": 450,
+        "mbq": 200,
+        "unit": "kg",
+        "price": 32,
+        "image": "https://images.unsplash.com/photo-1518977676601-b53f02ac6d31?q=80&w=800&auto=format&fit=crop",
+        "supplier": "Farmers Collective A",
+        "lastUpdated": "2026-01-28T10:00:00Z"
+    },
+    {
+        "id": "PROD-002",
+        "name": "Red Onions",
+        "category": "Vegetables",
+        "currentStock": 150,
+        "mbq": 300,
+        "unit": "kg",
+        "price": 45,
+        "image": "https://images.unsplash.com/photo-1508747703725-719777637510?q=80&w=800&auto=format&fit=crop",
+        "supplier": "Nashik Agro",
+        "lastUpdated": "2026-01-28T09:30:00Z"
+    },
+    {
+        "id": "PROD-003",
+        "name": "Shimla Apples",
+        "category": "Fruits",
+        "currentStock": 80,
+        "mbq": 100,
+        "unit": "kg",
+        "price": 180,
+        "image": "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?q=80&w=800&auto=format&fit=crop",
+        "supplier": "Hillside Orchards",
+        "lastUpdated": "2026-01-28T11:15:00Z"
+    },
+    {
+        "id": "PROD-004",
+        "name": "Alphonso Mangoes",
+        "category": "Fruits",
+        "currentStock": 10,
+        "mbq": 50,
+        "unit": "box",
+        "price": 1200,
+        "image": "https://images.unsplash.com/photo-1553279768-865429fa0078?q=80&w=800&auto=format&fit=crop",
+        "supplier": "Ratnagiri Farms",
+        "lastUpdated": "2026-01-28T08:45:00Z"
+    },
+    {
+        "id": "PROD-005",
+        "name": "Organic Spinach",
+        "category": "Vegetables",
+        "currentStock": 0,
+        "mbq": 40,
+        "unit": "kg",
+        "price": 40,
+        "image": "https://images.unsplash.com/photo-1576045057995-568f588f82fb?q=80&w=800&auto=format&fit=crop",
+        "supplier": "Green Earth Farm",
+        "lastUpdated": "2026-01-27T17:30:00Z"
+    },
+    {
+        "id": "PROD-006",
+        "name": "Farm Fresh Milk",
+        "category": "Dairy",
+        "currentStock": 200,
+        "mbq": 100,
+        "unit": "L",
+        "price": 60,
+        "image": "https://images.unsplash.com/photo-1550583724-125581cc258b?q=80&w=800&auto=format&fit=crop",
+        "supplier": "Happy Cows Dairy",
+        "lastUpdated": "2026-01-28T12:00:00Z"
+    },
+    {
+        "id": "PROD-007",
+        "name": "Basmati Rice",
+        "category": "Grains",
+        "currentStock": 1200,
+        "mbq": 500,
+        "unit": "kg",
+        "price": 110,
+        "image": "https://images.unsplash.com/photo-1586201375761-83865001e31c?q=80&w=800&auto=format&fit=crop",
+        "supplier": "Punjab Grains",
+        "lastUpdated": "2026-01-25T14:20:00Z"
+    },
+    {
+        "id": "PROD-008",
+        "name": "Coriander Leaves",
+        "category": "Vegetables",
+        "currentStock": 15,
+        "mbq": 20,
+        "unit": "kg",
+        "price": 15,
+        "image": "https://images.unsplash.com/photo-1588873281272-139ec4272183?q=80&w=800&auto=format&fit=crop",
+        "supplier": "Local Vendor B",
+        "lastUpdated": "2026-01-28T10:15:00Z"
+    },
+    {
+        "id": "PROD-009",
+        "name": "Potatoes (Table)",
+        "category": "Vegetables",
+        "currentStock": 800,
+        "mbq": 400,
+        "unit": "kg",
+        "price": 25,
+        "image": "https://images.unsplash.com/photo-1518977676601-b53f02ac6d31?q=80&w=800&auto=format&fit=crop",
+        "supplier": "Agro Hub Agra",
+        "lastUpdated": "2026-01-28T09:00:00Z"
+    },
+    {
+        "id": "PROD-010",
+        "name": "Bananas (Robusta)",
+        "category": "Fruits",
+        "currentStock": 45,
+        "mbq": 60,
+        "unit": "dozen",
+        "price": 60,
+        "image": "https://images.unsplash.com/photo-1571771894821-ad9902ed1202?q=80&w=800&auto=format&fit=crop",
+        "supplier": "Jalgaon Banana Union",
+        "lastUpdated": "2026-01-28T11:45:00Z"
+    }
+]

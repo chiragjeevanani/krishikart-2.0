@@ -1,0 +1,48 @@
+{
+    "currentMonth": {
+        "grossEarnings": 452800,
+        "commission": 56600,
+        "commissionPercentage": 12.5,
+        "netPayout": 396200
+    },
+    "history": [
+        {
+            "id": "PAY-10024",
+            "period": "Oct 2024",
+            "gross": 452800,
+            "commission": 56600,
+            "net": 396200,
+            "status": "Processing",
+            "date": "2024-10-28"
+        },
+        {
+            "id": "PAY-10023",
+            "period": "Sep 2024",
+            "gross": 412000,
+            "commission": 51500,
+            "net": 360500,
+            "status": "Paid",
+            "date": "2024-09-28"
+        }
+    ],
+    "transactions": [
+        {
+            "id": "ORD-V-2001",
+            "franchise": "South Delhi Hub",
+            "amount": 1100,
+            "commission": 137.5,
+            "net": 962.5,
+            "status": "Paid",
+            "date": "2024-10-25"
+        },
+        {
+            "id": "ORD-V-2002",
+            "franchise": "Gurgaon West",
+            "amount": 900,
+            "commission": 112.5,
+            "net": 787.5,
+            "status": "Paid",
+            "date": "2024-10-25"
+        }
+    ]
+}

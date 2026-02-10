@@ -1,0 +1,56 @@
+[
+    {
+        "poNumber": "PO-2026-001",
+        "vendor": "Farmers Collective A",
+        "expectedDate": "2026-01-28",
+        "status": "In Transit",
+        "items": [
+            {
+                "productId": "PROD-001",
+                "productName": "Hybrid Tomatoes",
+                "orderedQty": 500,
+                "unit": "kg",
+                "receivedQty": 0,
+                "acceptedQty": 0,
+                "rejectedQty": 0,
+                "damageReason": null
+            }
+        ]
+    },
+    {
+        "poNumber": "PO-2026-002",
+        "vendor": "Nashik Agro",
+        "expectedDate": "2026-01-28",
+        "status": "Pending",
+        "items": [
+            {
+                "productId": "PROD-002",
+                "productName": "Red Onions",
+                "orderedQty": 1000,
+                "unit": "kg",
+                "receivedQty": 0,
+                "acceptedQty": 0,
+                "rejectedQty": 0,
+                "damageReason": null
+            }
+        ]
+    },
+    {
+        "poNumber": "PO-2026-003",
+        "vendor": "Green Earth Farm",
+        "expectedDate": "2026-01-29",
+        "status": "Upcoming",
+        "items": [
+            {
+                "productId": "PROD-005",
+                "productName": "Organic Spinach",
+                "orderedQty": 100,
+                "unit": "kg",
+                "receivedQty": 0,
+                "acceptedQty": 0,
+                "rejectedQty": 0,
+                "damageReason": null
+            }
+        ]
+    }
+]

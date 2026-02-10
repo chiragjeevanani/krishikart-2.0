@@ -1,0 +1,64 @@
+{
+    "vendorKYC": [
+        {
+            "id": "VK-001",
+            "vendorId": "V-005",
+            "vendorName": "Fresh Fields Ltd",
+            "submittedAt": "2026-01-25T14:00:00Z",
+            "status": "pending",
+            "documents": [
+                {
+                    "type": "trade_license",
+                    "fileName": "trade_license.pdf",
+                    "url": "#",
+                    "uploadedAt": "2026-01-25T14:00:00Z"
+                },
+                {
+                    "type": "tax_id",
+                    "fileName": "gst_certificate.pdf",
+                    "url": "#",
+                    "uploadedAt": "2026-01-25T14:00:00Z"
+                }
+            ]
+        }
+    ],
+    "franchiseDocuments": [
+        {
+            "id": "FD-001",
+            "franchiseId": "F-010",
+            "franchiseName": "KrishiKart Hebbal",
+            "submittedAt": "2026-01-26T10:30:00Z",
+            "status": "pending",
+            "checklist": {
+                "storeLicense": {
+                    "submitted": true,
+                    "url": "#"
+                },
+                "fssaiCertificate": {
+                    "submitted": true,
+                    "url": "#"
+                },
+                "gstRegistration": {
+                    "submitted": false,
+                    "url": null
+                }
+            }
+        }
+    ],
+    "hotelCreditRequests": [
+        {
+            "id": "HC-001",
+            "hotelId": "H-015",
+            "hotelName": "Hotel Paradise",
+            "requestedLimit": 200000,
+            "requestedAt": "2026-01-27T09:00:00Z",
+            "status": "pending",
+            "supportingDocs": [
+                {
+                    "type": "business_proof",
+                    "url": "#"
+                }
+            ]
+        }
+    ]
+}

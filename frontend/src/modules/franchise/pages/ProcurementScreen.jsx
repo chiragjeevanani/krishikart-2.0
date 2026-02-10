@@ -1,0 +1,367 @@
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    ShoppingBasket,
+    Search,
+    ChevronRight,
+    Plus,
+    Minus,
+    Truck,
+    CheckCircle2,
+    Loader2,
+    Package,
+    IndianRupee,
+    Home,
+    Download,
+    RefreshCw,
+    ShieldCheck,
+    Settings2,
+    Filter,
+    ArrowRight,
+    Search as SearchIcon,
+    ShoppingCart
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import products from '../../user/data/products.json';
+import { cn } from '@/lib/utils';
+
+export default function ProcurementScreen() {
+    const navigate = useNavigate();
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('All');
+    const [cart, setCart] = useState({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [orderSuccess, setOrderSuccess] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setIsLoading(false), 600);
+        return () => clearTimeout(timer);
+    }, []);
+
+    const categories = ['All', ...new Set(products.map(p => p.category))];
+
+    const filteredProducts = products.filter(p => {
+        const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
+        return matchesSearch && matchesCategory;
+    });
+
+    const updateQty = (productId, delta) => {
+        setCart(prev => {
+            const current = prev[productId] || 0;
+            const next = current + delta;
+            if (next <= 0) {
+                const { [productId]: removed, ...rest } = prev;
+                return rest;
+            }
+            return { ...prev, [productId]: next };
+        });
+    };
+
+    const setManualQty = (productId, value) => {
+        const qty = parseInt(value);
+        if (isNaN(qty) || qty <= 0) {
+            setCart(prev => {
+                const { [productId]: removed, ...rest } = prev;
+                return rest;
+            });
+        } else {
+            setCart(prev => ({ ...prev, [productId]: qty }));
+        }
+    };
+
+    const cartItems = Object.entries(cart).map(([id, qty]) => {
+        const product = products.find(p => p.id === id);
+        if (!product) return { id, name: 'Unknown Product', price: 0, qty, image: '' };
+        return { ...product, qty };
+    });
+
+    const totalAmount = cartItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+    const handlePlaceOrder = () => {
+        setIsSubmitting(true);
+        setTimeout(() => {
+            setIsSubmitting(false);
+            setOrderSuccess(true);
+            setCart({});
+        }, 2000);
+    };
+
+    if (orderSuccess) {
+        return (
+            <div className="h-full flex flex-col items-center justify-center p-8 text-center bg-slate-50 min-h-screen">
+                <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="w-20 h-20 bg-slate-900 border-4 border-white text-white rounded-sm flex items-center justify-center mb-8 shadow-2xl"
+                >
+                    <CheckCircle2 size={40} />
+                </motion.div>
+                <h2 className="text-xl font-black text-slate-900 tracking-[0.2em] uppercase">RESTOCK ARCHIVE COMMITTED</h2>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-4 max-w-sm leading-relaxed">
+                    Procurement Manifest <b>#PO-{Math.floor(Math.random() * 90000) + 10000}</b> has been synchronized with the central logistics terminal.
+                </p>
+                <div className="mt-12 flex flex-col gap-3 w-full max-w-xs">
+                    <button
+                        onClick={() => navigate('/franchise/dashboard')}
+                        className="w-full bg-slate-900 text-white h-12 rounded-sm font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-slate-800 transition-all active:scale-95"
+                    >
+                        Return to Command
+                    </button>
+                    <button
+                        onClick={() => setOrderSuccess(false)}
+                        className="w-full border border-slate-200 text-slate-400 h-10 rounded-sm font-black text-[9px] uppercase tracking-widest hover:bg-white hover:text-slate-900 transition-all"
+                    >
+                        Initialize New Manifest
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row h-full overflow-hidden font-sans">
+            {/* Left: Product Catalog Interface */}
+            <div className="flex-1 flex flex-col h-full bg-slate-50 relative border-r border-slate-200 min-w-0">
+                {/* Enterprise Header */}
+                <div className="h-14 bg-white border-b border-slate-200 px-4 flex items-center justify-between sticky top-0 z-30 overflow-hidden">
+                    <div className="flex items-center gap-4 min-w-0">
+                        <div className="hidden sm:flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-r border-slate-200 pr-4 shrink-0">
+                            <Home size={12} />
+                            <ChevronRight size={10} />
+                            <span>Franchise</span>
+                            <ChevronRight size={10} />
+                            <span className="text-slate-900 uppercase tracking-widest truncate max-w-[80px]">Procurement</span>
+                        </div>
+                        <h1 className="text-sm font-bold text-slate-900 truncate">Restock Portal</h1>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                        <div className="relative group w-32 xl:w-64">
+                            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" size={14} />
+                            <input
+                                type="text"
+                                placeholder="Search..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full bg-slate-100 border border-slate-200 rounded-sm py-1.5 pl-9 pr-4 outline-none text-[11px] font-black text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-slate-400 transition-all font-sans"
+                            />
+                        </div>
+                        <button className="p-1.5 border border-slate-200 rounded-sm hover:bg-slate-50 text-slate-400">
+                            <RefreshCw size={14} />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Sub-header Categories Strip */}
+                <div className="bg-white border-b border-slate-200 px-4 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
+                    {categories.map(cat => (
+                        <button
+                            key={cat}
+                            onClick={() => setSelectedCategory(cat)}
+                            className={cn(
+                                "h-8 px-4 border rounded-sm text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
+                                selectedCategory === cat
+                                    ? "bg-slate-900 border-slate-900 text-white shadow-md"
+                                    : "bg-white border-slate-200 text-slate-400 hover:border-slate-400"
+                            )}
+                        >
+                            {cat}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Products Grid */}
+                <div className="flex-1 overflow-y-auto p-4 no-scrollbar bg-slate-50">
+                    <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+                        <AnimatePresence>
+                            {filteredProducts.map((p, idx) => (
+                                <motion.div
+                                    key={p.id}
+                                    layout
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="bg-white border border-slate-200 p-3 transition-all group hover:border-slate-900 rounded-sm hover:shadow-xl hover:shadow-slate-200/50 flex flex-col"
+                                >
+                                    <div className="aspect-[4/3] bg-slate-50 border border-slate-100 rounded-sm overflow-hidden mb-3 relative shrink-0">
+                                        <img
+                                            src={p.image}
+                                            className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110"
+                                            alt={p.name}
+                                            onError={(e) => {
+                                                e.target.onerror = null;
+                                                e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=40';
+                                            }}
+                                        />
+                                        <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-sm shadow-sm">
+                                            <p className="text-[7px] font-black text-slate-500 uppercase tracking-wider">{p.category}</p>
+                                        </div>
+                                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    </div>
+                                    <div className="flex-1 flex flex-col justify-between">
+                                        <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-tight line-clamp-2 leading-tight mb-2 min-h-[2.5em]">{p.name}</h4>
+                                        <div className="flex items-end justify-between">
+                                            <div className="flex flex-col">
+                                                <span className="text-[13px] font-black text-slate-900 tabular-nums leading-none mb-1">₹{p.price.toLocaleString()}</span>
+                                                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Per {p.unit}</span>
+                                            </div>
+
+                                            {cart[p.id] ? (
+                                                <div className="flex items-center bg-slate-900 text-white rounded-sm p-0.5 shadow-lg shadow-slate-200">
+                                                    <button onClick={() => updateQty(p.id, -1)} className="w-6 h-6 flex items-center justify-center hover:bg-white/10 transition-colors">
+                                                        <Minus size={10} />
+                                                    </button>
+                                                    <span className="w-7 text-center font-black text-[9px] tabular-nums">{cart[p.id]}</span>
+                                                    <button onClick={() => updateQty(p.id, 1)} className="w-6 h-6 flex items-center justify-center hover:bg-white/10 transition-colors">
+                                                        <Plus size={10} />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    onClick={() => updateQty(p.id, 1)}
+                                                    className="w-8 h-8 rounded-sm border border-slate-200 text-slate-400 flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all shadow-sm hover:shadow-lg hover:shadow-slate-200 active:scale-90"
+                                                >
+                                                    <Plus size={14} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </AnimatePresence>
+                    </motion.div>
+                </div>
+            </div>
+
+            {/* Right: Procurement Manifest Interface */}
+            <div className="hidden lg:flex lg:w-[320px] xl:w-[380px] bg-white border-l border-slate-200 flex-col h-full shadow-2xl relative z-20 shrink-0">
+                <div className="h-14 border-b border-slate-200 px-5 flex items-center justify-between bg-slate-50/50 shrink-0">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-sm bg-slate-900 flex items-center justify-center text-white">
+                            <ShoppingBasket size={14} />
+                        </div>
+                        <div className="flex flex-col">
+                            <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-wider leading-none">Procurement</h2>
+                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1">Manifest Registry</p>
+                        </div>
+                    </div>
+                    <div className="flex flex-col items-end">
+                        <span className="text-[11px] font-black text-slate-900 tabular-nums leading-none">{cartItems.length}</span>
+                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mt-1">SKUs</span>
+                    </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto no-scrollbar bg-white">
+                    {cartItems.length > 0 ? (
+                        <div className="divide-y divide-slate-100">
+                            {cartItems.map(item => (
+                                <div key={item.id} className="p-4 flex gap-4 group hover:bg-slate-50 transition-colors">
+                                    <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-sm bg-slate-50 border border-slate-100 overflow-hidden shrink-0 relative">
+                                        <img
+                                            src={item.image}
+                                            className="w-full h-full object-cover transition-all"
+                                            onError={(e) => {
+                                                e.target.onerror = null;
+                                                e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&q=20';
+                                            }}
+                                            alt=""
+                                        />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex justify-between items-start mb-1">
+                                            <h4 className="text-[10px] xl:text-[11px] font-black text-slate-900 uppercase truncate leading-none">{item.name}</h4>
+                                            <span className="text-[10px] font-black text-slate-900 tabular-nums ml-2 whitespace-nowrap">₹{(item.qty * item.price).toLocaleString()}</span>
+                                        </div>
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{item.qty} {item.unit} × ₹{item.price}</p>
+
+                                        <div className="flex items-center justify-end mt-2">
+                                            <div className="flex items-center border border-slate-200 rounded-sm p-0.5 bg-white shadow-sm">
+                                                <button onClick={() => updateQty(item.id, -1)} className="w-5 h-5 xl:w-6 xl:h-6 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-colors">
+                                                    <Minus size={10} strokeWidth={3} />
+                                                </button>
+                                                <input
+                                                    type="number"
+                                                    className="bg-transparent border-none w-8 xl:w-10 text-center font-black text-[10px] text-slate-900 outline-none tabular-nums"
+                                                    value={item.qty}
+                                                    onChange={(e) => setManualQty(item.id, e.target.value)}
+                                                />
+                                                <button onClick={() => updateQty(item.id, 1)} className="w-5 h-5 xl:w-6 xl:h-6 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-colors">
+                                                    <Plus size={10} strokeWidth={3} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="h-full flex flex-col items-center justify-center text-center px-10 pt-32">
+                            <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-sm flex items-center justify-center text-slate-200 mb-6 relative">
+                                <ShoppingBasket size={32} strokeWidth={1} />
+                                <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/0 to-slate-200/50" />
+                            </div>
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">Manifest Interface Empty</h3>
+                            <p className="text-[9px] text-slate-300 font-bold uppercase tracking-wider max-w-[160px] leading-relaxed">Matrix awaiting resource allocation for node replenishment.</p>
+                        </div>
+                    )}
+                </div>
+
+                <div className="p-5 xl:p-6 bg-slate-900 text-white shadow-[0_-10px_40px_rgba(15,23,42,0.15)] relative z-10">
+                    {cartItems.length > 0 ? (
+                        <div className="space-y-4 mb-6 xl:mb-8">
+                            <div className="flex justify-between items-center px-1">
+                                <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider">Gross Terminal Value</span>
+                                <span className="text-[11px] font-black tabular-nums tracking-tight">₹{(totalAmount || 0).toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between items-center px-1">
+                                <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider">Logistics Surcharge</span>
+                                <span className="text-[11px] font-black text-emerald-400 uppercase tracking-wider">Waived</span>
+                            </div>
+                            <div className="h-px bg-slate-800" />
+                            <div className="flex flex-col px-1">
+                                <span className="text-[9px] font-black text-emerald-500/80 uppercase tracking-wider mb-2">Commitment Total</span>
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-2xl xl:text-3xl font-black tracking-tighter tabular-nums leading-none">₹{(totalAmount || 0).toLocaleString()}</span>
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">INR</span>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center gap-4 mb-6 xl:mb-8 opacity-20 py-4">
+                            <div className="w-full h-px bg-slate-800" />
+                            <span className="text-[9px] font-black uppercase tracking-wider">Awaiting Data</span>
+                            <div className="w-full h-px bg-slate-800" />
+                        </div>
+                    )}
+
+                    <button
+                        onClick={handlePlaceOrder}
+                        disabled={isSubmitting || cartItems.length === 0}
+                        className={cn(
+                            "w-full h-12 xl:h-14 rounded-sm font-black uppercase text-[10px] tracking-wider transition-all flex items-center justify-center gap-3 relative overflow-hidden group/btn",
+                            cartItems.length > 0
+                                ? "bg-white text-slate-900 hover:bg-slate-100 shadow-[0_10px_30px_rgba(255,255,255,0.1)] active:scale-[0.98]"
+                                : "bg-slate-800/50 text-slate-600 cursor-not-allowed border border-slate-800"
+                        )}
+                    >
+                        {isSubmitting ? (
+                            <Loader2 className="animate-spin" size={16} />
+                        ) : (
+                            <>
+                                <span className="relative z-10 transition-transform group-hover/btn:-translate-x-1">Authorize Manifest</span>
+                                <ArrowRight size={14} className="relative z-10 group-hover/btn:translate-x-1 transition-transform" />
+                            </>
+                        )}
+                        {cartItems.length > 0 && <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/5 to-emerald-500/0 opacity-0 group-hover/btn:opacity-100 transition-all -translate-x-full group-hover/btn:translate-x-full duration-1000" />}
+                    </button>
+
+                    <div className="mt-4 flex items-center justify-center gap-2">
+                        <ShieldCheck size={10} className="text-emerald-500/50" />
+                        <span className="text-[8px] font-bold text-slate-600 uppercase tracking-wider">Encrypted Terminal Protocol</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}

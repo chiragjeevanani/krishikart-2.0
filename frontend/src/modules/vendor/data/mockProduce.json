@@ -1,0 +1,52 @@
+[
+    {
+        "id": "PROD-001",
+        "name": "Organic Tomatoes",
+        "category": "Vegetables",
+        "price": 40,
+        "unit": "kg",
+        "quantity": 120,
+        "available": true,
+        "image": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=60"
+    },
+    {
+        "id": "PROD-002",
+        "name": "Fresh Spinach",
+        "category": "Vegetables",
+        "price": 30,
+        "unit": "bunch",
+        "quantity": 50,
+        "available": true,
+        "image": "https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=400&auto=format&fit=crop&q=60"
+    },
+    {
+        "id": "PROD-003",
+        "name": "Alphonso Mangoes",
+        "category": "Fruits",
+        "price": 450,
+        "unit": "dozen",
+        "quantity": 25,
+        "available": true,
+        "image": "https://images.unsplash.com/photo-1553279768-865429fa0078?w=400&auto=format&fit=crop&q=60"
+    },
+    {
+        "id": "PROD-004",
+        "name": "Red Carrots",
+        "category": "Vegetables",
+        "price": 35,
+        "unit": "kg",
+        "quantity": 0,
+        "available": false,
+        "image": "https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?w=400&auto=format&fit=crop&q=60"
+    },
+    {
+        "id": "PROD-005",
+        "name": "Green Apples",
+        "category": "Fruits",
+        "price": 180,
+        "unit": "kg",
+        "quantity": 80,
+        "available": true,
+        "image": "https://images.unsplash.com/photo-1610397648930-477b8c7f0943?w=400&auto=format&fit=crop&q=60"
+    }
+]
