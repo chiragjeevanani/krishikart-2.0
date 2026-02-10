@@ -49,7 +49,12 @@ export default function ProductCard({ product, layout = 'grid' }) {
                 className="bg-white rounded-2xl p-2.5 border border-slate-100 flex gap-3.5 h-[110px] items-center group cursor-pointer hover:shadow-md transition-all"
             >
                 <div className="relative w-24 h-24 rounded-xl overflow-hidden shrink-0 bg-slate-50">
-                    <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                    <img
+                        src={product.image}
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=80' }}
+                    />
                     <button
                         onClick={handleWishlist}
                         className="absolute top-1.5 right-1.5 w-7 h-7 rounded-lg bg-white/80 backdrop-blur-sm flex items-center justify-center text-slate-400 shadow-sm"
@@ -107,6 +112,7 @@ export default function ProductCard({ product, layout = 'grid' }) {
                     src={product.image}
                     alt={product.name}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=80' }}
                 />
 
                 <button

@@ -86,6 +86,7 @@ export default function HomeScreen() {
                                                 src={cat.image}
                                                 alt={cat.name}
                                                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                                onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=400&q=80' }}
                                             />
                                             <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors" />
                                         </div>
