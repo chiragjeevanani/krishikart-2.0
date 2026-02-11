@@ -18,8 +18,8 @@ export default function BottomNav() {
     const location = useLocation()
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pb-6 pointer-events-none">
-            <nav className="bg-white/80 backdrop-blur-2xl border border-white/40 shadow-[0_20px_50px_rgba(0,0,0,0.15)] rounded-[32px] px-2 h-18 flex items-center gap-1 pointer-events-auto mx-4 w-full max-w-sm overflow-hidden border-t border-t-white/50">
+        <div className="fixed bottom-16 left-0 right-0 z-50 flex justify-center pointer-events-none px-6 pb-[env(safe-area-inset-bottom)]">
+            <nav className="bg-white/95 backdrop-blur-md border border-slate-200 shadow-[0_10px_40px_rgba(0,0,0,0.1)] rounded-3xl h-16 flex items-center gap-1 w-full max-w-[360px] pointer-events-auto px-2 transition-all">
                 {navItems.map((item) => {
                     const isActive = location.pathname === item.path
                     const badge = item.label === 'Cart' ? cartCount : 0

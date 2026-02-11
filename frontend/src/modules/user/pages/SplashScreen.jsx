@@ -14,7 +14,7 @@ export default function SplashScreen() {
     }, [navigate])
 
     return (
-        <div className="h-screen w-full bg-primary flex flex-col items-center justify-center overflow-hidden">
+        <div className="user-app-theme h-screen w-full bg-primary flex flex-col items-center justify-center overflow-hidden">
             {/* Animated Background Elements */}
             <motion.div
                 animate={{

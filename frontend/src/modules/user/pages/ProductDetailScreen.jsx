@@ -16,6 +16,7 @@ import {
   Info
 } from 'lucide-react'
 import PageTransition from '../components/layout/PageTransition'
+import Breadcrumbs from '../components/layout/Breadcrumbs'
 import productsData from '../data/products.json'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -42,9 +43,9 @@ export default function ProductDetailScreen() {
 
   return (
     <PageTransition>
-      <div className="bg-white pb-40">
-        {/* Header Actions */}
-        <div className="fixed top-0 left-0 right-0 z-50 px-4 py-4 flex justify-between pointer-events-none max-w-md mx-auto">
+      <div className="bg-white pb-32 md:pb-20 min-h-screen">
+        {/* Mobile Header Actions */}
+        <div className="fixed top-0 left-0 right-0 z-50 px-4 py-4 flex justify-between pointer-events-none max-w-md mx-auto md:hidden">
           <button
             onClick={() => navigate(-1)}
             className="w-10 h-10 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-md shadow-sm border border-slate-100 text-slate-900 active:scale-90 transition-transform pointer-events-auto"
@@ -67,153 +68,205 @@ export default function ProductDetailScreen() {
           </div>
         </div>
 
-        {/* Hero Image */}
-        <div className="relative aspect-[4/5] bg-slate-50 overflow-hidden">
-          <motion.img
-            initial={{ scale: 1.1 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 0.8 }}
-            src={product.image}
-            alt={product.name}
-            className="w-full h-full object-cover"
-          />
-        </div>
-
-        {/* Content */}
-        <div className="px-6 -mt-8 relative z-10 bg-white rounded-t-[32px] pt-8">
-          <div className="flex items-center gap-2 mb-2">
-            <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-none px-3 font-bold uppercase text-[10px]">
-              {product.category}
-            </Badge>
-            {product.stock > 0 && (
-              <span className="text-[10px] font-bold text-green-500 uppercase flex items-center gap-1">
-                <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                In Stock
-              </span>
-            )}
-          </div>
-
-          <h1 className="text-2xl font-black text-slate-900 leading-tight mb-2 uppercase">{product.name}</h1>
-
-          <div className="flex items-center gap-4 mb-4">
-            <div className="flex items-center gap-1">
-              <div className="flex items-center gap-0.5 bg-yellow-400/10 px-2 py-1 rounded-lg">
-                <Star size={14} className="fill-yellow-400 text-yellow-400" />
-                <span className="text-xs font-black text-yellow-700">{product.rating}</span>
-              </div>
-              <span className="text-xs text-slate-400 font-bold">({product.reviews} Reviews)</span>
+        {/* Content Wrapper */}
+        <div className="max-w-7xl mx-auto md:px-8">
+          <div className="md:flex md:gap-12 md:items-start">
+            {/* Hero Image */}
+            <div className="relative aspect-[4/5] md:aspect-square md:w-[450px] lg:w-[500px] shrink-0 bg-white overflow-hidden md:rounded-xl md:border md:border-slate-100 flex items-center justify-center">
+              <img
+                src={product.image}
+                alt={product.name}
+                className="w-full h-full object-cover"
+                onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80' }}
+              />
             </div>
-          </div>
 
-          {/* Pricing Section */}
-          <div className="mb-8">
-            <div className="flex items-baseline gap-2">
-              <AnimatePresence mode="wait">
-                <motion.span
-                  key={currentPrice}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-3xl font-black text-slate-900 tracking-tight"
-                >
-                  ₹{currentPrice}
-                </motion.span>
-              </AnimatePresence>
-              <span className="text-sm text-slate-400 font-bold">/ {product.unit}</span>
-              {currentPrice < product.price && (
-                <div className="flex items-center gap-1 ml-2 bg-orange-100 text-orange-600 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase ring-2 ring-orange-50">
-                  <TrendingDown size={12} />
-                  Bulk Applied
+            {/* Content */}
+            <div className="px-6 -mt-8 relative z-10 bg-white rounded-t-[32px] pt-8 md:mt-0 md:bg-transparent md:px-0 md:pt-0 md:flex-1">
+              <div className="flex items-center gap-2 mb-3">
+                <Badge className="bg-green-50 text-green-700 hover:bg-green-100 border-green-100 px-3 font-bold uppercase text-[10px] md:normal-case md:font-semibold">
+                  {product.category}
+                </Badge>
+                {product.stock > 0 && (
+                  <span className="text-[10px] font-bold text-green-600 uppercase flex items-center gap-1 md:normal-case md:font-medium">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                    In Stock
+                  </span>
+                )}
+              </div>
+
+              <h1 className="text-2xl md:text-4xl font-black text-slate-900 leading-tight mb-2 uppercase md:normal-case md:font-bold">{product.name}</h1>
+
+              <div className="flex items-center gap-4 mb-6">
+                <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-0.5 bg-yellow-400/10 px-2 py-1 rounded-lg">
+                    <Star size={14} className="fill-yellow-400 text-yellow-400" />
+                    <span className="text-xs font-black text-yellow-700 md:font-bold">{product.rating}</span>
+                  </div>
+                  <span className="text-xs text-slate-400 font-bold md:font-medium">({product.reviews} Reviews)</span>
+                </div>
+              </div>
+
+              {/* Pricing Section */}
+              <div className="mb-8">
+                <div className="flex items-baseline gap-2">
+                  <AnimatePresence mode="wait">
+                    <motion.span
+                      key={currentPrice}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight md:font-bold"
+                    >
+                      ₹{currentPrice}
+                    </motion.span>
+                  </AnimatePresence>
+                  <span className="text-sm text-slate-400 font-bold md:font-medium">/ {product.unit}</span>
+                  {currentPrice < product.price && (
+                    <div className="flex items-center gap-1 ml-2 bg-orange-100 text-orange-600 px-2 py-0.5 rounded-lg text-[10px] font-black md:normal-case md:font-bold">
+                      <TrendingDown size={12} />
+                      Bulk Pricing Applied
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Bulk Pricing Grid */}
+              {product.bulkPricing && (
+                <div className="mb-8 p-6 rounded-[28px] md:rounded-xl bg-white border border-slate-100 shadow-sm">
+                  <div className="flex items-center gap-2 mb-4">
+                    <TrendingDown size={18} className="text-orange-500" />
+                    <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest md:normal-case md:tracking-normal">Bulk savings for businesses</h3>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2">
+                    {product.bulkPricing.map((tier, idx) => {
+                      const isUnlocked = quantity >= tier.minQty;
+                      return (
+                        <div
+                          key={idx}
+                          className={cn(
+                            "flex items-center justify-between p-3 rounded-2xl md:rounded-lg transition-all border",
+                            isUnlocked
+                              ? "bg-white border-primary/20 shadow-sm"
+                              : "bg-transparent border-transparent grayscale opacity-50"
+                          )}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={cn(
+                              "w-fit px-3 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold",
+                              isUnlocked ? "bg-primary text-white" : "bg-slate-200 text-slate-500"
+                            )}>
+                              {tier.minQty}+ {product.unit}
+                            </div>
+                            <span className="text-xs font-medium text-slate-600">Buy {tier.minQty} or more</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-sm font-bold text-slate-900">₹{tier.price}</span>
+                            <span className="text-[10px] text-slate-400 font-medium"> / {product.unit}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
-            </div>
-            {currentPrice === product.price && product.bulkPricing && (
-              <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider mt-1">
-                Buy {product.bulkPricing[0].minQty}+ {product.unit} to save more
-              </p>
-            )}
-          </div>
 
-          {/* Bulk Pricing Grid */}
-          {product.bulkPricing && (
-            <div className="mb-8 p-5 rounded-[28px] bg-slate-50 border border-slate-100">
-              <div className="flex items-center gap-2 mb-4">
-                <TrendingDown size={18} className="text-orange-500" />
-                <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.15em]">B2B Bulk Pricing</h3>
+              {/* Product Details */}
+              <div className="space-y-4 mb-10">
+                <h3 className="text-lg font-black text-slate-900 tracking-tight md:font-bold">About this product</h3>
+                <p className="text-sm text-slate-500 leading-relaxed font-medium">
+                  {product.description}
+                </p>
               </div>
-              <div className="grid grid-cols-1 gap-2">
-                {product.bulkPricing.map((tier, idx) => {
-                  const isUnlocked = quantity >= tier.minQty;
-                  return (
-                    <div
-                      key={idx}
-                      className={cn(
-                        "flex items-center justify-between p-3 rounded-2xl transition-all border",
-                        isUnlocked
-                          ? "bg-white border-orange-200 shadow-sm"
-                          : "bg-transparent border-transparent grayscale opacity-60"
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "w-fit px-3 h-8 rounded-xl flex items-center justify-center text-xs font-black",
-                          isUnlocked ? "bg-orange-500 text-white" : "bg-slate-200 text-slate-400"
-                        )}>
-                          {tier.minQty}+ {product.unit}
-                        </div>
-                        <span className="text-xs font-bold text-slate-600 italic">Order {tier.minQty} {product.unit} or more</span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-sm font-black text-slate-900">₹{tier.price}</span>
-                        <span className="text-[10px] text-slate-400 font-bold"> / {product.unit}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <p className="text-[10px] text-slate-400 font-bold mt-4 flex items-center gap-1.5 px-1">
-                <Info size={12} />
-                Volume discounts are automatically applied to your cart.
-              </p>
-            </div>
-          )}
 
-          {/* Supplier Info */}
-          <div className="space-y-4 mb-8">
-            <h3 className="text-lg font-black text-slate-900 tracking-tight">Product Details</h3>
-            <p className="text-sm text-slate-500 leading-relaxed font-medium">
-              {product.description}
-            </p>
+              {/* Desktop Add to Cart */}
+              <div className="hidden md:flex flex-col gap-6 p-8 rounded-xl bg-white border border-slate-100 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-slate-500">Order Total</span>
+                  <span className="text-3xl font-bold text-slate-900">₹{currentPrice * quantity}</span>
+                </div>
+
+                <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg p-1 h-12 w-32">
+                  <button
+                    onClick={() => setQuantity(prev => Math.max(1, (Number(prev) || 1) - 1))}
+                    className="w-8 h-full flex items-center justify-center rounded-md hover:bg-slate-50 text-slate-600 transition-colors"
+                  >
+                    <Minus size={18} />
+                  </button>
+                  <input
+                    type="number"
+                    min="1"
+                    value={quantity}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '') {
+                        setQuantity('');
+                      } else {
+                        const num = parseInt(val);
+                        if (!isNaN(num) && num > 0) setQuantity(num);
+                      }
+                    }}
+                    onBlur={() => {
+                      if (!quantity || Number(quantity) < 1) setQuantity(1);
+                    }}
+                    className="flex-1 w-full text-center text-lg font-bold border-none focus:outline-none bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                  <button
+                    onClick={() => setQuantity(prev => (Number(prev) || 0) + 1)}
+                    className="w-8 h-full flex items-center justify-center rounded-md hover:bg-slate-50 text-slate-600 transition-colors"
+                  >
+                    <Plus size={18} />
+                  </button>
+                </div>
+
+                <Button
+                  onClick={() => {
+                    const finalQty = Number(quantity) || 1;
+                    addToCart({ ...product, price: currentPrice }, finalQty)
+                    navigate('/cart')
+                  }}
+                  className="flex-1 h-12 rounded-lg bg-primary hover:bg-primary/90 text-md font-bold transition-all active:scale-[0.98]"
+                >
+                  Add to Cart
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Sticky Bottom Actions */}
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-xl border-t border-slate-100 px-6 py-6 pb-12 max-w-md mx-auto">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-4 bg-slate-50 border border-slate-200 rounded-3xl p-1.5 h-16">
+
+        {/* Sticky Bottom Actions - Mobile Only */}
+        <div className="fixed bottom-16 left-0 right-0 z-40 px-6 max-w-md mx-auto md:hidden pointer-events-none">
+          <div className="flex items-center gap-3 bg-white/95 backdrop-blur-md border border-slate-200 shadow-[0_10px_40px_rgba(0,0,0,0.12)] rounded-3xl p-1.5 pointer-events-auto">
+            <div className="flex items-center gap-2 bg-white border border-slate-100 rounded-2xl p-1 h-12 shadow-sm w-36">
               <button
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white shadow-sm text-slate-900 active:scale-90 transition-transform font-bold"
+                onClick={() => setQuantity(prev => Math.max(1, (Number(prev) || 1) - 1))}
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white shadow-sm text-slate-900 active:scale-90 transition-transform font-bold"
               >
-                <Minus size={20} />
+                <Minus size={16} />
               </button>
-              <div className="w-10 h-10 flex items-center justify-center relative overflow-hidden">
-                <AnimatePresence mode="popLayout">
-                  <motion.span
-                    key={quantity}
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: -20, opacity: 0 }}
-                    className="absolute text-xl font-black text-slate-900 tracking-tighter"
-                  >
-                    {quantity}
-                  </motion.span>
-                </AnimatePresence>
-              </div>
+              <input
+                type="number"
+                min="1"
+                value={quantity}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === '') {
+                    setQuantity('');
+                  } else {
+                    const num = parseInt(val);
+                    if (!isNaN(num) && num > 0) setQuantity(num);
+                  }
+                }}
+                onBlur={() => {
+                  if (!quantity || Number(quantity) < 1) setQuantity(1);
+                }}
+                className="flex-1 w-full text-center text-base font-black text-slate-900 tracking-tighter border-none focus:outline-none bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
               <button
-                onClick={() => setQuantity(quantity + 1)}
-                className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white shadow-sm text-slate-900 active:scale-90 transition-transform font-bold"
+                onClick={() => setQuantity(prev => (Number(prev) || 0) + 1)}
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white shadow-sm text-slate-900 active:scale-90 transition-transform font-bold"
               >
-                <Plus size={20} />
+                <Plus size={16} />
               </button>
             </div>
 
@@ -222,14 +275,14 @@ export default function ProductDetailScreen() {
                 addToCart({ ...product, price: currentPrice }, quantity)
                 navigate('/cart')
               }}
-              className="flex-1 h-16 rounded-[28px] bg-primary hover:bg-primary/90 text-lg font-black shadow-lg shadow-green-100 transition-all active:scale-[0.98] flex flex-col justify-center items-center gap-0"
+              className="flex-1 h-12 rounded-2xl bg-primary hover:bg-primary/90 text-md font-black shadow-lg shadow-green-100 transition-all active:scale-[0.98] flex flex-col justify-center items-center gap-0"
             >
-              <span className="text-white/80 text-[10px] font-bold uppercase tracking-widest leading-none mb-1">Add items to cart</span>
-              <span className="leading-none">₹{currentPrice * quantity}</span>
+              <span className="text-white/80 text-[8px] font-bold uppercase tracking-widest leading-none mb-1">Add to Cart</span>
+              <span className="leading-none text-sm">₹{currentPrice * quantity}</span>
             </Button>
           </div>
         </div>
       </div>
-    </PageTransition>
+    </PageTransition >
   )
 }

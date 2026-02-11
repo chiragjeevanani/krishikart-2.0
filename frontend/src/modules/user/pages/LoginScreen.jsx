@@ -20,109 +20,151 @@ export default function LoginScreen() {
     }
 
     return (
-        <div className="min-h-screen bg-white flex flex-col px-8 pt-20 pb-10">
-            <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-12"
-            >
-                <div className="w-16 h-16 bg-primary/10 rounded-3xl flex items-center justify-center text-primary mb-6">
-                    <Sprout size={32} />
+        <div className="user-app-theme min-h-screen bg-slate-50 md:flex md:items-center md:justify-center md:p-12">
+            <div className="bg-white min-h-screen md:min-h-0 md:h-[650px] md:w-full md:max-w-5xl md:rounded-xl md:shadow-2xl md:shadow-green-900/10 md:flex md:overflow-hidden relative border border-slate-100">
+
+                {/* Branding Side - Desktop only */}
+                <div className="hidden md:flex md:w-5/12 bg-primary relative overflow-hidden flex-col justify-between p-12 text-white">
+                    <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
+                    <div className="absolute bottom-0 left-0 w-80 h-80 bg-black/10 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl" />
+
+                    <div className="relative z-10 flex items-center gap-3">
+                        <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-primary shadow-lg border border-white">
+                            <Sprout size={24} />
+                        </div>
+                        <span className="text-xl font-bold tracking-tight">KrishiKart</span>
+                    </div>
+
+                    <div className="relative z-10">
+                        <h2 className="text-4xl font-bold leading-tight mb-4">
+                            Freshness <br />
+                            <span className="text-green-200">Simplified.</span>
+                        </h2>
+                        <p className="text-green-50/70 text-sm font-medium leading-relaxed max-w-xs italic">
+                            "Empowering local farmers by connecting them directly to your business."
+                        </p>
+                    </div>
+
+                    <div className="relative z-10 grid grid-cols-2 gap-6 border-t border-white/10 pt-8">
+                        <div>
+                            <p className="text-2xl font-bold">25+</p>
+                            <p className="text-[10px] font-semibold uppercase tracking-widest text-green-200 mt-1 opacity-80">Hubs</p>
+                        </div>
+                        <div>
+                            <p className="text-2xl font-bold">100%</p>
+                            <p className="text-[10px] font-semibold uppercase tracking-widest text-green-200 mt-1 opacity-80">Direct Sourced</p>
+                        </div>
+                    </div>
                 </div>
-                <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-none">
-                    Freshness <br />
-                    <span className="text-primary">Simplified.</span>
-                </h1>
-                <p className="mt-4 text-slate-500 font-bold text-lg leading-relaxed">
-                    Order fresh fruits & veggies directly from the farm to your door.
-                </p>
-            </motion.div>
 
-            <div className="flex-1">
-                <AnimatePresence mode="wait">
-                    {step === 'phone' ? (
-                        <motion.div
-                            key="phone"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            className="space-y-6"
-                        >
-                            <div className="relative">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 border-r border-slate-200 pr-3 mr-3 h-6">
-                                    <span className="text-sm font-black text-slate-900">+91</span>
-                                </div>
-                                <Input
-                                    type="tel"
-                                    placeholder="Enter phone number"
-                                    value={phone}
-                                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                                    className="pl-20 h-16 text-lg font-black bg-slate-50 border-none rounded-2xl placeholder:text-slate-300 ring-offset-transparent focus-visible:ring-2 focus-visible:ring-primary/20"
-                                />
-                            </div>
-                            <Button
-                                onClick={handleNext}
-                                disabled={phone.length !== 10}
-                                className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 text-lg font-black shadow-lg shadow-green-100 transition-all active:scale-[0.98]"
-                            >
-                                Send Verification <ArrowRight className="ml-2" />
-                            </Button>
-                        </motion.div>
-                    ) : (
-                        <motion.div
-                            key="otp"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            className="space-y-8"
-                        >
-                            <div>
-                                <p className="text-slate-400 font-bold text-sm uppercase tracking-widest mb-4">Verification Code</p>
-                                <div className="grid grid-cols-6 gap-2">
-                                    {otp.map((digit, idx) => (
-                                        <input
-                                            key={idx}
-                                            type="text"
-                                            maxLength={1}
-                                            value={digit}
-                                            onChange={(e) => {
-                                                const val = e.target.value.replace(/\D/g, '')
-                                                const newOtp = [...otp]
-                                                newOtp[idx] = val
-                                                setOtp(newOtp)
-                                                if (val && e.target.nextSibling) e.target.nextSibling.focus()
-                                            }}
-                                            className="w-full h-14 bg-slate-50 border-none rounded-xl text-center text-xl font-black text-slate-900 outline-none focus:ring-2 focus:ring-primary/20"
-                                        />
-                                    ))}
-                                </div>
-                            </div>
+                {/* Login Form Side */}
+                <div className="flex-1 flex flex-col p-8 md:p-12 relative bg-white">
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-10"
+                    >
+                        <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6 md:hidden">
+                            <Sprout size={28} />
+                        </div>
+                        <h1 className="text-3xl font-bold text-slate-900 tracking-tight leading-none md:text-4xl">
+                            Welcome back
+                        </h1>
+                        <p className="mt-4 text-slate-500 font-medium text-base leading-relaxed md:text-slate-400">
+                            {step === 'phone' ? 'Log in to access your dashboard' : 'Check your phone for the verification code'}
+                        </p>
+                    </motion.div>
 
-                            <div className="flex flex-col gap-4">
-                                <Button
-                                    onClick={handleNext}
-                                    className="w-full h-16 rounded-2xl bg-slate-900 hover:bg-slate-800 text-lg font-black shadow-xl"
+                    <div className="flex-1 max-w-sm">
+                        <AnimatePresence mode="wait">
+                            {step === 'phone' ? (
+                                <motion.div
+                                    key="phone"
+                                    initial={{ opacity: 0, x: 10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -10 }}
+                                    className="space-y-6"
                                 >
-                                    Verify & Continue
-                                </Button>
-                                <button
-                                    onClick={() => setStep('phone')}
-                                    className="text-slate-400 font-black uppercase text-xs tracking-[0.2em] text-center"
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Phone Number</label>
+                                        <div className="relative">
+                                            <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 border-r border-slate-200 pr-3 mr-3 h-5">
+                                                <span className="text-sm font-bold text-slate-900">+91</span>
+                                            </div>
+                                            <Input
+                                                type="tel"
+                                                placeholder="00000 00000"
+                                                value={phone}
+                                                onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                                                className="pl-16 h-12 text-md font-bold bg-white border border-slate-200 rounded-lg placeholder:text-slate-300 ring-offset-transparent focus-visible:ring-1 focus-visible:ring-primary/40 focus:bg-slate-50/30 transition-all"
+                                            />
+                                        </div>
+                                    </div>
+                                    <Button
+                                        onClick={handleNext}
+                                        disabled={phone.length !== 10}
+                                        className="w-full h-12 rounded-lg bg-primary hover:bg-primary/90 text-md font-bold shadow-md shadow-green-900/10 transition-all active:scale-[0.98]"
+                                    >
+                                        Get OTP <ArrowRight className="ml-2 w-4 h-4" />
+                                    </Button>
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    key="otp"
+                                    initial={{ opacity: 0, x: 10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -10 }}
+                                    className="space-y-8"
                                 >
-                                    Change Phone Number
-                                </button>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1 block mb-4">Verification Code</label>
+                                        <div className="grid grid-cols-6 gap-2">
+                                            {otp.map((digit, idx) => (
+                                                <input
+                                                    key={idx}
+                                                    type="text"
+                                                    maxLength={1}
+                                                    value={digit}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value.replace(/\D/g, '')
+                                                        const newOtp = [...otp]
+                                                        newOtp[idx] = val
+                                                        setOtp(newOtp)
+                                                        if (val && e.target.nextSibling) e.target.nextSibling.focus()
+                                                    }}
+                                                    className="w-full h-12 bg-white border border-slate-200 rounded-lg text-center text-lg font-bold text-slate-900 outline-none focus:ring-1 focus:ring-primary/40 focus:bg-slate-50/30"
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
 
-            <div className="mt-auto pt-10">
-                <div className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                    <ShieldCheck className="text-green-500" size={24} />
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-relaxed">
-                        Your connection is secure and encrypted. <br /> Trusted by 1M+ Users globally.
-                    </p>
+                                    <div className="flex flex-col gap-4">
+                                        <Button
+                                            onClick={handleNext}
+                                            className="w-full h-12 rounded-lg bg-slate-900 hover:bg-slate-800 text-md font-bold shadow-lg"
+                                        >
+                                            Verify Identity
+                                        </Button>
+                                        <button
+                                            onClick={() => setStep('phone')}
+                                            className="text-slate-400 font-bold text-xs text-center hover:text-primary transition-colors"
+                                        >
+                                            Use a different number
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
+                    <div className="mt-auto pt-10">
+                        <div className="flex items-center gap-3 border-t border-slate-100 pt-6">
+                            <ShieldCheck className="text-green-500 w-5 h-5" />
+                            <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
+                                Your data is protected by industry standard encryption. <br /> Safe and secure login powered by KrishiKart.
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

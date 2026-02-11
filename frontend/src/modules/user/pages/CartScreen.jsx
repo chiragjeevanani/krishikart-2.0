@@ -1,42 +1,45 @@
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Trash2, ShoppingBag, Plus, Minus, ChevronRight, MapPin, ShieldCheck, Tag } from 'lucide-react'
+import {
+  ArrowLeft,
+  Trash2,
+  Minus,
+  Plus,
+  ChevronRight,
+  ShoppingBag,
+  Tag,
+  ShieldCheck,
+  Info,
+  Truck,
+  ArrowRight
+} from 'lucide-react'
 import PageTransition from '../components/layout/PageTransition'
 import { Button } from '@/components/ui/button'
 import { useCart } from '../contexts/CartContext'
-import { cn } from '@/lib/utils'
 
 export default function CartScreen() {
+  const { cartItems, updateQuantity, removeFromCart, cartTotal } = useCart()
   const navigate = useNavigate()
-  const { cartItems, removeFromCart, updateQuantity, cartTotal, getActivePrice } = useCart()
 
   const deliveryFee = 50
   const tax = Math.round(cartTotal * 0.05)
-  const total = cartTotal > 0 ? cartTotal + deliveryFee + tax : 0
+  const total = cartTotal + deliveryFee + tax
 
   if (cartItems.length === 0) {
     return (
       <PageTransition>
-        <div className="bg-white min-h-screen flex flex-col">
-          <div className="px-6 py-6 flex items-center gap-4 mb-4 border-b border-slate-50">
-            <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-600">
-              <ArrowLeft size={20} />
-            </button>
-            <h1 className="text-xl font-black text-slate-900 tracking-tight">Your Cart</h1>
+        <div className="bg-[#f8fafd] min-h-screen flex flex-col items-center justify-center p-8 text-center">
+          <div className="w-24 h-24 bg-white rounded-3xl md:rounded-xl flex items-center justify-center text-slate-200 mb-8 shadow-sm border border-slate-50">
+            <ShoppingBag size={48} />
           </div>
-          <div className="flex-1 flex flex-col items-center justify-center px-10 text-center">
-            <div className="w-24 h-24 bg-slate-50 rounded-[32px] flex items-center justify-center text-slate-300 mb-6">
-              <ShoppingBag size={48} />
-            </div>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">Your cart is empty</h2>
-            <p className="mt-2 text-slate-400 font-bold text-sm">Looks like you haven't added anything to your cart yet.</p>
-            <Button
-              onClick={() => navigate('/home')}
-              className="mt-8 bg-primary hover:bg-primary/90 text-white rounded-2xl h-14 px-8 font-black shadow-lg shadow-green-100 transition-all active:scale-95"
-            >
-              Start Shopping
-            </Button>
-          </div>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight md:font-bold md:normal-case">Your cart is empty</h1>
+          <p className="mt-2 text-slate-400 font-bold uppercase tracking-widest text-xs md:normal-case md:font-medium md:text-sm">Time to stock up on some fresh farm produce!</p>
+          <Button
+            onClick={() => navigate('/home')}
+            className="mt-10 h-14 px-10 rounded-2xl md:rounded-lg bg-primary text-white font-black md:font-bold shadow-lg shadow-green-100 active:scale-95 transition-all"
+          >
+            Browse Products
+          </Button>
         </div>
       </PageTransition>
     )
@@ -44,127 +47,150 @@ export default function CartScreen() {
 
   return (
     <PageTransition>
-      <div className="bg-[#f8fafd] min-h-screen pb-48">
-        {/* Header */}
-        <div className="sticky top-0 z-40 bg-white px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-600 active:scale-90 transition-transform">
-              <ArrowLeft size={20} />
-            </button>
-            <h1 className="text-xl font-black text-slate-900 tracking-tight">Your Order</h1>
-          </div>
-          <span className="text-xs font-black text-primary uppercase tracking-widest bg-primary/5 px-3 py-1.5 rounded-full">
-            {cartItems.length} Groups
-          </span>
+      <div className="bg-[#f8fafd] min-h-screen pb-40 md:pb-20">
+        {/* Mobile Header */}
+        <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md px-6 py-4 border-b border-slate-100 flex items-center gap-4 md:hidden">
+          <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-600">
+            <ArrowLeft size={20} />
+          </button>
+          <h1 className="text-xl font-black text-slate-900 tracking-tight">Your Cart</h1>
         </div>
 
-        {/* Items List */}
-        <div className="p-6 space-y-4">
-          <AnimatePresence mode="popLayout">
-            {cartItems.map((item) => {
-              const currentUnitPrice = getActivePrice(item);
-              const isBulkApplied = currentUnitPrice < item.price;
+        {/* Content Wrapper */}
+        <div className="max-w-7xl mx-auto md:px-8">
+          <div className="md:flex md:gap-10 md:py-10">
+            {/* Cart Items List */}
+            <div className="flex-1 space-y-4 px-6 md:px-0">
+              <h2 className="hidden md:block text-3xl font-bold text-slate-900 mb-8 tracking-tight">My Shopping Cart</h2>
 
-              return (
-                <motion.div
-                  key={item.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  className="bg-white rounded-[32px] p-4 flex gap-4 border border-slate-100 shadow-sm relative group overflow-hidden"
-                >
-                  <div className="w-20 h-20 bg-slate-50 rounded-2xl overflow-hidden shrink-0">
-                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                  </div>
-
-                  <div className="flex-1 flex flex-col justify-between py-1">
-                    <div>
-                      <div className="flex justify-between items-start">
-                        <h3 className="text-sm font-black text-slate-900 leading-tight uppercase tracking-tight">{item.name}</h3>
-                        <button
-                          onClick={() => removeFromCart(item.id)}
-                          className="text-slate-300 hover:text-red-500 transition-colors"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+              <AnimatePresence mode="popLayout">
+                {cartItems.map((item) => (
+                  <motion.div
+                    key={item.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="bg-white rounded-[32px] md:rounded-xl p-4 flex gap-4 border border-slate-100 shadow-sm relative group"
+                  >
+                    <div className="w-24 h-24 rounded-2xl md:rounded-lg overflow-hidden bg-slate-50 shrink-0 border border-slate-50">
+                      <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex-1 flex flex-col justify-between py-1">
+                      <div>
+                        <div className="flex justify-between items-start">
+                          <h3 className="text-base font-black text-slate-900 leading-tight uppercase md:normal-case md:font-bold">{item.name}</h3>
+                          <button
+                            onClick={() => removeFromCart(item.id)}
+                            className="text-slate-300 hover:text-red-500 transition-colors p-1"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 md:normal-case md:font-medium">₹{item.price} / {item.unit}</p>
                       </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{item.supplier}</span>
-                        {isBulkApplied && (
-                          <span className="bg-orange-100 text-orange-600 text-[8px] font-black px-1.5 py-0.5 rounded-md flex items-center gap-1">
-                            <Tag size={8} />
-                            BULK PRICE
-                          </span>
-                        )}
+
+                      <div className="flex justify-between items-center">
+                        <span className="text-lg font-black text-primary md:font-bold">₹{item.price * item.quantity}</span>
+                        <div className="flex items-center gap-3 bg-slate-50 rounded-xl md:rounded-lg p-1 border border-slate-100">
+                          <button
+                            onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
+                            className="w-8 h-8 flex items-center justify-center rounded-lg bg-white shadow-sm text-slate-600 hover:text-primary transition-colors active:scale-90"
+                          >
+                            <Minus size={14} />
+                          </button>
+                          <span className="w-6 text-center text-sm font-black text-slate-900 md:font-bold">{item.quantity}</span>
+                          <button
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            className="w-8 h-8 flex items-center justify-center rounded-lg bg-white shadow-sm text-slate-600 hover:text-primary transition-colors active:scale-90"
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
                       </div>
                     </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
 
-                    <div className="flex items-center justify-between mt-2">
-                      <div className="flex flex-col">
-                        <p className="text-base font-black text-slate-900 tracking-tight">₹{currentUnitPrice * item.quantity}</p>
-                        <p className="text-[9px] text-slate-400 font-bold">₹{currentUnitPrice} / {item.unit}</p>
-                      </div>
-
-                      <div className="flex items-center gap-3 bg-slate-50 rounded-xl p-1 border border-slate-100">
-                        <button
-                          onClick={() => updateQuantity(item.id, -1)}
-                          className="w-8 h-8 flex items-center justify-center rounded-lg bg-white shadow-sm text-slate-600 active:scale-90 transition-transform"
-                        >
-                          <Minus size={14} />
-                        </button>
-                        <span className="text-sm font-black text-slate-900 w-4 text-center">{item.quantity}</span>
-                        <button
-                          onClick={() => updateQuantity(item.id, 1)}
-                          className="w-8 h-8 flex items-center justify-center rounded-lg bg-white shadow-sm text-slate-600 active:scale-90 transition-transform"
-                        >
-                          <Plus size={14} />
-                        </button>
-                      </div>
-                    </div>
+              {/* Offers & Coupons */}
+              <div className="mt-8 bg-white rounded-[32px] md:rounded-xl p-6 border border-dashed border-slate-200 flex items-center justify-between group cursor-pointer hover:border-primary/40 hover:bg-slate-50/30 transition-all">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl md:rounded-lg bg-orange-50 flex items-center justify-center text-orange-500">
+                    <Tag size={24} />
                   </div>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
-        </div>
-
-        {/* Bill Summary */}
-        <div className="px-6 pb-6">
-          <div className="bg-white rounded-[32px] p-6 space-y-4 border border-slate-100 shadow-sm relative overflow-hidden">
-            <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em] mb-2">Order Summary</h3>
-            <div className="flex justify-between items-center text-sm font-bold text-slate-500 italic">
-              <span>Subtotal (Bulk Applied)</span>
-              <span>₹{cartTotal}</span>
-            </div>
-            <div className="flex justify-between items-center text-sm font-bold text-slate-500 italic">
-              <span>Delivery Charges</span>
-              <span>₹{deliveryFee}</span>
-            </div>
-            <div className="flex justify-between items-center text-sm font-bold text-slate-500 italic">
-              <span>Taxes (GST 5%)</span>
-              <span>₹{tax}</span>
-            </div>
-            <div className="border-t border-slate-100 pt-5 flex justify-between items-center">
-              <div>
-                <span className="text-lg font-black text-slate-900 tracking-tight">Total Amount</span>
-                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Includes all bulk discounts</p>
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 uppercase md:normal-case md:font-bold">Apply Coupon</h3>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest md:normal-case md:font-medium">Save up to ₹500 on this order</p>
+                  </div>
+                </div>
+                <ChevronRight className="text-slate-300 group-hover:text-primary transition-colors group-hover:translate-x-1" />
               </div>
-              <span className="text-3xl font-black text-primary tracking-tighter">₹{total}</span>
+            </div>
+
+            {/* Order Summary - Sticky on Desktop */}
+            <div className="w-full md:w-[400px] shrink-0 mt-10 md:mt-0 px-6 md:px-0">
+              <div className="bg-white rounded-[40px] md:rounded-xl p-8 space-y-6 border border-slate-100 shadow-sm sticky top-24">
+                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 md:normal-case md:tracking-normal md:text-slate-900 md:text-base">Order Summary</h3>
+
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center text-sm font-medium text-slate-500">
+                    <span>Subtotal</span>
+                    <span>₹{cartTotal}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm font-medium text-slate-500">
+                    <span>Delivery Fee</span>
+                    <span className="text-green-600 font-bold">₹{deliveryFee}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm font-medium text-slate-500">
+                    <span>GST (5%)</span>
+                    <span>₹{tax}</span>
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-100 pt-6">
+                  <div className="flex justify-between items-center mb-8">
+                    <span className="text-xl font-bold text-slate-900">Total Payable</span>
+                    <span className="text-3xl font-black text-primary tracking-tight md:font-bold">₹{total}</span>
+                  </div>
+
+                  <div className="bg-green-50 rounded-xl p-4 flex gap-3 mb-8 border border-green-100">
+                    <ShieldCheck className="text-primary shrink-0" size={20} />
+                    <p className="text-[11px] font-medium text-green-800 leading-relaxed">Payments are 100% secure. <br /> Freshness guaranteed on every item.</p>
+                  </div>
+
+                  <Button
+                    onClick={() => navigate('/checkout')}
+                    className="hidden md:flex w-full h-14 rounded-lg bg-primary hover:bg-primary/90 text-lg font-bold shadow-lg shadow-green-100 transition-all active:scale-[0.98] items-center justify-center gap-3"
+                  >
+                    Proceed to Checkout <ArrowRight size={20} />
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Sticky Bottom Checkout */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-2xl border-t border-slate-100 px-6 py-6 pb-12 max-w-md mx-auto rounded-t-[40px] shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
-        <Button
-          onClick={() => navigate('/checkout')}
-          className="w-full h-16 rounded-[24px] bg-primary hover:bg-primary/90 text-xl font-black shadow-lg shadow-green-100 transition-all active:scale-[0.98] flex items-center justify-center gap-3 group"
-        >
-          Confirm Bulk Order
-          <ChevronRight className="group-hover:translate-x-1 transition-transform" />
-        </Button>
+        {/* Sticky Checkout Bar - Mobile Only */}
+        <div className="fixed bottom-16 left-0 right-0 z-40 px-6 max-w-md mx-auto md:hidden pointer-events-none">
+          <div className="bg-white/95 backdrop-blur-2xl border border-slate-200 shadow-[0_10px_40px_rgba(0,0,0,0.12)] rounded-[32px] p-6 pointer-events-auto">
+            <div className="flex items-center justify-between mb-6 px-2">
+              <div>
+                <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-1">Total Payable</p>
+                <p className="text-3xl font-black text-slate-900 tracking-tighter">₹{total}</p>
+              </div>
+              <div className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest">
+                <Truck size={14} /> Free Delivery
+              </div>
+            </div>
+            <Button
+              onClick={() => navigate('/checkout')}
+              className="w-full h-18 rounded-3xl bg-primary hover:bg-primary/90 text-2xl font-black shadow-lg shadow-green-100 transition-all active:scale-[0.98] flex items-center justify-center gap-3"
+            >
+              Checkout <ArrowRight size={24} />
+            </Button>
+          </div>
+        </div>
       </div>
     </PageTransition>
   )
