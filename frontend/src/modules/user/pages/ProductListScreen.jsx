@@ -1,16 +1,15 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, SlidersHorizontal, Search, X, Check, ChevronRight, LayoutGrid } from 'lucide-react'
+import { ArrowLeft, SlidersHorizontal, Search, X, Check, ChevronRight, LayoutGrid, Star, ChevronDown, ShoppingCart } from 'lucide-react'
 import PageTransition from '../components/layout/PageTransition'
 import ProductCard from '../components/common/ProductCard'
-import HorizontalCategoryNav from '../components/common/HorizontalCategoryNav'
-import FilterPills from '../components/common/FilterPills'
 import productsData from '../data/products.json'
 import categoriesData from '../data/categories.json'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useCart } from '../contexts/CartContext'
 import {
     Sheet,
     SheetContent,
@@ -20,14 +19,14 @@ import {
     SheetFooter,
     SheetClose
 } from "@/components/ui/sheet"
-import { Badge } from '@/components/ui/badge'
 
 export default function ProductListScreen() {
     const { category } = useParams()
     const navigate = useNavigate()
+    const { cartCount } = useCart()
     const [searchQuery, setSearchQuery] = useState('')
     const [selectedCategory, setSelectedCategory] = useState(category || 'all')
-    const [sortBy, setSortBy] = useState('popular')
+    const [activeSubCategory, setActiveSubCategory] = useState('all')
     const [activeFilters, setActiveFilters] = useState({
         rating: false,
         veg: false,
@@ -35,22 +34,29 @@ export default function ProductListScreen() {
         type: null
     })
 
-    const handleFilterChange = (key, value) => {
-        setActiveFilters(prev => ({ ...prev, [key]: value }))
-    }
+    // Reset subcategory when main category changes
+    useEffect(() => {
+        setSelectedCategory(category || 'all')
+        setActiveSubCategory('all')
+    }, [category])
 
-    // Extract unique brands and types for filters
-    const filterOptions = useMemo(() => {
-        const brands = new Set()
-        const types = new Set()
-        productsData.forEach(p => {
-            if (p.brand) brands.add(p.brand)
-            if (p.type) types.add(p.type)
-        })
-        return {
-            brands: Array.from(brands).sort(),
-            types: Array.from(types).sort()
-        }
+    const currentCategoryData = useMemo(() => {
+        return categoriesData.find(c => c.id === selectedCategory) || { name: 'All Products' }
+    }, [selectedCategory])
+
+    // Generate dynamic sidebar categories based on categoriesData
+    const sidebarCategories = useMemo(() => {
+        const cats = categoriesData.map(cat => ({
+            id: cat.id,
+            name: cat.name,
+            image: cat.image,
+            color: cat.color
+        }))
+
+        return [
+            { id: 'all', name: 'All', icon: LayoutGrid, color: 'bg-emerald-50 text-emerald-500' },
+            ...cats
+        ]
     }, [])
 
     const filteredProducts = useMemo(() => {
@@ -59,217 +65,192 @@ export default function ProductListScreen() {
             const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase())
             const matchesRating = !activeFilters.rating || (p.rating >= 4.0)
             const matchesVeg = !activeFilters.veg || p.isVeg
-            const matchesBrand = !activeFilters.brand || p.brand === activeFilters.brand
-            const matchesType = !activeFilters.type || p.type === activeFilters.type
-            return matchesCategory && matchesSearch && matchesRating && matchesVeg && matchesBrand && matchesType
+            return matchesCategory && matchesSearch && matchesRating && matchesVeg
         })
     }, [selectedCategory, searchQuery, activeFilters])
 
     return (
         <PageTransition>
-            <div className="bg-white min-h-screen pb-32">
-                {/* Mobile Header */}
-                <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md px-4 py-4 space-y-4 border-b border-slate-50 md:hidden">
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => navigate(-1)}
-                            className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-600 active:scale-90 transition-transform"
-                        >
-                            <ArrowLeft size={20} />
-                        </button>
-                        <h1 className="text-xl font-black text-slate-900 tracking-tight capitalize">
-                            {selectedCategory === 'all' ? 'All Products' : selectedCategory}
-                        </h1>
-                    </div>
-
-                    <div className="flex gap-2">
-                        <div className="relative flex-1">
-                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                                <Search size={16} />
-                            </div>
-                            <Input
-                                placeholder="Search products..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-10 h-11 bg-slate-50 border-none rounded-xl text-sm"
-                            />
-                        </div>
-
-                        <Sheet>
-                            <SheetTrigger asChild>
-                                <Button variant="outline" size="icon" className="h-11 w-11 rounded-xl border-slate-200">
-                                    <SlidersHorizontal size={20} className="text-slate-600" />
-                                </Button>
-                            </SheetTrigger>
-                            <SheetContent side="bottom" className="rounded-t-[32px] px-6 pb-10">
-                                <SheetHeader className="mb-6">
-                                    <SheetTitle className="text-2xl font-black text-slate-900">Filters</SheetTitle>
-                                </SheetHeader>
-
-                                {/* Mobile filters remain simplified */}
-                                <div className="space-y-8">
-                                    <div>
-                                        <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Categories</h3>
-                                        <div className="flex flex-wrap gap-2">
-                                            <Button
-                                                key="all"
-                                                variant={selectedCategory === 'all' ? 'default' : 'outline'}
-                                                onClick={() => setSelectedCategory('all')}
-                                                className={cn(
-                                                    "rounded-full px-6",
-                                                    selectedCategory === 'all' ? "bg-primary" : "border-slate-200 text-slate-600"
-                                                )}
-                                            >
-                                                All
-                                            </Button>
-                                            {categoriesData.map(cat => (
-                                                <Button
-                                                    key={cat.id}
-                                                    variant={selectedCategory === cat.id ? 'default' : 'outline'}
-                                                    onClick={() => setSelectedCategory(cat.id)}
-                                                    className={cn(
-                                                        "rounded-full px-6 capitalize",
-                                                        selectedCategory === cat.id ? "bg-primary" : "border-slate-200 text-slate-600"
-                                                    )}
-                                                >
-                                                    {cat.name}
-                                                </Button>
+            <div className="bg-white min-h-screen pb-32 flex flex-col">
+                {/* Unified Header - Mobile Redesign */}
+                <div className="sticky top-0 z-40 bg-white border-b border-slate-100 md:hidden">
+                    <div className="flex items-center justify-between px-4 h-16">
+                        <div className="flex items-center gap-3">
+                            <button onClick={() => navigate(-1)} className="text-slate-900">
+                                <ArrowLeft size={24} />
+                            </button>
+                            <div className="flex flex-col">
+                                <h1 className="text-[17px] font-bold text-slate-900 leading-tight">
+                                    {currentCategoryData.name}
+                                </h1>
+                                <Sheet>
+                                    <SheetTrigger asChild>
+                                        <button className="flex items-center gap-1 text-[13px] font-bold text-emerald-600 leading-tight">
+                                            Change category <ChevronDown size={14} strokeWidth={3} />
+                                        </button>
+                                    </SheetTrigger>
+                                    <SheetContent side="bottom" className="rounded-t-[32px] max-h-[80vh] overflow-y-auto">
+                                        <SheetHeader className="mb-6">
+                                            <SheetTitle className="text-xl font-black">All Categories</SheetTitle>
+                                        </SheetHeader>
+                                        <div className="grid grid-cols-4 gap-4 py-4">
+                                            {sidebarCategories.map((cat) => (
+                                                <SheetClose asChild key={cat.id}>
+                                                    <button
+                                                        onClick={() => setSelectedCategory(cat.id)}
+                                                        className="flex flex-col items-center gap-2"
+                                                    >
+                                                        <div className={cn(
+                                                            "w-14 h-14 rounded-2xl flex items-center justify-center border border-slate-100 shadow-sm",
+                                                            cat.color || "bg-slate-50"
+                                                        )}>
+                                                            {cat.icon && typeof cat.icon === 'function' ? (
+                                                                <cat.icon size={24} />
+                                                            ) : (
+                                                                <img src={cat.image} className="w-full h-full object-cover rounded-2xl" />
+                                                            )}
+                                                        </div>
+                                                        <span className="text-[10px] font-bold text-center leading-tight">{cat.name}</span>
+                                                    </button>
+                                                </SheetClose>
                                             ))}
                                         </div>
-                                    </div>
-                                </div>
-
-                                <SheetFooter className="mt-10">
-                                    <SheetClose asChild>
-                                        <Button className="w-full h-14 rounded-2xl bg-primary text-lg font-bold shadow-lg shadow-green-100">
-                                            Apply Filters
-                                        </Button>
-                                    </SheetClose>
-                                </SheetFooter>
-                            </SheetContent>
-                        </Sheet>
+                                    </SheetContent>
+                                </Sheet>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 border border-slate-100">
+                                <Search size={20} strokeWidth={2.5} />
+                            </button>
+                            <button
+                                onClick={() => navigate('/cart')}
+                                className="relative w-10 h-10 flex items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-100"
+                            >
+                                <ShoppingCart size={18} strokeWidth={2.5} />
+                                {cartCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-black text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white">
+                                        {cartCount}
+                                    </span>
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                {/* Desktop Horizontal Category Nav */}
-                <HorizontalCategoryNav
-                    activeCategory={selectedCategory}
-                    onCategoryChange={setSelectedCategory}
-                />
-
-                <div className="max-w-[1400px] mx-auto md:px-8">
-                    <div className="flex gap-8">
-                        {/* Desktop Sidebar - Minimal Subcategory List */}
-                        <aside className="hidden md:block w-72 shrink-0 pt-0 sticky top-44 h-[calc(100vh-180px)] overflow-y-auto no-scrollbar pr-4">
-                            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden py-2">
-                                <button
-                                    onClick={() => setSelectedCategory('all')}
-                                    className={cn(
-                                        "w-full px-4 py-4 text-[15px] font-bold transition-all text-left relative flex items-center gap-4 group",
-                                        selectedCategory === 'all'
-                                            ? "bg-slate-50 text-slate-900"
-                                            : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
-                                    )}
-                                >
-                                    {selectedCategory === 'all' && (
-                                        <motion.div
-                                            layoutId="active-category-indicator"
-                                            className="absolute right-0 top-0 bottom-0 w-1.5 bg-[#D32F2F] rounded-l-md"
-                                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                                        />
-                                    )}
-                                    <div className={cn(
-                                        "w-12 h-12 rounded-full flex items-center justify-center transition-all bg-[#eff1f5] group-hover:scale-105",
-                                    )}>
-                                        <LayoutGrid size={22} className="text-slate-600" />
-                                    </div>
-                                    All Products
-                                </button>
-                                {categoriesData.map(cat => (
+                {/* Main Content Area - Split View on Mobile */}
+                <div className="flex flex-1 overflow-hidden">
+                    {/* Mobile Sidebar - LEFT COL */}
+                    <aside className="w-[85px] border-r border-slate-50 h-[calc(100vh-120px)] overflow-y-auto no-scrollbar md:hidden bg-white shrink-0">
+                        <div className="flex flex-col py-2">
+                            {sidebarCategories.map((cat) => {
+                                const isActive = selectedCategory === cat.id
+                                return (
                                     <button
                                         key={cat.id}
                                         onClick={() => setSelectedCategory(cat.id)}
                                         className={cn(
-                                            "w-full px-4 py-4 text-[15px] font-bold transition-all text-left relative flex items-center gap-4 group",
-                                            selectedCategory === cat.id
-                                                ? "bg-slate-50 text-slate-900"
-                                                : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+                                            "relative flex flex-col items-center gap-1.5 py-4 px-1 transition-all",
+                                            isActive ? "bg-white" : "hover:bg-slate-50/50"
                                         )}
                                     >
-                                        {selectedCategory === cat.id && (
+                                        <div className={cn(
+                                            "w-[54px] h-[54px] rounded-full overflow-hidden flex items-center justify-center shrink-0 border border-slate-50 transition-all shadow-sm",
+                                            isActive ? "ring-2 ring-emerald-500 ring-offset-2 scale-105" : "bg-slate-50",
+                                            cat.color
+                                        )}>
+                                            {cat.icon && typeof cat.icon === 'function' ? (
+                                                <cat.icon size={22} strokeWidth={2.5} />
+                                            ) : (
+                                                <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
+                                            )}
+                                        </div>
+                                        <span className={cn(
+                                            "text-[10px] font-bold text-center leading-tight transition-colors px-1",
+                                            isActive ? "text-slate-900" : "text-slate-500"
+                                        )}>
+                                            {cat.name}
+                                        </span>
+
+                                        {/* Green Active Indicator Bar */}
+                                        {isActive && (
                                             <motion.div
-                                                layoutId="active-category-indicator"
-                                                className="absolute right-0 top-0 bottom-0 w-1.5 bg-[#D32F2F] rounded-l-md"
-                                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                                layoutId="activeSubBar"
+                                                className="absolute right-0 top-[19px] w-1 h-12 bg-emerald-600 rounded-l-md"
                                             />
                                         )}
-                                        <div className={cn(
-                                            "w-12 h-12 rounded-full overflow-hidden flex items-center justify-center transition-all bg-[#eff1f5] group-hover:scale-105",
-                                        )}>
-                                            <img src={cat.image} alt={cat.name} className="w-full h-full object-cover mix-blend-multiply opacity-90" />
-                                        </div>
-                                        {cat.name}
                                     </button>
-                                ))}
+                                )
+                            })}
+                        </div>
+                    </aside>
+
+                    {/* Right Side - Products Area */}
+                    <main className="flex-1 h-[calc(100vh-120px)] overflow-y-auto no-scrollbar bg-white">
+                        {/* Horizontal Filters - Top of Right Column */}
+                        <div className="flex items-center gap-2.5 px-4 py-4 overflow-x-auto no-scrollbar border-b border-slate-50/50 sticky top-0 bg-white/95 backdrop-blur-sm z-10 md:hidden">
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-100 bg-white text-slate-700 shadow-sm whitespace-nowrap">
+                                <Star size={14} className="text-orange-400 fill-orange-400" />
+                                <span className="text-[12px] font-bold">Rated 4.0+</span>
                             </div>
-                        </aside>
-
-                        {/* Right Content Area */}
-                        <div className="flex-1 pt-0">
-                            <div className="hidden md:block mb-8 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                                <h1 className="text-2xl font-black text-slate-900 capitalize">
-                                    {selectedCategory === 'all' ? 'All Products' : categoriesData.find(c => c.id === selectedCategory)?.name || selectedCategory}
-                                </h1>
-                                <p className="text-slate-400 text-sm font-medium">{filteredProducts.length} items found</p>
-
-                                {/* Inline Filter Pills */}
-                                <FilterPills
-                                    activeFilters={activeFilters}
-                                    onFilterChange={handleFilterChange}
-                                    brands={filterOptions.brands}
-                                    types={filterOptions.types}
-                                />
+                            <div className="px-4 py-1.5 rounded-full border border-slate-100 bg-white text-slate-700 shadow-sm whitespace-nowrap">
+                                <span className="text-[12px] font-bold">Veg</span>
                             </div>
+                            <div className="flex items-center gap-1 px-4 py-1.5 rounded-full border border-slate-100 bg-white text-slate-700 shadow-sm whitespace-nowrap">
+                                <span className="text-[12px] font-bold">Brand</span>
+                                <ChevronDown size={14} className="text-slate-400" />
+                            </div>
+                        </div>
 
-                            {/* Product Grid */}
-                            {filteredProducts.length > 0 ? (
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                                    <AnimatePresence mode="popLayout">
-                                        {filteredProducts.map((product) => (
-                                            <motion.div
-                                                key={product.id}
-                                                layout
-                                                initial={{ opacity: 0, scale: 0.95 }}
-                                                animate={{ opacity: 1, scale: 1 }}
-                                                exit={{ opacity: 0, scale: 0.95 }}
-                                            >
-                                                <ProductCard product={product} />
-                                            </motion.div>
-                                        ))}
-                                    </AnimatePresence>
-                                </div>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-2xl border border-slate-100 shadow-sm">
-                                    <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                                        <Search size={32} className="text-slate-200" />
-                                    </div>
-                                    <h3 className="text-lg font-bold text-slate-900">No products found</h3>
-                                    <p className="text-slate-400 text-sm mt-1">Try adjusting your filters or search keywords</p>
-                                    <Button
-                                        variant="link"
-                                        className="mt-4 text-primary font-bold"
-                                        onClick={() => {
-                                            setSearchQuery('');
-                                            setSelectedCategory('all');
-                                            setActiveFilters({ rating: false, veg: false, brand: null, type: null });
-                                        }}
+                        {/* Product Grid - Mobile */}
+                        <div className="p-4 flex flex-col gap-6 md:hidden">
+                            <AnimatePresence mode="popLayout">
+                                {filteredProducts.map((product) => (
+                                    <motion.div
+                                        key={product.id}
+                                        layout
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
                                     >
-                                        Clear all filters
-                                    </Button>
+                                        <ProductCard product={product} />
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+
+                            {filteredProducts.length === 0 && (
+                                <div className="py-20 text-center">
+                                    <Search className="mx-auto text-slate-200 mb-4" size={48} />
+                                    <p className="text-slate-400 font-bold">No products found</p>
                                 </div>
                             )}
                         </div>
-                    </div>
+
+                        {/* DESKTOP VIEW (維持現有結構) */}
+                        <div className="hidden md:block max-w-[1400px] mx-auto px-8 w-full mt-10">
+                            <div className="flex gap-8">
+                                <aside className="w-72 shrink-0">
+                                    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden py-2 sticky top-32">
+                                        <button onClick={() => navigate('/products/all')} className={cn("w-full px-6 py-4 text-[15px] font-bold text-left flex items-center gap-4", selectedCategory === 'all' ? "bg-slate-50" : "text-slate-500")}>
+                                            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center"><LayoutGrid size={20} /></div>
+                                            All Products
+                                        </button>
+                                        {categoriesData.map(cat => (
+                                            <button key={cat.id} onClick={() => navigate(`/products/${cat.id}`)} className={cn("w-full px-6 py-4 text-[15px] font-bold text-left flex items-center gap-4", selectedCategory === cat.id ? "bg-slate-50" : "text-slate-500")}>
+                                                <div className="w-10 h-10 rounded-full bg-slate-100 overflow-hidden"><img src={cat.image} className="w-full h-full object-cover" /></div>
+                                                {cat.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </aside>
+                                <div className="flex-1">
+                                    <div className="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                                        {filteredProducts.map(product => <ProductCard key={product.id} product={product} />)}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
                 </div>
             </div>
         </PageTransition>

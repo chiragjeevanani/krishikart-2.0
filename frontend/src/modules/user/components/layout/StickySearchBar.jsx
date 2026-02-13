@@ -3,6 +3,7 @@ import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useWishlist } from '../../contexts/WishlistContext'
+import MobileProfileDrawer from './MobileProfileDrawer'
 
 const PLACEHOLDERS = [
     "Search 'Fresh Apples'...",
@@ -60,8 +61,8 @@ export default function StickySearchBar() {
             </div>
 
             <div className="relative group overflow-hidden">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 z-10 bg-inherit">
-                    <Search size={18} />
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500 z-10 bg-inherit">
+                    <Search size={18} strokeWidth={2.5} />
                 </div>
                 <div className="relative w-full">
                     <input

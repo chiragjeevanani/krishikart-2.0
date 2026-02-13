@@ -52,61 +52,35 @@ export default function HomeScreen() {
                 </div>
 
                 {/* Categories Row - Full width background, centered content */}
-                <div className="bg-white shadow-sm md:shadow-none pb-6 md:pb-0">
-                    <div className="max-w-7xl mx-auto md:px-8">
-                        {/* Mobile Categories (Horizontal Scroll) */}
-                        <div className="overflow-x-auto no-scrollbar py-6 px-4 md:hidden">
-                            <div className="flex gap-5 w-max">
-                                {categoriesData.map((cat, idx) => (
-                                    <motion.button
-                                        key={cat.id}
-                                        onClick={() => navigate(`/products/${cat.id}`)}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: idx * 0.05 }}
-                                        className="flex flex-col items-center gap-2.5 group"
-                                    >
-                                        <div className="w-16 h-16 rounded-[24px] overflow-hidden shadow-sm active:scale-95 transition-all">
+                <div className="bg-white shadow-sm md:shadow-none">
+                    <div className="max-w-7xl mx-auto px-4 md:px-8 pt-2 pb-10 md:pt-4 md:pb-16">
+                        <h2 className="text-[20px] md:text-[28px] font-bold text-slate-900 mb-6 md:mb-8">Shop by category</h2>
+
+                        <div className="grid grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-x-3 gap-y-6 md:gap-x-4 md:gap-y-8">
+                            {categoriesData.map((cat, idx) => (
+                                <motion.div
+                                    key={cat.id}
+                                    onClick={() => navigate(`/products/${cat.id}`)}
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: idx * 0.02 }}
+                                    className="flex flex-col items-center group cursor-pointer"
+                                >
+                                    <div className="w-full aspect-square rounded-[24px] bg-[#eef7f6] mb-2.5 flex items-center justify-center transition-all duration-300 group-hover:-translate-y-1 relative overflow-hidden group-active:scale-95 shadow-sm border border-slate-50 p-2">
+                                        <div className="w-full h-full relative z-10 transition-transform duration-500 group-hover:scale-110">
                                             <img
                                                 src={cat.image}
                                                 alt={cat.name}
-                                                className="w-full h-full object-cover"
+                                                className="w-full h-full object-contain mix-blend-multiply"
                                                 onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=400&q=80' }}
                                             />
                                         </div>
-                                        <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">{cat.name}</span>
-                                    </motion.button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Desktop Shop by Category Grid */}
-                        <div className="hidden md:block py-12">
-                            <h2 className="text-[28px] font-bold text-slate-900 mb-8 px-4 md:px-0">Shop by category</h2>
-                            <div className="grid grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-x-4 gap-y-6">
-                                {categoriesData.map((cat, idx) => (
-                                    <motion.div
-                                        key={cat.id}
-                                        onClick={() => navigate(`/products/${cat.id}`)}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: idx * 0.02 }}
-                                        className="flex flex-col items-center group cursor-pointer"
-                                    >
-                                        <div className="w-full aspect-square rounded-[20px] mb-3 flex items-center justify-center transition-all duration-300 group-hover:-translate-y-1 relative overflow-hidden group-hover:shadow-[0_12px_24px_rgba(0,0,0,0.08)]">
-                                            <div className="w-full h-full relative z-10 transition-transform duration-500 group-hover:scale-105">
-                                                <img
-                                                    src={cat.image}
-                                                    alt={cat.name}
-                                                    className="w-full h-full object-cover"
-                                                    onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=400&q=80' }}
-                                                />
-                                            </div>
-                                        </div>
-                                        <span className="text-[13px] font-bold text-slate-800 text-center leading-tight transition-colors group-hover:text-primary">{cat.name}</span>
-                                    </motion.div>
-                                ))}
-                            </div>
+                                    </div>
+                                    <span className="text-[11px] md:text-[13px] font-bold text-slate-800 text-center leading-tight transition-colors group-hover:text-primary line-clamp-2 w-full px-0.5">
+                                        {cat.name}
+                                    </span>
+                                </motion.div>
+                            ))}
                         </div>
                     </div>
                 </div>
@@ -137,7 +111,7 @@ export default function HomeScreen() {
                     </div>
 
                     {/* Section 1: Flash Deals */}
-                    <div className="mt-10 md:mt-12">
+                    <div className="mt-8 md:mt-12">
                         <div className="px-6 md:px-0 flex items-end justify-between mb-6">
                             <div>
                                 <div className="flex items-center gap-2 mb-1">
@@ -154,7 +128,7 @@ export default function HomeScreen() {
                             <button className="text-primary text-[11px] font-black uppercase tracking-widest bg-primary/5 px-4 py-2 rounded-full md:normal-case md:font-semibold md:text-sm hover:bg-primary/10 transition-colors">See All</button>
                         </div>
                         <div className="overflow-x-auto no-scrollbar md:overflow-visible px-6 md:px-0">
-                            <div className="flex gap-4 w-max md:w-full md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 pb-6">
+                            <div className="flex gap-4 w-max md:w-full md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 pb-2 md:pb-0">
                                 {productsData.slice(0, 5).map((product) => (
                                     <div key={product.id} className="w-[164px] md:w-full cursor-pointer">
                                         <ProductCard product={product} />
@@ -166,7 +140,7 @@ export default function HomeScreen() {
                 </div>
 
                 {/* Section 2: Bulk Savings - Full width background row */}
-                <div className="mt-8 md:mt-12 py-10 md:py-16">
+                <div className="mt-2 md:mt-4 py-8 md:py-10 bg-slate-50/50 border-y border-slate-100/50">
                     <div className="max-w-7xl mx-auto md:px-8">
                         <div className="px-6 md:px-0 flex items-center justify-between mb-6">
                             <div className="flex flex-col">
@@ -195,7 +169,7 @@ export default function HomeScreen() {
                 {/* Remaining sections wrapped in centered container */}
                 <div className="max-w-7xl mx-auto md:px-8">
                     {/* Section 3: Seasonal Picks */}
-                    <div className="mt-12 px-6 md:px-0 md:mt-16">
+                    <div className="mt-4 px-6 md:px-0 md:mt-8">
                         <div className="flex items-center gap-2 mb-6">
                             <div className="p-1.5 bg-emerald-100 rounded-lg md:rounded-md">
                                 <Sparkles size={16} className="text-emerald-500 fill-emerald-500 md:w-5 md:h-5" />
@@ -210,7 +184,7 @@ export default function HomeScreen() {
                     </div>
 
                     {/* Section 4: Premium Exotic Finds */}
-                    <div className="mt-14 md:mt-16">
+                    <div className="mt-8 md:mt-10">
                         <div className="px-6 md:px-0 flex items-center justify-between mb-6">
                             <div className="flex items-center gap-2">
                                 <div className="p-1.5 bg-purple-100 rounded-lg md:rounded-md">
@@ -232,7 +206,7 @@ export default function HomeScreen() {
                     </div>
 
                     {/* Section 5: Daily Essentials */}
-                    <div className="mt-12 px-6 md:px-0 md:mt-16">
+                    <div className="mt-8 px-6 md:px-0 md:mt-10">
                         <div className="flex items-center gap-2 mb-6">
                             <div className="p-1.5 bg-blue-100 rounded-lg md:rounded-md">
                                 <History size={16} className="text-blue-500 md:w-5 md:h-5" />
@@ -249,7 +223,7 @@ export default function HomeScreen() {
                     </div>
 
                     {/* Final Grid: All Best Sellers */}
-                    <div className="mt-12 px-6 md:px-0 md:mt-20 md:pb-20">
+                    <div className="mt-12 px-6 md:px-0 md:mt-16 md:pb-20">
                         <div className="flex flex-col mb-10">
                             <h2 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tight text-center md:font-bold">Best Sellers near you</h2>
                             <div className="w-16 h-1 bg-primary rounded-full mx-auto mt-4" />

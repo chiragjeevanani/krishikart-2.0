@@ -50,7 +50,12 @@ const DeliveryPartnerLogin = () => {
     const handleKeyDown = (e, index) => {
         if (e.key === 'Backspace' && !otp[index] && index > 0) {
             const prevInput = document.getElementById(`otp-${index - 1}`);
-            if (prevInput) prevInput.focus();
+            if (prevInput) {
+                prevInput.focus();
+                const newOtp = [...otp];
+                newOtp[index - 1] = '';
+                setOtp(newOtp);
+            }
         }
     };
 
@@ -164,6 +169,7 @@ const DeliveryPartnerLogin = () => {
                                         <input
                                             key={idx}
                                             id={`otp-${idx}`}
+                                            autoFocus={idx === 0}
                                             type="text"
                                             maxLength={1}
                                             value={digit}
