@@ -3,20 +3,31 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShieldCheck, Mail, Lock, Loader2, ArrowRight } from 'lucide-react';
 
+import api from '../../../lib/axios';
+
 export default function LoginScreen() {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
         setIsLoading(true);
-        // Simulate login delay
-        setTimeout(() => {
-            setIsLoading(false);
+        try {
+            const response = await api.post('/masteradmin/login', { email, password });
+
+            // Store token and user data
+            localStorage.setItem('masterAdminToken', response.data.token);
+            localStorage.setItem('masterAdminData', JSON.stringify(response.data));
+
             navigate('/masteradmin/dashboard');
-        }, 1500);
+        } catch (error) {
+            console.error(error);
+            alert(error.response?.data?.message || 'Login failed');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -85,7 +96,13 @@ export default function LoginScreen() {
                             <input type="checkbox" className="w-4 h-4 rounded border-slate-200 text-primary focus:ring-primary transition-all" />
                             <span className="text-xs font-bold text-slate-400 group-hover:text-slate-600 transition-colors">Stay Logged In</span>
                         </label>
-                        <button type="button" className="text-xs font-bold text-primary hover:underline underline-offset-4 tracking-tight">Recovery Access</button>
+                        <button
+                            type="button"
+                            onClick={() => navigate('/masteradmin/forgot-password')}
+                            className="text-xs font-bold text-primary hover:underline underline-offset-4 tracking-tight"
+                        >
+                            Recovery Access
+                        </button>
                     </div>
 
                     <button

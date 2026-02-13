@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Phone, ArrowRight, ShieldCheck, CheckCircle2, Sprout } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import api from '../../../lib/axios'
 
 export default function LoginScreen() {
     const [step, setStep] = useState('phone') // phone, otp
@@ -11,11 +12,40 @@ export default function LoginScreen() {
     const [otp, setOtp] = useState(['', '', '', '', '', ''])
     const navigate = useNavigate()
 
-    const handleNext = () => {
+    const [isLoading, setIsLoading] = useState(false)
+
+    const handleNext = async () => {
         if (step === 'phone') {
-            if (phone.length === 10) setStep('otp')
+            if (phone.length === 10) {
+                setIsLoading(true);
+                try {
+                    await api.post('/user/send-otp', { mobile: phone });
+                    setStep('otp')
+                } catch (error) {
+                    console.error(error);
+                    alert(error.response?.data?.message || 'Failed to send OTP');
+                } finally {
+                    setIsLoading(false);
+                }
+            }
         } else {
-            if (otp.join('') === '123456') navigate('/home')
+            const otpValue = otp.join('');
+            if (otpValue.length === 6) {
+                setIsLoading(true);
+                try {
+                    const response = await api.post('/user/verify-otp', { mobile: phone, otp: otpValue });
+
+                    localStorage.setItem('userToken', response.data.token);
+                    localStorage.setItem('userData', JSON.stringify(response.data.user));
+
+                    navigate('/home')
+                } catch (error) {
+                    console.error(error);
+                    alert(error.response?.data?.message || 'Verification failed');
+                } finally {
+                    setIsLoading(false);
+                }
+            }
         }
     }
 
@@ -102,10 +132,10 @@ export default function LoginScreen() {
                                     </div>
                                     <Button
                                         onClick={handleNext}
-                                        disabled={phone.length !== 10}
+                                        disabled={phone.length !== 10 || isLoading}
                                         className="w-full h-12 rounded-lg bg-primary hover:bg-primary/90 text-md font-bold shadow-md shadow-green-900/10 transition-all active:scale-[0.98]"
                                     >
-                                        Get OTP <ArrowRight className="ml-2 w-4 h-4" />
+                                        {isLoading ? 'Sending...' : 'Get OTP'} <ArrowRight className="ml-2 w-4 h-4" />
                                     </Button>
                                 </motion.div>
                             ) : (
@@ -141,9 +171,10 @@ export default function LoginScreen() {
                                     <div className="flex flex-col gap-4">
                                         <Button
                                             onClick={handleNext}
+                                            disabled={isLoading || otp.join('').length !== 6}
                                             className="w-full h-12 rounded-lg bg-slate-900 hover:bg-slate-800 text-md font-bold shadow-lg"
                                         >
-                                            Verify Identity
+                                            {isLoading ? 'Verifying...' : 'Verify Identity'}
                                         </Button>
                                         <button
                                             onClick={() => setStep('phone')}

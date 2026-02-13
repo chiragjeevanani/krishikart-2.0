@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Navigation, ShieldCheck, ArrowRight, Phone, MessageSquare, RefreshCw } from 'lucide-react';
 import { ROUTES } from '../utils/constants';
 import { useNavigate } from 'react-router-dom';
+import api from '../../../lib/axios';
 
 const DeliveryPartnerLogin = () => {
     const [step, setStep] = useState('phone'); // 'phone' or 'otp'
@@ -11,27 +12,40 @@ const DeliveryPartnerLogin = () => {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
-    const handleSendOtp = (e) => {
+    const handleSendOtp = async (e) => {
         e.preventDefault();
         if (phone.length !== 10) return;
         setLoading(true);
-        // Simulate API call
-        setTimeout(() => {
-            setLoading(false);
+        try {
+            await api.post('/delivery/send-otp', { mobile: phone });
             setStep('otp');
-        }, 1200);
+        } catch (error) {
+            console.error(error);
+            alert(error.response?.data?.message || 'Login failed');
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleVerifyOtp = (e) => {
+    const handleVerifyOtp = async (e) => {
         e.preventDefault();
         const otpCode = otp.join('');
         if (otpCode.length !== 6) return;
         setLoading(true);
-        // Simulate Verification
-        setTimeout(() => {
-            setLoading(false);
+        try {
+            const response = await api.post('/delivery/verify-otp', { mobile: phone, otp: otpCode });
+
+            // Store token and user data
+            localStorage.setItem('deliveryToken', response.data.token);
+            localStorage.setItem('deliveryData', JSON.stringify(response.data));
+
             navigate(ROUTES.DASHBOARD);
-        }, 1500);
+        } catch (error) {
+            console.error(error);
+            alert(error.response?.data?.message || 'Verification failed');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleOtpChange = (value, index) => {
@@ -134,8 +148,13 @@ const DeliveryPartnerLogin = () => {
                             </form>
 
                             <p className="mt-8 text-center text-[11px] text-slate-400 font-bold uppercase tracking-widest leading-relaxed">
-                                By continuing, you agree to our<br />
-                                <span className="text-slate-900 underline decoration-primary/40 underline-offset-4 pointer-events-none">Partner Terms of Service</span>
+                                Don't have an account?<br />
+                                <span
+                                    onClick={() => navigate('/delivery/signup')}
+                                    className="text-primary cursor-pointer hover:underline underline-offset-4"
+                                >
+                                    Register as Partner
+                                </span>
                             </p>
                         </motion.div>
                     ) : (

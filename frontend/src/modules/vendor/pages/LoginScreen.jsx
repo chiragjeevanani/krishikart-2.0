@@ -3,19 +3,31 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Sprout, Mail, Lock, Loader2, ArrowRight } from 'lucide-react';
 
+import api from '../../../lib/axios';
+
 export default function LoginScreen() {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
         setIsLoading(true);
-        setTimeout(() => {
-            setIsLoading(false);
+        try {
+            const response = await api.post('/vendor/login', { email, password });
+
+            // Store token and vendor data
+            localStorage.setItem('vendorToken', response.data.token);
+            localStorage.setItem('vendorData', JSON.stringify(response.data));
+
             navigate('/vendor/dashboard');
-        }, 1500);
+        } catch (error) {
+            console.error(error);
+            alert(error.response?.data?.message || 'Login failed');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -95,7 +107,11 @@ export default function LoginScreen() {
                     </div>
 
                     <div className="flex items-center justify-end">
-                        <button type="button" className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline">
+                        <button
+                            type="button"
+                            onClick={() => navigate('/vendor/forgot-password')}
+                            className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline"
+                        >
                             Forgot Access?
                         </button>
                     </div>
@@ -120,7 +136,7 @@ export default function LoginScreen() {
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                         Don't have a vendor account?
                     </p>
-                    <button className="mt-2 text-primary font-black text-xs hover:underline">
+                    <button onClick={() => navigate('/vendor/signup')} className="mt-2 text-primary font-black text-xs hover:underline">
                         Apply for Partnership
                     </button>
                 </div>

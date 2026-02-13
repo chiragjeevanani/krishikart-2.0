@@ -8,10 +8,10 @@ export function FranchiseAuthProvider({ children }) {
         return saved ? JSON.parse(saved) : null;
     });
 
-    const login = (id, password) => {
+    const login = (mobile, otp) => {
         // Mock login - in a real app, this would be an API call
         const mockFranchise = {
-            id: id,
+            id: mobile, // Using mobile as ID for now
             name: "KrishiKart Franchise - Delhi South",
             location: "Malviya Nagar, New Delhi",
             owner: "Rajesh Kumar",

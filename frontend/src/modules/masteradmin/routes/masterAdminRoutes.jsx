@@ -2,6 +2,7 @@ import { Route } from 'react-router-dom';
 import MasterAdminLayout from '../components/layout/MasterAdminLayout';
 import DashboardScreen from '../pages/DashboardScreen';
 import LoginScreen from '../pages/LoginScreen';
+import ForgotPasswordScreen from '../pages/ForgotPasswordScreen';
 import OrdersScreen from '../pages/OrdersScreen';
 import VendorAssignmentScreen from '../pages/VendorAssignmentScreen';
 import FranchiseManagementScreen from '../pages/FranchiseManagementScreen';
@@ -25,6 +26,7 @@ export const masterAdminRoutes = (
         <Route index element={<DashboardScreen />} />
         <Route path="dashboard" element={<DashboardScreen />} />
         <Route path="login" element={<LoginScreen />} />
+        <Route path="forgot-password" element={<ForgotPasswordScreen />} />
         <Route path="orders" element={<OrdersScreen />} />
         <Route path="assignment" element={<VendorAssignmentScreen />} />
         <Route path="franchises" element={<FranchiseManagementScreen />} />

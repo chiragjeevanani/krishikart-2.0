@@ -43,6 +43,7 @@ const POSWeighingScreen = lazy(() => import('./modules/franchise/pages/POSScreen
 const ProcurementScreen = lazy(() => import('./modules/franchise/pages/ProcurementScreen'));
 const FranchiseProfile = lazy(() => import('./modules/franchise/pages/ProfileScreen'));
 const FranchiseLogin = lazy(() => import('./modules/franchise/pages/LoginScreen'));
+const FranchiseSignup = lazy(() => import('./modules/franchise/pages/SignupScreen'));
 
 // Master Admin Module Imports
 import { masterAdminRoutes } from './modules/masteradmin/routes/masterAdminRoutes';
@@ -100,6 +101,7 @@ function App() {
                             <Route path="/franchise">
                               <Route index element={<Navigate to="login" replace />} />
                               <Route path="login" element={<FranchiseLogin />} />
+                              <Route path="signup" element={<FranchiseSignup />} />
                               <Route element={<FranchiseLayout />}>
                                 <Route path="dashboard" element={<FranchiseDashboard />} />
                                 <Route path="orders" element={<FranchiseOrders />} />

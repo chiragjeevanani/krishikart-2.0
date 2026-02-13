@@ -1,32 +1,51 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, User, ArrowRight, ShieldCheck, KeyRound, Globe, Cpu, Zap, ChevronRight, Home, Command, Smartphone } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import {
+    User, ArrowRight, ShieldCheck,
+    Cpu, Zap, Home, Command,
+    Smartphone, MapPin, Building2, Mail, ChevronRight
+} from 'lucide-react';
 import { useFranchiseAuth } from '../contexts/FranchiseAuthContext';
-import { cn } from '@/lib/utils';
 import api from '../../../lib/axios';
 
-export default function LoginScreen() {
+export default function SignupScreen() {
     const navigate = useNavigate();
     const { login } = useFranchiseAuth();
-    const [mobile, setMobile] = useState('');
+
+    // Form States
+    const [formData, setFormData] = useState({
+        franchiseName: '',
+        ownerName: '',
+        mobile: '',
+        email: '',
+        location: ''
+    });
+
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [isLoading, setIsLoading] = useState(false);
-    const [mode, setMode] = useState('mobile'); // 'mobile' or 'otp'
+    const [mode, setMode] = useState('details'); // 'details' or 'otp'
     const otpRefs = [useRef(), useRef(), useRef(), useRef(), useRef(), useRef()];
+
+    const handleChange = (field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
 
     const handleNext = async (e) => {
         e.preventDefault();
-        if (mobile.length === 10) {
+        if (formData.mobile.length === 10 && formData.franchiseName && formData.ownerName) {
             setIsLoading(true);
             try {
-                await api.post('/franchise/send-otp', { mobile });
+                await api.post('/franchise/register', {
+                    franchiseName: formData.franchiseName,
+                    ownerName: formData.ownerName,
+                    mobile: formData.mobile,
+                    city: formData.location // Mapping location to city as per backend
+                });
                 setMode('otp');
             } catch (error) {
                 console.error(error);
-                alert(error.response?.data?.message || 'Failed to send OTP');
+                alert(error.response?.data?.message || 'Registration failed');
             } finally {
                 setIsLoading(false);
             }
@@ -34,14 +53,13 @@ export default function LoginScreen() {
     };
 
     const handleOtpChange = (index, value) => {
-        if (value.length > 1) value = value[0]; // Allow only 1 char
-        if (!/^\d*$/.test(value)) return; // Allow only digits
+        if (value.length > 1) value = value[0];
+        if (!/^\d*$/.test(value)) return;
 
         const newOtp = [...otp];
         newOtp[index] = value;
         setOtp(newOtp);
 
-        // Auto-focus next input
         if (value && index < 5) {
             otpRefs[index + 1].current.focus();
         }
@@ -53,7 +71,7 @@ export default function LoginScreen() {
         }
     };
 
-    const handleLogin = async (e) => {
+    const handleSignup = async (e) => {
         e.preventDefault();
         const otpValue = otp.join('');
         if (otpValue.length !== 6) return;
@@ -61,18 +79,15 @@ export default function LoginScreen() {
         setIsLoading(true);
 
         try {
-            const response = await api.post('/franchise/verify-otp', { mobile, otp: otpValue });
-            // The context login function might need updating or we handle storage manually here to match other modules
-            // Assuming context handles state update if we pass data, but let's do manual storage for consistency
+            const response = await api.post('/franchise/verify-otp', { mobile: formData.mobile, otp: otpValue });
+
             localStorage.setItem('franchiseToken', response.data.token);
             localStorage.setItem('franchiseData', JSON.stringify(response.data));
 
-            // If context has a login method that updates state, ideally use it. 
-            // For now, manual storage + navigation works.
             navigate('/franchise/dashboard');
         } catch (error) {
             console.error(error);
-            alert(error.response?.data?.message || 'Login failed');
+            alert(error.response?.data?.message || 'Verification failed');
         } finally {
             setIsLoading(false);
         }
@@ -80,7 +95,7 @@ export default function LoginScreen() {
 
     return (
         <div className="min-h-screen bg-slate-900 flex flex-col md:flex-row relative overflow-hidden font-sans">
-            {/* Left Panel: Brand & Visual Identity */}
+            {/* Left Panel: Information Deck */}
             <div className="hidden md:flex flex-1 flex-col justify-between p-12 relative z-10 border-r border-slate-800">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-white rounded-sm flex items-center justify-center text-slate-900 shadow-xl">
@@ -94,96 +109,143 @@ export default function LoginScreen() {
 
                 <div className="space-y-6 max-w-md">
                     <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-black uppercase tracking-widest rounded-sm">
-                        <Zap size={10} /> v2.4.0 High-Performance Hub
+                        <Zap size={10} /> v2.4.0 Initialize Node
                     </div>
                     <h1 className="text-5xl font-black text-white tracking-tighter leading-[0.9] uppercase">
-                        Enterprise <br />
-                        Node <br />
-                        Access.
+                        Provision <br />
+                        New <br />
+                        Logistics Node.
                     </h1>
                     <p className="text-slate-400 text-sm font-medium leading-relaxed uppercase tracking-tight">
-                        Authorized logistics terminal for verified franchise partners. Secure biometric and credential handshakes required for operational sync.
+                        Register your facility as an authorized distribution point. Complete verification required for network synchronization.
                     </p>
                 </div>
 
                 <div className="flex items-center gap-12 text-slate-500">
                     <div className="flex flex-col">
-                        <span className="text-xs font-black text-white uppercase tabular-nums tracking-widest">99.9%</span>
-                        <span className="text-[9px] font-bold uppercase tracking-widest mt-1">Uptime SLA</span>
+                        <span className="text-xs font-black text-white uppercase tabular-nums tracking-widest">Type-A</span>
+                        <span className="text-[9px] font-bold uppercase tracking-widest mt-1">Infrastructure</span>
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-xs font-black text-white uppercase tabular-nums tracking-widest">&lt; 200MS</span>
-                        <span className="text-[9px] font-bold uppercase tracking-widest mt-1">Sync Latency</span>
+                        <span className="text-xs font-black text-white uppercase tabular-nums tracking-widest">Secure</span>
+                        <span className="text-[9px] font-bold uppercase tracking-widest mt-1">Onboarding</span>
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-xs font-black text-white uppercase tabular-nums tracking-widest">Quantum</span>
-                        <span className="text-[9px] font-bold uppercase tracking-widest mt-1">Encryption</span>
+                        <span className="text-xs font-black text-white uppercase tabular-nums tracking-widest">24/7</span>
+                        <span className="text-[9px] font-bold uppercase tracking-widest mt-1">Support</span>
                     </div>
                 </div>
 
-                {/* Grid Background Pattern */}
                 <div className="absolute inset-0 opacity-10 -z-10" style={{ backgroundImage: 'radial-gradient(#fff 0.5px, transparent 0.5px)', backgroundSize: '24px 24px' }} />
             </div>
 
-            {/* Right Panel: Auth Terminal */}
+            {/* Right Panel: Registration Form */}
             <div className="flex-1 flex items-center justify-center p-6 bg-slate-900 md:bg-white relative">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="w-full max-w-sm space-y-12"
+                    className="w-full max-w-md space-y-12"
                 >
                     <div className="space-y-2">
                         <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4">
                             <Home size={12} />
                             <ChevronRight size={10} />
-                            <span className="text-slate-900 border-b border-slate-900 pb-px">Terminal Login</span>
+                            <span className="text-slate-900 border-b border-slate-900 pb-px">Network Registration</span>
                         </div>
-                        <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter leading-none">Security Handshake</h2>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Deploying RSA Session Keys...</p>
+                        <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter leading-none">Node Configuration</h2>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Enter parameters for facility provisioning...</p>
                     </div>
 
-                    <form onSubmit={mode === 'mobile' ? handleNext : handleLogin} className="space-y-6">
+                    <form onSubmit={mode === 'details' ? handleNext : handleSignup} className="space-y-6">
                         <AnimatePresence mode="wait">
-                            {mode === 'mobile' ? (
+                            {mode === 'details' ? (
                                 <motion.div
-                                    key="mobile-input"
+                                    key="details-input"
                                     initial={{ opacity: 0, x: -10 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: 10 }}
                                     className="space-y-4"
                                 >
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] px-1">Node Identifier</label>
+                                            <div className="relative group">
+                                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors">
+                                                    <Building2 size={16} />
+                                                </div>
+                                                <input
+                                                    autoFocus
+                                                    value={formData.franchiseName}
+                                                    onChange={(e) => handleChange('franchiseName', e.target.value)}
+                                                    placeholder="Franchise Name"
+                                                    className="w-full h-12 pl-12 pr-4 bg-slate-50 border border-slate-200 rounded-sm outline-none text-xs font-black text-slate-900 placeholder:text-slate-300 focus:bg-white focus:border-slate-900 transition-all font-sans"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] px-1">Operator Name</label>
+                                            <div className="relative group">
+                                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors">
+                                                    <User size={16} />
+                                                </div>
+                                                <input
+                                                    value={formData.ownerName}
+                                                    onChange={(e) => handleChange('ownerName', e.target.value)}
+                                                    placeholder="Owner Name"
+                                                    className="w-full h-12 pl-12 pr-4 bg-slate-50 border border-slate-200 rounded-sm outline-none text-xs font-black text-slate-900 placeholder:text-slate-300 focus:bg-white focus:border-slate-900 transition-all font-sans"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <div className="space-y-2">
-                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] px-1">Mobile Interface</label>
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] px-1">Comms Channel</label>
                                         <div className="relative group">
                                             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors">
                                                 <Smartphone size={16} />
                                             </div>
                                             <input
-                                                autoFocus
                                                 type="tel"
                                                 maxLength={10}
-                                                value={mobile}
+                                                value={formData.mobile}
                                                 onChange={(e) => {
                                                     const val = e.target.value.replace(/\D/g, '');
-                                                    if (val.length <= 10) setMobile(val);
+                                                    if (val.length <= 10) handleChange('mobile', val);
                                                 }}
-                                                placeholder="Enter Mobile Number"
-                                                className="w-full h-14 pl-12 pr-4 bg-slate-50 border border-slate-200 rounded-sm outline-none text-xs font-black text-slate-900 placeholder:text-slate-300 focus:bg-white focus:border-slate-900 transition-all font-sans tracking-widest"
+                                                placeholder="Mobile Number"
+                                                className="w-full h-12 pl-12 pr-4 bg-slate-50 border border-slate-200 rounded-sm outline-none text-xs font-black text-slate-900 placeholder:text-slate-300 focus:bg-white focus:border-slate-900 transition-all font-sans tracking-widest"
                                             />
                                         </div>
                                     </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] px-1">Geo Coordinates</label>
+                                        <div className="relative group">
+                                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors">
+                                                <MapPin size={16} />
+                                            </div>
+                                            <input
+                                                value={formData.location}
+                                                onChange={(e) => handleChange('location', e.target.value)}
+                                                placeholder="City / Area"
+                                                className="w-full h-12 pl-12 pr-4 bg-slate-50 border border-slate-200 rounded-sm outline-none text-xs font-black text-slate-900 placeholder:text-slate-300 focus:bg-white focus:border-slate-900 transition-all font-sans"
+                                            />
+                                        </div>
+                                    </div>
+
                                     <button
-                                        disabled={mobile.length < 10}
-                                        className="w-full h-14 bg-slate-900 text-white rounded-sm font-black uppercase text-[11px] tracking-[0.3em] shadow-xl hover:bg-slate-800 active:scale-[0.98] transition-all disabled:bg-slate-200 disabled:text-slate-400 flex items-center justify-center gap-3"
+                                        disabled={!formData.mobile || formData.mobile.length < 10 || !formData.franchiseName}
+                                        className="w-full h-14 bg-slate-900 text-white rounded-sm font-black uppercase text-[11px] tracking-[0.3em] shadow-xl hover:bg-slate-800 active:scale-[0.98] transition-all disabled:bg-slate-200 disabled:text-slate-400 flex items-center justify-center gap-3 mt-4"
                                     >
-                                        Request OTP <ArrowRight size={16} />
+                                        Initiate Handshake <ArrowRight size={16} />
                                     </button>
+
                                     <button
                                         type="button"
-                                        onClick={() => navigate('/franchise/signup')}
+                                        onClick={() => navigate('/franchise/login')}
                                         className="w-full text-[10px] font-black text-slate-400 uppercase tracking-widest py-2 hover:text-slate-900 transition-colors underline underline-offset-8 decoration-slate-200"
                                     >
-                                        New Node Provisioning
+                                        Already Provisioned? Access Terminal
                                     </button>
                                 </motion.div>
                             ) : (
@@ -198,7 +260,7 @@ export default function LoginScreen() {
                                         <div className="space-y-2">
                                             <div className="flex justify-between items-center px-1">
                                                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em]">Access Verification</label>
-                                                <span className="text-[9px] font-bold text-slate-400">{mobile}</span>
+                                                <span className="text-[9px] font-bold text-slate-400">{formData.mobile}</span>
                                             </div>
 
                                             <div className="flex gap-2 justify-between">
@@ -226,19 +288,19 @@ export default function LoginScreen() {
                                         >
                                             {isLoading ? <Cpu className="animate-spin" size={16} /> : (
                                                 <>
-                                                    Authorize Node Access <ShieldCheck size={16} />
+                                                    Confirm Registration <ShieldCheck size={16} />
                                                 </>
                                             )}
                                         </button>
                                         <button
                                             type="button"
                                             onClick={() => {
-                                                setMode('mobile');
+                                                setMode('details');
                                                 setOtp(['', '', '', '', '', '']);
                                             }}
                                             className="text-[10px] font-black text-slate-400 uppercase tracking-widest py-2 hover:text-slate-900 transition-colors underline underline-offset-8 decoration-slate-200"
                                         >
-                                            Change Mobile Number
+                                            Modify Parameters
                                         </button>
                                     </div>
                                 </motion.div>
@@ -249,12 +311,8 @@ export default function LoginScreen() {
                     <div className="pt-12 border-t border-slate-100 flex flex-col items-center gap-6">
                         <div className="flex items-center gap-3">
                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em]">Operational Readiness Validated</span>
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em]">System Status: Online</span>
                         </div>
-                        <p className="text-[9px] text-slate-300 font-bold uppercase tracking-widest text-center leading-relaxed">
-                            Logistics Node Authentication protocol v2.4.0-STABLE<br />
-                            Unauthorized data extraction is a violation of partner compliance.
-                        </p>
                     </div>
                 </motion.div>
             </div>

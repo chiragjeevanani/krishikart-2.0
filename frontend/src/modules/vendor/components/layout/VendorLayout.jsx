@@ -6,9 +6,11 @@ import { Suspense } from 'react';
 
 export default function VendorLayout() {
     const location = useLocation();
-    const isLoginPage = location.pathname === '/vendor/login';
+    const isAuthPage = location.pathname === '/vendor/login' ||
+        location.pathname === '/vendor/signup' ||
+        location.pathname === '/vendor/forgot-password';
 
-    if (isLoginPage) {
+    if (isAuthPage) {
         return (
             <div className="min-h-screen bg-white">
                 <AnimatePresence mode="wait" initial={false}>

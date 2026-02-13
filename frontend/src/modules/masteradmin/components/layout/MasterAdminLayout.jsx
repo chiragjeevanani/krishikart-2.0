@@ -7,7 +7,8 @@ import { useState, Suspense } from 'react';
 export default function MasterAdminLayout() {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const location = useLocation();
-    const isLoginPage = location.pathname === '/masteradmin/login';
+    const isLoginPage = location.pathname === '/masteradmin/login' ||
+        location.pathname === '/masteradmin/forgot-password';
 
     if (isLoginPage) {
         return (

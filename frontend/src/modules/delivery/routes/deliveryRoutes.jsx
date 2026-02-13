@@ -3,6 +3,7 @@ import { Route, Navigate } from 'react-router-dom';
 import DeliveryLayout from '../components/layout/DeliveryLayout';
 
 const DeliveryPartnerLogin = lazy(() => import('../pages/DeliveryPartnerLogin'));
+const DeliveryPartnerSignup = lazy(() => import('../pages/SignupScreen'));
 const Dashboard = lazy(() => import('../pages/Dashboard'));
 const DeliveryRequests = lazy(() => import('../pages/DeliveryRequests'));
 const ActiveDelivery = lazy(() => import('../pages/ActiveDelivery'));
@@ -27,6 +28,7 @@ export const deliveryRoutes = (
     <Route path="delivery">
         <Route index element={<Navigate to="login" replace />} />
         <Route path="login" element={withSuspense(DeliveryPartnerLogin)} />
+        <Route path="signup" element={withSuspense(DeliveryPartnerSignup)} />
         <Route element={<DeliveryLayout />}>
             <Route path="dashboard" element={withSuspense(Dashboard)} />
             <Route path="requests" element={withSuspense(DeliveryRequests)} />
