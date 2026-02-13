@@ -44,7 +44,7 @@ export default function ProfileScreen() {
           icon: Briefcase,
           label: "Register as business",
           path: "#",
-          badge: <span className="bg-rose-100 text-rose-500 text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-tighter">NEW</span>
+          badge: <span className="bg-emerald-100 text-emerald-600 text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-tighter">NEW</span>
         },
         {
           icon: null,
@@ -86,7 +86,7 @@ export default function ProfileScreen() {
           {sections.map((section, sIdx) => (
             <div key={sIdx} className="bg-white rounded-[24px] overflow-hidden shadow-sm border border-white/50">
               <div className="px-4 pt-4 pb-1.5 flex items-center gap-2.5">
-                <div className="w-[2.5px] h-3.5 bg-rose-600 rounded-full" />
+                <div className="w-[2.5px] h-3.5 bg-emerald-600 rounded-full" />
                 <h2 className="text-[14px] font-black text-slate-800 tracking-tight">{section.title}</h2>
               </div>
 
@@ -139,7 +139,7 @@ export default function ProfileScreen() {
           {/* Logout Button */}
           <button
             onClick={() => navigate('/login')}
-            className="w-full bg-white rounded-[20px] px-6 py-3.5 flex items-center gap-3 text-rose-500 font-extrabold text-[14.5px] shadow-sm active:bg-rose-50/50 transition-all mt-1"
+            className="w-full bg-white rounded-[20px] px-6 py-3.5 flex items-center gap-3 text-emerald-600 font-extrabold text-[14.5px] shadow-sm active:bg-slate-50 transition-all mt-1"
           >
             <Power size={17} strokeWidth={3} />
             Logout
@@ -185,7 +185,7 @@ export default function ProfileScreen() {
 
               <button
                 onClick={() => navigate('/login')}
-                className="w-full bg-white rounded-[32px] p-6 flex items-center justify-center gap-3 text-rose-500 font-black border-2 border-dashed border-rose-100 hover:bg-rose-50 transition-all"
+                className="w-full bg-white rounded-[32px] p-6 flex items-center justify-center gap-3 text-emerald-600 font-black border-2 border-dashed border-emerald-100 hover:bg-emerald-50 transition-all"
               >
                 <Power size={24} />
                 Logout from KrishiKart
