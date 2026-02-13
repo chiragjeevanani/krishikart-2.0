@@ -113,6 +113,7 @@ const DeliveryPartnerLogin = () => {
                                         </div>
                                         <input
                                             type="tel"
+                                            inputMode="numeric"
                                             value={phone}
                                             onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                                             placeholder="Enter registered mobile"
@@ -171,6 +172,8 @@ const DeliveryPartnerLogin = () => {
                                             id={`otp-${idx}`}
                                             autoFocus={idx === 0}
                                             type="text"
+                                            inputMode="numeric"
+                                            pattern="[0-9]*"
                                             maxLength={1}
                                             value={digit}
                                             onChange={(e) => handleOtpChange(e.target.value, idx)}

@@ -149,14 +149,15 @@ export default function CartScreen() {
                 </div>
 
                 <div className="border-t border-slate-100 pt-6">
-                  <div className="flex justify-between items-center mb-8">
+                  {/* Hide total payable on mobile inside summary card because we have the sticky bar */}
+                  <div className="hidden md:flex justify-between items-center mb-8">
                     <span className="text-xl font-bold text-slate-900">Total Payable</span>
                     <span className="text-3xl font-black text-primary tracking-tight md:font-bold">₹{total}</span>
                   </div>
 
-                  <div className="bg-green-50 rounded-xl p-4 flex gap-3 mb-8 border border-green-100">
+                  <div className="bg-green-50 rounded-xl p-4 flex gap-3 mb-4 md:mb-8 border border-green-100">
                     <ShieldCheck className="text-primary shrink-0" size={20} />
-                    <p className="text-[11px] font-medium text-green-800 leading-relaxed">Payments are 100% secure. <br /> Freshness guaranteed on every item.</p>
+                    <p className="text-[11px] font-medium text-green-800 leading-relaxed">Payments are 100% secure. <br className="hidden md:block" /> Freshness guaranteed on every item.</p>
                   </div>
 
                   <Button
@@ -171,23 +172,19 @@ export default function CartScreen() {
           </div>
         </div>
 
-        {/* Sticky Checkout Bar - Mobile Only */}
-        <div className="fixed bottom-16 left-0 right-0 z-40 px-6 max-w-md mx-auto md:hidden pointer-events-none">
-          <div className="bg-white/95 backdrop-blur-2xl border border-slate-200 shadow-[0_10px_40px_rgba(0,0,0,0.12)] rounded-[32px] p-6 pointer-events-auto">
-            <div className="flex items-center justify-between mb-6 px-2">
-              <div>
-                <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-1">Total Payable</p>
-                <p className="text-3xl font-black text-slate-900 tracking-tighter">₹{total}</p>
-              </div>
-              <div className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest">
-                <Truck size={14} /> Free Delivery
-              </div>
+        {/* Integrated Sticky Checkout Bar - Mobile Only */}
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:hidden">
+          <div className="flex items-center gap-4 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] px-6">
+            <div className="shrink-0 flex flex-col">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Total Payable</span>
+              <span className="text-[22px] font-black text-slate-900 leading-none tracking-tighter">₹{total}</span>
             </div>
+
             <Button
               onClick={() => navigate('/checkout')}
-              className="w-full h-18 rounded-3xl bg-primary hover:bg-primary/90 text-2xl font-black shadow-lg shadow-green-100 transition-all active:scale-[0.98] flex items-center justify-center gap-3"
+              className="flex-1 h-12 rounded-xl bg-primary hover:bg-primary/90 text-[15px] font-black shadow-lg shadow-green-100 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
             >
-              Checkout <ArrowRight size={24} />
+              Checkout <ArrowRight size={18} strokeWidth={3} />
             </Button>
           </div>
         </div>

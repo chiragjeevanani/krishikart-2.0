@@ -188,7 +188,7 @@ export default function ProductListScreen() {
                     {/* Right Side - Products Area */}
                     <main className="flex-1 h-[calc(100vh-120px)] overflow-y-auto no-scrollbar bg-white">
                         {/* Horizontal Filters - Top of Right Column */}
-                        <div className="flex items-center gap-2.5 px-4 py-4 overflow-x-auto no-scrollbar border-b border-slate-50/50 sticky top-0 bg-white/95 backdrop-blur-sm z-10 md:hidden">
+                        <div className="flex items-center gap-2.5 px-4 py-4 overflow-x-auto no-scrollbar border-b border-slate-50/50 sticky top-0 bg-white/95 backdrop-blur-sm z-30 md:hidden">
                             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-100 bg-white text-slate-700 shadow-sm whitespace-nowrap">
                                 <Star size={14} className="text-orange-400 fill-orange-400" />
                                 <span className="text-[12px] font-bold">Rated 4.0+</span>

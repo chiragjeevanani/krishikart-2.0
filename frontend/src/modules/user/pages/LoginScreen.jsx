@@ -93,6 +93,7 @@ export default function LoginScreen() {
                                             </div>
                                             <Input
                                                 type="tel"
+                                                inputMode="numeric"
                                                 placeholder="00000 00000"
                                                 value={phone}
                                                 onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
@@ -124,6 +125,8 @@ export default function LoginScreen() {
                                                     key={idx}
                                                     autoFocus={idx === 0}
                                                     type="text"
+                                                    inputMode="numeric"
+                                                    pattern="[0-9]*"
                                                     maxLength={1}
                                                     value={digit}
                                                     onChange={(e) => {
