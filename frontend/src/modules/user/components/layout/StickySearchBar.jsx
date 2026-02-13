@@ -1,8 +1,10 @@
-import { Search, MapPin, Heart } from 'lucide-react'
+import { Search, MapPin, Heart, ShoppingCart } from 'lucide-react'
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useWishlist } from '../../contexts/WishlistContext'
+import { useCart } from '../../contexts/CartContext'
+import MobileProfileDrawer from './MobileProfileDrawer'
 
 const PLACEHOLDERS = [
     "Search 'Fresh Apples'...",
@@ -16,6 +18,7 @@ const PLACEHOLDERS = [
 export default function StickySearchBar() {
     const navigate = useNavigate()
     const { wishlistCount } = useWishlist()
+    const { cartCount } = useCart()
     const { scrollY } = useScroll()
     const opacity = useTransform(scrollY, [0, 50], [1, 0.95])
     const y = useTransform(scrollY, [0, 50], [0, 2])
@@ -44,24 +47,33 @@ export default function StickySearchBar() {
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => navigate('/wishlist')}
-                        className="relative w-10 h-10 flex items-center justify-center rounded-2xl bg-white border border-slate-100 shadow-sm text-slate-400 hover:text-red-500 transition-colors"
+                        className="relative w-10 h-10 flex items-center justify-center rounded-[18px] bg-white border border-slate-100 shadow-sm text-slate-400 active:scale-95 transition-all"
                     >
-                        <Heart size={20} fill={wishlistCount > 0 ? "currentColor" : "none"} className={wishlistCount > 0 ? "text-red-500" : ""} />
+                        <Heart size={18} fill={wishlistCount > 0 ? "currentColor" : "none"} className={wishlistCount > 0 ? "text-red-500" : ""} />
                         {wishlistCount > 0 && (
                             <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm">
                                 {wishlistCount}
                             </span>
                         )}
                     </button>
-                    <div className="w-10 h-10 rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="avatar" className="w-full h-full object-cover" />
-                    </div>
+
+                    <button
+                        onClick={() => navigate('/cart')}
+                        className="relative w-10 h-10 flex items-center justify-center rounded-[18px] bg-white border border-slate-100 shadow-sm text-slate-400 active:scale-95 transition-all"
+                    >
+                        <ShoppingCart size={18} className="text-slate-900" />
+                        {cartCount > 0 && (
+                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+                                {cartCount}
+                            </span>
+                        )}
+                    </button>
                 </div>
             </div>
 
             <div className="relative group overflow-hidden">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 z-10 bg-inherit">
-                    <Search size={18} />
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500 z-10 bg-inherit">
+                    <Search size={18} strokeWidth={2.5} />
                 </div>
                 <div className="relative w-full">
                     <input

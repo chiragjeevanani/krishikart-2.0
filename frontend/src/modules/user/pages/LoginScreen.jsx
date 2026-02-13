@@ -123,6 +123,7 @@ export default function LoginScreen() {
                                             </div>
                                             <Input
                                                 type="tel"
+                                                inputMode="numeric"
                                                 placeholder="00000 00000"
                                                 value={phone}
                                                 onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
@@ -152,7 +153,10 @@ export default function LoginScreen() {
                                             {otp.map((digit, idx) => (
                                                 <input
                                                     key={idx}
+                                                    autoFocus={idx === 0}
                                                     type="text"
+                                                    inputMode="numeric"
+                                                    pattern="[0-9]*"
                                                     maxLength={1}
                                                     value={digit}
                                                     onChange={(e) => {
@@ -161,6 +165,17 @@ export default function LoginScreen() {
                                                         newOtp[idx] = val
                                                         setOtp(newOtp)
                                                         if (val && e.target.nextSibling) e.target.nextSibling.focus()
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Backspace' && !otp[idx] && idx > 0) {
+                                                            const prevSibling = e.target.previousSibling
+                                                            if (prevSibling) {
+                                                                prevSibling.focus()
+                                                                const newOtp = [...otp]
+                                                                newOtp[idx - 1] = ''
+                                                                setOtp(newOtp)
+                                                            }
+                                                        }
                                                     }}
                                                     className="w-full h-12 bg-white border border-slate-200 rounded-lg text-center text-lg font-bold text-slate-900 outline-none focus:ring-1 focus:ring-primary/40 focus:bg-slate-50/30"
                                                 />

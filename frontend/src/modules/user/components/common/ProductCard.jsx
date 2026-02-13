@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Star, ShoppingCart, Plus, Minus, Heart } from 'lucide-react'
@@ -7,6 +7,7 @@ import { useCart } from '../../contexts/CartContext'
 import { useWishlist } from '../../contexts/WishlistContext'
 import { cn } from '@/lib/utils'
 import QuantityModal from './QuantityModal'
+import MobileQuantitySheet from './MobileQuantitySheet'
 
 export default function ProductCard({ product, layout = 'grid' }) {
     const navigate = useNavigate()
@@ -14,17 +15,21 @@ export default function ProductCard({ product, layout = 'grid' }) {
     const { toggleWishlist, isWishlisted } = useWishlist()
 
     const [isModalOpen, setIsModalOpen] = useState(false)
+    const [isMobile, setIsMobile] = useState(false)
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768)
+        checkMobile()
+        window.addEventListener('resize', checkMobile)
+        return () => window.removeEventListener('resize', checkMobile)
+    }, [])
     const cartItem = cartItems.find(item => item.id === product.id)
     const quantity = cartItem ? cartItem.quantity : 0
     const isLoved = isWishlisted(product.id)
 
     const handleAddToCart = (e) => {
         e.stopPropagation()
-        if (window.innerWidth >= 768) {
-            setIsModalOpen(true)
-        } else {
-            addToCart(product)
-        }
+        setIsModalOpen(true)
     }
 
     const handleWishlist = (e) => {
@@ -103,12 +108,14 @@ export default function ProductCard({ product, layout = 'grid' }) {
                     </div>
                 </motion.div>
                 {/* Desktop Quantity Modal */}
-                <QuantityModal
-                    isOpen={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
-                    product={product}
-                    onAdd={(prod, qty) => addToCart(prod, qty)}
-                />
+                {!isMobile && (
+                    <QuantityModal
+                        isOpen={isModalOpen}
+                        onClose={() => setIsModalOpen(false)}
+                        product={product}
+                        onAdd={(prod, qty) => addToCart(prod, qty)}
+                    />
+                )}
             </>
         )
     }
@@ -117,97 +124,124 @@ export default function ProductCard({ product, layout = 'grid' }) {
         <>
             <motion.div
                 layout
-                initial={{ opacity: 0, scale: 0.95 }}
+                initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
-                whileHover={{ y: -3 }}
                 onClick={() => navigate(`/product/${product.id}`)}
-                className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg transition-all duration-300 group cursor-pointer overflow-hidden pb-2"
+                className="bg-white rounded-[20px] transition-all duration-300 group cursor-pointer overflow-hidden flex flex-col h-full"
             >
-                {/* Image Container */}
-                <div className="relative aspect-[4/3] bg-white p-2 flex items-center justify-center">
+                {/* Image & Floating Actions Container */}
+                <div className="relative aspect-square bg-white border border-slate-100 rounded-[20px] overflow-hidden m-0.5 group-hover:border-slate-200 transition-colors">
                     <img
                         src={product.image}
                         alt={product.name}
-                        className="w-full h-full object-contain mix-blend-multiply transition-transform duration-700 group-hover:scale-110"
+                        className="w-full h-full object-contain p-4 mix-blend-multiply transition-transform duration-700 group-hover:scale-105"
                         onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=80' }}
                     />
 
-                    {/* Veg/Non-Veg Indicator */}
-                    <div className="absolute top-3 left-3">
+                    {/* Veg/Non-Veg Indicator (Bottom Left of Image Area) */}
+                    <div className="absolute bottom-3 left-3">
                         <div className={cn(
-                            "w-4 h-4 border flex items-center justify-center rounded-sm bg-white",
+                            "w-4 h-4 border-[1.2px] flex items-center justify-center rounded-[2px] bg-white",
                             product.isVeg ? "border-emerald-600" : "border-red-600"
                         )}>
                             <div className={cn(
-                                "w-2 h-2 rounded-full",
+                                "w-[5px] h-[5px] rounded-full",
                                 product.isVeg ? "bg-emerald-600" : "bg-red-600"
                             )} />
                         </div>
                     </div>
 
+                    {/* Floating Wishlist (Top Right) */}
                     <button
                         onClick={handleWishlist}
-                        className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-all hover:bg-slate-100 active:scale-95"
+                        className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-all hover:bg-slate-50 active:scale-95 z-20"
                     >
-                        <Heart size={18} className={isLoved ? "fill-red-500 text-red-500" : "text-slate-300"} />
+                        <Heart size={18} className={isLoved ? "fill-red-500 text-red-500" : "text-slate-200"} />
                     </button>
+
+                    {/* Floating Add Button (Bottom Right of Image Area) */}
+                    <div className="absolute bottom-3 right-3 z-20">
+                        <AnimatePresence mode="wait">
+                            {quantity === 0 ? (
+                                <button
+                                    onClick={handleAddToCart}
+                                    className="h-[34px] px-6 rounded-lg border border-emerald-200 bg-[#f0fdf4] text-emerald-600 font-bold text-[13px] shadow-[0_2px_8px_rgba(5,150,105,0.08)] hover:bg-emerald-600 hover:text-white transition-all flex items-center gap-1.5"
+                                >
+                                    ADD <Plus size={14} strokeWidth={3} className="mb-0.5" />
+                                </button>
+                            ) : (
+                                <div className="flex items-center h-[34px] bg-emerald-600 rounded-lg px-1 text-white shadow-lg shadow-emerald-900/10 ring-2 ring-emerald-50">
+                                    <button
+                                        onClick={handleDecrement}
+                                        className="w-7 h-full flex items-center justify-center hover:bg-white/20 rounded-l transition-colors"
+                                    >
+                                        <Minus size={14} strokeWidth={3} />
+                                    </button>
+                                    <span className="text-[13px] font-bold w-5 text-center">{quantity}</span>
+                                    <button
+                                        onClick={handleIncrement}
+                                        className="w-7 h-full flex items-center justify-center hover:bg-white/20 rounded-r transition-colors"
+                                    >
+                                        <Plus size={14} strokeWidth={3} />
+                                    </button>
+                                </div>
+                            )}
+                        </AnimatePresence>
+                    </div>
                 </div>
 
                 {/* Content */}
-                <div className="px-3 md:px-4 pt-1 pb-3">
-                    <div className="mb-2 h-10">
-                        <h3 className="text-[15px] font-bold text-slate-800 leading-snug line-clamp-2 md:text-[15px]">{product.name}</h3>
+                <div className="px-1 pt-3 pb-2 flex flex-col flex-1">
+                    {/* Title */}
+                    <h3 className="text-[14px] font-bold text-slate-800 leading-[1.3] line-clamp-2 px-1 mb-1.5">
+                        {product.name}
+                    </h3>
+
+                    {/* Unit & Dotted Line */}
+                    <div className="flex items-center gap-2 mb-2 px-1">
+                        <span className="bg-slate-100 text-slate-600 text-[11px] font-bold px-2 py-0.5 rounded-md min-w-[32px] text-center">
+                            {product.unit || '1 pc'}
+                        </span>
+                        <div className="flex-1 border-b border-dotted border-slate-200 mt-1" />
                     </div>
 
-                    <p className="text-[13px] text-slate-500 font-medium mb-3">{product.unit || '1 pc'}</p>
-
-                    <div className="flex items-center justify-between">
-                        <div className="flex flex-col">
-                            <div className="flex items-center gap-2">
-                                <span className="text-[15px] font-bold text-slate-900">₹{product.price}</span>
-                                {product.mrp && <span className="text-xs text-slate-400 line-through">₹{product.mrp}</span>}
-                            </div>
-                            <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded-sm w-fit mt-1">Best Price</span>
+                    {/* Pricing */}
+                    <div className="mt-auto px-1 space-y-1">
+                        <div className="flex items-baseline gap-1.5">
+                            <span className="text-[18px] font-extrabold text-slate-900">₹{product.price}</span>
+                            {product.mrp && <span className="text-xs text-slate-400 line-through">₹{product.mrp}</span>}
                         </div>
 
-                        <div className="relative z-10">
-                            <AnimatePresence mode="wait">
-                                {quantity === 0 ? (
-                                    <button
-                                        onClick={handleAddToCart}
-                                        className="h-9 px-6 rounded-lg border border-[#D32F2F] text-[#D32F2F] bg-red-50/50 hover:bg-[#D32F2F] hover:text-white font-bold text-sm tracking-wide transition-all uppercase flex items-center gap-1"
-                                    >
-                                        ADD <Plus size={16} strokeWidth={3} />
-                                    </button>
-                                ) : (
-                                    <div className="flex items-center h-9 bg-[#D32F2F] rounded-lg px-1 text-white shadow-sm ring-2 ring-red-100">
-                                        <button
-                                            onClick={handleDecrement}
-                                            className="w-8 h-full flex items-center justify-center hover:bg-white/20 rounded transition-colors"
-                                        >
-                                            <Minus size={16} strokeWidth={3} />
-                                        </button>
-                                        <span className="text-sm font-bold w-6 text-center">{quantity}</span>
-                                        <button
-                                            onClick={handleIncrement}
-                                            className="w-8 h-full flex items-center justify-center hover:bg-white/20 rounded transition-colors"
-                                        >
-                                            <Plus size={16} strokeWidth={3} />
-                                        </button>
-                                    </div>
-                                )}
-                            </AnimatePresence>
+                        <p className="text-[11px] font-bold text-slate-400">
+                            ₹{product.price}/{product.unit?.split(' ')[1] || 'pc'}
+                        </p>
+
+                        <div className="bg-[#e7f9ee] text-[#1a8a4d] text-[11px] font-bold px-2 py-1 rounded-md w-fit mt-1 border border-[#c6f0d7]">
+                            ₹{Math.floor(product.price * 0.95)}/pc Best rate
                         </div>
                     </div>
                 </div>
             </motion.div>
+
             {/* Desktop Quantity Modal */}
-            <QuantityModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                product={product}
-                onAdd={(prod, qty) => addToCart(prod, qty)}
-            />
+            {!isMobile && (
+                <QuantityModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    product={product}
+                    onAdd={(prod, qty) => addToCart(prod, qty)}
+                />
+            )}
+
+            {/* Mobile Quantity Sheet */}
+            {isMobile && (
+                <MobileQuantitySheet
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    product={product}
+                    onAdd={(prod, qty) => addToCart(prod, qty)}
+                />
+            )}
         </>
     )
 }

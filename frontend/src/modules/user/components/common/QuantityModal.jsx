@@ -75,10 +75,10 @@ export default function QuantityModal({ isOpen, onClose, product, onAdd }) {
                                     <span className="text-base text-slate-400 line-through font-medium">₹{originalPrice}</span>
                                 </div>
 
-                                <div className="flex items-center bg-white border border-rose-200 rounded-xl overflow-hidden h-11">
+                                <div className="flex items-center bg-white border border-emerald-200 rounded-xl overflow-hidden h-11">
                                     <button
                                         onClick={() => setModalQty(Math.max(1, (Number(modalQty) || 1) - 1))}
-                                        className="w-10 h-full flex items-center justify-center text-rose-500 hover:bg-rose-50 transition-colors border-r border-rose-100"
+                                        className="w-10 h-full flex items-center justify-center text-emerald-600 hover:bg-emerald-50 transition-colors border-r border-emerald-100"
                                     >
                                         <Minus size={16} strokeWidth={3} />
                                     </button>
@@ -99,7 +99,7 @@ export default function QuantityModal({ isOpen, onClose, product, onAdd }) {
                                     />
                                     <button
                                         onClick={() => setModalQty((Number(modalQty) || 1) + 1)}
-                                        className="w-10 h-full flex items-center justify-center text-rose-500 hover:bg-rose-50 transition-colors border-l border-rose-100"
+                                        className="w-10 h-full flex items-center justify-center text-emerald-600 hover:bg-emerald-50 transition-colors border-l border-emerald-100"
                                     >
                                         <Plus size={16} strokeWidth={3} />
                                     </button>
@@ -115,7 +115,7 @@ export default function QuantityModal({ isOpen, onClose, product, onAdd }) {
                                         </div>
                                         <button
                                             onClick={() => setModalQty(tier.minQty)}
-                                            className="text-rose-500 font-bold text-sm hover:underline"
+                                            className="text-emerald-600 font-bold text-sm hover:underline"
                                         >
                                             Select {tier.minQty}
                                         </button>

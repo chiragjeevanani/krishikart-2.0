@@ -232,7 +232,7 @@ export default function CheckoutScreen() {
                                 </div>
 
                                 <div className="border-t border-slate-100 pt-6">
-                                    <div className="flex justify-between items-center mb-8">
+                                    <div className="hidden md:flex justify-between items-center mb-8">
                                         <span className="text-xl font-bold text-slate-900">Total Payable</span>
                                         <span className="text-3xl font-bold text-primary tracking-tight">₹{total}</span>
                                     </div>
@@ -244,7 +244,7 @@ export default function CheckoutScreen() {
                                         Place Order Now
                                     </Button>
 
-                                    <div className="mt-6 flex items-center justify-center gap-2 text-slate-400">
+                                    <div className="mt-4 md:mt-6 flex items-center justify-center gap-2 text-slate-400">
                                         <ShieldCheck size={16} />
                                         <span className="text-[11px] font-medium">Safe & Secure Transactions</span>
                                     </div>
@@ -254,14 +254,19 @@ export default function CheckoutScreen() {
                     </div>
                 </div>
 
-                {/* Sticky Proceed - Mobile Only */}
-                <div className="fixed bottom-16 left-0 right-0 z-40 px-6 max-w-md mx-auto md:hidden pointer-events-none">
-                    <div className="bg-white/95 backdrop-blur-2xl border border-slate-200 shadow-[0_10px_40px_rgba(0,0,0,0.12)] rounded-[32px] p-6 pointer-events-auto">
+                {/* Integrated Sticky Proceed Bar - Mobile Only */}
+                <div className="fixed bottom-0 left-0 right-0 z-[60] bg-white border-t border-slate-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:hidden">
+                    <div className="flex items-center gap-4 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] px-6">
+                        <div className="shrink-0 flex flex-col">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Final Amount</span>
+                            <span className="text-[22px] font-black text-slate-900 leading-none tracking-tighter">₹{total}</span>
+                        </div>
+
                         <Button
                             onClick={handlePlaceOrder}
-                            className="w-full h-18 rounded-3xl bg-primary hover:bg-primary/90 text-2xl font-black shadow-lg shadow-green-100 transition-all active:scale-[0.98]"
+                            className="flex-1 h-12 rounded-xl bg-primary hover:bg-primary/90 text-[15px] font-black shadow-lg shadow-green-100 transition-all active:scale-[0.98]"
                         >
-                            Place Order · ₹{total}
+                            Place Order Now
                         </Button>
                     </div>
                 </div>

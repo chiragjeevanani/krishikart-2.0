@@ -235,12 +235,12 @@ export default function ProductDetailScreen() {
 
 
         {/* Sticky Bottom Actions - Mobile Only */}
-        <div className="fixed bottom-16 left-0 right-0 z-40 px-6 max-w-md mx-auto md:hidden pointer-events-none">
-          <div className="flex items-center gap-3 bg-white/95 backdrop-blur-md border border-slate-200 shadow-[0_10px_40px_rgba(0,0,0,0.12)] rounded-3xl p-1.5 pointer-events-auto">
-            <div className="flex items-center gap-2 bg-white border border-slate-100 rounded-2xl p-1 h-12 shadow-sm w-36">
+        <div className="fixed bottom-0 left-0 right-0 z-[60] bg-white border-t border-slate-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:hidden">
+          <div className="flex items-center gap-3 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] px-6">
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-xl p-1 h-12 w-32 shrink-0">
               <button
                 onClick={() => setQuantity(prev => Math.max(1, (Number(prev) || 1) - 1))}
-                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white shadow-sm text-slate-900 active:scale-90 transition-transform font-bold"
+                className="w-10 h-10 flex items-center justify-center rounded-lg bg-white shadow-sm text-slate-900 active:scale-90 transition-transform font-bold"
               >
                 <Minus size={16} />
               </button>
@@ -260,11 +260,11 @@ export default function ProductDetailScreen() {
                 onBlur={() => {
                   if (!quantity || Number(quantity) < 1) setQuantity(1);
                 }}
-                className="flex-1 w-full text-center text-base font-black text-slate-900 tracking-tighter border-none focus:outline-none bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="flex-1 w-full text-center text-sm font-black text-slate-900 tracking-tighter border-none focus:outline-none bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               <button
                 onClick={() => setQuantity(prev => (Number(prev) || 0) + 1)}
-                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white shadow-sm text-slate-900 active:scale-90 transition-transform font-bold"
+                className="w-10 h-10 flex items-center justify-center rounded-lg bg-white shadow-sm text-slate-900 active:scale-90 transition-transform font-bold"
               >
                 <Plus size={16} />
               </button>
@@ -272,13 +272,14 @@ export default function ProductDetailScreen() {
 
             <Button
               onClick={() => {
-                addToCart({ ...product, price: currentPrice }, quantity)
+                const finalQty = Number(quantity) || 1;
+                addToCart({ ...product, price: currentPrice }, finalQty)
                 navigate('/cart')
               }}
-              className="flex-1 h-12 rounded-2xl bg-primary hover:bg-primary/90 text-md font-black shadow-lg shadow-green-100 transition-all active:scale-[0.98] flex flex-col justify-center items-center gap-0"
+              className="flex-1 h-12 rounded-xl bg-primary hover:bg-primary/90 text-md font-black shadow-lg shadow-green-100 transition-all active:scale-[0.98] flex flex-col justify-center items-center gap-0"
             >
               <span className="text-white/80 text-[8px] font-bold uppercase tracking-widest leading-none mb-1">Add to Cart</span>
-              <span className="leading-none text-sm">₹{currentPrice * quantity}</span>
+              <span className="leading-none text-[15px]">₹{currentPrice * (Number(quantity) || 1)}</span>
             </Button>
           </div>
         </div>
