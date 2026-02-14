@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
+    ArrowLeft,
+    Camera,
     User,
     Store,
     MapPin,
@@ -16,21 +18,21 @@ import {
     Home,
     Settings2,
     Lock,
-    Cpu,
-    Webhook,
-    Database,
-    Clock,
-    Zap,
-    Scale
+    X,
+    Loader2
 } from 'lucide-react';
 import { useFranchiseAuth } from '../contexts/FranchiseAuthContext';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 export default function ProfileScreen() {
-    const { franchise, logout } = useFranchiseAuth();
+    const { franchise, logout, updateProfile, updatePassword } = useFranchiseAuth();
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(true);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+    const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+    const [isUploading, setIsUploading] = useState(false);
 
     useEffect(() => {
         const timer = setTimeout(() => setIsLoading(false), 500);
@@ -39,25 +41,16 @@ export default function ProfileScreen() {
 
     const sections = [
         {
-            group: 'Operational Identity',
+            group: 'Account Information',
             items: [
-                { id: 'details', label: 'Node Definition', icon: Store, sub: 'Operating parameters & GPS coordinates' },
-                { id: 'radius', label: 'Logistic Radius', icon: MapPin, sub: 'Currently provisioned: 5.0 KM' },
-                { id: 'security', label: 'Access Control', icon: ShieldCheck, sub: 'Manage terminal credentials' }
+                { id: 'details', label: 'Personal Details', icon: User, sub: 'View and edit your profile', onClick: () => setIsEditModalOpen(true) },
+                { id: 'security', label: 'Change Password', icon: Lock, sub: 'Update your security credentials', onClick: () => setIsPasswordModalOpen(true) }
             ]
         },
         {
-            group: 'Financial Protocol',
+            group: 'Settings',
             items: [
-                { id: 'payment', label: 'Treasury Settings', icon: CreditCard, sub: 'Settlement Account: **** 4589' },
-                { id: 'ledger', label: 'Audit Manifests', icon: Database, sub: 'Digital reconciliation history' }
-            ]
-        },
-        {
-            group: 'System Configuration',
-            items: [
-                { id: 'notifications', label: 'Audio Telemetry', icon: Bell, sub: 'High-decibel order alerts', toggle: true },
-                { id: 'api', label: 'Webhook Integration', icon: Webhook, sub: 'Third-party logistics sync' }
+                { id: 'notifications', label: 'Notifications', icon: Bell, sub: 'Manage order alerts', toggle: true }
             ]
         }
     ];
@@ -65,6 +58,22 @@ export default function ProfileScreen() {
     const handleLogout = () => {
         logout();
         navigate('/franchise/login');
+    };
+
+    const handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setIsUploading(true);
+        // Mock upload logic
+        setTimeout(() => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                updateProfile({ profilePicture: reader.result });
+                setIsUploading(false);
+            };
+            reader.readAsDataURL(file);
+        }, 1500);
     };
 
     if (isLoading) {
@@ -79,54 +88,70 @@ export default function ProfileScreen() {
 
     return (
         <div className="bg-slate-50 min-h-screen">
-            {/* Enterprise Header */}
+            {/* Header */}
             <div className="bg-white border-b border-slate-200 sticky top-0 z-30">
                 <div className="px-4 py-2 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-r border-slate-200 pr-4">
                             <Home size={12} />
                             <ChevronRight size={10} />
-                            <span>System</span>
+                            <span>Franchise</span>
                             <ChevronRight size={10} />
-                            <span className="text-slate-900 uppercase tracking-widest">Node Settings</span>
+                            <span className="text-slate-900 uppercase tracking-widest">Profile</span>
                         </div>
-                        <h1 className="text-sm font-bold text-slate-900">Franchise Internal Configuration</h1>
+                        <h1 className="text-sm font-bold text-slate-900">Profile Settings</h1>
                     </div>
                 </div>
             </div>
 
-            {/* Profile Identity Deck */}
+            {/* Profile Identity Card */}
             <div className="bg-slate-900 px-8 py-12 flex flex-col md:flex-row items-center gap-8 border-b border-slate-800 relative overflow-hidden">
-                <div className="relative z-10 w-24 h-24 bg-white rounded-sm flex items-center justify-center text-slate-900 border-4 border-slate-800 shadow-2xl overflow-hidden group">
-                    <User size={40} strokeWidth={1.5} />
-                    <div className="absolute inset-0 bg-slate-900/80 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
-                        <span className="text-[9px] font-black text-white uppercase tracking-[0.3em]">Update</span>
-                    </div>
+                <div className="relative group">
+                    <input
+                        type="file"
+                        id="profile-pic"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                    />
+                    <label
+                        htmlFor="profile-pic"
+                        className="relative z-10 w-24 h-24 bg-white rounded-[32px] flex items-center justify-center text-slate-900 border-4 border-slate-800 shadow-2xl overflow-hidden group cursor-pointer"
+                    >
+                        {isUploading ? (
+                            <Loader2 size={24} className="animate-spin text-slate-400" />
+                        ) : franchise?.profilePicture ? (
+                            <img src={franchise.profilePicture} className="w-full h-full object-cover" alt="Profile" />
+                        ) : (
+                            <User size={40} strokeWidth={1.5} />
+                        )}
+                        <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                            <Camera size={20} className="text-white" />
+                        </div>
+                    </label>
                 </div>
 
                 <div className="relative z-10 text-center md:text-left">
                     <div className="flex flex-col gap-1">
                         <div className="flex items-center justify-center md:justify-start gap-3">
-                            <h2 className="text-2xl font-black text-white tracking-tighter uppercase">{franchise?.name || 'Indore Node 01'}</h2>
-                            <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-black uppercase tracking-widest rounded-sm">Verified Node</span>
+                            <h2 className="text-2xl font-black text-white tracking-tighter uppercase">{franchise?.name || 'Franchise Node'}</h2>
+                            <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-black uppercase tracking-widest rounded-sm">
+                                {franchise?.isVerified ? 'Verified' : 'Pending'}
+                            </span>
                         </div>
                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] flex items-center justify-center md:justify-start gap-2">
-                            System ID: KR-{Math.floor(1000 + Math.random() * 9000)}-FR
+                            Franchise ID: {franchise?.id || 'FR-0000'}
                         </p>
                     </div>
 
-                    <div className="mt-6 grid grid-cols-3 gap-6 border-t border-slate-800 pt-6">
+                    <div className="mt-6 grid grid-cols-2 gap-8 border-t border-slate-800 pt-6">
                         <div className="text-center md:text-left">
                             <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Operational Since</p>
                             <p className="text-xs font-black text-white uppercase tabular-nums">Oct 2023</p>
                         </div>
-                        <div className="text-center md:text-left border-x border-slate-800 px-6">
-                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Node Rating</p>
-                            <p className="text-xs font-black text-emerald-400 uppercase tabular-nums">4.9/5.0</p>
-                        </div>
-                        <div className="text-center md:text-left">
-                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Sync Status</p>
-                            <p className="text-xs font-black text-emerald-400 uppercase">Live</p>
+                        <div className="text-center md:text-left border-l border-slate-800 pl-8">
+                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Location</p>
+                            <p className="text-xs font-black text-white uppercase">{franchise?.city || 'Indore'}</p>
                         </div>
                     </div>
                 </div>
@@ -147,9 +172,10 @@ export default function ProfileScreen() {
                                         "w-full flex items-center justify-between p-5 hover:bg-slate-50 transition-colors group",
                                         idx !== group.items.length - 1 && "border-b border-slate-100"
                                     )}
+                                    onClick={item.onClick}
                                 >
                                     <div className="flex items-center gap-5">
-                                        <div className="w-10 h-10 rounded-sm bg-slate-50 border border-slate-100 text-slate-400 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-all">
+                                        <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 text-slate-400 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-all">
                                             <item.icon size={18} />
                                         </div>
                                         <div className="text-left">
@@ -158,9 +184,21 @@ export default function ProfileScreen() {
                                         </div>
                                     </div>
                                     {item.toggle ? (
-                                        <div className="w-10 h-5 bg-slate-900 border border-slate-800 rounded-full relative p-1 shadow-inner">
-                                            <div className="w-3 h-3 bg-emerald-400 rounded-full absolute right-1 top-1" />
-                                        </div>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (item.id === 'notifications') setNotificationsEnabled(!notificationsEnabled);
+                                            }}
+                                            className={cn(
+                                                "w-10 h-5 border border-slate-200 rounded-full relative p-0.5 transition-colors duration-300",
+                                                (item.id === 'notifications' ? notificationsEnabled : false) ? "bg-slate-900 border-slate-900" : "bg-slate-100"
+                                            )}
+                                        >
+                                            <motion.div
+                                                animate={{ x: (item.id === 'notifications' ? notificationsEnabled : false) ? 20 : 0 }}
+                                                className="w-3.5 h-3.5 bg-white rounded-full shadow-sm"
+                                            />
+                                        </button>
                                     ) : (
                                         <ChevronRight size={16} className="text-slate-200 group-hover:text-slate-900 group-hover:translate-x-1 transition-all" />
                                     )}
@@ -173,16 +211,232 @@ export default function ProfileScreen() {
                 <div className="pt-8 border-t border-slate-200 space-y-4">
                     <button
                         onClick={handleLogout}
-                        className="w-full h-14 bg-white border border-rose-200 text-rose-500 hover:bg-rose-50 rounded-sm flex items-center justify-center gap-3 font-black uppercase text-[10px] tracking-[0.2em] transition-all"
+                        className="w-full h-14 bg-white border border-rose-200 text-rose-500 hover:bg-rose-50 rounded-xl flex items-center justify-center gap-3 font-black uppercase text-[10px] tracking-[0.2em] transition-all"
                     >
                         <LogOut size={16} />
-                        Deauthorize Terminal
+                        Logout
                     </button>
                     <div className="text-center">
-                        <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em]">Logical Environment: Production-Stable 2.4.0</p>
+                        <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em]">Version 2.4.0</p>
                     </div>
                 </div>
             </div>
+
+            {/* Modals */}
+            <AnimatePresence>
+                {isEditModalOpen && (
+                    <EditProfileModal
+                        isOpen={isEditModalOpen}
+                        onClose={() => setIsEditModalOpen(false)}
+                        franchiseData={franchise}
+                        onUpdate={updateProfile}
+                    />
+                )}
+                {isPasswordModalOpen && (
+                    <ChangePasswordModal
+                        isOpen={isPasswordModalOpen}
+                        onClose={() => setIsPasswordModalOpen(false)}
+                        onUpdate={updatePassword}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 }
+
+const EditProfileModal = ({ isOpen, onClose, franchiseData, onUpdate }) => {
+    const [formData, setFormData] = useState({
+        franchiseName: franchiseData?.name || '',
+        ownerName: franchiseData?.owner || '',
+        email: franchiseData?.email || '',
+        mobile: franchiseData?.mobile || '',
+        city: franchiseData?.city || '',
+    });
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSubmit = async () => {
+        setIsSaving(true);
+        try {
+            await onUpdate(formData);
+            onClose();
+        } catch (error) {
+            console.error('Update failed', error);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white w-full max-w-lg rounded-[32px] p-8 shadow-2xl"
+            >
+                <div className="flex items-center justify-between mb-8">
+                    <h2 className="text-xl font-black text-slate-900 tracking-tight">Edit Profile</h2>
+                    <button onClick={onClose} className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center hover:bg-slate-200 transition-colors">
+                        <X size={20} />
+                    </button>
+                </div>
+
+                <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Franchise Name</label>
+                            <input
+                                value={formData.franchiseName}
+                                onChange={(e) => setFormData({ ...formData, franchiseName: e.target.value })}
+                                className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Owner Name</label>
+                            <input
+                                value={formData.ownerName}
+                                onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
+                                className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
+                        <input
+                            value={formData.email}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Contact Number</label>
+                            <input
+                                value={formData.mobile}
+                                onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+                                className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">City</label>
+                            <input
+                                value={formData.city}
+                                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                                className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
+                            />
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={handleSubmit}
+                        disabled={isSaving}
+                        className="w-full h-14 bg-slate-900 text-white rounded-xl font-black text-xs uppercase tracking-[0.2em] mt-8 hover:bg-emerald-600 transition-all flex items-center justify-center gap-3 disabled:bg-slate-200"
+                    >
+                        {isSaving ? <Loader2 size={18} className="animate-spin" /> : 'Update Profile'}
+                    </button>
+                </div>
+            </motion.div>
+        </div>
+    );
+};
+
+const ChangePasswordModal = ({ isOpen, onClose, onUpdate }) => {
+    const [passwords, setPasswords] = useState({
+        current: '',
+        new: '',
+        confirm: ''
+    });
+    const [isSaving, setIsSaving] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleSubmit = async () => {
+        if (passwords.new !== passwords.confirm) {
+            setError('Passwords do not match');
+            return;
+        }
+        if (passwords.new.length < 6) {
+            setError('Password must be at least 6 characters');
+            return;
+        }
+
+        setIsSaving(true);
+        setError('');
+        try {
+            await onUpdate(passwords.current, passwords.new);
+            onClose();
+        } catch (err) {
+            setError('Failed to update password');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white w-full max-w-md rounded-[32px] p-8 shadow-2xl"
+            >
+                <div className="flex items-center justify-between mb-8">
+                    <h2 className="text-xl font-black text-slate-900 tracking-tight">Security</h2>
+                    <button onClick={onClose} className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center hover:bg-slate-200 transition-colors">
+                        <X size={20} />
+                    </button>
+                </div>
+
+                <div className="space-y-4">
+                    {error && <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest text-center">{error}</p>}
+
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Current Password</label>
+                        <input
+                            type="password"
+                            placeholder="••••••••"
+                            value={passwords.current}
+                            onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
+                            className="w-full h-14 px-5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all"
+                        />
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">New Password</label>
+                        <input
+                            type="password"
+                            placeholder="••••••••"
+                            value={passwords.new}
+                            onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
+                            className="w-full h-14 px-5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all"
+                        />
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Confirm New Password</label>
+                        <input
+                            type="password"
+                            placeholder="••••••••"
+                            value={passwords.confirm}
+                            onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
+                            className="w-full h-14 px-5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all"
+                        />
+                    </div>
+
+                    <button
+                        onClick={handleSubmit}
+                        disabled={isSaving}
+                        className="w-full h-14 bg-slate-900 text-white rounded-xl font-black text-xs uppercase tracking-[0.2em] mt-4 hover:bg-slate-800 transition-all flex items-center justify-center gap-3 disabled:bg-slate-200"
+                    >
+                        {isSaving ? <Loader2 size={18} className="animate-spin" /> : 'Update Security'}
+                    </button>
+                </div>
+            </motion.div>
+        </div>
+    );
+};

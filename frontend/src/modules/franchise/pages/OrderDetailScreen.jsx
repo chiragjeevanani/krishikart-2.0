@@ -83,18 +83,18 @@ export default function OrderDetailScreen() {
                 <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center text-slate-300 mb-6">
                     <Search size={32} />
                 </div>
-                <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest leading-none mb-2">Entity Not Found</h2>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">The requested order identifier does not exist in the active ledger.</p>
-                <button onClick={() => navigate(-1)} className="mt-8 text-[11px] font-black uppercase text-slate-900 border-b-2 border-slate-900 pb-1">Return to Registry</button>
+                <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest leading-none mb-2">Order Not Found</h2>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">The order you are looking for does not exist in the system.</p>
+                <button onClick={() => navigate(-1)} className="mt-8 text-[11px] font-black uppercase text-slate-900 border-b-2 border-slate-900 pb-1">Go Back</button>
             </div>
         );
     }
 
     const timeline = [
-        { status: 'Registry Entry', time: '10:30 AM', desc: 'Order initialized in central manifest', active: true },
-        { status: 'Node Acceptance', time: '10:35 AM', desc: 'Franchise node confirmed fulfillment', active: order.status !== 'incoming' },
-        { status: 'Fleet Assignment', time: '10:45 AM', desc: 'Logistic partner allocated for dispatch', active: order.status === 'assigned' || order.status === 'completed' || order.status === 'delivered' || order.status === 'out_for_delivery' },
-        { status: 'Protocol Finalized', time: '--:--', desc: 'Order reached terminal destination', active: order.status === 'completed' || order.status === 'delivered' }
+        { status: 'Order Placed', time: '10:30 AM', desc: 'Order received by system', active: true },
+        { status: 'Accepted', time: '10:35 AM', desc: 'Franchise accepted the order', active: order.status !== 'incoming' },
+        { status: 'Delivery Assigned', time: '10:45 AM', desc: 'Delivery partner assigned', active: order.status === 'assigned' || order.status === 'completed' || order.status === 'delivered' || order.status === 'out_for_delivery' },
+        { status: 'Delivered', time: '--:--', desc: 'Order delivered successfully', active: order.status === 'completed' || order.status === 'delivered' }
     ];
 
     return (
@@ -109,7 +109,7 @@ export default function OrderDetailScreen() {
                         <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-r border-slate-200 pr-4">
                             <Home size={12} />
                             <ChevronRight size={10} />
-                            <span>Manifest</span>
+                            <span>Orders</span>
                             <ChevronRight size={10} />
                             <span className="text-slate-900 uppercase tracking-widest">{order.id}</span>
                         </div>
@@ -140,20 +140,20 @@ export default function OrderDetailScreen() {
                         {/* Summary Header */}
                         <div className="bg-slate-900 p-8 text-white rounded-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden">
                             <div className="relative z-10">
-                                <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.3em] mb-2 leading-none">Entity Information</p>
+                                <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.3em] mb-2 leading-none">Store Details</p>
                                 <h2 className="text-3xl font-black tracking-tighter uppercase leading-none mb-4">{order.customer || order.hotelName}</h2>
                                 <div className="flex items-center gap-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                                     <div className="flex items-center gap-1.5">
-                                        <Briefcase size={12} strokeWidth={2.5} /> Standard Account
+                                        <Briefcase size={12} strokeWidth={2.5} /> Regular Partner
                                     </div>
                                     <div className="w-1 h-1 rounded-full bg-slate-700" />
                                     <div className="flex items-center gap-1.5">
-                                        <Clock size={12} strokeWidth={2.5} /> Internal Sync Active
+                                        <Clock size={12} strokeWidth={2.5} /> System Connected
                                     </div>
                                 </div>
                             </div>
                             <div className="relative z-10 flex flex-col items-end gap-2">
-                                <span className="text-[11px] font-black text-emerald-400 uppercase tracking-widest text-right">Commitment Volume</span>
+                                <span className="text-[11px] font-black text-emerald-400 uppercase tracking-widest text-right">Total Amount</span>
                                 <span className="text-4xl font-black tracking-tighter tabular-nums leading-none">₹{order.total.toLocaleString()}</span>
                             </div>
                             {/* Grid Pattern Background */}
@@ -165,7 +165,7 @@ export default function OrderDetailScreen() {
                             <div className="bg-white border border-slate-200 p-6 rounded-sm space-y-6">
                                 <div className="flex items-center gap-3">
                                     <MapPin className="text-slate-900" size={16} />
-                                    <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em]">Geo-spatial Endpoint</h3>
+                                    <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em]">Delivery Address</h3>
                                 </div>
                                 <div className="p-4 bg-slate-50 border border-slate-100 rounded-sm">
                                     <p className="text-[11px] font-bold text-slate-600 leading-relaxed uppercase tracking-tight">{order.address}</p>
@@ -177,14 +177,14 @@ export default function OrderDetailScreen() {
                                         </div>
                                         <span className="text-[10px] font-black text-slate-900">+91 98765 43210</span>
                                     </div>
-                                    <button className="text-[9px] font-black uppercase text-slate-400 hover:text-slate-900 transition-colors">Route Map</button>
+                                    <button className="text-[9px] font-black uppercase text-slate-400 hover:text-slate-900 transition-colors">View Map</button>
                                 </div>
                             </div>
 
                             <div className="bg-white border border-slate-200 p-6 rounded-sm space-y-6">
                                 <div className="flex items-center gap-3">
                                     <FileText className="text-slate-900" size={16} />
-                                    <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em]">Supply Chain Protocols</h3>
+                                    <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em]">Documents</h3>
                                 </div>
                                 <div className="space-y-2">
                                     {order.deliveryChallan && (
@@ -206,14 +206,14 @@ export default function OrderDetailScreen() {
                                         >
                                             <div className="flex items-center gap-3">
                                                 <ShieldCheck className="text-emerald-500" size={16} />
-                                                <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Audit Registry (GRN)</span>
+                                                <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Purchase Record (GRN)</span>
                                             </div>
                                             <ChevronRight size={12} className="text-slate-300" />
                                         </button>
                                     )}
                                     {!order.deliveryChallan && !order.grn && (
                                         <div className="p-4 border border-dashed border-slate-200 rounded-sm text-center">
-                                            <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">No Digital Manifests Linked</p>
+                                            <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">No documents available</p>
                                         </div>
                                     )}
                                 </div>
@@ -225,9 +225,9 @@ export default function OrderDetailScreen() {
                             <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white">
                                 <div className="flex items-center gap-2">
                                     <Package className="text-slate-900" size={16} />
-                                    <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em]">Itemized Manifest Ledger</h2>
+                                    <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em]">Order Items</h2>
                                 </div>
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest tabular-nums">{order.items.length} LINE SKUS</span>
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest tabular-nums">{order.items.length} ITEMS</span>
                             </div>
                             <div className="divide-y divide-slate-100">
                                 {order.items.map((item, idx) => (
@@ -240,7 +240,7 @@ export default function OrderDetailScreen() {
                                         </div>
                                         <div className="flex items-center gap-8">
                                             <div className="hidden md:flex flex-col items-end opacity-0 group-hover:opacity-100 transition-all">
-                                                <span className="text-[9px] font-bold text-slate-400 uppercase italic">Unit Value</span>
+                                                <span className="text-[9px] font-bold text-slate-400 uppercase italic">Price</span>
                                                 <span className="text-[10px] font-black text-slate-900 tabular-nums">₹{item.price.toLocaleString()}</span>
                                             </div>
                                             <span className="text-[11px] font-black text-slate-900 tabular-nums">₹{(item.price * item.quantity).toLocaleString()}</span>
@@ -250,8 +250,8 @@ export default function OrderDetailScreen() {
                             </div>
                             <div className="bg-slate-900 p-6 flex items-center justify-between text-white">
                                 <div className="flex flex-col">
-                                    <span className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.3em] mb-1">Final Settlement Volume</span>
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase">Inclusive of Logistic Overheads</span>
+                                    <span className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.3em] mb-1">Total Bill</span>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase">Including all charges</span>
                                 </div>
                                 <span className="text-2xl font-black tracking-tighter tabular-nums">₹{order.total.toLocaleString()}</span>
                             </div>
@@ -264,7 +264,7 @@ export default function OrderDetailScreen() {
                         <div className="bg-white border border-slate-200 p-8 rounded-sm">
                             <div className="flex items-center gap-3 mb-10">
                                 <Clock className="text-slate-900" size={18} />
-                                <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em]">Event Telemetry Log</h3>
+                                <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em]">Order Timeline</h3>
                             </div>
                             <div className="space-y-12 relative">
                                 <div className="absolute left-[11px] top-2 bottom-2 w-px bg-slate-100" />
@@ -290,12 +290,12 @@ export default function OrderDetailScreen() {
 
                         {/* Context Actions */}
                         <div className="bg-white border border-slate-200 p-6 rounded-sm space-y-4">
-                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Protocol Control</h3>
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Manage Order</h3>
                             <button className="w-full h-12 bg-slate-900 text-white rounded-sm font-black uppercase text-[10px] tracking-[0.2em] shadow-lg hover:bg-slate-800 transition-all flex items-center justify-center gap-2">
-                                Update Logistics Stage <ArrowRight size={14} />
+                                Update Status <ArrowRight size={14} />
                             </button>
                             <button className="w-full h-10 border border-slate-200 text-slate-400 rounded-sm font-black uppercase text-[9px] tracking-widest hover:bg-slate-50 hover:text-slate-900 transition-all">
-                                Flag Audit Variance
+                                Report Issue
                             </button>
                         </div>
                     </div>

@@ -54,17 +54,17 @@ export default function DashboardScreen() {
 
     const orderColumns = [
         {
-            header: 'Entity Identifier',
+            header: 'Store / Shop',
             key: 'hotelName',
             render: (val, row) => (
                 <div className="flex flex-col">
                     <span className="font-black text-slate-900 text-[11px] tracking-tight">{val}</span>
-                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-[0.1em] mt-0.5">{row.id}</span>
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-[0.1em] mt-0.5">Order #{row.id}</span>
                 </div>
             )
         },
         {
-            header: 'Fulfillment Status',
+            header: 'Status',
             key: 'status',
             render: (val) => (
                 <div className={cn(
@@ -78,18 +78,18 @@ export default function DashboardScreen() {
             )
         },
         {
-            header: 'Gross Volume',
+            header: 'Amount',
             key: 'total',
             align: 'right',
-            render: (val) => <span className="text-[11px] font-black text-slate-900 tabular-nums">₹{val.toLocaleString()}</span>
+            render: (val) => <span className="text-[11px] font-black text-slate-900 tabular-nums">₹{(val || 0).toLocaleString()}</span>
         },
         {
-            header: 'Priority Slot',
+            header: 'Delivery Slot',
             key: 'deliverySlot',
             render: (val) => <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{val}</span>
         },
         {
-            header: 'Operations',
+            header: 'Action',
             key: 'actions',
             align: 'right',
             render: (_, row) => (
@@ -127,24 +127,24 @@ export default function DashboardScreen() {
                         <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-r border-slate-200 pr-4">
                             <Home size={12} />
                             <ChevronRight size={10} />
-                            <span>Franchise Node</span>
+                            <span>Franchise</span>
                             <ChevronRight size={10} />
-                            <span className="text-slate-900 uppercase tracking-widest">Live Operations</span>
+                            <span className="text-slate-900 uppercase tracking-widest">Dashboard</span>
                         </div>
-                        <h1 className="text-sm font-bold text-slate-900">Warehouse Control Center</h1>
+                        <h1 className="text-sm font-bold text-slate-900">Manage Orders</h1>
                     </div>
 
                     <div className="flex items-center gap-2">
                         <div className="flex items-center bg-slate-100 p-0.5 rounded-sm mr-2">
-                            <button className="px-3 py-1 text-[9px] font-bold bg-white text-slate-900 shadow-sm rounded-sm uppercase tracking-widest">Day View</button>
-                            <button className="px-3 py-1 text-[9px] font-bold text-slate-400 hover:text-slate-900 uppercase tracking-widest transition-colors">Audit</button>
+                            <button className="px-3 py-1 text-[9px] font-bold bg-white text-slate-900 shadow-sm rounded-sm uppercase tracking-widest">Today</button>
+                            <button className="px-3 py-1 text-[9px] font-bold text-slate-400 hover:text-slate-900 uppercase tracking-widest transition-colors">History</button>
                         </div>
                         <button className="p-1.5 border border-slate-200 rounded-sm hover:bg-slate-50 text-slate-400">
                             <RefreshCw size={14} />
                         </button>
                         <button className="bg-slate-900 text-white px-3 py-1.5 rounded-sm text-[11px] font-bold flex items-center gap-2 hover:bg-slate-800 transition-colors shadow-sm uppercase tracking-widest">
                             <Monitor size={14} />
-                            Terminal Access
+                            Sales Terminal (POS)
                         </button>
                     </div>
                 </div>
@@ -165,27 +165,27 @@ export default function DashboardScreen() {
                     icon={Truck}
                 />
                 <MetricRow
-                    label="Stock Critical"
+                    label="Stock Health"
                     value={inventoryStats.lowStockCount}
                     trend={inventoryStats.lowStockCount > 10 ? 'down' : 'Stable'}
                     icon={AlertTriangle}
                 />
                 <MetricRow
-                    label="Accrued Comm."
+                    label="Total Commission"
                     value="₹24,500"
                     change={8.2}
                     trend="up"
                     icon={TrendingUp}
                 />
                 <MetricRow
-                    label="PO Pipeline"
+                    label="Incoming PO"
                     value={purchaseOrders.length}
                     trend="Stable"
                     icon={PackageCheck}
                 />
                 <MetricRow
                     label="COD Liability"
-                    value={`₹${codSummary.pendingDeposit.toLocaleString()}`}
+                    value={`₹${(codSummary?.totalToDeposit || 0).toLocaleString()}`}
                     trend="Stable"
                     icon={Wallet}
                 />
@@ -198,11 +198,11 @@ export default function DashboardScreen() {
                         <FilterBar
                             actions={
                                 <div className="flex items-center gap-4">
-                                    <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Live Inbound Pipeline</h2>
+                                    <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Recent Orders</h2>
                                     <div className="h-4 w-px bg-slate-200" />
                                     <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 border border-emerald-100 rounded-sm">
                                         <ShieldCheck size={10} className="text-emerald-500" />
-                                        <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest">Systems Nominal</span>
+                                        <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest">System Online</span>
                                     </div>
                                 </div>
                             }
@@ -218,8 +218,8 @@ export default function DashboardScreen() {
                     <div className="space-y-px bg-slate-200">
                         {/* Stock Health Panel */}
                         <ChartPanel
-                            title="Inventory Integrity"
-                            subtitle="Current Stock Distribution"
+                            title="Stock distribution"
+                            subtitle="Current inventory split"
                             height={220}
                             className="bg-white"
                         >
@@ -248,7 +248,7 @@ export default function DashboardScreen() {
                                     onClick={() => navigate('/franchise/inventory')}
                                     className="w-full py-2.5 border border-slate-900 text-[10px] font-black uppercase tracking-[0.2em] text-slate-900 hover:bg-slate-900 hover:text-white transition-all mt-4"
                                 >
-                                    Audit Catalog
+                                    Manage Stock
                                 </button>
                             </div>
                         </ChartPanel>
@@ -257,17 +257,17 @@ export default function DashboardScreen() {
                         <div className="p-8 bg-slate-900 text-white flex flex-col justify-center gap-4">
                             <div className="flex items-center gap-3 text-emerald-400">
                                 <Zap size={18} fill="currentColor" strokeWidth={0} />
-                                <span className="text-[10px] font-black uppercase tracking-[0.3em]">Operational Pulse</span>
+                                <span className="text-[10px] font-black uppercase tracking-[0.3em]">Quick Status</span>
                             </div>
-                            <h3 className="text-lg font-black tracking-tight leading-tight">Batch receiving protocol active.</h3>
+                            <h3 className="text-lg font-black tracking-tight leading-tight">Incoming shipments arriving now.</h3>
                             <p className="text-slate-400 text-[11px] font-medium leading-relaxed">
-                                {purchaseOrders.length} confirmed vendor shipments are inbound. Initializing staging area for high-velocity SKUs.
+                                {purchaseOrders.length} shipments are being tracked. Make sure the receiving area is ready for unloading.
                             </p>
                             <button
                                 onClick={() => navigate('/franchise/receiving')}
                                 className="mt-4 bg-white text-slate-900 py-3 rounded-sm text-[10px] font-black uppercase tracking-[0.2em] hover:bg-slate-100 transition-all active:scale-95"
                             >
-                                Initiate Receiving
+                                Receive Stock
                             </button>
                         </div>
                     </div>

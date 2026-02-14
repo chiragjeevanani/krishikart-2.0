@@ -75,10 +75,10 @@ export default function OrdersScreen() {
     };
 
     const tabs = [
-        { id: 'new', label: 'Incoming', icon: ShoppingBag },
-        { id: 'preparing', label: 'Processing', icon: Zap },
+        { id: 'new', label: 'New', icon: ShoppingBag },
+        { id: 'preparing', label: 'Preparing', icon: Zap },
         { id: 'ready', label: 'Dispatch', icon: Truck },
-        { id: 'delivered', label: 'Archive', icon: History }
+        { id: 'delivered', label: 'Completed', icon: History }
     ];
 
     const filteredOrders = allOrders.filter(order => {
@@ -97,33 +97,33 @@ export default function OrdersScreen() {
 
     const orderColumns = [
         {
-            header: 'Entity Identifier',
+            header: 'Store / Shop',
             key: 'hotelName',
             render: (val, row) => (
                 <div className="flex flex-col">
                     <span className="font-black text-slate-900 text-[11px] tracking-tight">{val}</span>
-                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-[0.1em] mt-0.5">{row.id}</span>
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-[0.1em] mt-0.5">Order #{row.id}</span>
                 </div>
             )
         },
         {
-            header: 'Slot Window',
+            header: 'Delivery Slot',
             key: 'deliverySlot',
             render: (val) => <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{val}</span>
         },
         {
-            header: 'Gross Value',
+            header: 'Amount',
             key: 'total',
             align: 'right',
             render: (val) => <span className="text-[11px] font-black text-slate-900 tabular-nums">₹{(val || 0).toLocaleString()}</span>
         },
         {
-            header: 'Itemization',
+            header: 'Total Items',
             key: 'items',
             render: (items) => <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{items.length} units</span>
         },
         {
-            header: 'Operations',
+            header: 'Action',
             key: 'actions',
             align: 'right',
             render: (_, row) => (
@@ -182,11 +182,11 @@ export default function OrdersScreen() {
                         <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-r border-slate-200 pr-4">
                             <Home size={12} />
                             <ChevronRight size={10} />
-                            <span>Franchise Node</span>
+                            <span>Franchise</span>
                             <ChevronRight size={10} />
-                            <span className="text-slate-900 uppercase tracking-widest">Order Ledger</span>
+                            <span className="text-slate-900 uppercase tracking-widest">Orders</span>
                         </div>
-                        <h1 className="text-sm font-bold text-slate-900">Hotel Fulfillment Pipeline</h1>
+                        <h1 className="text-sm font-bold text-slate-900">Order Management</h1>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -195,7 +195,7 @@ export default function OrdersScreen() {
                         </button>
                         <button className="bg-slate-900 text-white px-3 py-1.5 rounded-sm text-[11px] font-bold flex items-center gap-2 hover:bg-slate-800 transition-colors shadow-sm uppercase tracking-widest">
                             <History size={14} />
-                            Fiscal Archive
+                            Order History
                         </button>
                     </div>
                 </div>
@@ -204,13 +204,13 @@ export default function OrdersScreen() {
             {/* Performance Strip */}
             <div className="bg-white border-b border-slate-200 grid grid-cols-1 md:grid-cols-4">
                 <MetricRow
-                    label="Active Demand"
+                    label="New Orders"
                     value={allOrders.filter(o => o.status === 'new').length}
                     trend="Stable"
                     icon={ShoppingBag}
                 />
                 <MetricRow
-                    label="Fulfillment Rate"
+                    label="Success Rate"
                     value="94.2%"
                     change={2.1}
                     trend="up"
@@ -224,7 +224,7 @@ export default function OrdersScreen() {
                     icon={Clock}
                 />
                 <MetricRow
-                    label="Pipeline Volume"
+                    label="Total Sales"
                     value={`₹${allOrders.reduce((acc, curr) => acc + (curr.total || 0), 0).toLocaleString()}`}
                     trend="Stable"
                     icon={IndianRupee}
@@ -259,7 +259,7 @@ export default function OrdersScreen() {
                                 <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" size={14} />
                                 <input
                                     type="text"
-                                    placeholder="Filter by Order ID or Entity..."
+                                    placeholder="Search by Order ID or Store..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className="bg-white border border-slate-200 rounded-sm py-1.5 pl-9 pr-4 outline-none text-[11px] font-black text-slate-900 placeholder:text-slate-400 focus:border-slate-400 transition-all font-sans min-w-[240px]"

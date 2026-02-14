@@ -26,6 +26,17 @@ const franchiseSchema = new mongoose.Schema(
       required: true,
     },
 
+    email: {
+      type: String,
+      trim: true,
+      lowercase: true
+    },
+
+    profilePicture: {
+      type: String,
+      default: null
+    },
+
     otp: String,
     otpExpiresAt: Date,
     otpAttempts: { type: Number, default: 0 },

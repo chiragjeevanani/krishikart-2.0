@@ -99,25 +99,25 @@ export default function SignupScreen() {
             <div className="hidden md:flex flex-1 flex-col justify-between p-12 relative z-10 border-r border-slate-800">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-white rounded-sm flex items-center justify-center text-slate-900 shadow-xl">
-                        <Command size={24} />
+                        <Home size={24} />
                     </div>
                     <div className="flex flex-col">
                         <span className="text-white text-lg font-black tracking-tight leading-none uppercase">KrishiKart</span>
-                        <span className="text-[10px] text-slate-500 font-bold tracking-[0.3em] uppercase">Operations OS</span>
+                        <span className="text-[10px] text-slate-500 font-bold tracking-[0.3em] uppercase">Franchise Partner</span>
                     </div>
                 </div>
 
                 <div className="space-y-6 max-w-md">
                     <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-black uppercase tracking-widest rounded-sm">
-                        <Zap size={10} /> v2.4.0 Initialize Node
+                        <Zap size={10} /> v2.4.0 Register
                     </div>
                     <h1 className="text-5xl font-black text-white tracking-tighter leading-[0.9] uppercase">
-                        Provision <br />
-                        New <br />
-                        Logistics Node.
+                        Become a <br />
+                        Franchise <br />
+                        Partner.
                     </h1>
                     <p className="text-slate-400 text-sm font-medium leading-relaxed uppercase tracking-tight">
-                        Register your facility as an authorized distribution point. Complete verification required for network synchronization.
+                        Join our network and start managing orders in your area. Quick verification to get you started.
                     </p>
                 </div>
 
@@ -150,10 +150,10 @@ export default function SignupScreen() {
                         <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4">
                             <Home size={12} />
                             <ChevronRight size={10} />
-                            <span className="text-slate-900 border-b border-slate-900 pb-px">Network Registration</span>
+                            <span className="text-slate-900 border-b border-slate-900 pb-px">Registration</span>
                         </div>
-                        <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter leading-none">Node Configuration</h2>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Enter parameters for facility provisioning...</p>
+                        <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter leading-none">Partner Details</h2>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Enter your business information</p>
                     </div>
 
                     <form onSubmit={mode === 'details' ? handleNext : handleSignup} className="space-y-6">
@@ -168,7 +168,7 @@ export default function SignupScreen() {
                                 >
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] px-1">Node Identifier</label>
+                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] px-1">Shop Name</label>
                                             <div className="relative group">
                                                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors">
                                                     <Building2 size={16} />
@@ -183,7 +183,7 @@ export default function SignupScreen() {
                                             </div>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] px-1">Operator Name</label>
+                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] px-1">Owner Name</label>
                                             <div className="relative group">
                                                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors">
                                                     <User size={16} />
@@ -199,7 +199,7 @@ export default function SignupScreen() {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] px-1">Comms Channel</label>
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] px-1">Mobile Number</label>
                                         <div className="relative group">
                                             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors">
                                                 <Smartphone size={16} />
@@ -219,7 +219,7 @@ export default function SignupScreen() {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] px-1">Geo Coordinates</label>
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] px-1">City / Area</label>
                                         <div className="relative group">
                                             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors">
                                                 <MapPin size={16} />
@@ -237,7 +237,7 @@ export default function SignupScreen() {
                                         disabled={!formData.mobile || formData.mobile.length < 10 || !formData.franchiseName}
                                         className="w-full h-14 bg-slate-900 text-white rounded-sm font-black uppercase text-[11px] tracking-[0.3em] shadow-xl hover:bg-slate-800 active:scale-[0.98] transition-all disabled:bg-slate-200 disabled:text-slate-400 flex items-center justify-center gap-3 mt-4"
                                     >
-                                        Initiate Handshake <ArrowRight size={16} />
+                                        Register Now <ArrowRight size={16} />
                                     </button>
 
                                     <button
@@ -245,7 +245,7 @@ export default function SignupScreen() {
                                         onClick={() => navigate('/franchise/login')}
                                         className="w-full text-[10px] font-black text-slate-400 uppercase tracking-widest py-2 hover:text-slate-900 transition-colors underline underline-offset-8 decoration-slate-200"
                                     >
-                                        Already Provisioned? Access Terminal
+                                        Already a partner? Login
                                     </button>
                                 </motion.div>
                             ) : (
@@ -286,7 +286,7 @@ export default function SignupScreen() {
                                             className="w-full h-14 bg-slate-900 text-white rounded-sm font-black uppercase text-[11px] tracking-[0.3em] shadow-xl hover:bg-slate-800 active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:bg-slate-200 disabled:text-slate-400"
                                             disabled={isLoading || otp.join('').length < 6}
                                         >
-                                            {isLoading ? <Cpu className="animate-spin" size={16} /> : (
+                                            {isLoading ? <Loader2 className="animate-spin" size={16} /> : (
                                                 <>
                                                     Confirm Registration <ShieldCheck size={16} />
                                                 </>
@@ -300,7 +300,7 @@ export default function SignupScreen() {
                                             }}
                                             className="text-[10px] font-black text-slate-400 uppercase tracking-widest py-2 hover:text-slate-900 transition-colors underline underline-offset-8 decoration-slate-200"
                                         >
-                                            Modify Parameters
+                                            Edit Details
                                         </button>
                                     </div>
                                 </motion.div>

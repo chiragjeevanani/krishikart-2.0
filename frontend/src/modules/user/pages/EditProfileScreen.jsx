@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
     ArrowLeft, AlertCircle, MessageSquare,
     CircleDollarSign, FileText, Phone, Mail, Edit3,
-    Smartphone, Receipt, X, CheckCircle2
+    Smartphone, Receipt, X, CheckCircle2,
+    Plus, Briefcase, Info, Headset, Trash2
 } from 'lucide-react'
 import PageTransition from '../components/layout/PageTransition'
 import { Button } from '@/components/ui/button'
@@ -15,6 +16,11 @@ import { cn } from '@/lib/utils'
 export default function EditProfileScreen() {
     const navigate = useNavigate()
     const [isPasswordDrawerOpen, setIsPasswordDrawerOpen] = useState(false)
+    const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false)
+
+    // Dynamic Additional Numbers
+    const [additionalNumbers, setAdditionalNumbers] = useState([])
+
     const [preferences, setPreferences] = useState({
         whatsapp: false,
         tax: false,
@@ -29,6 +35,14 @@ export default function EditProfileScreen() {
 
     const togglePreference = (key) => {
         setPreferences(prev => ({ ...prev, [key]: !prev[key] }))
+    }
+
+    const addNumberRow = () => {
+        setAdditionalNumbers(prev => [...prev, { id: Date.now(), phone: '', name: '' }])
+    }
+
+    const removeNumberRow = (id) => {
+        setAdditionalNumbers(prev => prev.filter(row => row.id !== id))
     }
 
     const userData = {
@@ -79,8 +93,8 @@ export default function EditProfileScreen() {
 
                                 <div className="space-y-1.5">
                                     <label className="text-[13px] font-bold text-slate-400">PAN card number</label>
-                                    <div className="flex items-center gap-1.5 text-amber-600 font-black">
-                                        <div className="w-4 h-4 rounded-full bg-amber-600 flex items-center justify-center text-white">
+                                    <div className="flex items-center gap-1.5 text-orange-500 font-black">
+                                        <div className="w-4 h-4 rounded-full bg-orange-500 flex items-center justify-center text-white">
                                             <AlertCircle size={10} strokeWidth={4} />
                                         </div>
                                         <span className="text-[14px]">Unverified</span>
@@ -103,6 +117,7 @@ export default function EditProfileScreen() {
                                     Change Password
                                 </Button>
                                 <Button
+                                    onClick={() => setIsEditDrawerOpen(true)}
                                     className="flex-1 h-12 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-base shadow-lg shadow-emerald-100 transition-all active:scale-[0.98]"
                                 >
                                     Edit Details
@@ -162,10 +177,6 @@ export default function EditProfileScreen() {
                                     <h2 className="text-2xl font-black text-slate-900 tracking-tight">{userData.name}</h2>
                                     <p className="text-[14px] font-medium text-slate-400">{userData.address}</p>
                                 </div>
-                                <button className="flex items-center gap-1.5 text-[14px] font-black text-emerald-600 uppercase tracking-tighter hover:opacity-80 transition-opacity">
-                                    <Edit3 size={15} />
-                                    edit
-                                </button>
                             </div>
 
                             <div className="space-y-4 pt-6 mt-6 border-t border-slate-50">
@@ -185,6 +196,166 @@ export default function EditProfileScreen() {
                         </div>
                     </div>
                 </div>
+
+                {/* Edit Profile Drawer */}
+                <AnimatePresence>
+                    {isEditDrawerOpen && (
+                        <>
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setIsEditDrawerOpen(false)}
+                                className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-[100]"
+                            />
+                            <motion.div
+                                initial={{ x: '100%' }}
+                                animate={{ x: 0 }}
+                                exit={{ x: '100%' }}
+                                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                                className="fixed top-0 right-0 h-full w-full max-w-[520px] bg-slate-50 shadow-2xl z-[101] flex flex-col"
+                            >
+                                <div className="flex items-center justify-between px-8 py-6 bg-white border-b border-slate-100">
+                                    <h2 className="text-xl font-black text-slate-800 tracking-tight">Edit Profile</h2>
+                                    <button
+                                        onClick={() => setIsEditDrawerOpen(false)}
+                                        className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors bg-slate-50 rounded-full"
+                                    >
+                                        <X size={20} strokeWidth={2.5} />
+                                    </button>
+                                </div>
+
+                                <div className="flex-1 overflow-y-auto p-8 space-y-8">
+                                    {/* Personal Info Section */}
+                                    <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-6">
+                                        <div className="space-y-1.5">
+                                            <div className="relative">
+                                                <Input
+                                                    defaultValue={userData.email}
+                                                    placeholder="Email address"
+                                                    className="h-14 bg-white border-slate-200 rounded-xl px-5 text-base font-bold focus:ring-[#10b981]/10"
+                                                />
+                                                <span className="absolute -top-2 left-4 bg-white px-1 text-[10px] font-black text-slate-400 uppercase">Email address</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="relative">
+                                                <Input
+                                                    defaultValue={userData.phone}
+                                                    placeholder="Phone number"
+                                                    className="h-14 bg-white border-slate-200 rounded-xl px-5 text-base font-bold focus:ring-[#10b981]/10"
+                                                />
+                                                <span className="absolute -top-2 left-4 bg-white px-1 text-[10px] font-black text-slate-400 uppercase">Phone number</span>
+                                            </div>
+                                            <div className="relative">
+                                                <Input
+                                                    placeholder="Name"
+                                                    className="h-14 bg-white border-slate-200 rounded-xl px-5 text-base font-bold focus:ring-[#10b981]/10"
+                                                />
+                                                <span className="absolute -top-2 left-4 bg-white px-1 text-[10px] font-black text-slate-400 uppercase invisible">Name</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Dynamic Additional Numbers */}
+                                        <AnimatePresence initial={false}>
+                                            {additionalNumbers.map((row) => (
+                                                <motion.div
+                                                    key={row.id}
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: 'auto', opacity: 1 }}
+                                                    exit={{ height: 0, opacity: 0 }}
+                                                    className="grid grid-cols-[1fr,1fr,auto] gap-4 items-center overflow-hidden"
+                                                >
+                                                    <Input
+                                                        placeholder="Phone number"
+                                                        className="h-14 bg-white border-slate-200 rounded-xl px-5 text-base font-bold"
+                                                    />
+                                                    <Input
+                                                        placeholder="Name"
+                                                        className="h-14 bg-white border-slate-200 rounded-xl px-5 text-base font-bold"
+                                                    />
+                                                    <button
+                                                        onClick={() => removeNumberRow(row.id)}
+                                                        className="w-10 h-10 flex items-center justify-center text-[#ec5262] hover:bg-red-50 rounded-xl transition-colors shrink-0"
+                                                    >
+                                                        <Trash2 size={20} />
+                                                    </button>
+                                                </motion.div>
+                                            ))}
+                                        </AnimatePresence>
+
+                                        <button
+                                            onClick={addNumberRow}
+                                            className="flex items-center gap-1.5 text-sm font-black text-emerald-600 group"
+                                        >
+                                            <Plus size={16} strokeWidth={3} className="group-hover:scale-110 transition-transform" />
+                                            Add another number
+                                        </button>
+                                    </div>
+
+                                    {/* Business Details Section */}
+                                    <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-6">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-500">
+                                                <Briefcase size={24} />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-black text-slate-800 leading-tight">Business details</h3>
+                                                <p className="text-xs text-slate-400 font-medium tracking-tight">official details of your outlet</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4 pt-2">
+                                            {[1, 2].map((i) => (
+                                                <div key={i} className="relative group">
+                                                    <Input
+                                                        placeholder=" "
+                                                        className="h-14 bg-white border-slate-200 rounded-xl px-5 text-base font-bold pr-16"
+                                                    />
+                                                    <button className="absolute right-4 top-1/2 -translate-y-1/2 text-[13px] font-black text-emerald-600 uppercase tracking-tight">Verify</button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Support Info Box */}
+                                    <div className="bg-[#f0f9ff] rounded-3xl p-6 border border-blue-100 space-y-5">
+                                        <div className="flex items-start gap-4">
+                                            <div className="w-8 h-8 rounded-lg bg-blue-100/50 flex items-center justify-center text-blue-500 shrink-0 mt-0.5">
+                                                <Info size={18} strokeWidth={2.5} />
+                                            </div>
+                                            <p className="text-[13.5px] font-bold text-slate-600 leading-relaxed">
+                                                Please reach out to our customer support to update account details & government provided documents
+                                            </p>
+                                        </div>
+
+                                        <div className="space-y-4 pl-12 pt-1 border-white/50">
+                                            <button className="flex items-center gap-3 text-emerald-600 font-black text-sm hover:underline underline-offset-4 decoration-2">
+                                                <MessageSquare size={18} />
+                                                Chat with us
+                                            </button>
+                                            <button className="flex items-center gap-3 text-emerald-600 font-black text-sm hover:underline underline-offset-4 decoration-2">
+                                                <Headset size={18} />
+                                                011-41171717
+                                            </button>
+                                            <button className="flex items-center gap-3 text-emerald-600 font-black text-sm hover:underline underline-offset-4 decoration-2">
+                                                <Mail size={18} />
+                                                help@krishikart.com
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="p-8 bg-white border-t border-slate-100">
+                                    <Button className="w-full h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-lg shadow-lg shadow-emerald-100 active:scale-[0.98] transition-all">
+                                        Save Changes
+                                    </Button>
+                                </div>
+                            </motion.div>
+                        </>
+                    )}
+                </AnimatePresence>
 
                 {/* Change Password Drawer */}
                 <AnimatePresence>

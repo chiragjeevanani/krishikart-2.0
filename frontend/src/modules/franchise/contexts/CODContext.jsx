@@ -6,43 +6,65 @@ const CODContext = createContext();
 export const CODProvider = ({ children }) => {
     const [transactions, setTransactions] = useState([]);
     const [summary, setSummary] = useState({
-        totalCollectedToday: 0,
-        pendingDeposit: 0,
-        depositedToday: 0
+        totalToDeposit: 0,
+        totalDeposited: 0,
+        pendingTxCount: 0,
+        totalCollectedToday: 0
     });
 
     useEffect(() => {
         const savedCOD = localStorage.getItem('franchise_cod');
+        let data;
         if (savedCOD) {
-            const data = JSON.parse(savedCOD);
-            setTransactions(data.transactions);
-            setSummary(data.summary);
+            data = JSON.parse(savedCOD);
         } else {
-            setTransactions(mockCOD.transactions);
-            setSummary(mockCOD.summary);
+            data = mockCOD;
         }
+
+        const txs = data.transactions || [];
+        setTransactions(txs);
+
+        // Re-calculate summary to ensure consistency with current structure
+        const pending = txs.filter(t => t.status.toLowerCase().includes('pending') || t.status.toLowerCase() === 'unreconciled' || t.status.toLowerCase() === 'pending deposit');
+        const deposited = txs.filter(t => t.status.toLowerCase() === 'deposited');
+
+        setSummary({
+            totalToDeposit: pending.reduce((sum, t) => sum + t.amount, 0),
+            totalDeposited: deposited.reduce((sum, t) => sum + t.amount, 0),
+            pendingTxCount: pending.length,
+            totalCollectedToday: txs.reduce((sum, t) => sum + t.amount, 0)
+        });
     }, []);
 
     useEffect(() => {
         localStorage.setItem('franchise_cod', JSON.stringify({ transactions, summary }));
     }, [transactions, summary]);
 
-    const depositCash = (transactionIds) => {
-        let totalDeposited = 0;
+    const markAsDeposited = (txId, bankReference) => {
         const newTransactions = transactions.map(txn => {
-            if (transactionIds.includes(txn.id) && txn.status === 'Pending Deposit') {
-                totalDeposited += txn.amount;
-                return { ...txn, status: 'Deposited', depositDate: new Date().toISOString() };
+            if (txn.id === txId) {
+                return {
+                    ...txn,
+                    status: 'deposited',
+                    bankReference,
+                    depositDate: new Date().toISOString()
+                };
             }
             return txn;
         });
 
         setTransactions(newTransactions);
-        setSummary(prev => ({
-            ...prev,
-            pendingDeposit: Math.max(0, prev.pendingDeposit - totalDeposited),
-            depositedToday: prev.depositedToday + totalDeposited
-        }));
+
+        // Update summary
+        const pending = newTransactions.filter(t => t.status === 'pending' || t.status === 'Pending Deposit' || t.status === 'unreconciled');
+        const deposited = newTransactions.filter(t => t.status === 'deposited' || t.status === 'Deposited');
+
+        setSummary({
+            totalToDeposit: pending.reduce((sum, t) => sum + t.amount, 0),
+            totalDeposited: deposited.reduce((sum, t) => sum + t.amount, 0),
+            pendingTxCount: pending.length,
+            totalCollectedToday: newTransactions.reduce((sum, t) => sum + t.amount, 0)
+        });
     };
 
     const addCODTransaction = (orderId, hotelName, amount, collectedBy) => {
@@ -53,22 +75,28 @@ export const CODProvider = ({ children }) => {
             amount,
             collectedBy,
             timestamp: new Date().toISOString(),
-            status: 'Pending Deposit'
+            status: 'pending'
         };
 
-        setTransactions(prev => [newTxn, ...prev]);
-        setSummary(prev => ({
-            ...prev,
-            totalCollectedToday: prev.totalCollectedToday + amount,
-            pendingDeposit: prev.pendingDeposit + amount
-        }));
+        const updatedTxs = [newTxn, ...transactions];
+        setTransactions(updatedTxs);
+
+        const pending = updatedTxs.filter(t => t.status === 'pending' || t.status === 'Pending Deposit');
+        const deposited = updatedTxs.filter(t => t.status === 'deposited' || t.status === 'Deposited');
+
+        setSummary({
+            totalToDeposit: pending.reduce((sum, t) => sum + t.amount, 0),
+            totalDeposited: deposited.reduce((sum, t) => sum + t.amount, 0),
+            pendingTxCount: pending.length,
+            totalCollectedToday: updatedTxs.reduce((sum, t) => sum + t.amount, 0)
+        });
     };
 
     return (
         <CODContext.Provider value={{
             transactions,
             summary,
-            depositCash,
+            markAsDeposited,
             addCODTransaction
         }}>
             {children}

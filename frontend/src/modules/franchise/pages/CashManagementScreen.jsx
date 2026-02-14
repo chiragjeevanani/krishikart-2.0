@@ -86,7 +86,7 @@ export default function CashManagementScreen() {
             header: 'Gross Amount',
             key: 'amount',
             align: 'right',
-            render: (val) => <span className="text-[11px] font-black text-slate-900 tabular-nums">₹{val.toLocaleString()}</span>
+            render: (val) => <span className="text-[11px] font-black text-slate-900 tabular-nums">₹{val?.toLocaleString() ?? 0}</span>
         },
         {
             header: 'UTR Identification',
@@ -164,7 +164,7 @@ export default function CashManagementScreen() {
                 <div className="bg-slate-900 text-white px-6 py-4 flex flex-col justify-center border-r border-slate-800">
                     <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest leading-none mb-1.5">Collection Liability</p>
                     <h3 className="text-xl font-black tracking-tight tabular-nums leading-none text-white">
-                        ₹{summary.totalToDeposit.toLocaleString()}
+                        ₹{summary?.totalToDeposit?.toLocaleString() ?? 0}
                     </h3>
                     <div className="flex items-center gap-2 mt-2">
                         <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Liquidity Status: High</span>
@@ -172,7 +172,7 @@ export default function CashManagementScreen() {
                 </div>
                 <MetricRow
                     label="Active Liquidity"
-                    value={`₹${summary.totalDeposited.toLocaleString()}`}
+                    value={`₹${summary?.totalDeposited?.toLocaleString() ?? 0}`}
                     trend="up"
                     change={5.2}
                     icon={TrendingUp}
@@ -254,7 +254,7 @@ export default function CashManagementScreen() {
                                     </div>
                                     <div>
                                         <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest leading-none mb-1.5">Collection Volume</p>
-                                        <h2 className="text-2xl font-black tracking-tight leading-none">₹{selectedTx.amount.toLocaleString()}</h2>
+                                        <h2 className="text-2xl font-black tracking-tight leading-none">₹{selectedTx?.amount?.toLocaleString() ?? 0}</h2>
                                     </div>
                                 </div>
 

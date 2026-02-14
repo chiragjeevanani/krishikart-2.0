@@ -153,7 +153,7 @@ export default function MobileProfileDrawer() {
                                         <SectionHeader title="Others" />
                                         <div className="bg-white rounded-[24px] overflow-hidden border border-slate-100 shadow-sm">
                                             <MenuItem icon={User} label="Profile settings" path="/edit-profile" isFirst />
-                                            <MenuItem icon={Briefcase} label="Register as business" path="/verification" isNew />
+                                            <MenuItem icon={Briefcase} label="Register as business" path="/business-registration" isNew />
                                             <MenuItem
                                                 icon={CircleDot}
                                                 label="Veg mode"

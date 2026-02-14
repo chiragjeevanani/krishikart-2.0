@@ -43,7 +43,7 @@ export default function ProfileScreen() {
         {
           icon: Briefcase,
           label: "Register as business",
-          path: "#",
+          path: "/business-registration",
           badge: <span className="bg-emerald-100 text-emerald-600 text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-tighter">NEW</span>
         },
         {

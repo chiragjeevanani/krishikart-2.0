@@ -49,7 +49,7 @@ export default function InventoryScreen() {
 
     const inventoryColumns = [
         {
-            header: 'Resource Identifier',
+            header: 'Item Name',
             key: 'name',
             render: (val, row) => (
                 <div className="flex items-center gap-3">
@@ -64,7 +64,7 @@ export default function InventoryScreen() {
             )
         },
         {
-            header: 'Classification',
+            header: 'Category',
             key: 'category',
             render: (val) => <span className="text-[10px] font-bold text-slate-600 bg-slate-50 px-2 py-0.5 rounded-sm border border-slate-200 uppercase tracking-tight">{val}</span>
         },
@@ -85,7 +85,7 @@ export default function InventoryScreen() {
             )
         },
         {
-            header: 'Utilization Score',
+            header: 'Stock Level',
             key: 'usageRate',
             render: (_, row) => {
                 const percentage = (row.currentStock / 100) * 100; // Mock logic
@@ -103,13 +103,13 @@ export default function InventoryScreen() {
             }
         },
         {
-            header: 'Valuation',
+            header: 'Price',
             key: 'price',
             align: 'right',
             render: (val) => <span className="text-[11px] font-black text-slate-900 tabular-nums">₹{(val || 0).toLocaleString()}</span>
         },
         {
-            header: 'Operations',
+            header: 'Action',
             key: 'actions',
             align: 'right',
             render: () => (
@@ -139,11 +139,11 @@ export default function InventoryScreen() {
                         <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-r border-slate-200 pr-4">
                             <Home size={12} />
                             <ChevronRight size={10} />
-                            <span>Warehouse</span>
+                            <span>Inventory</span>
                             <ChevronRight size={10} />
-                            <span className="text-slate-900 uppercase tracking-widest">Global Inventory</span>
+                            <span className="text-slate-900 uppercase tracking-widest">All Items</span>
                         </div>
-                        <h1 className="text-sm font-bold text-slate-900">Resource Availability Matrix</h1>
+                        <h1 className="text-sm font-bold text-slate-900">Stock Status</h1>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -155,7 +155,7 @@ export default function InventoryScreen() {
                             className="bg-slate-900 text-white px-3 py-1.5 rounded-sm text-[11px] font-bold flex items-center gap-2 hover:bg-slate-800 transition-colors shadow-sm uppercase tracking-widest"
                         >
                             <Plus size={14} />
-                            Stock Inflow
+                            Add Stock
                         </button>
                     </div>
                 </div>
@@ -164,28 +164,28 @@ export default function InventoryScreen() {
             {/* Performance Strip */}
             <div className="bg-white border-b border-slate-200 grid grid-cols-1 md:grid-cols-4">
                 <MetricRow
-                    label="Resource Integrity"
+                    label="Stock Health"
                     value={`${Math.round((stats.healthyCount / stats.totalItems) * 100)}%`}
                     trend="Stable"
                     icon={ShieldCheck}
                 />
                 <MetricRow
-                    label="Critical Depletion"
+                    label="Low Stock"
                     value={stats.lowStockCount}
                     trend={stats.lowStockCount > 2 ? 'down' : 'Stable'}
                     icon={AlertTriangle}
-                    sub="SKUs Requiring Action"
+                    sub="Items to reorder"
                 />
                 <MetricRow
-                    label="Inventory Valuation"
+                    label="Total Value"
                     value={`₹${((stats.totalItems || 0) * 240).toLocaleString()}`}
                     trend="Stable"
                     icon={RefreshCw}
                 />
                 <MetricRow
-                    label="Catalog Depth"
+                    label="Total Items"
                     value={stats.totalItems}
-                    sub="Active SKUs"
+                    sub="Total Products"
                     icon={Zap}
                 />
             </div>
@@ -217,7 +217,7 @@ export default function InventoryScreen() {
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" size={14} />
                                 <input
                                     type="text"
-                                    placeholder="Matrix Search..."
+                                    placeholder="Search items..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className="bg-white border border-slate-200 rounded-sm py-1.5 pl-9 pr-4 outline-none text-[11px] font-black text-slate-900 placeholder:text-slate-400 focus:border-slate-400 transition-all font-sans min-w-[240px]"

@@ -84,25 +84,25 @@ export default function LoginScreen() {
             <div className="hidden md:flex flex-1 flex-col justify-between p-12 relative z-10 border-r border-slate-800">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-white rounded-sm flex items-center justify-center text-slate-900 shadow-xl">
-                        <Command size={24} />
+                        <Home size={24} />
                     </div>
                     <div className="flex flex-col">
                         <span className="text-white text-lg font-black tracking-tight leading-none uppercase">KrishiKart</span>
-                        <span className="text-[10px] text-slate-500 font-bold tracking-[0.3em] uppercase">Operations OS</span>
+                        <span className="text-[10px] text-slate-500 font-bold tracking-[0.3em] uppercase">Franchise Partner</span>
                     </div>
                 </div>
 
                 <div className="space-y-6 max-w-md">
                     <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-black uppercase tracking-widest rounded-sm">
-                        <Zap size={10} /> v2.4.0 High-Performance Hub
+                        <Zap size={10} /> v2.4.0 Live
                     </div>
                     <h1 className="text-5xl font-black text-white tracking-tighter leading-[0.9] uppercase">
-                        Enterprise <br />
-                        Node <br />
-                        Access.
+                        Franchise <br />
+                        Partner <br />
+                        Login.
                     </h1>
                     <p className="text-slate-400 text-sm font-medium leading-relaxed uppercase tracking-tight">
-                        Authorized logistics terminal for verified franchise partners. Secure biometric and credential handshakes required for operational sync.
+                        Welcome back! Login to manage your orders, deliveries, and business profile securely.
                     </p>
                 </div>
 
@@ -136,10 +136,10 @@ export default function LoginScreen() {
                         <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4">
                             <Home size={12} />
                             <ChevronRight size={10} />
-                            <span className="text-slate-900 border-b border-slate-900 pb-px">Terminal Login</span>
+                            <span className="text-slate-900 border-b border-slate-900 pb-px">Login</span>
                         </div>
-                        <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter leading-none">Security Handshake</h2>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Deploying RSA Session Keys...</p>
+                        <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter leading-none">Account Access</h2>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Verify your partner identity</p>
                     </div>
 
                     <form onSubmit={mode === 'mobile' ? handleNext : handleLogin} className="space-y-6">
@@ -183,7 +183,7 @@ export default function LoginScreen() {
                                         onClick={() => navigate('/franchise/signup')}
                                         className="w-full text-[10px] font-black text-slate-400 uppercase tracking-widest py-2 hover:text-slate-900 transition-colors underline underline-offset-8 decoration-slate-200"
                                     >
-                                        New Node Provisioning
+                                        Register as New Partner
                                     </button>
                                 </motion.div>
                             ) : (
@@ -224,9 +224,9 @@ export default function LoginScreen() {
                                             className="w-full h-14 bg-slate-900 text-white rounded-sm font-black uppercase text-[11px] tracking-[0.3em] shadow-xl hover:bg-slate-800 active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:bg-slate-200 disabled:text-slate-400"
                                             disabled={isLoading || otp.join('').length < 6}
                                         >
-                                            {isLoading ? <Cpu className="animate-spin" size={16} /> : (
+                                            {isLoading ? <Loader2 className="animate-spin" size={16} /> : (
                                                 <>
-                                                    Authorize Node Access <ShieldCheck size={16} />
+                                                    Login to Account <ShieldCheck size={16} />
                                                 </>
                                             )}
                                         </button>
@@ -249,11 +249,11 @@ export default function LoginScreen() {
                     <div className="pt-12 border-t border-slate-100 flex flex-col items-center gap-6">
                         <div className="flex items-center gap-3">
                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em]">Operational Readiness Validated</span>
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em]">Secure Connection Active</span>
                         </div>
                         <p className="text-[9px] text-slate-300 font-bold uppercase tracking-widest text-center leading-relaxed">
-                            Logistics Node Authentication protocol v2.4.0-STABLE<br />
-                            Unauthorized data extraction is a violation of partner compliance.
+                            KrishiKart Partner Security Protocol v2.4.0<br />
+                            By logging in, you agree to our partner terms and compliance.
                         </p>
                     </div>
                 </motion.div>
