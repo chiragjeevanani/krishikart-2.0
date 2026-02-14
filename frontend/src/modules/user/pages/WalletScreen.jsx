@@ -1,269 +1,318 @@
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Plus, Wallet, History, ArrowUpRight, ArrowDownLeft, CheckCircle2, ChevronRight, CreditCard, Info } from 'lucide-react'
+import {
+    ArrowLeft,
+    Plus,
+    Wallet,
+    History,
+    FileText,
+    Download,
+    Star,
+    Clock,
+    ChevronRight,
+    Info,
+    CheckCircle2,
+    RefreshCcw,
+    Zap
+} from 'lucide-react'
 import PageTransition from '../components/layout/PageTransition'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import { useState } from 'react'
 import { useWallet } from '../contexts/WalletContext'
 import { cn } from '@/lib/utils'
 
 export default function WalletScreen() {
     const navigate = useNavigate()
-    const { balance, transactions, addMoney, creditLimit, creditUsed } = useWallet()
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+    const { balance, transactions, addMoney, creditLimit, creditUsed, loyaltyPoints } = useWallet()
     const [amountToAdd, setAmountToAdd] = useState('')
     const [isProcessing, setIsProcessing] = useState(false)
     const [showSuccess, setShowSuccess] = useState(false)
+    const [activeFilter, setActiveFilter] = useState('All')
+    const [refundToWallet, setRefundToWallet] = useState(true)
 
-    const handleAddMoney = () => {
-        if (!amountToAdd || isNaN(amountToAdd) || amountToAdd <= 0) return
+    const filters = [
+        'All', 'Used', 'Expiring', 'Recharge', 'Refund', 'Loyalty',
+        'Promotion', 'Sampling', 'Advance payments', 'COD payment',
+        'Cashback savings', 'KrishiKart rewards'
+    ]
+
+    const quickAddAmounts = [1000, 2000, 5000]
+
+    const handleAddMoney = (amount = amountToAdd) => {
+        const value = amount || amountToAdd;
+        if (!value || isNaN(value) || value <= 0) return
 
         setIsProcessing(true)
-        // Simulate Razorpay Delay
         setTimeout(() => {
-            addMoney(Number(amountToAdd))
+            addMoney(Number(value))
             setIsProcessing(false)
             setShowSuccess(true)
-            setTimeout(() => {
-                setShowSuccess(false)
-                setIsAddModalOpen(false)
-                setAmountToAdd('')
-            }, 2000)
-        }, 1500)
+            setAmountToAdd('')
+            setTimeout(() => setShowSuccess(false), 2000)
+        }, 1200)
     }
 
-    const creditAvailable = creditLimit - creditUsed;
-    const creditProgress = (creditUsed / creditLimit) * 100;
+    const filteredTransactions = activeFilter === 'All'
+        ? transactions
+        : transactions.filter(t => {
+            if (activeFilter === 'Loyalty') return t.type === 'Loyalty Bonus';
+            if (activeFilter === 'Recharge') return t.type === 'Added';
+            if (activeFilter === 'Used') return t.type === 'Paid';
+            return true;
+        })
 
     return (
         <PageTransition>
-            <div className="bg-[#f8fafd] min-h-screen pb-32">
-                {/* Header */}
-                <div className="bg-white px-6 py-4 border-b border-slate-100 flex items-center gap-4 sticky top-0 z-40 h-20">
+            <div className="bg-[#fcfdff] min-h-screen">
+                {/* Mobile Header (Hidden on Desktop) */}
+                <div className="lg:hidden bg-white px-6 py-4 border-b border-slate-100 flex items-center gap-4 sticky top-0 z-40">
                     <button
                         onClick={() => navigate(-1)}
-                        className="w-12 h-12 flex items-center justify-center rounded-2xl bg-slate-50 text-slate-600 active:scale-[0.9] transition-all shadow-sm border border-slate-100"
+                        className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-600 active:scale-95 transition-all"
                     >
-                        <ArrowLeft size={24} />
+                        <ArrowLeft size={20} />
                     </button>
-                    <h1 className="text-2xl font-black text-slate-900 tracking-tight italic uppercase">KK Financials</h1>
+                    <h1 className="text-lg font-bold text-slate-900 tracking-tight">KrishiKart Wallet</h1>
                 </div>
 
-                <div className="p-6 space-y-6">
-                    {/* Wallet Card */}
-                    <motion.div
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        className="bg-slate-900 rounded-[40px] p-8 text-white relative overflow-hidden shadow-2xl shadow-green-900/20"
-                    >
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full -mr-32 -mt-32 blur-3xl opacity-50" />
-                        <div className="relative z-10">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-2 italic">Available Balance</p>
-                                    <h2 className="text-5xl font-black tracking-tighter flex items-baseline gap-1">
-                                        <span className="text-2xl text-slate-400 font-bold">₹</span>
-                                        {balance.toLocaleString()}
-                                    </h2>
+                <div className="max-w-6xl mx-auto px-6 py-8 pb-32">
+                    {/* Desktop Page Title */}
+                    <h1 className="hidden lg:block text-2xl font-bold text-slate-900 mb-8 font-sans">KrishiKart Wallet</h1>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                        {/* Main Content Area */}
+                        <div className="lg:col-span-2 space-y-8">
+                            {/* Balance Card - The Big One */}
+                            <div className="bg-[#eff6ff] rounded-2xl p-8 flex items-center justify-between border border-blue-100 relative overflow-hidden group shadow-sm">
+                                <div className="absolute top-0 right-0 w-48 h-48 bg-white/40 rounded-full -mr-24 -mt-24 blur-3xl opacity-50" />
+                                <div className="flex items-center gap-8 relative z-10">
+                                    <div className="w-20 h-20 bg-white rounded-2xl shadow-sm border border-blue-50 flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
+                                        <Wallet size={40} className="text-[#3b82f6]" strokeWidth={1.5} />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <h2 className="text-5xl font-bold text-[#1e40af] tracking-tight tabular-nums">
+                                            ₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                        </h2>
+                                        <p className="text-[11px] font-black text-[#60a5fa] uppercase tracking-[0.15em] ml-1">Your Credit Balance</p>
+                                    </div>
                                 </div>
-                                <div className="p-3 bg-white/5 rounded-2xl border border-white/10">
-                                    <Wallet size={24} className="text-primary" />
+
+                                {/* Loyalty Points Bubble */}
+                                <div className="hidden md:flex flex-col items-end gap-1 px-4 py-2 bg-white/60 backdrop-blur-sm rounded-xl border border-blue-50 relative z-10 shadow-sm">
+                                    <div className="flex items-center gap-2 text-primary">
+                                        <Star size={14} className="fill-primary" />
+                                        <span className="text-sm font-bold tabular-nums">{loyaltyPoints}</span>
+                                    </div>
+                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">KK Points</span>
                                 </div>
                             </div>
-                            <div className="mt-10 flex gap-4">
-                                <Button
-                                    onClick={() => setIsAddModalOpen(true)}
-                                    className="flex-1 h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase text-xs tracking-widest gap-2 shadow-lg shadow-green-900/20"
-                                >
-                                    <Plus size={18} /> Add Money
-                                </Button>
-                            </div>
-                        </div>
-                    </motion.div>
 
-                    {/* Credit Section */}
-                    <motion.div
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.1 }}
-                        className="bg-white rounded-[40px] p-8 border border-slate-100 shadow-sm overflow-hidden relative"
-                    >
-                        <div className="flex justify-between items-center mb-6">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center">
-                                    <CreditCard size={20} />
+                            {/* Statement Banner */}
+                            <motion.div
+                                whileHover={{ scale: 1.005 }}
+                                className="bg-[#3b82f6] rounded-2xl p-6 text-white flex items-center justify-between shadow-lg shadow-blue-500/10 cursor-pointer relative overflow-hidden group"
+                            >
+                                <div className="flex items-center gap-4 relative z-10">
+                                    <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-md">
+                                        <FileText size={24} />
+                                    </div>
+                                    <div className="space-y-0.5">
+                                        <h3 className="text-xl font-bold tracking-tight">Get your wallet account statement</h3>
+                                        <p className="text-xs text-blue-100 font-medium opacity-80">for a specific time period</p>
+                                    </div>
                                 </div>
-                                <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight italic">Business Credit</h3>
-                            </div>
-                            <span className="text-[10px] font-black bg-orange-100 text-orange-600 px-3 py-1 rounded-full uppercase tracking-widest">Active</span>
-                        </div>
-
-                        <div className="flex justify-between items-end mb-4">
-                            <div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 leading-none">Credit Limit</p>
-                                <p className="text-3xl font-black text-slate-900 tracking-tight">₹{creditLimit.toLocaleString()}</p>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 leading-none">Available</p>
-                                <p className="text-xl font-black text-primary tracking-tight">₹{creditAvailable.toLocaleString()}</p>
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <div className="w-full h-3 bg-slate-50 rounded-full overflow-hidden">
-                                <motion.div
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${creditProgress}%` }}
-                                    className="h-full bg-orange-500 rounded-full"
-                                />
-                            </div>
-                            <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                <span>Utilized: ₹{creditUsed.toLocaleString()}</span>
-                                <span>{Math.round(creditProgress)}%</span>
-                            </div>
-                        </div>
-
-                        {/* Credit Note */}
-                        <div className="mt-8 p-6 rounded-3xl bg-amber-50 border border-amber-100 flex gap-4">
-                            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-sm">
-                                <Info size={20} className="text-amber-500" />
-                            </div>
-                            <div className="space-y-1">
-                                <p className="text-xs font-black text-amber-900 uppercase tracking-tight italic">Payment Policy Note</p>
-                                <p className="text-[11px] font-bold text-amber-800/80 leading-relaxed uppercase tracking-wider">
-                                    Once your credit period is due, please order normally using cash or wallet payments to avoid service disruption.
-                                </p>
-                            </div>
-                        </div>
-                    </motion.div>
-
-                    {/* Transaction History */}
-                    <div>
-                        <div className="flex items-center justify-between mb-6 px-2">
-                            <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Recent Activity</h3>
-                            <button className="text-primary text-[10px] font-black uppercase">View History</button>
-                        </div>
-                        <div className="space-y-3">
-                            {transactions.map((txn, idx) => (
-                                <motion.div
-                                    key={txn.id}
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: idx * 0.1 }}
-                                    className="bg-white p-5 rounded-[28px] border border-slate-100 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow"
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <div className={cn(
-                                            "w-12 h-12 rounded-2xl flex items-center justify-center",
-                                            txn.type === 'Added' ? "bg-emerald-50 text-emerald-500" : "bg-orange-50 text-orange-500"
-                                        )}>
-                                            {txn.type === 'Added' ? <ArrowDownLeft size={22} /> : <ArrowUpRight size={22} />}
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-black text-slate-900">{txn.type === 'Added' ? 'Funds Top-up' : 'Order Payment'}</p>
-                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{txn.date}</p>
+                                <div className="relative z-10 hidden sm:block">
+                                    <div className="bg-white/10 p-4 rounded-xl backdrop-blur-md border border-white/20 rotate-12 group-hover:rotate-0 transition-all duration-500">
+                                        <div className="w-10 h-10 bg-white rounded-lg flex flex-col items-center justify-center gap-1 shadow-sm">
+                                            <div className="w-6 h-0.5 bg-blue-100 rounded" />
+                                            <div className="w-4 h-0.5 bg-blue-100 rounded" />
+                                            <div className="w-5 h-0.5 bg-blue-50 rounded" />
                                         </div>
                                     </div>
-                                    <div className="text-right">
-                                        <p className={cn(
-                                            "text-base font-black tracking-tight",
-                                            txn.type === 'Added' ? "text-emerald-600" : "text-slate-900"
-                                        )}>
-                                            {txn.type === 'Added' ? '+' : '-'}₹{txn.amount.toLocaleString()}
-                                        </p>
-                                        <span className="text-[9px] font-black bg-slate-50 px-2 py-0.5 rounded text-slate-400 uppercase tracking-[0.1em]">{txn.status}</span>
+                                </div>
+                            </motion.div>
+
+                            {/* Credit History Section */}
+                            <div className="space-y-6">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-lg font-bold text-slate-800 tracking-tight">Credit History</h3>
+                                    {isProcessing && <p className="text-[10px] font-bold text-blue-500 uppercase animate-pulse">Updating Transactions...</p>}
+                                </div>
+
+                                {/* Filters Tags */}
+                                <div className="flex flex-wrap gap-2 py-1">
+                                    {filters.map((filter) => (
+                                        <button
+                                            key={filter}
+                                            onClick={() => setActiveFilter(filter)}
+                                            className={cn(
+                                                "px-4 py-1.5 rounded-lg text-xs font-bold transition-all border",
+                                                activeFilter === filter
+                                                    ? "bg-[#e2f1f1] text-[#2d7d7d] border-[#2d7d7d]/20"
+                                                    : "bg-white text-slate-500 border-transparent hover:border-slate-200"
+                                            )}
+                                        >
+                                            {filter}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Transactions List */}
+                                <div className="space-y-3 pt-2">
+                                    {filteredTransactions.length > 0 ? (
+                                        filteredTransactions.map((txn) => (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 5 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                key={txn.id}
+                                                className="bg-white p-4 rounded-xl border border-slate-100 flex items-center justify-between group hover:border-blue-100 transition-colors shadow-sm"
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <div className={cn(
+                                                        "w-10 h-10 rounded-lg flex items-center justify-center transition-colors shadow-sm",
+                                                        txn.type === 'Added' ? "bg-emerald-50 text-emerald-500" :
+                                                            txn.type === 'Loyalty Bonus' ? "bg-blue-50 text-blue-500" :
+                                                                "bg-[#fef2f2] text-red-500"
+                                                    )}>
+                                                        {txn.type === 'Added' ? <RefreshCcw size={18} /> :
+                                                            txn.type === 'Loyalty Bonus' ? <Star size={18} className="fill-current" /> :
+                                                                <Clock size={18} />}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-bold text-slate-900 leading-none mb-1">
+                                                            {txn.type === 'Added' ? 'Recharge' :
+                                                                txn.type === 'Loyalty Bonus' ? 'Loyalty Bonus' :
+                                                                    'Debit Payment'}
+                                                        </p>
+                                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{txn.date} • {txn.id}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right space-y-0.5">
+                                                    <p className={cn(
+                                                        "text-base font-bold tracking-tight tabular-nums",
+                                                        txn.type === 'Added' ? "text-emerald-600" :
+                                                            txn.type === 'Loyalty Bonus' ? "text-blue-600" :
+                                                                "text-slate-900"
+                                                    )}>
+                                                        {txn.type === 'Added' || txn.type === 'Loyalty Bonus' ? '+' : '-'}
+                                                        {txn.type === 'Loyalty Bonus' ? '' : '₹'}
+                                                        {txn.amount.toLocaleString('en-IN')}
+                                                        {txn.type === 'Loyalty Bonus' ? ' Pts' : ''}
+                                                    </p>
+                                                    <div className="flex items-center justify-end gap-1">
+                                                        <div className={cn("w-1.5 h-1.5 rounded-full", txn.status === 'Success' ? "bg-emerald-500" : "bg-amber-400")} />
+                                                        <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest leading-none">{txn.status}</span>
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                        ))
+                                    ) : (
+                                        <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-100 italic text-slate-400 text-sm font-bold">
+                                            No transaction found for "{activeFilter}"
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Sidebar */}
+                        <div className="space-y-6">
+                            {/* Add Money Card */}
+                            <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-6 sticky top-28">
+                                <div className="space-y-1">
+                                    <h3 className="text-base font-bold text-slate-800">Add money</h3>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Instant Recharge via UPI/Nexus</p>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="relative group">
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 font-bold">₹</span>
+                                        <Input
+                                            type="number"
+                                            placeholder="Enter amount"
+                                            className="h-12 pl-8 bg-slate-50/50 border-slate-100 focus:bg-white transition-all text-sm font-bold placeholder:text-slate-300 rounded-xl"
+                                            value={amountToAdd}
+                                            onChange={(e) => setAmountToAdd(e.target.value)}
+                                        />
                                     </div>
-                                </motion.div>
-                            ))}
+
+                                    <Button
+                                        onClick={() => handleAddMoney()}
+                                        disabled={!amountToAdd || isProcessing}
+                                        className={cn(
+                                            "w-full h-12 bg-[#d1d5db] text-[#4b5563] font-bold tracking-tight rounded-xl hover:bg-slate-300 transition-all",
+                                            amountToAdd && "bg-slate-900 text-white hover:bg-slate-800 shadow-lg shadow-slate-200 active:scale-[0.98]"
+                                        )}
+                                    >
+                                        {isProcessing ? (
+                                            <RefreshCcw className="animate-spin mr-2" size={16} />
+                                        ) : "Add"}
+                                    </Button>
+
+                                    <div className="grid grid-cols-1 gap-2 pt-2">
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Quick Recharge</p>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {quickAddAmounts.map((amt) => (
+                                                <button
+                                                    key={amt}
+                                                    onClick={() => handleAddMoney(amt)}
+                                                    className="py-2.5 border border-slate-100 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-200 transition-all active:scale-95 flex flex-col items-center justify-center gap-0.5"
+                                                >
+                                                    <span className="leading-none text-[10px]">+₹{amt.toLocaleString('en-IN')}</span>
+                                                    {amt === 2000 && <span className="text-[7px] text-[#3b82f6] font-black uppercase tracking-tighter">Popular</span>}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="pt-4 mt-4 border-t border-slate-50">
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-1 pr-4">
+                                            <h3 className="text-sm font-bold text-slate-800">Refund to KrishiKart wallet</h3>
+                                            <p className="text-[9px] font-bold text-slate-400 leading-tight">Enable this to get instant refunds to KrishiKart wallet</p>
+                                        </div>
+                                        <Switch
+                                            checked={refundToWallet}
+                                            onCheckedChange={setRefundToWallet}
+                                            className="data-[state=checked]:bg-[#3b82f6]"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Promotional/Nexus Card */}
+                            <div className="bg-gradient-to-br from-[#1e40af] to-[#3b82f6] rounded-2xl p-6 text-white overflow-hidden relative group shadow-lg shadow-blue-500/10">
+                                <Zap className="absolute top-4 right-4 text-white/10 group-hover:scale-125 transition-transform duration-700" size={60} strokeWidth={1} />
+                                <div className="relative z-10 space-y-4">
+                                    <div className="bg-white/20 inline-block px-2 py-1 rounded text-[9px] font-black uppercase tracking-widest backdrop-blur-sm">Nexus Exclusive</div>
+                                    <h4 className="text-lg font-bold leading-tight tracking-tight italic uppercase">Unlock High-Yield Benefits</h4>
+                                    <p className="text-[10px] text-white/90 font-medium leading-relaxed">Boost your loyalty multiplier x1.5 with monthly KK Wallet top-ups over ₹10k.</p>
+                                    <button className="text-[10px] font-black uppercase tracking-widest bg-white text-blue-600 px-4 py-2.5 rounded-xl shadow-sm hover:bg-slate-50 transition-colors w-full">Learn More</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Add Money Modal (Simulated Razorpay) */}
+                {/* Success Notification Toast */}
                 <AnimatePresence>
-                    {isAddModalOpen && (
-                        <div className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-10 bg-slate-900/60 backdrop-blur-sm">
-                            <motion.div
-                                initial={{ y: 200, opacity: 0 }}
-                                animate={{ y: 0, opacity: 1 }}
-                                exit={{ y: 200, opacity: 0 }}
-                                className="bg-white w-full max-w-sm rounded-[48px] p-8 shadow-2xl relative"
-                            >
-                                {showSuccess ? (
-                                    <div className="text-center py-10">
-                                        <motion.div
-                                            initial={{ scale: 0 }}
-                                            animate={{ scale: 1 }}
-                                            className="w-20 h-20 bg-primary rounded-full flex items-center justify-center text-white mx-auto mb-6 shadow-xl shadow-green-100"
-                                        >
-                                            <CheckCircle2 size={40} />
-                                        </motion.div>
-                                        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Money Added!</h2>
-                                        <p className="text-sm text-slate-400 font-medium mt-2">₹{amountToAdd} added to your KK Wallet.</p>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <div className="flex justify-between items-center mb-8">
-                                            <h2 className="text-xl font-black text-slate-900">Add Money</h2>
-                                            <button onClick={() => setIsAddModalOpen(false)} className="text-slate-300">
-                                                <ChevronRight className="rotate-90" />
-                                            </button>
-                                        </div>
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 px-2">Enter Amount (₹)</p>
-                                        <div className="relative mb-8">
-                                            <span className="absolute left-6 top-1/2 -translate-y-1/2 text-3xl font-black text-slate-300">₹</span>
-                                            <input
-                                                autoFocus
-                                                type="number"
-                                                value={amountToAdd}
-                                                onChange={(e) => setAmountToAdd(e.target.value)}
-                                                className="w-full h-20 bg-slate-50 rounded-3xl border-none pl-12 pr-6 text-3xl font-black text-slate-900 outline-none focus:ring-4 focus:ring-primary/10 transition-all"
-                                                placeholder="0.00"
-                                            />
-                                        </div>
-                                        <div className="space-y-4">
-                                            <div className="bg-slate-50 p-4 rounded-2xl flex items-center justify-between border border-slate-100 mb-6">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 border border-slate-100">
-                                                        <CreditCard size={20} />
-                                                    </div>
-                                                    <span className="text-xs font-bold text-slate-700">Powered by Razorpay</span>
-                                                </div>
-                                                <BadgeCheck size={16} className="text-blue-500" />
-                                            </div>
-                                            <Button
-                                                disabled={isProcessing || !amountToAdd}
-                                                onClick={handleAddMoney}
-                                                className="w-full h-18 rounded-3xl bg-primary hover:bg-primary/90 text-xl font-black shadow-lg shadow-green-100 disabled:opacity-50"
-                                            >
-                                                {isProcessing ? "Processing..." : `Pay ₹${amountToAdd || '0'}`}
-                                            </Button>
-                                        </div>
-                                    </>
-                                )}
-                            </motion.div>
-                        </div>
+                    {showSuccess && (
+                        <motion.div
+                            initial={{ y: 50, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 50, opacity: 0 }}
+                            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-slate-900 py-4 px-8 rounded-2xl shadow-2xl flex items-center gap-4 border border-white/10"
+                        >
+                            <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white">
+                                <CheckCircle2 size={16} />
+                            </div>
+                            <span className="text-white text-sm font-bold tracking-tight">Recharge successful! Funds added to your wallet.</span>
+                        </motion.div>
                     )}
                 </AnimatePresence>
             </div>
         </PageTransition>
-    )
-}
-
-function BadgeCheck({ size, className }) {
-    return (
-        <svg
-            width={size}
-            height={size}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={className}
-        >
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor" />
-        </svg>
     )
 }

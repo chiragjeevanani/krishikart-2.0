@@ -2,26 +2,16 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Shield,
-    Bell,
-    Lock,
-    Zap,
-    Server,
-    Save,
-    UserCircle,
-    Mail,
-    Phone,
-    Key,
+    ShieldCheck,
     Home,
     ChevronRight,
-    Settings,
-    Database,
-    Cpu,
-    Webhook,
+    Save,
     User,
     ChevronDown,
     Activity,
-    ShieldCheck
+    UserCircle,
+    Mail,
+    Phone,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import api from '@/lib/axios';
@@ -60,10 +50,6 @@ export default function SettingsScreen() {
 
     const sections = [
         { id: 'profile', label: 'Identity Protocol', icon: User },
-        { id: 'security', label: 'Access Hardening', icon: Shield },
-        { id: 'platform', label: 'Platform Engine', icon: Cpu },
-        { id: 'notifications', label: 'Signal Rules', icon: Bell },
-        { id: 'api', label: 'API & Telemetry', icon: Webhook },
     ];
 
     if (isLoading) {
@@ -188,38 +174,7 @@ export default function SettingsScreen() {
                                         </motion.div>
                                     )}
 
-                                    {activeSection === 'security' && (
-                                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                                            <SecurityProtocolItem
-                                                title="Master Key Rotation"
-                                                desc="Force global re-authentication and key cycle."
-                                                action="Execute Cycle"
-                                                icon={Key}
-                                            />
-                                            <SecurityProtocolItem
-                                                title="Multi-Factor Uplink"
-                                                desc="Synchronous biometric or token-based verification."
-                                                active
-                                                icon={Lock}
-                                            />
-                                            <SecurityProtocolItem
-                                                title="Session Heartbeat"
-                                                desc="Automatic termination after 15m of system inactivity."
-                                                active
-                                                icon={Clock}
-                                            />
-                                        </motion.div>
-                                    )}
 
-                                    {(activeSection === 'platform' || activeSection === 'notifications' || activeSection === 'api') && (
-                                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-20 flex flex-col items-center text-center">
-                                            <div className="w-12 h-12 bg-slate-50 border border-slate-200 rounded-sm flex items-center justify-center text-slate-300 mb-6">
-                                                <Database size={24} />
-                                            </div>
-                                            <h3 className="text-xs font-black text-slate-900 uppercase tracking-[0.2em]">Maintenance Cycle in Progress</h3>
-                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2 max-w-xs">High-level parameters for {activeSection} are currently locked for database synchronization.</p>
-                                        </motion.div>
-                                    )}
                                 </AnimatePresence>
                             </div>
 
@@ -261,42 +216,4 @@ function SettingsField({ label, value, isVerified }) {
     );
 }
 
-function SecurityProtocolItem({ title, desc, action, active, icon: Icon }) {
-    return (
-        <div className="flex items-center justify-between p-5 bg-white border border-slate-200 rounded-sm hover:bg-slate-50/50 transition-all group">
-            <div className="flex items-center gap-5">
-                <div className={cn(
-                    "w-10 h-10 rounded-sm flex items-center justify-center border transition-colors",
-                    active ? "bg-emerald-50 border-emerald-100 text-emerald-600" : "bg-slate-50 border-slate-100 text-slate-400 group-hover:bg-slate-900 group-hover:text-white group-hover:border-slate-900"
-                )}>
-                    {Icon && <Icon size={18} />}
-                </div>
-                <div>
-                    <h4 className="text-xs font-black text-slate-900 uppercase tracking-tight">{title}</h4>
-                    <p className="text-[10px] font-medium text-slate-500 mt-0.5">{desc}</p>
-                </div>
-            </div>
-            {action ? (
-                <button className="px-4 py-2 bg-white border border-slate-900 text-slate-900 text-[9px] font-black uppercase tracking-widest rounded-sm hover:bg-slate-900 hover:text-white transition-all">
-                    {action}
-                </button>
-            ) : (
-                <div className={cn(
-                    "w-10 h-5 rounded-full relative flex items-center transition-colors px-1 cursor-pointer",
-                    active ? "bg-slate-900" : "bg-slate-200"
-                )}>
-                    <div className={cn(
-                        "w-3 h-3 bg-white rounded-full transition-all shadow-sm",
-                        active ? "ml-auto" : "ml-0"
-                    )} />
-                </div>
-            )}
-        </div>
-    );
-}
 
-function Clock({ size }) {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-    );
-}

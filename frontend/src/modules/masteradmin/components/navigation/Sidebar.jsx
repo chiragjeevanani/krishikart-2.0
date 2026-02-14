@@ -15,10 +15,6 @@ import {
     ShieldCheck,
     UserCheck,
     UserCircle,
-    Shield,
-    Zap,
-    Bell,
-    Server,
     CreditCard,
     BookOpen,
     Percent,
@@ -98,10 +94,6 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                     path: '/masteradmin/settings',
                     submenu: [
                         { label: 'Admin Profile', path: '/masteradmin/settings?section=profile', icon: UserCircle },
-                        { label: 'Security Protocols', path: '/masteradmin/settings?section=security', icon: Shield },
-                        { label: 'Platform Config', path: '/masteradmin/settings?section=platform', icon: Zap },
-                        { label: 'Alert Center', path: '/masteradmin/settings?section=notifications', icon: Bell },
-                        { label: 'API & Webhooks', path: '/masteradmin/settings?section=api', icon: Server }
                     ]
                 }
             ]
