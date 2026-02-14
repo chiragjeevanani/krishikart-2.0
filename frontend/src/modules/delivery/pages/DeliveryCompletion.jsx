@@ -12,14 +12,19 @@ import {
 import { activeDelivery } from '../utils/mockData';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../utils/constants';
+import { useWallet } from '../../user/contexts/WalletContext';
 
 const DeliveryCompletion = () => {
     const [photo, setPhoto] = useState(null);
     const [signed, setSigned] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const navigate = useNavigate();
+    const { addLoyaltyPoints } = useWallet();
 
     const handleComplete = () => {
+        // Award 10 loyalty points for successful delivery
+        addLoyaltyPoints(10);
+
         setIsSuccess(true);
         setTimeout(() => {
             navigate(ROUTES.DASHBOARD);

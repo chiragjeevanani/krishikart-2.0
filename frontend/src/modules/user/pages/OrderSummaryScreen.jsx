@@ -37,6 +37,13 @@ export default function OrderSummaryScreen() {
                             <h2 className="text-2xl font-black text-slate-900 italic uppercase">Order {order.status}</h2>
                             <p className="text-sm text-slate-400 font-bold uppercase tracking-widest mt-1 italic">{order.date}</p>
 
+                            {order.status === 'Delivered' && (
+                                <div className="mt-4 flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-2xl border border-blue-100 w-fit mx-auto">
+                                    <Star size={16} className="fill-blue-500" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest">+10 KK Points Earned</span>
+                                </div>
+                            )}
+
                             <div className="grid grid-cols-2 gap-4 mt-8 pt-8 border-t border-slate-50">
                                 <Button variant="outline" className="h-14 rounded-2xl border-slate-100 font-black text-xs uppercase tracking-widest gap-2">
                                     <RotateCcw size={16} /> Reorder
