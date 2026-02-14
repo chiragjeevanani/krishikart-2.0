@@ -10,6 +10,21 @@ const masterAdminSchema = new mongoose.Schema(
       match: [/^\S+@\S+\.\S+$/, "Invalid email"],
     },
 
+    fullName: {
+      type: String,
+      default: "KrishiKart Global Root",
+    },
+
+    mobile: {
+      type: String,
+      default: "+91 80000 00001",
+    },
+
+    operationalZone: {
+      type: String,
+      default: "ASIA-SOUTH-IND-01",
+    },
+
     password: {
       type: String,
       required: true,

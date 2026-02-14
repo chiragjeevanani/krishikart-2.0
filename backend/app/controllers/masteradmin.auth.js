@@ -10,9 +10,9 @@ const generateToken = (id) =>
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN }
   );
-  export const createMasterAdmin = async (req, res) => {
+export const createMasterAdmin = async (req, res) => {
   try {
-    const { email, password, secretKey } = req.body;
+    const { email, password, secretKey, fullName, mobile, operationalZone } = req.body;
 
     /* 🔐 SECURITY CHECK */
     if (secretKey !== process.env.MASTERADMIN_SECRET) {
@@ -28,7 +28,10 @@ const generateToken = (id) =>
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const admin = await MasterAdmin.create({
+      fullName: fullName || "KrishiKart Global Root",
       email,
+      mobile: mobile || "+91 80000 00001",
+      operationalZone: operationalZone || "ASIA-SOUTH-IND-01",
       password: hashedPassword,
       role: "masteradmin",
       status: "active",
@@ -78,6 +81,57 @@ export const loginMasterAdmin = async (req, res) => {
 /* ================= GET ME ================= */
 export const getMasterAdminMe = async (req, res) => {
   return handleResponse(res, 200, "MasterAdmin profile", req.masteradmin);
+};
+
+/* ================= UPDATE PROFILE ================= */
+export const updateMasterAdminProfile = async (req, res) => {
+  try {
+    const { fullName, email, mobile, operationalZone, password } = req.body;
+
+    const admin = await MasterAdmin.findById(req.masteradmin._id);
+    if (!admin) return handleResponse(res, 404, "MasterAdmin not found");
+
+    if (fullName) admin.fullName = fullName;
+    if (email) admin.email = email;
+    if (mobile) admin.mobile = mobile;
+    if (operationalZone) admin.operationalZone = operationalZone;
+
+    if (password) {
+      admin.password = await bcrypt.hash(password, 10);
+    }
+
+    await admin.save();
+
+    return handleResponse(res, 200, "Profile updated successfully", admin);
+  } catch (err) {
+    console.error("Update Error:", err);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+/* ================= CHANGE PASSWORD ================= */
+export const changeMasterAdminPassword = async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+
+    if (!oldPassword || !newPassword) {
+      return handleResponse(res, 400, "Old and new password required");
+    }
+
+    const admin = await MasterAdmin.findById(req.masteradmin._id);
+    if (!admin) return handleResponse(res, 404, "MasterAdmin not found");
+
+    const match = await bcrypt.compare(oldPassword, admin.password);
+    if (!match) return handleResponse(res, 400, "Incorrect old password");
+
+    admin.password = await bcrypt.hash(newPassword, 10);
+    await admin.save();
+
+    return handleResponse(res, 200, "Password changed successfully");
+  } catch (err) {
+    console.error("Change Password Error:", err);
+    return handleResponse(res, 500, "Server error");
+  }
 };
 
 /* ================= FORGOT PASSWORD ================= */
