@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, User, ArrowRight, ShieldCheck, KeyRound, Globe, Cpu, Zap, ChevronRight, Home, Command, Smartphone } from 'lucide-react';
+import { Lock, User, ArrowRight, ShieldCheck, KeyRound, Globe, Cpu, Zap, ChevronRight, Home, Command, Smartphone, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useFranchiseAuth } from '../contexts/FranchiseAuthContext';
@@ -10,7 +10,7 @@ import api from '../../../lib/axios';
 
 export default function LoginScreen() {
     const navigate = useNavigate();
-    const { login } = useFranchiseAuth();
+    const { loginSuccess } = useFranchiseAuth();
     const [mobile, setMobile] = useState('');
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [isLoading, setIsLoading] = useState(false);
@@ -64,11 +64,13 @@ export default function LoginScreen() {
             const response = await api.post('/franchise/verify-otp', { mobile, otp: otpValue });
             // The context login function might need updating or we handle storage manually here to match other modules
             // Assuming context handles state update if we pass data, but let's do manual storage for consistency
-            localStorage.setItem('franchiseToken', response.data.token);
-            localStorage.setItem('franchiseData', JSON.stringify(response.data));
+            localStorage.setItem('franchiseToken', response.data.result.token);
+            localStorage.setItem('franchiseData', JSON.stringify(response.data.result));
 
             // If context has a login method that updates state, ideally use it. 
-            // For now, manual storage + navigation works.
+            // Manual storage done above, now update context state
+            loginSuccess(response.data.result);
+
             navigate('/franchise/dashboard');
         } catch (error) {
             console.error(error);

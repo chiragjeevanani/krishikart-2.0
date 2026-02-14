@@ -4,6 +4,8 @@ import {
   verifyFranchiseOTP,
   getFranchiseMe,
   sendFranchiseOTP,
+  updateFranchiseProfile,
+  changeFranchisePassword,
 } from "../controllers/franchise.auth.js";
 
 
@@ -15,5 +17,7 @@ router.post("/register", registerFranchise);
 router.post("/send-otp", sendFranchiseOTP);
 router.post("/verify-otp", verifyFranchiseOTP);
 router.get("/me", protectFranchise, getFranchiseMe);
+router.put("/update", protectFranchise, updateFranchiseProfile);
+router.post("/change-password", protectFranchise, changeFranchisePassword);
 
 export default router;

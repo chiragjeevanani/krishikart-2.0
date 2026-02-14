@@ -16,9 +16,11 @@ api.interceptors.request.use((config) => {
         token = localStorage.getItem('masterAdminToken') || token;
     } else if (window.location.pathname.startsWith('/vendor')) {
         token = localStorage.getItem('vendorToken') || token;
+    } else if (window.location.pathname.startsWith('/franchise')) {
+        token = localStorage.getItem('franchiseToken') || token;
     } else {
         // Fallback checks
-        token = token || localStorage.getItem('vendorToken') || localStorage.getItem('masterAdminToken');
+        token = token || localStorage.getItem('vendorToken') || localStorage.getItem('masterAdminToken') || localStorage.getItem('franchiseToken');
     }
 
     if (token) {

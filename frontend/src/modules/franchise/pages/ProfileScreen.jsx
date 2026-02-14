@@ -26,25 +26,25 @@ import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 export default function ProfileScreen() {
-    const { franchise, logout, updateProfile, updatePassword } = useFranchiseAuth();
+    const { franchise, logout, updateProfile, loading: contextLoading } = useFranchiseAuth();
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(true);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
     const [isUploading, setIsUploading] = useState(false);
 
     useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 500);
-        return () => clearTimeout(timer);
-    }, []);
+        if (!contextLoading) {
+            const timer = setTimeout(() => setIsLoading(false), 500);
+            return () => clearTimeout(timer);
+        }
+    }, [contextLoading]);
 
     const sections = [
         {
             group: 'Account Information',
             items: [
-                { id: 'details', label: 'Personal Details', icon: User, sub: 'View and edit your profile', onClick: () => setIsEditModalOpen(true) },
-                { id: 'security', label: 'Change Password', icon: Lock, sub: 'Update your security credentials', onClick: () => setIsPasswordModalOpen(true) }
+                { id: 'details', label: 'Personal Details', icon: User, sub: 'View and edit your profile', onClick: () => setIsEditModalOpen(true) }
             ]
         },
         {
@@ -134,13 +134,13 @@ export default function ProfileScreen() {
                 <div className="relative z-10 text-center md:text-left">
                     <div className="flex flex-col gap-1">
                         <div className="flex items-center justify-center md:justify-start gap-3">
-                            <h2 className="text-2xl font-black text-white tracking-tighter uppercase">{franchise?.name || 'Franchise Node'}</h2>
+                            <h2 className="text-2xl font-black text-white tracking-tighter uppercase">{franchise?.franchiseName || 'Franchise Node'}</h2>
                             <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-black uppercase tracking-widest rounded-sm">
                                 {franchise?.isVerified ? 'Verified' : 'Pending'}
                             </span>
                         </div>
                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] flex items-center justify-center md:justify-start gap-2">
-                            Franchise ID: {franchise?.id || 'FR-0000'}
+                            Franchise ID: {franchise?._id?.slice(-6).toUpperCase() || 'FR-0000'}
                         </p>
                     </div>
 
@@ -232,13 +232,6 @@ export default function ProfileScreen() {
                         onUpdate={updateProfile}
                     />
                 )}
-                {isPasswordModalOpen && (
-                    <ChangePasswordModal
-                        isOpen={isPasswordModalOpen}
-                        onClose={() => setIsPasswordModalOpen(false)}
-                        onUpdate={updatePassword}
-                    />
-                )}
             </AnimatePresence>
         </div>
     );
@@ -246,8 +239,8 @@ export default function ProfileScreen() {
 
 const EditProfileModal = ({ isOpen, onClose, franchiseData, onUpdate }) => {
     const [formData, setFormData] = useState({
-        franchiseName: franchiseData?.name || '',
-        ownerName: franchiseData?.owner || '',
+        franchiseName: franchiseData?.franchiseName || '',
+        ownerName: franchiseData?.ownerName || '',
         email: franchiseData?.email || '',
         mobile: franchiseData?.mobile || '',
         city: franchiseData?.city || '',
@@ -258,6 +251,7 @@ const EditProfileModal = ({ isOpen, onClose, franchiseData, onUpdate }) => {
         setIsSaving(true);
         try {
             await onUpdate(formData);
+            alert("Profile updated successfully!");
             onClose();
         } catch (error) {
             console.error('Update failed', error);
@@ -284,51 +278,40 @@ const EditProfileModal = ({ isOpen, onClose, franchiseData, onUpdate }) => {
                 </div>
 
                 <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Franchise Name</label>
-                            <input
-                                value={formData.franchiseName}
-                                onChange={(e) => setFormData({ ...formData, franchiseName: e.target.value })}
-                                className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Owner Name</label>
-                            <input
-                                value={formData.ownerName}
-                                onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
-                                className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
-                            />
-                        </div>
-                    </div>
-
                     <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Shop Name</label>
                         <input
-                            value={formData.email}
-                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            value={formData.franchiseName}
+                            onChange={(e) => setFormData({ ...formData, franchiseName: e.target.value })}
+                            className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
+                        />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Owner Name</label>
+                        <input
+                            value={formData.ownerName}
+                            onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
                             className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Contact Number</label>
-                            <input
-                                value={formData.mobile}
-                                onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-                                className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">City</label>
-                            <input
-                                value={formData.city}
-                                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                                className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
-                            />
-                        </div>
+
+
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mobile Number</label>
+                        <input
+                            value={formData.mobile}
+                            onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+                            className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
+                        />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">City / Area</label>
+                        <input
+                            value={formData.city}
+                            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                            className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
+                        />
                     </div>
 
                     <button
@@ -344,99 +327,4 @@ const EditProfileModal = ({ isOpen, onClose, franchiseData, onUpdate }) => {
     );
 };
 
-const ChangePasswordModal = ({ isOpen, onClose, onUpdate }) => {
-    const [passwords, setPasswords] = useState({
-        current: '',
-        new: '',
-        confirm: ''
-    });
-    const [isSaving, setIsSaving] = useState(false);
-    const [error, setError] = useState('');
 
-    const handleSubmit = async () => {
-        if (passwords.new !== passwords.confirm) {
-            setError('Passwords do not match');
-            return;
-        }
-        if (passwords.new.length < 6) {
-            setError('Password must be at least 6 characters');
-            return;
-        }
-
-        setIsSaving(true);
-        setError('');
-        try {
-            await onUpdate(passwords.current, passwords.new);
-            onClose();
-        } catch (err) {
-            setError('Failed to update password');
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
-    if (!isOpen) return null;
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white w-full max-w-md rounded-[32px] p-8 shadow-2xl"
-            >
-                <div className="flex items-center justify-between mb-8">
-                    <h2 className="text-xl font-black text-slate-900 tracking-tight">Security</h2>
-                    <button onClick={onClose} className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center hover:bg-slate-200 transition-colors">
-                        <X size={20} />
-                    </button>
-                </div>
-
-                <div className="space-y-4">
-                    {error && <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest text-center">{error}</p>}
-
-                    <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Current Password</label>
-                        <input
-                            type="password"
-                            placeholder="••••••••"
-                            value={passwords.current}
-                            onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
-                            className="w-full h-14 px-5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all"
-                        />
-                    </div>
-
-                    <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">New Password</label>
-                        <input
-                            type="password"
-                            placeholder="••••••••"
-                            value={passwords.new}
-                            onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
-                            className="w-full h-14 px-5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all"
-                        />
-                    </div>
-
-                    <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Confirm New Password</label>
-                        <input
-                            type="password"
-                            placeholder="••••••••"
-                            value={passwords.confirm}
-                            onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
-                            className="w-full h-14 px-5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all"
-                        />
-                    </div>
-
-                    <button
-                        onClick={handleSubmit}
-                        disabled={isSaving}
-                        className="w-full h-14 bg-slate-900 text-white rounded-xl font-black text-xs uppercase tracking-[0.2em] mt-4 hover:bg-slate-800 transition-all flex items-center justify-center gap-3 disabled:bg-slate-200"
-                    >
-                        {isSaving ? <Loader2 size={18} className="animate-spin" /> : 'Update Security'}
-                    </button>
-                </div>
-            </motion.div>
-        </div>
-    );
-};

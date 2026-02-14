@@ -37,6 +37,11 @@ const franchiseSchema = new mongoose.Schema(
       default: null
     },
 
+    password: {
+      type: String,
+      select: false,
+    },
+
     otp: String,
     otpExpiresAt: Date,
     otpAttempts: { type: Number, default: 0 },

@@ -1,6 +1,7 @@
 import Franchise from "../models/franchise.js";
 import handleResponse from "../utils/helper.js";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 
 /* 🔐 TOKEN */
 const generateToken = (id) =>
@@ -100,11 +101,12 @@ export const verifyFranchiseOTP = async (req, res) => {
 
             const token = generateToken(franchise._id);
 
+            const franchiseObj = franchise.toObject();
+            delete franchiseObj.password;
+
             return handleResponse(res, 200, "Login successful (DEV MODE)", {
-                token,
-                id: franchise._id,
-                mobile: franchise.mobile,
-                role: "franchise",
+                ...franchiseObj,
+                token
             });
         }
 
@@ -141,11 +143,13 @@ export const verifyFranchiseOTP = async (req, res) => {
 
         const token = generateToken(franchise._id);
 
+        const franchiseObj = franchise.toObject();
+        delete franchiseObj.password;
+        delete franchiseObj.otp;
+
         return handleResponse(res, 200, "Login successful", {
+            ...franchiseObj,
             token,
-            id: franchise._id,
-            mobile: franchise.mobile,
-            role: "franchise",
         });
     } catch (err) {
         console.error(err);
@@ -156,4 +160,62 @@ export const verifyFranchiseOTP = async (req, res) => {
 /* ================= GET ME ================= */
 export const getFranchiseMe = async (req, res) => {
     return handleResponse(res, 200, "Franchise profile", req.franchise);
+};
+
+/* ================= UPDATE PROFILE ================= */
+export const updateFranchiseProfile = async (req, res) => {
+    try {
+        const { franchiseName, ownerName, mobile, city } = req.body;
+        const franchiseId = req.franchise._id;
+
+        const franchise = await Franchise.findById(franchiseId);
+        if (!franchise) return handleResponse(res, 404, "Franchise not found");
+
+        if (mobile && mobile !== franchise.mobile) {
+            const existing = await Franchise.findOne({ mobile });
+            if (existing) return handleResponse(res, 409, "Mobile number already in use");
+            franchise.mobile = mobile;
+        }
+
+        if (franchiseName) franchise.franchiseName = franchiseName;
+        if (ownerName) franchise.ownerName = ownerName;
+        if (city) franchise.city = city;
+
+        await franchise.save();
+
+        return handleResponse(res, 200, "Profile updated successfully", franchise);
+    } catch (err) {
+        console.error(err);
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
+/* ================= CHANGE PASSWORD ================= */
+export const changeFranchisePassword = async (req, res) => {
+    try {
+        const { oldPassword, newPassword } = req.body;
+        const franchiseId = req.franchise._id;
+
+        if (!newPassword) return handleResponse(res, 400, "New password is required");
+
+        const franchise = await Franchise.findById(franchiseId).select("+password");
+        if (!franchise) return handleResponse(res, 404, "Franchise not found");
+
+        // If password exists, verify old password
+        if (franchise.password) {
+            if (!oldPassword) return handleResponse(res, 400, "Old password is required");
+            const isMatch = await bcrypt.compare(oldPassword, franchise.password);
+            if (!isMatch) return handleResponse(res, 401, "Incorrect old password");
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        franchise.password = await bcrypt.hash(newPassword, salt);
+
+        await franchise.save();
+
+        return handleResponse(res, 200, "Password updated successfully");
+    } catch (err) {
+        console.error(err);
+        return handleResponse(res, 500, "Server error");
+    }
 };

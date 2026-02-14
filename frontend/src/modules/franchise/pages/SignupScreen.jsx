@@ -4,14 +4,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     User, ArrowRight, ShieldCheck,
     Cpu, Zap, Home, Command,
-    Smartphone, MapPin, Building2, Mail, ChevronRight
+    Smartphone, MapPin, Building2, Mail, ChevronRight, Loader2
 } from 'lucide-react';
 import { useFranchiseAuth } from '../contexts/FranchiseAuthContext';
 import api from '../../../lib/axios';
 
 export default function SignupScreen() {
     const navigate = useNavigate();
-    const { login } = useFranchiseAuth();
+    const { loginSuccess } = useFranchiseAuth();
 
     // Form States
     const [formData, setFormData] = useState({
@@ -81,8 +81,10 @@ export default function SignupScreen() {
         try {
             const response = await api.post('/franchise/verify-otp', { mobile: formData.mobile, otp: otpValue });
 
-            localStorage.setItem('franchiseToken', response.data.token);
-            localStorage.setItem('franchiseData', JSON.stringify(response.data));
+            localStorage.setItem('franchiseToken', response.data.result.token);
+            localStorage.setItem('franchiseData', JSON.stringify(response.data.result));
+
+            loginSuccess(response.data.result);
 
             navigate('/franchise/dashboard');
         } catch (error) {

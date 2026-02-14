@@ -23,17 +23,72 @@ export default function SettingsScreen() {
     const [activeSection, setActiveSection] = useState('profile');
     const [adminData, setAdminData] = useState(null);
 
+    const [formData, setFormData] = useState({
+        fullName: '',
+        email: '',
+        mobile: '',
+        operationalZone: ''
+    });
+    const [passwordData, setPasswordData] = useState({
+        oldPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    });
+
     useEffect(() => {
         const fetchAdminProfile = async () => {
             try {
                 const { data } = await api.get('/masteradmin/me');
                 setAdminData(data.result);
+                setFormData({
+                    fullName: data.result.fullName || '',
+                    email: data.result.email || '',
+                    mobile: data.result.mobile || '',
+                    operationalZone: data.result.operationalZone || ''
+                });
             } catch (error) {
                 console.error("Failed to fetch profile", error);
             }
         };
         fetchAdminProfile();
     }, []);
+
+    const handleProfileChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handlePasswordChange = (e) => {
+        setPasswordData({ ...passwordData, [e.target.name]: e.target.value });
+    };
+
+    const handleUpdateProfile = async () => {
+        try {
+            await api.put('/masteradmin/update', formData);
+            alert("Profile Updated Successfully");
+            // Refresh data to show sync status if needed
+        } catch (error) {
+            console.error("Update failed", error);
+            alert("Failed to update profile");
+        }
+    };
+
+    const handleChangePassword = async () => {
+        if (passwordData.newPassword !== passwordData.confirmPassword) {
+            alert("New passwords do not match");
+            return;
+        }
+        try {
+            await api.post('/masteradmin/change-password', {
+                oldPassword: passwordData.oldPassword,
+                newPassword: passwordData.newPassword
+            });
+            alert("Password Changed Successfully");
+            setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
+        } catch (error) {
+            console.error("Password change failed", error);
+            alert(error.response?.data?.message || "Failed to change password");
+        }
+    };
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);
@@ -50,6 +105,7 @@ export default function SettingsScreen() {
 
     const sections = [
         { id: 'profile', label: 'Identity Protocol', icon: User },
+        { id: 'security', label: 'Change Password', icon: ShieldCheck },
     ];
 
     if (isLoading) {
@@ -150,7 +206,7 @@ export default function SettingsScreen() {
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    <h3 className="text-xl font-black text-slate-900 tracking-tight leading-none mb-1">Master Administrator</h3>
+                                                    <h3 className="text-xl font-black text-slate-900 tracking-tight leading-none mb-1">{formData.fullName || "Master Administrator"}</h3>
                                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em]">System Governance Level 10</p>
                                                     <div className="flex items-center gap-2 mt-4 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-sm border border-emerald-100 w-fit">
                                                         <ShieldCheck size={12} />
@@ -160,21 +216,83 @@ export default function SettingsScreen() {
                                             </div>
 
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                                                <SettingsField label="Core Principal" value="KrishiKart Global Root" />
-                                                <SettingsField label="Primary Signaling Email" value={adminData?.email || "governance@krishikart.io"} isVerified />
-                                                <SettingsField label="Emergency Uplink" value="+91 80000 00001" />
+                                                <SettingsField
+                                                    label="Core Principal"
+                                                    name="fullName"
+                                                    value={formData.fullName}
+                                                    onChange={handleProfileChange}
+                                                />
+                                                <SettingsField
+                                                    label="Primary Signaling Email"
+                                                    name="email"
+                                                    value={formData.email}
+                                                    onChange={handleProfileChange}
+                                                    isVerified
+                                                />
+                                                <SettingsField
+                                                    label="Emergency Uplink"
+                                                    name="mobile"
+                                                    value={formData.mobile}
+                                                    onChange={handleProfileChange}
+                                                />
                                                 <div className="space-y-2">
                                                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block ml-1">Operational Zone</label>
-                                                    <div className="flex items-center justify-between bg-slate-50 border border-slate-100 px-4 py-3 rounded-sm">
-                                                        <span className="text-xs font-bold text-slate-900 uppercase">Asia-South-IND-01</span>
-                                                        <ChevronDown size={14} className="text-slate-400" />
+                                                    <div className="relative group">
+                                                        <select
+                                                            name="operationalZone"
+                                                            value={formData.operationalZone}
+                                                            onChange={handleProfileChange}
+                                                            className="w-full bg-slate-50 border border-slate-100 rounded-sm py-3 px-4 outline-none text-xs font-bold text-slate-900 focus:border-slate-300 transition-all appearance-none cursor-pointer"
+                                                        >
+                                                            <option value="ASIA-SOUTH-IND-01">ASIA-SOUTH-IND-01</option>
+                                                            <option value="ASIA-SOUTH-IND-02">ASIA-SOUTH-IND-02</option>
+                                                            <option value="EU-WEST-01">EU-WEST-01</option>
+                                                            <option value="US-EAST-01">US-EAST-01</option>
+                                                            <option value="INDIA">INDIA</option>
+                                                        </select>
+                                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                                                            <ChevronDown size={14} className="text-slate-400" />
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </motion.div>
                                     )}
 
+                                    {activeSection === 'security' && (
+                                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-10">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                                                <div className="md:col-span-2">
+                                                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-wide mb-1">Update Credentials</h3>
+                                                    <p className="text-[10px] font-medium text-slate-500">Secure your account with a new strong password.</p>
+                                                </div>
 
+                                                <SettingsField
+                                                    label="Old Password"
+                                                    name="oldPassword"
+                                                    type="password"
+                                                    value={passwordData.oldPassword}
+                                                    onChange={handlePasswordChange}
+                                                />
+                                                <div className="hidden md:block"></div>
+
+                                                <SettingsField
+                                                    label="New Password"
+                                                    name="newPassword"
+                                                    type="password"
+                                                    value={passwordData.newPassword}
+                                                    onChange={handlePasswordChange}
+                                                />
+                                                <SettingsField
+                                                    label="Confirm Password"
+                                                    name="confirmPassword"
+                                                    type="password"
+                                                    value={passwordData.confirmPassword}
+                                                    onChange={handlePasswordChange}
+                                                />
+                                            </div>
+                                        </motion.div>
+                                    )}
                                 </AnimatePresence>
                             </div>
 
@@ -183,9 +301,12 @@ export default function SettingsScreen() {
                                     <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">Settings Synchronized // 0 SEC AGO</span>
                                 </div>
-                                <button className="bg-slate-900 text-white px-6 py-2.5 rounded-sm text-[11px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-slate-800 transition-all shadow-sm active:scale-[0.98]">
+                                <button
+                                    onClick={activeSection === 'profile' ? handleUpdateProfile : handleChangePassword}
+                                    className="bg-slate-900 text-white px-6 py-2.5 rounded-sm text-[11px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-slate-800 transition-all shadow-sm active:scale-[0.98]"
+                                >
                                     <Save size={14} />
-                                    Push Changes
+                                    {activeSection === 'profile' ? 'Push Changes' : 'Update Credentials'}
                                 </button>
                             </div>
                         </div>
@@ -196,14 +317,16 @@ export default function SettingsScreen() {
     );
 }
 
-function SettingsField({ label, value, isVerified }) {
+function SettingsField({ label, value, name, onChange, isVerified, type = "text" }) {
     return (
         <div className="space-y-2">
             <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block ml-1">{label}</label>
             <div className="relative group">
                 <input
-                    type="text"
-                    defaultValue={value}
+                    type={type}
+                    name={name}
+                    value={value}
+                    onChange={onChange}
                     className="w-full bg-slate-50 border border-slate-100 rounded-sm py-3 px-4 outline-none text-xs font-bold text-slate-900 focus:border-slate-300 transition-all font-sans"
                 />
                 {isVerified && (
