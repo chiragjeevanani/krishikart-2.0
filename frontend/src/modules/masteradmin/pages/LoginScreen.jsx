@@ -18,8 +18,8 @@ export default function LoginScreen() {
             const response = await api.post('/masteradmin/login', { email, password });
 
             // Store token and user data
-            localStorage.setItem('masterAdminToken', response.data.token);
-            localStorage.setItem('masterAdminData', JSON.stringify(response.data));
+            localStorage.setItem('masterAdminToken', response.data.result.token);
+            localStorage.setItem('masterAdminData', JSON.stringify(response.data.result));
 
             navigate('/masteradmin/dashboard');
         } catch (error) {

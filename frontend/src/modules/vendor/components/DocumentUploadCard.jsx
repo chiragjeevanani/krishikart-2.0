@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export default function DocumentUploadCard({ title, icon: Icon, status: initialStatus, fileName: initialFileName, uploadDate: initialUploadDate }) {
+export default function DocumentUploadCard({ title, icon: Icon, status: initialStatus, fileName: initialFileName, uploadDate: initialUploadDate, url }) {
     const [status, setStatus] = useState(initialStatus || 'not_uploaded');
     const [fileName, setFileName] = useState(initialFileName || null);
     const [uploadDate, setUploadDate] = useState(initialUploadDate || null);
@@ -88,7 +88,7 @@ export default function DocumentUploadCard({ title, icon: Icon, status: initialS
                             exit={{ opacity: 0, scale: 0.8 }}
                             className="flex items-center gap-2"
                         >
-                            <button className="p-2 text-slate-400 hover:text-primary transition-colors bg-slate-50 rounded-lg">
+                            <button onClick={() => url && window.open(url, '_blank')} className="p-2 text-slate-400 hover:text-primary transition-colors bg-slate-50 rounded-lg">
                                 <Eye size={14} />
                             </button>
                             <button onClick={handleRemove} className="p-2 text-slate-400 hover:text-red-500 transition-colors bg-slate-50 rounded-lg">

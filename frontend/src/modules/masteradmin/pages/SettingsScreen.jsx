@@ -24,12 +24,26 @@ import {
     ShieldCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import api from '@/lib/axios';
 
 export default function SettingsScreen() {
     const location = useLocation();
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(true);
     const [activeSection, setActiveSection] = useState('profile');
+    const [adminData, setAdminData] = useState(null);
+
+    useEffect(() => {
+        const fetchAdminProfile = async () => {
+            try {
+                const { data } = await api.get('/masteradmin/me');
+                setAdminData(data.result);
+            } catch (error) {
+                console.error("Failed to fetch profile", error);
+            }
+        };
+        fetchAdminProfile();
+    }, []);
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);
@@ -161,7 +175,7 @@ export default function SettingsScreen() {
 
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
                                                 <SettingsField label="Core Principal" value="KrishiKart Global Root" />
-                                                <SettingsField label="Primary Signaling Email" value="governance@krishikart.io" isVerified />
+                                                <SettingsField label="Primary Signaling Email" value={adminData?.email || "governance@krishikart.io"} isVerified />
                                                 <SettingsField label="Emergency Uplink" value="+91 80000 00001" />
                                                 <div className="space-y-2">
                                                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block ml-1">Operational Zone</label>

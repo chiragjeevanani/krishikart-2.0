@@ -8,4 +8,25 @@ const api = axios.create({
     },
 });
 
+api.interceptors.request.use((config) => {
+    let token = localStorage.getItem('token'); // Default token
+
+    // Intelligent Token Selection based on Route
+    if (window.location.pathname.startsWith('/masteradmin')) {
+        token = localStorage.getItem('masterAdminToken') || token;
+    } else if (window.location.pathname.startsWith('/vendor')) {
+        token = localStorage.getItem('vendorToken') || token;
+    } else {
+        // Fallback checks
+        token = token || localStorage.getItem('vendorToken') || localStorage.getItem('masterAdminToken');
+    }
+
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+}, (error) => {
+    return Promise.reject(error);
+});
+
 export default api;

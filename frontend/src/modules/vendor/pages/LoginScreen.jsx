@@ -18,10 +18,18 @@ export default function LoginScreen() {
             const response = await api.post('/vendor/login', { email, password });
 
             // Store token and vendor data
-            localStorage.setItem('vendorToken', response.data.token);
-            localStorage.setItem('vendorData', JSON.stringify(response.data));
-
-            navigate('/vendor/dashboard');
+            if (response.data.result && response.data.result.token) {
+                localStorage.setItem('vendorToken', response.data.result.token);
+                localStorage.setItem('vendorData', JSON.stringify(response.data.result));
+                navigate('/vendor/dashboard');
+            } else if (response.data.token) {
+                // Fallback if structure changes
+                localStorage.setItem('vendorToken', response.data.token);
+                localStorage.setItem('vendorData', JSON.stringify(response.data));
+                navigate('/vendor/dashboard');
+            } else {
+                throw new Error('Invalid response from server');
+            }
         } catch (error) {
             console.error(error);
             alert(error.response?.data?.message || 'Login failed');
