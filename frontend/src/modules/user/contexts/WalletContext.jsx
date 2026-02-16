@@ -13,6 +13,22 @@ export function WalletProvider({ children }) {
     const [transactions, setTransactions] = useState([
         { id: 'TXN-101', type: 'Added', amount: 5000, date: 'Jan 15, 2026', status: 'Success' },
     ]);
+    const [loyaltyConfig, setLoyaltyConfig] = useState(() => {
+        const saved = localStorage.getItem('krishikart_loyalty_config');
+        return saved ? JSON.parse(saved) : {
+            awardRate: 5, // 5% of order value
+            redemptionRate: 10, // 10 points = ₹1
+            minRedeemPoints: 100
+        };
+    });
+
+    useEffect(() => {
+        localStorage.setItem('krishikart_loyalty_config', JSON.stringify(loyaltyConfig));
+    }, [loyaltyConfig]);
+
+    const updateLoyaltyConfig = (newConfig) => {
+        setLoyaltyConfig(prev => ({ ...prev, ...newConfig }));
+    };
 
     useEffect(() => {
         localStorage.setItem('krishikart_loyalty_points', loyaltyPoints.toString());
@@ -28,6 +44,25 @@ export function WalletProvider({ children }) {
             status: 'Success'
         };
         setTransactions(prev => [newTxn, ...prev]);
+    };
+
+    const redeemLoyaltyPoints = (points) => {
+        if (loyaltyPoints >= points && points >= (loyaltyConfig?.minRedeemPoints || 100)) {
+            const rupees = Math.floor(points / (loyaltyConfig?.redemptionRate || 10));
+            setLoyaltyPoints(prev => prev - points);
+            setBalance(prev => prev + rupees);
+
+            const newTxn = {
+                id: `RED-${Math.floor(1000 + Math.random() * 9000)}`,
+                type: 'Redemption',
+                amount: rupees,
+                date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                status: 'Success'
+            };
+            setTransactions(prev => [newTxn, ...prev]);
+            return true;
+        }
+        return false;
     };
 
     const addMoney = (amount) => {
@@ -69,7 +104,10 @@ export function WalletProvider({ children }) {
             creditLimit,
             creditUsed,
             loyaltyPoints,
-            addLoyaltyPoints
+            addLoyaltyPoints,
+            redeemLoyaltyPoints,
+            loyaltyConfig,
+            updateLoyaltyConfig
         }}>
             {children}
         </WalletContext.Provider>

@@ -62,6 +62,16 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
     },
+
+    walletBalance: {
+      type: Number,
+      default: 0
+    },
+
+    loyaltyPoints: {
+      type: Number,
+      default: 0
+    }
   },
   { timestamps: true }
 );

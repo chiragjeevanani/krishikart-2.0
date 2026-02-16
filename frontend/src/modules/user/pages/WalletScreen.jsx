@@ -25,12 +25,13 @@ import { cn } from '@/lib/utils'
 
 export default function WalletScreen() {
     const navigate = useNavigate()
-    const { balance, transactions, addMoney, creditLimit, creditUsed, loyaltyPoints } = useWallet()
+    const { balance, transactions, addMoney, creditLimit, creditUsed, loyaltyPoints, redeemLoyaltyPoints, loyaltyConfig } = useWallet()
     const [amountToAdd, setAmountToAdd] = useState('')
     const [isProcessing, setIsProcessing] = useState(false)
     const [showSuccess, setShowSuccess] = useState(false)
     const [activeFilter, setActiveFilter] = useState('All')
     const [refundToWallet, setRefundToWallet] = useState(true)
+    const [successMessage, setSuccessMessage] = useState('')
 
     const filters = [
         'All', 'Used', 'Expiring', 'Recharge', 'Refund', 'Loyalty',
@@ -48,16 +49,16 @@ export default function WalletScreen() {
         setTimeout(() => {
             addMoney(Number(value))
             setIsProcessing(false)
+            setSuccessMessage('Recharge successful! Funds added to your wallet.')
             setShowSuccess(true)
             setAmountToAdd('')
-            setTimeout(() => setShowSuccess(false), 2000)
         }, 1200)
     }
 
     const filteredTransactions = activeFilter === 'All'
         ? transactions
         : transactions.filter(t => {
-            if (activeFilter === 'Loyalty') return t.type === 'Loyalty Bonus';
+            if (activeFilter === 'Loyalty') return t.type === 'Loyalty Bonus' || t.type === 'Redemption';
             if (activeFilter === 'Recharge') return t.type === 'Added';
             if (activeFilter === 'Used') return t.type === 'Paid';
             return true;
@@ -178,13 +179,15 @@ export default function WalletScreen() {
                                                     )}>
                                                         {txn.type === 'Added' ? <RefreshCcw size={18} /> :
                                                             txn.type === 'Loyalty Bonus' ? <Star size={18} className="fill-current" /> :
-                                                                <Clock size={18} />}
+                                                                txn.type === 'Redemption' ? <Zap size={18} /> :
+                                                                    <Clock size={18} />}
                                                     </div>
                                                     <div>
                                                         <p className="text-sm font-bold text-slate-900 leading-none mb-1">
                                                             {txn.type === 'Added' ? 'Recharge' :
                                                                 txn.type === 'Loyalty Bonus' ? 'Loyalty Bonus' :
-                                                                    'Debit Payment'}
+                                                                    txn.type === 'Redemption' ? 'Points Redeemed' :
+                                                                        'Debit Payment'}
                                                         </p>
                                                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{txn.date} • {txn.id}</p>
                                                     </div>
@@ -192,11 +195,11 @@ export default function WalletScreen() {
                                                 <div className="text-right space-y-0.5">
                                                     <p className={cn(
                                                         "text-base font-bold tracking-tight tabular-nums",
-                                                        txn.type === 'Added' ? "text-emerald-600" :
+                                                        txn.type === 'Added' || txn.type === 'Redemption' ? "text-emerald-600" :
                                                             txn.type === 'Loyalty Bonus' ? "text-blue-600" :
                                                                 "text-slate-900"
                                                     )}>
-                                                        {txn.type === 'Added' || txn.type === 'Loyalty Bonus' ? '+' : '-'}
+                                                        {txn.type === 'Added' || txn.type === 'Loyalty Bonus' || txn.type === 'Redemption' ? '+' : '-'}
                                                         {txn.type === 'Loyalty Bonus' ? '' : '₹'}
                                                         {txn.amount.toLocaleString('en-IN')}
                                                         {txn.type === 'Loyalty Bonus' ? ' Pts' : ''}
@@ -282,6 +285,54 @@ export default function WalletScreen() {
                                 </div>
                             </div>
 
+                            {/* Loyalty Points Redemption Card */}
+                            <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-6">
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-1">
+                                        <h3 className="text-base font-bold text-slate-800">Redeem Points</h3>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Convert KK Points to Cash</p>
+                                    </div>
+                                    <div className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-100">
+                                        {loyaltyPoints} Pts
+                                    </div>
+                                </div>
+
+                                <div className="p-4 bg-slate-50 rounded-xl space-y-3">
+                                    <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                                        <span>Conversion Rate</span>
+                                        <span>{loyaltyConfig?.redemptionRate || 10} Pts = ₹1</span>
+                                    </div>
+                                    <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-emerald-500 transition-all duration-1000"
+                                            style={{ width: `${Math.min((loyaltyPoints / ((loyaltyConfig?.minRedeemPoints || 100) * 10)) * 100, 100)}%` }}
+                                        />
+                                    </div>
+                                    <p className="text-[9px] text-slate-400 leading-relaxed italic">
+                                        Minimum {loyaltyConfig?.minRedeemPoints || 100} points required to redeem. Current value: ₹{Math.floor(loyaltyPoints / (loyaltyConfig?.redemptionRate || 10))}
+                                    </p>
+                                </div>
+
+                                <Button
+                                    disabled={loyaltyPoints < (loyaltyConfig?.minRedeemPoints || 100)}
+                                    onClick={() => {
+                                        if (redeemLoyaltyPoints(loyaltyPoints)) {
+                                            setSuccessMessage(`Redeemed ₹${Math.floor(loyaltyPoints / (loyaltyConfig?.redemptionRate || 10))} to your wallet!`)
+                                            setShowSuccess(true);
+                                            setTimeout(() => setShowSuccess(false), 2000);
+                                        }
+                                    }}
+                                    className={cn(
+                                        "w-full h-12 font-bold tracking-tight rounded-xl transition-all",
+                                        loyaltyPoints >= 100
+                                            ? "bg-slate-900 text-white hover:bg-slate-800 shadow-lg shadow-slate-200 active:scale-[0.98]"
+                                            : "bg-slate-100 text-slate-400"
+                                    )}
+                                >
+                                    Redeem Now
+                                </Button>
+                            </div>
+
                             {/* Promotional/Nexus Card */}
                             <div className="bg-gradient-to-br from-[#1e40af] to-[#3b82f6] rounded-2xl p-6 text-white overflow-hidden relative group shadow-lg shadow-blue-500/10">
                                 <Zap className="absolute top-4 right-4 text-white/10 group-hover:scale-125 transition-transform duration-700" size={60} strokeWidth={1} />
@@ -308,7 +359,7 @@ export default function WalletScreen() {
                             <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white">
                                 <CheckCircle2 size={16} />
                             </div>
-                            <span className="text-white text-sm font-bold tracking-tight">Recharge successful! Funds added to your wallet.</span>
+                            <span className="text-white text-sm font-bold tracking-tight">{successMessage}</span>
                         </motion.div>
                     )}
                 </AnimatePresence>

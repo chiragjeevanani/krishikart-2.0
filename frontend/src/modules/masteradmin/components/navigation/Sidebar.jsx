@@ -26,7 +26,8 @@ import {
     Package,
     Tags,
     PlusCircle,
-    List
+    List,
+    Star
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
@@ -68,6 +69,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                 { icon: CreditCard, label: 'Credit Management', path: '/masteradmin/credit' },
                 { icon: BookOpen, label: 'Ledger', path: '/masteradmin/ledger' },
                 { icon: Percent, label: 'Commissions', path: '/masteradmin/commission' },
+                { icon: Star, label: 'Loyalty Engine', path: '/masteradmin/loyalty' },
             ]
         },
         {

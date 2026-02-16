@@ -25,6 +25,7 @@ import EditProductScreen from '../pages/EditProductScreen';
 import ManageProductScreen from '../pages/ManageProductScreen';
 import CategoryManagementScreen from '../pages/CategoryManagementScreen';
 import SubcategoryManagementScreen from '../pages/SubcategoryManagementScreen';
+import LoyaltyControlScreen from '../pages/LoyaltyControlScreen';
 import { Navigate } from 'react-router-dom';
 
 export const masterAdminRoutes = (
@@ -47,6 +48,7 @@ export const masterAdminRoutes = (
         <Route path="credit" element={<CreditManagementScreen />} />
         <Route path="ledger" element={<LedgerSystemScreen />} />
         <Route path="commission" element={<CommissionControlScreen />} />
+        <Route path="loyalty" element={<LoyaltyControlScreen />} />
 
         {/* Inventory & Supply Routes */}
         <Route path="stock-monitoring" element={<FranchiseStockMonitoringScreen />} />

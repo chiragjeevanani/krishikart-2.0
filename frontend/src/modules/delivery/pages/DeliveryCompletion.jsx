@@ -19,11 +19,13 @@ const DeliveryCompletion = () => {
     const [signed, setSigned] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const navigate = useNavigate();
-    const { addLoyaltyPoints } = useWallet();
+    const { addLoyaltyPoints, loyaltyConfig } = useWallet();
 
     const handleComplete = () => {
-        // Award 10 loyalty points for successful delivery
-        addLoyaltyPoints(10);
+        // Award points based on admin configuration (percentage of total bill)
+        const rate = loyaltyConfig?.awardRate || 5;
+        const points = Math.max(10, Math.floor((activeDelivery.totalBill * rate) / 100));
+        addLoyaltyPoints(points);
 
         setIsSuccess(true);
         setTimeout(() => {
