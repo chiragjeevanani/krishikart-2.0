@@ -5,23 +5,47 @@ import { useCatalog } from '../contexts/CatalogContext';
 import { cn } from '@/lib/utils';
 
 export default function SubcategoryManagementScreen() {
-    const { categories, subcategories, addSubcategory } = useCatalog();
+    const { categories, subcategories, addSubcategory, updateSubcategory, deleteSubcategory } = useCatalog();
     const [isLoading, setIsLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Form State
     const [newSub, setNewSub] = useState({ name: '', categoryId: '', image: null });
+    const [editSub, setEditSub] = useState({ id: '', name: '', categoryId: '', image: null, file: null, isVisible: true });
 
     useEffect(() => {
         const timer = setTimeout(() => setIsLoading(false), 500);
         return () => clearTimeout(timer);
     }, []);
 
-    const handleAdd = () => {
+    const handleAdd = async () => {
         if (!newSub.name.trim() || !newSub.categoryId) return;
-        addSubcategory(newSub);
-        setNewSub({ name: '', categoryId: '', image: null });
-        setShowAddModal(false);
+        setIsSubmitting(true);
+        try {
+            await addSubcategory(newSub);
+            setNewSub({ name: '', categoryId: '', image: null, file: null });
+            setShowAddModal(false);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleUpdate = async () => {
+        if (!editSub.name.trim() || !editSub.categoryId) return;
+        setIsSubmitting(true);
+        try {
+            await updateSubcategory(editSub.id, editSub);
+            setShowEditModal(false);
+            setEditSub({ id: '', name: '', categoryId: '', image: null, file: null, isVisible: true });
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     if (isLoading) {
@@ -63,7 +87,7 @@ export default function SubcategoryManagementScreen() {
                                     >
                                         <option value="">Select Parent Taxonomy...</option>
                                         {categories.map(cat => (
-                                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                            <option key={cat._id} value={cat._id}>{cat.name}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -104,7 +128,7 @@ export default function SubcategoryManagementScreen() {
                                                         const file = e.target.files[0];
                                                         if (file) {
                                                             const url = URL.createObjectURL(file);
-                                                            setNewSub(prev => ({ ...prev, image: url }));
+                                                            setNewSub(prev => ({ ...prev, image: url, file }));
                                                         }
                                                     }}
                                                 />
@@ -117,6 +141,110 @@ export default function SubcategoryManagementScreen() {
                                     className="w-full py-3 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-sm hover:bg-emerald-600 transition-all shadow-lg"
                                 >
                                     Initialize Branch
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Edit Subcategory Modal */}
+            <AnimatePresence>
+                {showEditModal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setShowEditModal(false)}
+                            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            className="bg-white rounded-sm shadow-2xl w-full max-w-md relative z-10 overflow-hidden"
+                        >
+                            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                                <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Modify Branch</h3>
+                                <button onClick={() => setShowEditModal(false)} className="text-slate-400 hover:text-slate-900">
+                                    <X size={16} />
+                                </button>
+                            </div>
+                            <div className="p-6 space-y-6">
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Primary Category Map</label>
+                                    <select
+                                        value={editSub.categoryId}
+                                        onChange={(e) => setEditSub(prev => ({ ...prev, categoryId: e.target.value }))}
+                                        className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-3 text-sm font-bold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all appearance-none cursor-pointer"
+                                    >
+                                        <option value="">Select Parent Taxonomy...</option>
+                                        {categories.map(cat => (
+                                            <option key={cat._id} value={cat._id}>{cat.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Subcategory Title</label>
+                                    <input
+                                        type="text"
+                                        value={editSub.name}
+                                        onChange={(e) => setEditSub(prev => ({ ...prev, name: e.target.value }))}
+                                        className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-3 text-sm font-bold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                                    />
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        id="edit-sub-visible"
+                                        checked={editSub.isVisible}
+                                        onChange={(e) => setEditSub(prev => ({ ...prev, isVisible: e.target.checked }))}
+                                        className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                                    />
+                                    <label htmlFor="edit-sub-visible" className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Visible Globally</label>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Subcategory Visual Asset</label>
+                                    <div className="relative aspect-video bg-slate-50 border-2 border-dashed border-slate-200 rounded-sm flex flex-col items-center justify-center space-y-2 group/upload cursor-pointer hover:bg-white hover:border-emerald-500 transition-all overflow-hidden">
+                                        {(editSub.image || editSub.file) ? (
+                                            <>
+                                                <img src={editSub.image} className="absolute inset-0 w-full h-full object-cover" alt="Preview" />
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setEditSub(prev => ({ ...prev, image: null, file: null })); }}
+                                                    className="absolute top-2 right-2 p-1.5 bg-white text-rose-500 rounded-full shadow-lg z-10"
+                                                >
+                                                    <X size={14} />
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Upload size={20} className="text-slate-400 group-hover/upload:text-emerald-500 transition-colors" />
+                                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Update Asset</span>
+                                                <input
+                                                    type="file"
+                                                    className="absolute inset-0 opacity-0 cursor-pointer"
+                                                    accept="image/*"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files[0];
+                                                        if (file) {
+                                                            const url = URL.createObjectURL(file);
+                                                            setEditSub(prev => ({ ...prev, image: url, file }));
+                                                        }
+                                                    }}
+                                                />
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={handleUpdate}
+                                    disabled={isSubmitting}
+                                    className="w-full py-3 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-sm hover:bg-emerald-600 transition-all shadow-lg flex items-center justify-center gap-2"
+                                >
+                                    {isSubmitting ? 'Syncing...' : 'Update Branch'}
                                 </button>
                             </div>
                         </motion.div>
@@ -158,13 +286,14 @@ export default function SubcategoryManagementScreen() {
 
                     <div className="divide-y divide-slate-100">
                         {subcategories.length > 0 ? subcategories.map((sub, idx) => {
-                            const parent = categories.find(c => c.id === sub.categoryId);
+                            const categoryId = typeof sub.category === 'object' ? sub.category._id : sub.category;
+                            const parent = categories.find(c => c._id === categoryId);
                             return (
                                 <motion.div
                                     initial={{ opacity: 0, x: -10 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: idx * 0.03 }}
-                                    key={sub.id}
+                                    key={sub._id}
                                     className="group p-6 flex items-center justify-between hover:bg-slate-50 transition-colors"
                                 >
                                     <div className="flex items-center gap-6">
@@ -179,7 +308,7 @@ export default function SubcategoryManagementScreen() {
                                             <div className="flex items-center gap-2">
                                                 <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest">{sub.name}</h4>
                                                 <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 text-[8px] font-black uppercase tracking-widest rounded-sm border border-slate-200">
-                                                    ID: {sub.id}
+                                                    ID: {sub._id}
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-2 mt-1.5">
@@ -191,11 +320,31 @@ export default function SubcategoryManagementScreen() {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button className="p-2 text-slate-400 hover:text-slate-900 hover:bg-white rounded-sm transition-all border border-transparent hover:border-slate-100 shadow-sm text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                                        <button
+                                            onClick={() => {
+                                                setEditSub({
+                                                    id: sub._id,
+                                                    name: sub.name,
+                                                    categoryId: typeof sub.category === 'object' ? sub.category._id : sub.category,
+                                                    image: sub.image,
+                                                    isVisible: sub.isVisible,
+                                                    file: null
+                                                });
+                                                setShowEditModal(true);
+                                            }}
+                                            className="p-2 text-slate-400 hover:text-slate-900 hover:bg-white rounded-sm transition-all border border-transparent hover:border-slate-100 shadow-sm text-xs font-black uppercase tracking-widest flex items-center gap-2"
+                                        >
                                             <Pencil size={14} />
                                             Modify
                                         </button>
-                                        <button className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-sm transition-all border border-transparent hover:border-rose-100 shadow-sm text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                                        <button
+                                            onClick={() => {
+                                                if (window.confirm('Purge this secondary branch?')) {
+                                                    deleteSubcategory(sub._id);
+                                                }
+                                            }}
+                                            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-sm transition-all border border-transparent hover:border-rose-100 shadow-sm text-xs font-black uppercase tracking-widest flex items-center gap-2"
+                                        >
                                             <Trash2 size={14} />
                                             Purge
                                         </button>

@@ -24,7 +24,7 @@ import { cn } from '@/lib/utils';
 import { useCatalog } from '../contexts/CatalogContext';
 
 export default function AddProductScreen() {
-    const { categories, subcategories, addCategory, addSubcategory, getSubcategoriesByCategory } = useCatalog();
+    const { categories, subcategories, addCategory, addSubcategory, getSubcategoriesByCategory, addProduct } = useCatalog();
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -33,6 +33,7 @@ export default function AddProductScreen() {
     const [showQuickAddSub, setShowQuickAddSub] = useState(false);
     const [quickAddName, setQuickAddName] = useState('');
     const [quickAddImage, setQuickAddImage] = useState(null);
+    const [quickAddFile, setQuickAddFile] = useState(null);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -48,8 +49,11 @@ export default function AddProductScreen() {
         status: 'draft',
         images: [],
         primaryImage: null,
+        primaryFile: null,
+        galleryFiles: [],
         bulkPricing: [],
-        bestPrice: ''
+        bestPrice: '',
+        dietaryType: 'veg' // 'veg' | 'non-veg' | 'none'
     });
 
     useEffect(() => {
@@ -67,22 +71,44 @@ export default function AddProductScreen() {
         }));
     };
 
-    const handleQuickAddCategory = () => {
+    const handleQuickAddCategory = async () => {
         if (!quickAddName.trim()) return;
-        const newCat = addCategory({ name: quickAddName, description: 'Quick added', image: quickAddImage });
-        setFormData(prev => ({ ...prev, category: newCat.id }));
-        setQuickAddName('');
-        setQuickAddImage(null);
-        setShowQuickAddCat(false);
+        try {
+            const newCat = await addCategory({
+                name: quickAddName,
+                description: 'Quick added from Induction',
+                file: quickAddFile
+            });
+            if (newCat) {
+                setFormData(prev => ({ ...prev, category: newCat._id }));
+                setQuickAddName('');
+                setQuickAddImage(null);
+                setQuickAddFile(null);
+                setShowQuickAddCat(false);
+            }
+        } catch (error) {
+            console.error(error);
+        }
     };
 
-    const handleQuickAddSubcategory = () => {
+    const handleQuickAddSubcategory = async () => {
         if (!quickAddName.trim() || !formData.category) return;
-        const newSub = addSubcategory({ name: quickAddName, categoryId: formData.category, image: quickAddImage });
-        setFormData(prev => ({ ...prev, subcategory: newSub.id }));
-        setQuickAddName('');
-        setQuickAddImage(null);
-        setShowQuickAddSub(false);
+        try {
+            const newSub = await addSubcategory({
+                name: quickAddName,
+                categoryId: formData.category,
+                file: quickAddFile
+            });
+            if (newSub) {
+                setFormData(prev => ({ ...prev, subcategory: newSub._id }));
+                setQuickAddName('');
+                setQuickAddImage(null);
+                setQuickAddFile(null);
+                setShowQuickAddSub(false);
+            }
+        } catch (error) {
+            console.error(error);
+        }
     };
 
     const handleAddBulkTier = () => {
@@ -105,13 +131,24 @@ export default function AddProductScreen() {
         setFormData(prev => ({ ...prev, bulkPricing: newBulk }));
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
+        if (!formData.name || !formData.category || !formData.price || !formData.primaryFile) {
+            alert('Please fill at least Name, Category, Price and Primary Image.');
+            return;
+        }
+
         setIsSaving(true);
-        // Simulate API call
-        setTimeout(() => {
+        try {
+            await addProduct(formData);
+            // On success, redirect or clear form
+            setTimeout(() => {
+                window.location.href = '/masteradmin/products/manage';
+            }, 1000);
+        } catch (error) {
+            console.error(error);
+        } finally {
             setIsSaving(false);
-            alert('Product entry initialized in ledger.');
-        }, 1500);
+        }
     };
 
     if (isLoading) {
@@ -183,6 +220,7 @@ export default function AddProductScreen() {
                                                         if (file) {
                                                             const url = URL.createObjectURL(file);
                                                             setQuickAddImage(url);
+                                                            setQuickAddFile(file); // Need to add this state
                                                         }
                                                     }}
                                                 />
@@ -257,16 +295,65 @@ export default function AddProductScreen() {
                             </div>
                             <div className="p-6 space-y-6">
                                 <div className="grid grid-cols-1 gap-6">
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Product Title</label>
-                                        <input
-                                            type="text"
-                                            name="name"
-                                            value={formData.name}
-                                            onChange={handleChange}
-                                            placeholder="e.g. Organic Cavendish Bananas"
-                                            className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-2.5 text-sm font-medium focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-300"
-                                        />
+                                    <div className="flex flex-col md:flex-row gap-6">
+                                        <div className="flex-1 space-y-1.5">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Product Title</label>
+                                            <input
+                                                type="text"
+                                                name="name"
+                                                value={formData.name}
+                                                onChange={handleChange}
+                                                placeholder="e.g. Organic Cavendish Bananas"
+                                                className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-2.5 text-sm font-medium focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-300"
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Dietary Classification</label>
+                                            <div className="flex items-center gap-2 p-1 bg-slate-50 border border-slate-200 rounded-sm w-fit">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFormData(prev => ({ ...prev, dietaryType: 'veg' }))}
+                                                    className={cn(
+                                                        "px-4 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-sm transition-all flex items-center gap-2",
+                                                        formData.dietaryType === 'veg'
+                                                            ? "bg-white text-emerald-600 shadow-sm border border-emerald-100"
+                                                            : "text-slate-400 hover:text-slate-600"
+                                                    )}
+                                                >
+                                                    <div className="w-2.5 h-2.5 border-2 border-emerald-600 p-0.5 flex items-center justify-center">
+                                                        <div className="w-full h-full bg-emerald-600 rounded-full" />
+                                                    </div>
+                                                    Veg
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFormData(prev => ({ ...prev, dietaryType: 'non-veg' }))}
+                                                    className={cn(
+                                                        "px-4 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-sm transition-all flex items-center gap-2",
+                                                        formData.dietaryType === 'non-veg'
+                                                            ? "bg-white text-rose-600 shadow-sm border border-rose-100"
+                                                            : "text-slate-400 hover:text-slate-600"
+                                                    )}
+                                                >
+                                                    <div className="w-2.5 h-2.5 border-2 border-rose-600 p-0.5 flex items-center justify-center">
+                                                        <div className="w-full h-full bg-rose-600 rounded-full" />
+                                                    </div>
+                                                    Non-Veg
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFormData(prev => ({ ...prev, dietaryType: 'none' }))}
+                                                    className={cn(
+                                                        "px-4 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-sm transition-all",
+                                                        formData.dietaryType === 'none'
+                                                            ? "bg-white text-slate-900 shadow-sm border border-slate-200"
+                                                            : "text-slate-400 hover:text-slate-600"
+                                                    )}
+                                                >
+                                                    None
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Description (Extended)</label>
@@ -389,7 +476,7 @@ export default function AddProductScreen() {
                                             <div className="col-span-2"></div>
                                         </div>
                                         <div className="space-y-3">
-                                            {formData.bulkPricing.map((tier, index) => (
+                                            {formData.bulkPricing?.map((tier, index) => (
                                                 <motion.div
                                                     initial={{ opacity: 0, y: 10 }}
                                                     animate={{ opacity: 1, y: 0 }}
@@ -535,7 +622,11 @@ export default function AddProductScreen() {
                                                     const file = e.target.files[0];
                                                     if (file) {
                                                         const url = URL.createObjectURL(file);
-                                                        setFormData(prev => ({ ...prev, primaryImage: url }));
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            primaryImage: url,
+                                                            primaryFile: file
+                                                        }));
                                                     }
                                                 }}
                                                 accept="image/*"
@@ -576,8 +667,8 @@ export default function AddProductScreen() {
                                         className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-2.5 text-sm font-bold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all appearance-none cursor-pointer"
                                     >
                                         <option value="">Map to Primary...</option>
-                                        {categories.map(cat => (
-                                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                        {(categories || []).map(cat => (
+                                            <option key={cat._id} value={cat._id}>{cat.name}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -604,8 +695,8 @@ export default function AddProductScreen() {
                                         className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-2.5 text-sm font-bold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all appearance-none cursor-pointer disabled:bg-slate-100 disabled:cursor-not-allowed"
                                     >
                                         <option value="">Map to Secondary...</option>
-                                        {getSubcategoriesByCategory(formData.category).map(sub => (
-                                            <option key={sub.id} value={sub.id}>{sub.name}</option>
+                                        {(getSubcategoriesByCategory(formData.category) || []).map(sub => (
+                                            <option key={sub._id} value={sub._id}>{sub.name}</option>
                                         ))}
                                     </select>
                                 </div>

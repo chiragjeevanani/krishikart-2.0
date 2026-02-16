@@ -54,6 +54,7 @@ import { deliveryRoutes } from './modules/delivery/routes/deliveryRoutes';
 import { CartProvider } from './modules/user/contexts/CartContext'
 import { OrderProvider } from '@/modules/user/contexts/OrderContext'
 import { WalletProvider } from './modules/user/contexts/WalletContext'
+import { Toaster } from 'sonner'
 
 function App() {
   return (
@@ -67,6 +68,7 @@ function App() {
                   <WishlistProvider>
                     <WalletProvider>
                       <BrowserRouter>
+                        <Toaster position="top-center" richColors />
                         <Suspense fallback={
                           <div className="user-app-theme h-screen w-full flex items-center justify-center bg-slate-50">
                             <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />

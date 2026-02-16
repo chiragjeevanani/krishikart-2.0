@@ -1,0 +1,91 @@
+import mongoose from 'mongoose';
+
+const bulkPricingSchema = new mongoose.Schema({
+    minQty: {
+        type: Number,
+        required: true
+    },
+    price: {
+        type: Number,
+        required: true
+    }
+}, { _id: false });
+
+const productSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        required: [true, 'Product name is required'],
+        trim: true
+    },
+    category: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Category',
+        required: [true, 'Category mapping is required']
+    },
+    subcategory: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Subcategory'
+    },
+    price: {
+        type: Number,
+        required: [true, 'Standard price is required'],
+        min: 0
+    },
+    comparePrice: {
+        type: Number,
+        min: 0
+    },
+    bestPrice: {
+        type: Number,
+        min: 0
+    },
+    stock: {
+        type: Number,
+        default: 0
+    },
+    unit: {
+        type: String,
+        enum: ['kg', 'gm', 'pcs', 'ltr', 'box'],
+        default: 'kg'
+    },
+    description: {
+        type: String,
+        trim: true
+    },
+    shortDescription: {
+        type: String,
+        trim: true
+    },
+    dietaryType: {
+        type: String,
+        enum: ['veg', 'non-veg', 'none'],
+        default: 'none'
+    },
+    primaryImage: {
+        type: String,
+        default: ''
+    },
+    images: [{
+        type: String
+    }],
+    bulkPricing: [bulkPricingSchema],
+    status: {
+        type: String,
+        enum: ['draft', 'active', 'inactive'],
+        default: 'draft'
+    },
+    isVisible: {
+        type: Boolean,
+        default: true
+    }
+}, {
+    timestamps: true
+});
+
+// Indexing for faster searches
+productSchema.index({ name: 'text', description: 'text' });
+productSchema.index({ category: 1, subcategory: 1 });
+
+const Product = mongoose.model('Product', productSchema);
+
+export default Product;
