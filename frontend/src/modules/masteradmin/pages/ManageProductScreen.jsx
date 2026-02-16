@@ -15,7 +15,8 @@ import {
     AlertCircle,
     CheckCircle2,
     Eye,
-    EyeOff
+    EyeOff,
+    X
 } from 'lucide-react';
 import { useCatalog } from '../contexts/CatalogContext';
 import { useNavigate } from 'react-router-dom';
@@ -26,6 +27,8 @@ export default function ManageProductScreen() {
     const { products, isLoading: contextLoading, fetchProducts, deleteProduct, updateProduct } = useCatalog();
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [selectedProduct, setSelectedProduct] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -38,6 +41,11 @@ export default function ManageProductScreen() {
         }
     };
 
+    const handleViewProduct = (product) => {
+        setSelectedProduct(product);
+        setIsModalOpen(true);
+    };
+
     const toggleVisibility = async (product) => {
         try {
             await updateProduct(product._id, { isVisible: !product.isVisible });
@@ -47,7 +55,8 @@ export default function ManageProductScreen() {
     };
 
     const filteredProducts = products.filter(p => {
-        const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p._id.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
         return matchesSearch && matchesStatus;
     });
@@ -202,15 +211,16 @@ export default function ManageProductScreen() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="flex items-center justify-end gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
                                                 <button
-                                                    onClick={() => toggleVisibility(product)}
-                                                    title={product.isVisible ? 'Hide from store' : 'Show on store'}
+                                                    onClick={() => handleViewProduct(product)}
+                                                    title="Quick View Record"
                                                     className="p-2 text-slate-400 hover:text-slate-900 hover:bg-white rounded-sm transition-all border border-transparent hover:border-slate-100"
                                                 >
-                                                    {product.isVisible ? <Eye size={14} /> : <EyeOff size={14} />}
+                                                    <Eye size={14} />
                                                 </button>
                                                 <button
+                                                    onClick={() => navigate(`/masteradmin/products/edit/${product._id}`)}
                                                     className="p-2 text-slate-400 hover:text-slate-900 hover:bg-white rounded-sm transition-all border border-transparent hover:border-slate-100"
                                                 >
                                                     <Pencil size={14} />
@@ -266,9 +276,117 @@ export default function ManageProductScreen() {
                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Inventory Void</span>
                         </div>
                     </div>
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">Automated SKU Ledger v2.0</p>
                 </div>
             </div>
+            <QuickViewModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                product={selectedProduct}
+                onEdit={(id) => navigate(`/masteradmin/products/edit/${id}`)}
+            />
         </div>
     );
 }
+
+function QuickViewModal({ isOpen, onClose, product, onEdit }) {
+    if (!isOpen || !product) return null;
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={onClose}
+                className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+            />
+            <motion.div
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                className="bg-white rounded-sm shadow-2xl w-full max-w-2xl relative z-10 overflow-hidden"
+            >
+                <div className="flex flex-col md:flex-row h-full max-h-[80vh] overflow-y-auto">
+                    <div className="w-full md:w-2/5 aspect-square bg-slate-100 border-r border-slate-100 relative">
+                        {product.primaryImage ? (
+                            <img src={product.primaryImage} className="w-full h-full object-cover" alt="" />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                <Package size={64} />
+                            </div>
+                        )}
+                        <div className="absolute top-4 left-4">
+                            <span className={cn(
+                                "px-2 py-1 rounded-[2px] text-[9px] font-black uppercase tracking-widest shadow-lg border",
+                                product.status === 'active' ? 'bg-emerald-500 text-white border-emerald-400' :
+                                    product.status === 'draft' ? 'bg-amber-500 text-white border-amber-400' :
+                                        'bg-slate-500 text-white border-slate-400'
+                            )}>
+                                {product.status}
+                            </span>
+                        </div>
+                    </div>
+                    <div className="flex-1 p-8 space-y-6 relative">
+                        <button
+                            onClick={onClose}
+                            className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-900 transition-colors"
+                        >
+                            <X size={20} />
+                        </button>
+
+                        <div className="space-y-1">
+                            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">SKU Details</p>
+                            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight leading-none">{product.name}</h2>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Internal ID: {product._id}</p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-8">
+                            <div className="space-y-1">
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Base Valuation</p>
+                                <p className="text-lg font-black text-slate-900">₹{product.price} <span className="text-xs text-slate-400 font-bold">/ {product.unit}</span></p>
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Live Inventory</p>
+                                <p className="text-lg font-black text-slate-900">{product.stock} <span className="text-xs text-slate-400 font-bold">In Ledger</span></p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Principal Identity (Description)</p>
+                            <div className="bg-slate-50 border border-slate-100 p-4 rounded-sm">
+                                <p className="text-xs font-medium text-slate-600 leading-relaxed italic">
+                                    {product.description || 'No detailed documentation available for this SKU record.'}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="text-center">
+                                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Taxonomy</p>
+                                    <p className="text-[10px] font-bold text-slate-900 uppercase tracking-widest">{product.category?.name || 'Unmapped'}</p>
+                                </div>
+                                <ChevronRight size={12} className="text-slate-300" />
+                                <div className="text-center">
+                                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Secondary</p>
+                                    <p className="text-[10px] font-bold text-slate-900 uppercase tracking-widest">{product.subcategory?.name || 'General'}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    onClose();
+                                    onEdit(product._id);
+                                }}
+                                className="px-6 py-2 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-sm hover:bg-emerald-600 transition-all flex items-center gap-2"
+                            >
+                                <Pencil size={12} />
+                                Edit SKU
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </motion.div>
+        </div>
+    );
+}
+

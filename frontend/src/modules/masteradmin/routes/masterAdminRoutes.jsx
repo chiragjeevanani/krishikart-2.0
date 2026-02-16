@@ -21,6 +21,7 @@ import PurchaseManagerScreen from '../pages/PurchaseManagerScreen';
 import OnboardingApprovalScreen from '../pages/OnboardingApprovalScreen';
 import VendorTurnoverScreen from '../pages/VendorTurnoverScreen';
 import AddProductScreen from '../pages/AddProductScreen';
+import EditProductScreen from '../pages/EditProductScreen';
 import ManageProductScreen from '../pages/ManageProductScreen';
 import CategoryManagementScreen from '../pages/CategoryManagementScreen';
 import SubcategoryManagementScreen from '../pages/SubcategoryManagementScreen';
@@ -57,6 +58,7 @@ export const masterAdminRoutes = (
         {/* Catalog Management Routes */}
         <Route path="products" element={<Navigate to="manage" replace />} />
         <Route path="products/add" element={<AddProductScreen />} />
+        <Route path="products/edit/:id" element={<EditProductScreen />} />
         <Route path="products/manage" element={<ManageProductScreen />} />
         <Route path="categories" element={<Navigate to="manage" replace />} />
         <Route path="categories/manage" element={<CategoryManagementScreen />} />
