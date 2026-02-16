@@ -25,6 +25,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import mockOrders from '../data/mockVendorOrders.json';
 import { cn } from '@/lib/utils';
 import { useOrders } from '@/modules/user/contexts/OrderContext';
+import { useProcurement } from '@/modules/franchise/contexts/ProcurementContext';
 import DocumentViewer from '../components/documents/DocumentViewer';
 
 export default function OrderDetailScreen() {
@@ -38,6 +39,8 @@ export default function OrderDetailScreen() {
     const [docType, setDocType] = useState('DC');
     const [bidPrice, setBidPrice] = useState('');
     const { orders: contextOrders, updateOrderStatus } = useOrders();
+    const { procurementRequests, submitQuotation, updateRequestStatus } = useProcurement();
+    const [quotedItems, setQuotedItems] = useState([]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -57,16 +60,31 @@ export default function OrderDetailScreen() {
                         priority: liveOrder.priority || 'normal',
                         deadline: liveOrder.deadline || new Date(Date.now() + 3600000).toISOString()
                     };
+                } else {
+                    const procReq = procurementRequests.find(r => r.id === id);
+                    if (procReq) {
+                        foundOrder = {
+                            ...procReq,
+                            franchiseName: 'Franchise Node 01',
+                            total: procReq.totalQuotedAmount || 0,
+                            procurementTotal: procReq.totalQuotedAmount || 0,
+                            priority: 'high',
+                            deadline: new Date(new Date(procReq.date).getTime() + 7200000).toISOString()
+                        };
+                    }
                 }
             }
 
             setOrder(foundOrder);
             setStatus(foundOrder?.status?.toLowerCase());
             setBidPrice(foundOrder?.total?.toString() || '');
+            if (foundOrder?.items) {
+                setQuotedItems(foundOrder.items.map(item => ({ ...item, quotedPrice: item.quotedPrice || 0 })));
+            }
             setIsLoading(false);
         }, 500);
         return () => clearTimeout(timer);
-    }, [id, contextOrders]);
+    }, [id, contextOrders, procurementRequests]);
 
     const handleAction = (newStatus, callback) => {
         setIsActionLoading(true);
@@ -74,10 +92,32 @@ export default function OrderDetailScreen() {
             if (contextOrders.find(o => o.id === id)) {
                 updateOrderStatus(id, newStatus);
             }
+            if (procurementRequests.find(r => r.id === id)) {
+                updateRequestStatus(id, newStatus);
+            }
             setStatus(newStatus);
             setIsActionLoading(false);
             if (callback) callback();
         }, 1000);
+    };
+
+    const handleQuotationSubmit = () => {
+        setIsActionLoading(true);
+        setTimeout(() => {
+            submitQuotation(id, quotedItems);
+            setStatus('quoted');
+            setIsActionLoading(false);
+            navigate('/vendor/orders');
+        }, 1000);
+    };
+
+    const updateItemQuotation = (idx, price) => {
+        const newItems = [...quotedItems];
+        newItems[idx].quotedPrice = parseFloat(price) || 0;
+        setQuotedItems(newItems);
+
+        const total = newItems.reduce((sum, item) => sum + (item.quotedPrice * item.qty), 0);
+        setBidPrice(total.toString());
     };
 
     if (isLoading) return (
@@ -105,8 +145,9 @@ export default function OrderDetailScreen() {
     );
 
     const steps = [
-        { id: 'assigned', label: 'Price Intel', icon: IndianRupee, description: 'Quote & Authorize' },
-        { id: 'accepted', label: 'Authorized', icon: Calendar, description: 'Order PO Received' },
+        { id: 'requested', label: 'Inquiry', icon: ClipboardList, description: 'New Node Request' },
+        { id: 'quoted', label: 'Quoted', icon: IndianRupee, description: 'Awaiting Approval' },
+        { id: 'approved', label: 'Authorized', icon: CheckCircle2, description: 'Order PO Received' },
         { id: 'preparing', label: 'Processing', icon: Package, description: 'Batch under assembly' },
         { id: 'ready', label: 'Staged', icon: Shield, description: 'Verified & Sealed' },
         { id: 'completed', label: 'Dispatched', icon: Truck, description: 'Inbound to Node' }
@@ -114,8 +155,8 @@ export default function OrderDetailScreen() {
 
     const getActiveStepId = (s) => {
         const lowerS = s?.toLowerCase();
-        if (lowerS === 'new') return 'assigned';
-        if (lowerS === 'bidding') return 'assigned';
+        if (lowerS === 'new') return 'approved';
+        if (lowerS === 'bidding') return 'quoted';
         return lowerS;
     };
 
@@ -187,7 +228,7 @@ export default function OrderDetailScreen() {
 
             {/* Price Bidding UI */}
             <AnimatePresence>
-                {status === 'assigned' && (
+                {(status === 'requested' || status === 'quoted' || status === 'assigned') && (
                     <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
@@ -196,8 +237,10 @@ export default function OrderDetailScreen() {
                     >
                         <div className="flex items-center justify-between">
                             <div>
-                                <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest">Operational Quote</h4>
-                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Define your procurement margin before authorization</p>
+                                <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest">Supply Quotation Aggregate</h4>
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                                    {status === 'requested' ? "Calculate per-item rates below to generate proposal" : "Current Quotation Value"}
+                                </p>
                             </div>
                             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-primary shadow-sm border border-primary/10">
                                 <IndianRupee size={20} />
@@ -206,13 +249,9 @@ export default function OrderDetailScreen() {
 
                         <div className="relative">
                             <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 font-black text-xl">₹</span>
-                            <input
-                                type="number"
-                                value={bidPrice}
-                                onChange={(e) => setBidPrice(e.target.value)}
-                                placeholder="Enter Price"
-                                className="w-full bg-white border-2 border-slate-100 rounded-[28px] py-4 pl-12 pr-6 text-2xl font-black text-slate-900 focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all outline-none tabular-nums"
-                            />
+                            <div className="w-full bg-white border-2 border-slate-100 rounded-[28px] py-4 pl-12 pr-6 text-2xl font-black text-slate-900 tabular-nums">
+                                {parseFloat(bidPrice).toLocaleString()}
+                            </div>
                         </div>
                     </motion.div>
                 )}
@@ -280,19 +319,35 @@ export default function OrderDetailScreen() {
                     </div>
 
                     <div className="space-y-3">
-                        {order.items.map((item, idx) => (
-                            <div key={idx} className="flex items-center justify-between p-4 rounded-2xl border border-slate-50 group hover:border-slate-200 hover:bg-slate-50 transition-all active:scale-[0.98]">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-white rounded-xl border border-slate-100 overflow-hidden shadow-sm">
-                                        <img src={item.image} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="" />
+                        {quotedItems.map((item, idx) => (
+                            <div key={idx} className="flex flex-col gap-3 p-4 rounded-2xl border border-slate-50 group hover:border-slate-200 hover:bg-slate-50 transition-all">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-white rounded-xl border border-slate-100 overflow-hidden shadow-sm">
+                                            <img src={item.image} className="w-full h-full object-cover" alt="" />
+                                        </div>
+                                        <div>
+                                            <p className="font-black text-slate-900 text-sm tracking-tight">{item.name}</p>
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{item.qty || item.quantity} {item.unit} Requested</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="font-black text-slate-900 text-sm tracking-tight">{item.name}</p>
-                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{item.quantity} {item.unit} Allocated</p>
-                                    </div>
-                                </div>
-                                <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <CheckCircle2 size={16} />
+                                    {status === 'requested' ? (
+                                        <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-1.5 focus-within:border-primary transition-all shadow-sm">
+                                            <span className="text-[11px] font-black text-slate-400">₹</span>
+                                            <input
+                                                type="number"
+                                                className="w-16 bg-transparent border-none outline-none font-black text-[11px] tabular-nums text-slate-900"
+                                                placeholder="Rate"
+                                                value={item.quotedPrice || ''}
+                                                onChange={(e) => updateItemQuotation(idx, e.target.value)}
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="text-right">
+                                            <p className="text-[11px] font-black text-slate-900 tabular-nums">₹{item.quotedPrice || (item.price || 0)}</p>
+                                            <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest">Quoted Rate</p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))}
@@ -359,39 +414,32 @@ export default function OrderDetailScreen() {
             {/* Sticky Action Footer */}
             <div className="fixed bottom-0 left-0 right-0 p-6 bg-white/90 backdrop-blur-2xl border-t border-slate-100 lg:left-64 flex gap-4 z-[100] shadow-[0_-20px_50px_-20px_rgba(0,0,0,0.1)]">
                 <AnimatePresence mode="wait">
-                    {status === 'assigned' && (
+                    {status === 'requested' && (
                         <motion.div
-                            key="action-assigned"
+                            key="action-requested"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
                             className="flex-1 flex gap-4"
                         >
                             <button
-                                onClick={() => handleAction('bidding')}
-                                disabled={isActionLoading || !bidPrice}
+                                onClick={handleQuotationSubmit}
+                                disabled={isActionLoading || quotedItems.some(item => !item.quotedPrice)}
                                 className="flex-[2] bg-slate-900 text-white py-5 rounded-[24px] font-black text-sm flex items-center justify-center gap-3 shadow-2xl shadow-slate-200 active:scale-95 transition-all disabled:opacity-50 group"
                             >
                                 {isActionLoading ? <Loader2 className="animate-spin" size={20} /> : (
                                     <>
-                                        Submit Procurement Quote
+                                        Transmit Supply Proposal
                                         <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
                                     </>
                                 )}
                             </button>
-                            <button
-                                onClick={() => handleAction('rejected', () => navigate('/vendor/orders'))}
-                                disabled={isActionLoading}
-                                className="flex-1 bg-white border-2 border-slate-100 text-slate-400 py-5 rounded-[24px] font-black text-sm flex items-center justify-center gap-2 hover:border-red-100 hover:text-red-500 active:scale-95 transition-all disabled:opacity-50"
-                            >
-                                <XCircle size={18} />
-                            </button>
                         </motion.div>
                     )}
 
-                    {status === 'bidding' && (
+                    {status === 'quoted' && (
                         <motion.div
-                            key="action-bidding"
+                            key="action-quoted"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             className="flex-1 bg-amber-50 text-amber-600 py-5 rounded-[24px] font-black text-sm flex items-center justify-center gap-3 border border-amber-100"
@@ -401,9 +449,9 @@ export default function OrderDetailScreen() {
                         </motion.div>
                     )}
 
-                    {status === 'accepted' && (
+                    {status === 'approved' && (
                         <motion.div
-                            key="action-accepted"
+                            key="action-approved"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             className="flex-1 flex gap-4"
