@@ -43,6 +43,7 @@ const CODCashScreen = lazy(() => import('./modules/franchise/pages/CashManagemen
 const POSWeighingScreen = lazy(() => import('./modules/franchise/pages/POSScreen'));
 const ProcurementScreen = lazy(() => import('./modules/franchise/pages/ProcurementScreen'));
 const FranchiseProfile = lazy(() => import('./modules/franchise/pages/ProfileScreen'));
+const DocumentationScreen = lazy(() => import('./modules/franchise/pages/DocumentationScreen'));
 const FranchiseLogin = lazy(() => import('./modules/franchise/pages/LoginScreen'));
 const FranchiseSignup = lazy(() => import('./modules/franchise/pages/SignupScreen'));
 
@@ -117,6 +118,7 @@ function App() {
                                 <Route path="pos" element={<POSWeighingScreen />} />
                                 <Route path="procurement" element={<ProcurementScreen />} />
                                 <Route path="profile" element={<FranchiseProfile />} />
+                                <Route path="documentation" element={<DocumentationScreen />} />
                               </Route>
                             </Route>
 
