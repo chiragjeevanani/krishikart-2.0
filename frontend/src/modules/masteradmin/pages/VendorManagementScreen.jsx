@@ -22,9 +22,10 @@ import {
     UserPlus,
     BarChart3
 } from 'lucide-react';
-import mockVendors from '../data/mockVendors.json';
+import { useAdmin } from '../contexts/AdminContext';
 import { cn } from '@/lib/utils';
 import VendorOnboardingDrawer from '../components/drawers/VendorOnboardingDrawer';
+import ApprovalDetailDrawer from '../components/drawers/ApprovalDetailDrawer';
 
 // Enterprise Components
 import MetricRow from '../components/cards/MetricRow';
@@ -32,24 +33,24 @@ import DataGrid from '../components/tables/DataGrid';
 import FilterBar from '../components/tables/FilterBar';
 
 export default function VendorManagementScreen() {
-    const [isLoading, setIsLoading] = useState(true);
+    const { vendors, fetchVendors, isLoading: adminLoading, updateVendorStatus } = useAdmin();
     const [searchTerm, setSearchTerm] = useState('');
     const [isOnboardOpen, setIsOnboardOpen] = useState(false);
+    const [selectedVendor, setSelectedVendor] = useState(null);
 
     useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 700);
-        return () => clearTimeout(timer);
+        fetchVendors(); // Fetch all vendors
     }, []);
 
-    const filteredVendors = mockVendors.filter(v =>
-        v.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        v.category.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredVendors = (vendors || []).filter(v =>
+        v.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        v.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const vendorColumns = [
         {
             header: 'Vendor Name',
-            key: 'name',
+            key: 'fullName',
             render: (val, row) => (
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-sm bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-slate-900 group-hover:text-white transition-colors">
@@ -57,15 +58,15 @@ export default function VendorManagementScreen() {
                     </div>
                     <div className="flex flex-col">
                         <span className="font-bold text-slate-900 text-[11px] leading-none mb-1">{val}</span>
-                        <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{row.id}</span>
+                        <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{row._id}</span>
                     </div>
                 </div>
             )
         },
         {
-            header: 'Vertical',
-            key: 'category',
-            render: (val) => <span className="text-[10px] font-bold text-slate-600 bg-slate-50 px-2 py-0.5 rounded-sm border border-slate-200 uppercase tracking-tight">{val}</span>
+            header: 'Location',
+            key: 'farmLocation',
+            render: (val) => <span className="text-[10px] font-bold text-slate-600 bg-slate-50 px-2 py-0.5 rounded-sm border border-slate-200 uppercase tracking-tight">{val || 'N/A'}</span>
         },
         {
             header: 'Trust Score',
@@ -78,24 +79,14 @@ export default function VendorManagementScreen() {
             )
         },
         {
-            header: 'Total Yield',
-            key: 'ordersFulfilled',
-            render: (val) => <span className="text-[11px] font-bold text-slate-900 tabular-nums">{val.toLocaleString()}</span>
+            header: 'Mobile',
+            key: 'mobile',
+            render: (val) => <span className="text-[11px] font-bold text-slate-900 tabular-nums">{val}</span>
         },
         {
-            header: 'Workload',
-            key: 'pendingWorkload',
-            render: (val) => (
-                <div className="flex items-center gap-2">
-                    <div className="flex-1 min-w-[60px] h-1 bg-slate-100 rounded-full overflow-hidden">
-                        <div
-                            className={cn("h-full", val > 15 ? "bg-rose-500" : val > 10 ? "bg-amber-400" : "bg-emerald-500")}
-                            style={{ width: `${Math.min((val / 20) * 100, 100)}%` }}
-                        />
-                    </div>
-                    <span className="text-[10px] font-bold text-slate-600 tabular-nums">{val}</span>
-                </div>
-            )
+            header: 'Email',
+            key: 'email',
+            render: (val) => <span className="text-[10px] font-bold text-slate-600 truncate max-w-[150px] inline-block">{val}</span>
         },
         {
             header: 'Status',
@@ -111,7 +102,7 @@ export default function VendorManagementScreen() {
         }
     ];
 
-    if (isLoading) {
+    if (adminLoading) {
         return (
             <div className="p-4 space-y-4 animate-pulse">
                 <div className="h-4 w-48 bg-slate-100 rounded" />
@@ -156,12 +147,12 @@ export default function VendorManagementScreen() {
             {/* Performance KPIs */}
             <div className="bg-white border-b border-slate-200 grid grid-cols-1 md:grid-cols-4">
                 <MetricRow
-                    label="Verified Partners"
-                    value="142"
-                    change={2.4}
+                    label="Total Partners"
+                    value={vendors?.length || 0}
+                    change={0}
                     trend="up"
                     icon={ShieldCheck}
-                    sparklineData={[135, 138, 140, 139, 142, 141, 142].map(v => ({ value: v }))}
+                    sparklineData={[...Array(7)].map(() => ({ value: vendors?.length || 0 }))}
                 />
                 <MetricRow
                     label="Performance"
@@ -222,6 +213,7 @@ export default function VendorManagementScreen() {
                         title="Vendor List"
                         columns={vendorColumns}
                         data={filteredVendors}
+                        onRowClick={(row) => setSelectedVendor(row)}
                         density="compact"
                     />
 
@@ -243,6 +235,23 @@ export default function VendorManagementScreen() {
                 onSave={(data) => {
                     console.log('Vendor Provisioned:', data);
                     setIsOnboardOpen(false);
+                }}
+            />
+
+            <ApprovalDetailDrawer
+                isOpen={!!selectedVendor}
+                onClose={() => setSelectedVendor(null)}
+                item={selectedVendor}
+                type="vendor"
+                onApprove={async (item) => {
+                    await updateVendorStatus(item._id, 'active');
+                    setSelectedVendor(null);
+                    fetchVendors();
+                }}
+                onReject={async (item) => {
+                    await updateVendorStatus(item._id, 'blocked');
+                    setSelectedVendor(null);
+                    fetchVendors();
                 }}
             />
         </div>

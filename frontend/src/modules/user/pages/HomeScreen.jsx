@@ -31,17 +31,31 @@ import {
 import StickySearchBar from '../components/layout/StickySearchBar'
 import PageTransition from '../components/layout/PageTransition'
 import ProductCard from '../components/common/ProductCard'
-import productsData from '../data/products.json'
-import categoriesData from '../data/categories.json'
+import api from '@/lib/axios'
 import { Button } from '@/components/ui/button'
 
 export default function HomeScreen() {
+    const [categories, setCategories] = useState([])
+    const [products, setProducts] = useState([])
     const [loading, setLoading] = useState(true)
     const navigate = useNavigate()
 
     useEffect(() => {
-        const timer = setTimeout(() => setLoading(false), 800)
-        return () => clearTimeout(timer)
+        const fetchData = async () => {
+            try {
+                const [catRes, prodRes] = await Promise.all([
+                    api.get('/catalog/categories'),
+                    api.get('/products')
+                ])
+                if (catRes.data.success) setCategories(catRes.data.results)
+                if (prodRes.data.success) setProducts(prodRes.data.results)
+            } catch (error) {
+                console.error('Error fetching home data:', error)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchData()
     }, [])
 
     return (
@@ -57,10 +71,10 @@ export default function HomeScreen() {
                         <h2 className="text-[20px] md:text-[28px] font-bold text-slate-900 mb-6 md:mb-8">Shop by category</h2>
 
                         <div className="grid grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-x-3 gap-y-6 md:gap-x-4 md:gap-y-8">
-                            {categoriesData.map((cat, idx) => (
+                            {categories.map((cat, idx) => (
                                 <motion.div
-                                    key={cat.id}
-                                    onClick={() => navigate(`/products/${cat.id}`)}
+                                    key={cat._id}
+                                    onClick={() => navigate(`/products/${cat._id}`)}
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ delay: idx * 0.02 }}
@@ -129,8 +143,8 @@ export default function HomeScreen() {
                         </div>
                         <div className="overflow-x-auto no-scrollbar md:overflow-visible px-6 md:px-0">
                             <div className="flex gap-4 w-max md:w-full md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 pb-2 md:pb-0">
-                                {productsData.slice(0, 5).map((product) => (
-                                    <div key={product.id} className="w-[164px] md:w-full cursor-pointer">
+                                {(products || []).slice(0, 5).map((product) => (
+                                    <div key={product._id} className="w-[164px] md:w-full cursor-pointer">
                                         <ProductCard product={product} />
                                     </div>
                                 ))}
@@ -156,8 +170,8 @@ export default function HomeScreen() {
                         </div>
                         <div className="overflow-x-auto no-scrollbar md:overflow-visible px-6 md:px-0">
                             <div className="flex gap-4 w-max md:w-full md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 pb-4">
-                                {productsData.filter(p => p.bulkPricing).slice(0, 5).map((product) => (
-                                    <div key={product.id} className="w-[155px] md:w-full cursor-pointer">
+                                {(products || []).filter(p => p.bulkPricing || p.wholesalePrice).slice(0, 5).map((product) => (
+                                    <div key={product._id} className="w-[155px] md:w-full cursor-pointer">
                                         <ProductCard product={product} />
                                     </div>
                                 ))}
@@ -177,8 +191,8 @@ export default function HomeScreen() {
                             <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight md:font-bold">Seasonal Picks</h2>
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-5 gap-4">
-                            {productsData.slice(2, 7).map((product) => (
-                                <ProductCard key={product.id} product={product} />
+                            {(products || []).slice(0, 5).map((product) => (
+                                <ProductCard key={product._id} product={product} />
                             ))}
                         </div>
                     </div>
@@ -196,8 +210,8 @@ export default function HomeScreen() {
                         </div>
                         <div className="overflow-x-auto no-scrollbar md:overflow-visible px-6 md:px-0">
                             <div className="flex gap-4 w-max md:w-full md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 pb-6">
-                                {productsData.filter(p => p.category === 'exotic').concat(productsData.slice(0, 5)).slice(0, 5).map((product) => (
-                                    <div key={product.id} className="w-[164px] md:w-full cursor-pointer">
+                                {(products || []).filter(p => p.category?.name?.toLowerCase() === 'exotic').slice(0, 5).map((product) => (
+                                    <div key={product._id} className="w-[164px] md:w-full cursor-pointer">
                                         <ProductCard product={product} />
                                     </div>
                                 ))}
@@ -214,8 +228,8 @@ export default function HomeScreen() {
                             <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight md:font-bold">Daily Essentials</h2>
                         </div>
                         <div className="space-y-4 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-4 md:space-y-0">
-                            {productsData.slice(1, 4).map((product, idx) => (
-                                <div key={product.id} onClick={() => navigate(`/product/${product.id}`)} className="cursor-pointer">
+                            {(products || []).slice(0, 3).map((product, idx) => (
+                                <div key={product._id} onClick={() => navigate(`/product/${product._id}`)} className="cursor-pointer">
                                     <ProductCard product={product} layout="list" index={idx} />
                                 </div>
                             ))}
@@ -229,8 +243,8 @@ export default function HomeScreen() {
                             <div className="w-16 h-1 bg-primary rounded-full mx-auto mt-4" />
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                            {productsData.slice(0, 15).map((product, idx) => (
-                                <div key={product.id} onClick={() => navigate(`/product/${product.id}`)} className="cursor-pointer">
+                            {(products || []).map((product, idx) => (
+                                <div key={product._id} onClick={() => navigate(`/product/${product._id}`)} className="cursor-pointer">
                                     <ProductCard product={product} index={idx} />
                                 </div>
                             ))}

@@ -4,11 +4,30 @@ import {
     ArrowLeft,
     ChevronRight
 } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import PageTransition from '../components/layout/PageTransition'
-import categoriesData from '../data/categories.json'
+import api from '@/lib/axios'
 
 export default function CategoriesScreen() {
+    const [categories, setCategories] = useState([])
+    const [loading, setLoading] = useState(true)
     const navigate = useNavigate()
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await api.get('/catalog/categories')
+                if (response.data.success) {
+                    setCategories(response.data.results)
+                }
+            } catch (error) {
+                console.error('Error fetching categories:', error)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchCategories()
+    }, [])
 
     return (
         <PageTransition>
@@ -32,11 +51,11 @@ export default function CategoriesScreen() {
                     </div>
 
                     <div className="p-4 md:p-4 md:py-10 grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-x-3 md:gap-x-8 gap-y-6 md:gap-y-12">
-                        {categoriesData.map((cat, idx) => {
+                        {categories.map((cat, idx) => {
                             return (
                                 <motion.button
-                                    key={cat.id}
-                                    onClick={() => navigate(`/products/${cat.id}`)}
+                                    key={cat._id}
+                                    onClick={() => navigate(`/products/${cat._id}`)}
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: idx * 0.02 }}

@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import api from '@/lib/axios'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Trash2, ShoppingCart, HeartOff, LayoutGrid, Star, ChevronDown, Search } from 'lucide-react'
 import PageTransition from '../components/layout/PageTransition'
@@ -15,18 +16,40 @@ export default function WishlistScreen() {
     const { wishlistItems } = useWishlist()
     const { cartCount } = useCart()
     const [activeCategory, setActiveCategory] = useState('all')
+    const [categories, setCategories] = useState([])
+
+    // Fetch categories to ensure we have names for IDs
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await api.get('/catalog/categories')
+                if (response.data.success) setCategories(response.data.results)
+            } catch (error) {
+                console.error('Fetch categories error:', error)
+            }
+        }
+        fetchCategories()
+    }, [])
 
     // Generate dynamic categories based on products in wishlist
     const dynamicCategories = useMemo(() => {
-        const uniqueCatIds = [...new Set(wishlistItems.map(item => item.category))]
+        const uniqueCatIds = [...new Set(wishlistItems.map(item =>
+            typeof item.category === 'object' ? item.category?._id : item.category
+        ))].filter(Boolean)
 
         const cats = uniqueCatIds.map(id => {
-            const data = categoriesData.find(c => c.id === id)
+            const itemWithCat = wishlistItems.find(i =>
+                (typeof i.category === 'object' ? i.category?._id : i.category) === id
+            )
+            const catObj = typeof itemWithCat?.category === 'object' ? itemWithCat.category : null
+            const apiCat = categories.find(c => c._id === id || c.id === id)
+            const staticData = categoriesData.find(c => c.id === id || c._id === id)
+
             return {
                 id: id,
-                name: data?.name || id.charAt(0).toUpperCase() + id.slice(1),
-                image: data?.image,
-                icon: data?.icon
+                name: catObj?.name || apiCat?.name || staticData?.name || 'Category',
+                image: catObj?.image || apiCat?.image || staticData?.image,
+                icon: staticData?.icon
             }
         })
 
@@ -133,13 +156,14 @@ export default function WishlistScreen() {
                                 <div className="px-4 py-1.5 rounded-full border border-slate-100 bg-white text-slate-700 shadow-sm whitespace-nowrap">
                                     <span className="text-[12px] font-bold">Veg</span>
                                 </div>
-                                <div className="flex items-center gap-1 px-4 py-1.5 rounded-full border border-slate-100 bg-white text-slate-700 shadow-sm whitespace-nowrap">
-                                    <span className="text-[12px] font-bold">Toor Dal</span>
-                                </div>
-                                <div className="flex items-center gap-1 px-4 py-1.5 rounded-full border border-slate-100 bg-white text-slate-700 shadow-sm whitespace-nowrap">
-                                    <span className="text-[12px] font-bold">Type</span>
-                                    <ChevronDown size={14} className="text-slate-400" />
-                                </div>
+                                {[...new Set(wishlistItems.map(item => typeof item.subcategory === 'object' ? item.subcategory?.name : item.subcategory))]
+                                    .filter(Boolean)
+                                    .map((sub, idx) => (
+                                        <div key={idx} className="flex items-center gap-1 px-4 py-1.5 rounded-full border border-slate-100 bg-white text-slate-700 shadow-sm whitespace-nowrap">
+                                            <span className="text-[12px] font-bold">{sub}</span>
+                                        </div>
+                                    ))
+                                }
                             </div>
                         )}
 

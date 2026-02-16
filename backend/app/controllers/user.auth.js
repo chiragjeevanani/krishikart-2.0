@@ -27,15 +27,15 @@ export const sendOTP = async (req, res) => {
       user = await User.create({ mobile });
     }
 
-    // Prevent OTP spam (60 seconds)
+    // Prevent OTP spam (60 seconds cooldown)
     if (
       user.otpExpiresAt &&
-      user.otpExpiresAt > new Date(Date.now() - 60 * 1000)
+      user.otpExpiresAt > new Date(Date.now() + 4 * 60 * 1000)
     ) {
       return handleResponse(
         res,
         429,
-        "Please wait before requesting another OTP"
+        "Please wait 60 seconds before requesting another OTP"
       );
     }
 

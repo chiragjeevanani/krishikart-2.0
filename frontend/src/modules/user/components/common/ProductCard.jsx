@@ -23,9 +23,11 @@ export default function ProductCard({ product, layout = 'grid' }) {
         window.addEventListener('resize', checkMobile)
         return () => window.removeEventListener('resize', checkMobile)
     }, [])
-    const cartItem = cartItems.find(item => item.id === product.id)
+    const productId = product._id || product.id
+    const cartItem = cartItems.find(item => item.id === productId)
     const quantity = cartItem ? cartItem.quantity : 0
-    const isLoved = isWishlisted(product.id)
+    const isLoved = isWishlisted(productId)
+    const productImage = product.primaryImage || product.image
 
     const handleAddToCart = (e) => {
         e.stopPropagation()
@@ -39,15 +41,15 @@ export default function ProductCard({ product, layout = 'grid' }) {
 
     const handleIncrement = (e) => {
         e.stopPropagation()
-        updateQuantity(product.id, 1)
+        updateQuantity(productId, 1)
     }
 
     const handleDecrement = (e) => {
         e.stopPropagation()
         if (quantity > 1) {
-            updateQuantity(product.id, -1)
+            updateQuantity(productId, -1)
         } else {
-            removeFromCart(product.id)
+            removeFromCart(productId)
         }
     }
 
@@ -58,12 +60,12 @@ export default function ProductCard({ product, layout = 'grid' }) {
                     layout
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    onClick={() => navigate(`/product/${product.id}`)}
+                    onClick={() => navigate(`/product/${productId}`)}
                     className="bg-white rounded-2xl p-2.5 border border-slate-100 flex gap-3.5 h-[110px] items-center group cursor-pointer hover:shadow-md transition-all md:rounded-xl md:border-slate-200 md:shadow-none md:hover:shadow-sm"
                 >
                     <div className="relative w-24 h-24 rounded-xl overflow-hidden shrink-0 bg-slate-50 md:rounded-lg">
                         <img
-                            src={product.image}
+                            src={productImage}
                             alt={product.name}
                             className="w-full h-full object-cover"
                             onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=80' }}
@@ -126,13 +128,13 @@ export default function ProductCard({ product, layout = 'grid' }) {
                 layout
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
-                onClick={() => navigate(`/product/${product.id}`)}
+                onClick={() => navigate(`/product/${productId}`)}
                 className="bg-white rounded-[20px] transition-all duration-300 group cursor-pointer overflow-hidden flex flex-col h-full"
             >
                 {/* Image & Floating Actions Container */}
                 <div className="relative aspect-square bg-white border border-slate-100 rounded-[20px] overflow-hidden m-0.5 group-hover:border-slate-200 transition-colors">
                     <img
-                        src={product.image}
+                        src={productImage}
                         alt={product.name}
                         className="w-full h-full object-contain p-4 mix-blend-multiply transition-transform duration-700 group-hover:scale-105"
                         onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=80' }}

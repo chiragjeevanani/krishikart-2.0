@@ -21,7 +21,12 @@ export default function ApprovalDetailDrawer({ isOpen, onClose, item, type, onAp
         }, 1500);
     };
 
-    const documents = isVendor ? item.documents :
+    const documents = isVendor ? [
+        { type: 'Aadhar Card', fileName: item.aadharCard ? 'aadhar_upload.pdf' : 'Not Uploaded', url: item.aadharCard },
+        { type: 'PAN Card', fileName: item.panCard ? 'pan_upload.pdf' : 'Not Uploaded', url: item.panCard },
+        { type: 'Shop Proof', fileName: item.shopEstablishmentProof ? 'shop_proof.pdf' : 'Not Uploaded', url: item.shopEstablishmentProof },
+        { type: 'FSSAI License', fileName: item.fssaiLicense || 'Not Provided', url: null }
+    ] :
         isFranchise ? Object.entries(item.checklist).map(([key, val]) => ({ type: key, ...val })) :
             item.supportingDocs;
 
@@ -56,15 +61,15 @@ export default function ApprovalDetailDrawer({ isOpen, onClose, item, type, onAp
                                 </div>
                                 <div>
                                     <h3 className="text-3xl font-black text-slate-900 tracking-tight italic uppercase">
-                                        {item.vendorName || item.franchiseName || item.hotelName}
+                                        {item.fullName || item.vendorName || item.franchiseName || item.hotelName}
                                     </h3>
                                     <div className="flex items-center gap-4 mt-2">
                                         <span className="px-3 py-1 bg-slate-100 text-slate-500 text-[10px] font-black rounded-lg uppercase tracking-widest border border-slate-200">
-                                            {item.id}
+                                            {item._id || item.id}
                                         </span>
                                         <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                             <Calendar size={14} className="text-slate-300" />
-                                            Submitted {new Date(item.submittedAt || item.requestedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}
+                                            Submitted {new Date(item.createdAt || item.submittedAt || item.requestedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}
                                         </div>
                                     </div>
                                 </div>
@@ -91,19 +96,19 @@ export default function ApprovalDetailDrawer({ isOpen, onClose, item, type, onAp
                                             <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                                 <User size={12} /> Contact Primary
                                             </div>
-                                            <p className="font-black text-slate-900">Arjun Singh</p>
+                                            <p className="font-black text-slate-900">{item.fullName || 'Arjun Singh'}</p>
                                         </div>
                                         <div className="space-y-4 p-4 rounded-3xl bg-slate-50/50">
                                             <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                                 <Phone size={12} /> Communication
                                             </div>
-                                            <p className="font-black text-slate-900">+91 98765 43210</p>
+                                            <p className="font-black text-slate-900">{item.mobile || '+91 98765 43210'}</p>
                                         </div>
                                         <div className="space-y-4 p-4 rounded-3xl bg-slate-50/50">
                                             <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                                 <Mail size={12} /> Credentials
                                             </div>
-                                            <p className="font-black text-slate-900 truncate">verification@krishikart.com</p>
+                                            <p className="font-black text-slate-900 truncate">{item.email || 'verification@krishikart.com'}</p>
                                         </div>
                                         {isCredit ? (
                                             <div className="space-y-4 p-4 rounded-3xl bg-slate-900 text-white">
@@ -117,7 +122,7 @@ export default function ApprovalDetailDrawer({ isOpen, onClose, item, type, onAp
                                                 <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                                     <MapPin size={12} /> Operations Hub
                                                 </div>
-                                                <p className="font-black text-slate-900">Benguluru Central</p>
+                                                <p className="font-black text-slate-900">{item.farmLocation || 'Benguluru Central'}</p>
                                             </div>
                                         )}
                                     </div>
@@ -138,11 +143,11 @@ export default function ApprovalDetailDrawer({ isOpen, onClose, item, type, onAp
                                     <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight mb-6">Business Profile</h4>
                                     <div className="space-y-4">
                                         <p className="text-sm text-slate-500 font-medium leading-relaxed">
-                                            This entity has been active in the regional supply chain for 3+ years. They speciallize in high-volume perishable procurement and have maintained a 95% delivery score on external platforms.
+                                            This entity has been active in the regional supply chain. Their specialized in high-volume perishable procurement and have maintained a good delivery score.
                                         </p>
                                         <div className="pt-4 border-t border-slate-50 flex gap-4">
                                             <span className="px-4 py-2 bg-slate-50 rounded-xl text-[10px] font-black text-slate-500 uppercase">Tier 1 Partner</span>
-                                            <span className="px-4 py-2 bg-slate-50 rounded-xl text-[10px] font-black text-slate-500 uppercase">Verified Address</span>
+                                            <span className="px-4 py-2 bg-slate-50 rounded-xl text-[10px] font-black text-slate-500 uppercase">{item.farmLocation ? 'Verified Address' : 'Pending Verification'}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -174,12 +179,25 @@ export default function ApprovalDetailDrawer({ isOpen, onClose, item, type, onAp
                                                             </div>
                                                         </div>
                                                         <div className="flex gap-2">
-                                                            <button className="w-8 h-8 rounded-lg bg-white border border-slate-100 flex items-center justify-center text-slate-300 hover:text-primary hover:border-primary transition-all shadow-sm">
-                                                                <ExternalLink size={14} />
-                                                            </button>
-                                                            <button className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-lg active:scale-95 transition-all">
-                                                                <Download size={14} />
-                                                            </button>
+                                                            {doc.url && (
+                                                                <>
+                                                                    <a
+                                                                        href={doc.url}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="w-8 h-8 rounded-lg bg-white border border-slate-100 flex items-center justify-center text-slate-300 hover:text-primary hover:border-primary transition-all shadow-sm"
+                                                                    >
+                                                                        <ExternalLink size={14} />
+                                                                    </a>
+                                                                    <a
+                                                                        href={doc.url}
+                                                                        download
+                                                                        className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-lg active:scale-95 transition-all"
+                                                                    >
+                                                                        <Download size={14} />
+                                                                    </a>
+                                                                </>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>

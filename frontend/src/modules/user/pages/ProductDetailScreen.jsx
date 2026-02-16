@@ -16,30 +16,75 @@ import {
   Info
 } from 'lucide-react'
 import PageTransition from '../components/layout/PageTransition'
-import Breadcrumbs from '../components/layout/Breadcrumbs'
-import productsData from '../data/products.json'
 import { Button } from '@/components/ui/button'
+import api from '@/lib/axios'
+import { useEffect } from 'react'
+import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { useCart } from '../contexts/CartContext'
+import { useWishlist } from '../contexts/WishlistContext'
 
 export default function ProductDetailScreen() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { addToCart } = useCart()
+  const { toggleWishlist, isWishlisted } = useWishlist()
+  const [product, setProduct] = useState(null)
+  const [loading, setLoading] = useState(true)
   const [quantity, setQuantity] = useState(1)
-  const [isFavorite, setIsFavorite] = useState(false)
+  const isFavorite = isWishlisted(id)
 
-  const product = useMemo(() => productsData.find(p => p.id === id) || productsData[0], [id])
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        setLoading(true)
+        const response = await api.get(`/products/${id}`)
+        if (response.data.success) {
+          setProduct(response.data.result)
+        }
+      } catch (error) {
+        console.error('Fetch Product Detail Error:', error)
+        toast.error('Failed to load product details')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (id) fetchProduct()
+  }, [id])
 
   // Calculate current price based on quantity
   const currentPrice = useMemo(() => {
-    if (!product.bulkPricing) return product.price;
+    if (!product) return 0;
+    if (!product.bulkPricing || product.bulkPricing.length === 0) return product.price;
     const applicableBulk = [...product.bulkPricing]
       .reverse()
       .find(b => quantity >= b.minQty);
     return applicableBulk ? applicableBulk.price : product.price;
   }, [product, quantity])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center">
+        <h2 className="text-2xl font-bold text-slate-900 mb-2">Product Not Found</h2>
+        <p className="text-slate-500 mb-6">The product you're looking for doesn't exist or has been removed.</p>
+        <Button onClick={() => navigate('/home')}>Go Back Home</Button>
+      </div>
+    )
+  }
+
+  const productImage = product.primaryImage || product.image
+  const productCategory = product.category?.name || product.category || 'General'
 
   return (
     <PageTransition>
@@ -57,7 +102,7 @@ export default function ProductDetailScreen() {
               <Share2 size={18} />
             </button>
             <button
-              onClick={() => setIsFavorite(!isFavorite)}
+              onClick={() => toggleWishlist(product)}
               className={cn(
                 "w-10 h-10 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-md shadow-sm border border-slate-100 transition-all active:scale-90",
                 isFavorite ? "text-red-500" : "text-slate-900"
@@ -74,7 +119,7 @@ export default function ProductDetailScreen() {
             {/* Hero Image */}
             <div className="relative aspect-[4/5] md:aspect-square md:w-[450px] lg:w-[500px] shrink-0 bg-white overflow-hidden md:rounded-xl md:border md:border-slate-100 flex items-center justify-center">
               <img
-                src={product.image}
+                src={productImage}
                 alt={product.name}
                 className="w-full h-full object-cover"
                 onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80' }}
@@ -85,7 +130,7 @@ export default function ProductDetailScreen() {
             <div className="px-6 -mt-8 relative z-10 bg-white rounded-t-[32px] pt-8 md:mt-0 md:bg-transparent md:px-0 md:pt-0 md:flex-1">
               <div className="flex items-center gap-2 mb-3">
                 <Badge className="bg-green-50 text-green-700 hover:bg-green-100 border-green-100 px-3 font-bold uppercase text-[10px] md:normal-case md:font-semibold">
-                  {product.category}
+                  {productCategory}
                 </Badge>
                 {product.stock > 0 && (
                   <span className="text-[10px] font-bold text-green-600 uppercase flex items-center gap-1 md:normal-case md:font-medium">

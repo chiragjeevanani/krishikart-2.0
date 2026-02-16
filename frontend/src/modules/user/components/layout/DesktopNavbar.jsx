@@ -120,9 +120,14 @@ export default function DesktopNavbar() {
                     {/* Wishlist */}
                     <button
                         onClick={() => navigate('/wishlist')}
-                        className="w-11 h-11 flex items-center justify-center rounded-full bg-white border border-slate-100 text-slate-700 hover:bg-slate-50 hover:border-slate-200 transition-all active:scale-95 shadow-sm"
+                        className="relative w-11 h-11 flex items-center justify-center rounded-full bg-white border border-slate-100 text-slate-700 hover:bg-slate-50 hover:border-slate-200 transition-all active:scale-95 shadow-sm group"
                     >
-                        <Heart size={20} className={cn(wishlistCount > 0 && "text-red-500 fill-red-500")} />
+                        <Heart size={20} className={cn("transition-colors", wishlistCount > 0 && "text-red-500 fill-red-500")} />
+                        {wishlistCount > 0 && (
+                            <span className="absolute -top-0.5 -right-0.5 w-[19px] h-[19px] bg-red-600 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white">
+                                {wishlistCount}
+                            </span>
+                        )}
                     </button>
 
                     {/* Profile Drawer */}

@@ -26,18 +26,18 @@ export default function ApprovalCard({ item, type, onApprove, onReject, onViewDo
                     </div>
                     <div>
                         <h4 className="font-bold text-slate-900 text-xs leading-none mb-1">
-                            {item.vendorName || item.franchiseName || item.hotelName}
+                            {item.fullName || item.vendorName || item.franchiseName || item.hotelName}
                         </h4>
                         <div className="flex items-center gap-1.5">
                             <Calendar size={10} className="text-slate-400" />
                             <span className="text-[9px] font-bold uppercase text-slate-400 tracking-wider">
-                                {new Date(item.submittedAt || item.requestedAt).toLocaleDateString('en-GB')}
+                                {new Date(item.createdAt || item.submittedAt || item.requestedAt).toLocaleDateString('en-GB')}
                             </span>
                         </div>
                     </div>
                 </div>
                 <div className="px-1.5 py-0.5 bg-slate-100 rounded-sm text-[8px] font-black uppercase tracking-widest text-slate-500">
-                    Pending
+                    {item.status || 'Pending'}
                 </div>
             </div>
 
@@ -45,23 +45,18 @@ export default function ApprovalCard({ item, type, onApprove, onReject, onViewDo
                 <div className="space-y-2">
                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Audit Checklist</span>
                     <div className="space-y-1.5 grayscale group-hover:grayscale-0 transition-all">
-                        {isVendor && item.documents.map((doc, idx) => (
+                        {isVendor && [
+                            { label: 'Aadhar Card', value: item.aadharCard },
+                            { label: 'PAN Card', value: item.panCard },
+                            { label: 'Shop Proof', value: item.shopEstablishmentProof },
+                            { label: 'FSSAI License', value: item.fssaiLicense }
+                        ].map((doc, idx) => (
                             <div key={idx} className="flex items-center justify-between py-1 border-b border-slate-50 last:border-0">
                                 <span className="text-[10px] font-medium text-slate-600 flex items-center gap-1.5">
-                                    <CheckCircle2 size={10} className="text-emerald-500" />
-                                    {doc.type.replace(/_/g, ' ')}
+                                    <CheckCircle2 size={10} className={doc.value ? "text-emerald-500" : "text-slate-300"} />
+                                    {doc.label}
                                 </span>
-                                <ExternalLink size={10} className="text-slate-300 group-hover:text-primary transition-colors" />
-                            </div>
-                        ))}
-                        {isFranchise && Object.entries(item.checklist).map(([key, val], idx) => (
-                            <div key={key} className="flex items-center justify-between py-1 border-b border-slate-50 last:border-0">
-                                <span className="text-[10px] font-medium text-slate-600">{key.replace(/([A-Z])/g, ' $1')}</span>
-                                {val.submitted ? (
-                                    <CheckCircle2 size={10} className="text-emerald-500" />
-                                ) : (
-                                    <AlertCircle size={10} className="text-amber-500" />
-                                )}
+                                {doc.value && <ExternalLink size={10} className="text-slate-300 group-hover:text-primary transition-colors" />}
                             </div>
                         ))}
                         {isCredit && (

@@ -22,41 +22,49 @@ import ApprovalCard from '../components/cards/ApprovalCard';
 import ApprovalDetailDrawer from '../components/drawers/ApprovalDetailDrawer';
 import FilterBar from '../components/tables/FilterBar';
 import mockApprovals from '../data/mockApprovals.json';
+import { useAdmin } from '../contexts/AdminContext';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function OnboardingApprovalScreen() {
+    const { vendors, isLoading: adminLoading, fetchVendors, updateVendorStatus } = useAdmin();
     const [searchParams, setSearchParams] = useSearchParams();
-    const [isLoading, setIsLoading] = useState(true);
     const activeTab = searchParams.get('type') || 'vendor';
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedItem, setSelectedItem] = useState(null);
 
     useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 800);
-        return () => clearTimeout(timer);
+        if (activeTab === 'vendor') {
+            fetchVendors('pending');
+        }
     }, [activeTab]);
 
     const tabs = [
-        { id: 'vendor', label: 'Vendor KYC', icon: Users, count: mockApprovals.vendorKYC.length },
-        { id: 'franchise', label: 'Franchise Docs', icon: Building, count: mockApprovals.franchiseDocuments.length },
-        { id: 'credit', label: 'Credit requests', icon: CreditCard, count: mockApprovals.hotelCreditRequests.length }
+        { id: 'vendor', label: 'Vendor KYC', icon: Users, count: vendors?.length || 0 },
+        { id: 'franchise', label: 'Franchise Docs', icon: Building, count: 0 },
+        { id: 'credit', label: 'Credit requests', icon: CreditCard, count: 0 }
     ];
 
-    const getApprovalData = () => {
-        switch (activeTab) {
-            case 'vendor': return mockApprovals.vendorKYC;
-            case 'franchise': return mockApprovals.franchiseDocuments;
-            case 'credit': return mockApprovals.hotelCreditRequests;
-            default: return [];
+    const currentItems = activeTab === 'vendor' ? (vendors || []).filter(v =>
+        (v.fullName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (v.email || "").toLowerCase().includes(searchTerm.toLowerCase())
+    ) : [];
+
+    const handleApprove = async (id) => {
+        const success = await updateVendorStatus(id, 'active');
+        if (success) {
+            setSelectedItem(null);
         }
     };
 
-    const currentItems = getApprovalData().filter(item => {
-        const name = item.vendorName || item.franchiseName || item.hotelName || '';
-        return name.toLowerCase().includes(searchTerm.toLowerCase());
-    });
+    const handleReject = async (id) => {
+        const success = await updateVendorStatus(id, 'blocked');
+        if (success) {
+            setSelectedItem(null);
+        }
+    };
 
-    if (isLoading) {
+    if (adminLoading) {
         return (
             <div className="p-4 space-y-4 animate-pulse">
                 <div className="h-4 w-48 bg-slate-100 rounded" />
@@ -124,7 +132,7 @@ export default function OnboardingApprovalScreen() {
                 <div className="px-6 py-4 border-r border-slate-100">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Queue Status</p>
                     <div className="flex items-center gap-2">
-                        <span className="text-xl font-black text-slate-900 tabular-nums">24</span>
+                        <span className="text-xl font-black text-slate-900 tabular-nums">{(vendors || []).length}</span>
                         <div className="px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded-sm text-[9px] font-bold uppercase tracking-wider border border-amber-100">Pending Review</div>
                     </div>
                 </div>
@@ -182,11 +190,11 @@ export default function OnboardingApprovalScreen() {
                     >
                         {currentItems.map((item) => (
                             <ApprovalCard
-                                key={item.id}
+                                key={item._id}
                                 item={item}
                                 type={activeTab}
-                                onApprove={() => setSelectedItem(item)}
-                                onReject={() => setSelectedItem(item)}
+                                onApprove={() => handleApprove(item._id)}
+                                onReject={() => handleReject(item._id)}
                                 onViewDoc={(item) => setSelectedItem(item)}
                             />
                         ))}
@@ -209,14 +217,8 @@ export default function OnboardingApprovalScreen() {
                 onClose={() => setSelectedItem(null)}
                 item={selectedItem}
                 type={activeTab}
-                onApprove={(item) => {
-                    console.log('Approved:', item.id);
-                    setSelectedItem(null);
-                }}
-                onReject={(item) => {
-                    console.log('Rejected:', item.id);
-                    setSelectedItem(null);
-                }}
+                onApprove={(item) => handleApprove(item._id)}
+                onReject={(item) => handleReject(item._id)}
             />
         </div>
     );

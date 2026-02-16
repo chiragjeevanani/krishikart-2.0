@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button'
 import { useCart } from '../contexts/CartContext'
 
 export default function CartScreen() {
-  const { cartItems, updateQuantity, removeFromCart, cartTotal } = useCart()
+  const { cartItems, updateQuantity, removeFromCart, cartTotal, getActivePrice } = useCart()
   const navigate = useNavigate()
 
   const deliveryFee = 50
@@ -64,9 +64,9 @@ export default function CartScreen() {
               <h2 className="hidden md:block text-3xl font-bold text-slate-900 mb-8 tracking-tight">My Shopping Cart</h2>
 
               <AnimatePresence mode="popLayout">
-                {cartItems.map((item) => (
+                {cartItems.map((item, index) => (
                   <motion.div
-                    key={item.id}
+                    key={item.id || index}
                     layout
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -74,7 +74,7 @@ export default function CartScreen() {
                     className="bg-white rounded-[32px] md:rounded-xl p-4 flex gap-4 border border-slate-100 shadow-sm relative group"
                   >
                     <div className="w-24 h-24 rounded-2xl md:rounded-lg overflow-hidden bg-slate-50 shrink-0 border border-slate-50">
-                      <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                      <img src={item.primaryImage || item.image} alt={item.name} className="w-full h-full object-cover" />
                     </div>
                     <div className="flex-1 flex flex-col justify-between py-1">
                       <div>
@@ -91,17 +91,17 @@ export default function CartScreen() {
                       </div>
 
                       <div className="flex justify-between items-center">
-                        <span className="text-lg font-black text-primary md:font-bold">₹{item.price * item.quantity}</span>
+                        <span className="text-lg font-black text-primary md:font-bold">₹{getActivePrice(item) * item.quantity}</span>
                         <div className="flex items-center gap-3 bg-slate-50 rounded-xl md:rounded-lg p-1 border border-slate-100">
                           <button
-                            onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
+                            onClick={() => updateQuantity(item.id, -1)}
                             className="w-8 h-8 flex items-center justify-center rounded-lg bg-white shadow-sm text-slate-600 hover:text-primary transition-colors active:scale-90"
                           >
                             <Minus size={14} />
                           </button>
                           <span className="w-6 text-center text-sm font-black text-slate-900 md:font-bold">{item.quantity}</span>
                           <button
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            onClick={() => updateQuantity(item.id, 1)}
                             className="w-8 h-8 flex items-center justify-center rounded-lg bg-white shadow-sm text-slate-600 hover:text-primary transition-colors active:scale-90"
                           >
                             <Plus size={14} />

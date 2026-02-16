@@ -5,8 +5,12 @@ import { Phone, ArrowRight, ShieldCheck, CheckCircle2, Sprout } from 'lucide-rea
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import api from '../../../lib/axios'
+import { useCart } from '../contexts/CartContext'
+import { useWishlist } from '../contexts/WishlistContext'
 
 export default function LoginScreen() {
+    const { fetchCart } = useCart()
+    const { fetchWishlist } = useWishlist()
     const [step, setStep] = useState('phone') // phone, otp
     const [phone, setPhone] = useState('')
     const [otp, setOtp] = useState(['', '', '', '', '', ''])
@@ -35,8 +39,12 @@ export default function LoginScreen() {
                 try {
                     const response = await api.post('/user/verify-otp', { mobile: phone, otp: otpValue });
 
-                    localStorage.setItem('userToken', response.data.result.token);
-                    localStorage.setItem('userData', JSON.stringify(response.data.result.user));
+                    localStorage.setItem('userToken', response.data.results.token);
+                    localStorage.setItem('userData', JSON.stringify(response.data.results.user));
+
+                    // Sync cart and wishlist immediately
+                    fetchCart();
+                    fetchWishlist();
 
                     navigate('/home')
                 } catch (error) {
