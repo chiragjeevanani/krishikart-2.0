@@ -20,6 +20,11 @@ import FranchiseStockMonitoringScreen from '../pages/FranchiseStockMonitoringScr
 import PurchaseManagerScreen from '../pages/PurchaseManagerScreen';
 import OnboardingApprovalScreen from '../pages/OnboardingApprovalScreen';
 import VendorTurnoverScreen from '../pages/VendorTurnoverScreen';
+import AddProductScreen from '../pages/AddProductScreen';
+import ManageProductScreen from '../pages/ManageProductScreen';
+import CategoryManagementScreen from '../pages/CategoryManagementScreen';
+import SubcategoryManagementScreen from '../pages/SubcategoryManagementScreen';
+import { Navigate } from 'react-router-dom';
 
 export const masterAdminRoutes = (
     <Route path="/masteradmin" element={<MasterAdminLayout />}>
@@ -48,5 +53,13 @@ export const masterAdminRoutes = (
 
         {/* Admin Approval Routes */}
         <Route path="approvals" element={<OnboardingApprovalScreen />} />
+
+        {/* Catalog Management Routes */}
+        <Route path="products" element={<Navigate to="manage" replace />} />
+        <Route path="products/add" element={<AddProductScreen />} />
+        <Route path="products/manage" element={<ManageProductScreen />} />
+        <Route path="categories" element={<Navigate to="manage" replace />} />
+        <Route path="categories/manage" element={<CategoryManagementScreen />} />
+        <Route path="subcategories/manage" element={<SubcategoryManagementScreen />} />
     </Route>
 );

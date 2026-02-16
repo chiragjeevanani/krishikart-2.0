@@ -77,7 +77,7 @@ export default function DashboardScreen() {
             )
         },
         {
-            header: 'SLA Status',
+            header: 'Status',
             key: 'status',
             render: (val) => (
                 <div className={cn(
@@ -89,7 +89,7 @@ export default function DashboardScreen() {
             )
         },
         {
-            header: 'Gross Amount',
+            header: 'Amount',
             key: 'amount',
             align: 'right',
             render: (val) => <span className="font-bold text-slate-900 tabular-nums text-[11px]">₹{val.toLocaleString()}</span>
@@ -101,7 +101,7 @@ export default function DashboardScreen() {
             render: (_, row) => <span className="font-bold text-blue-600 tabular-nums text-[11px]">₹{(row.amount * 0.95).toLocaleString()}</span>
         },
         {
-            header: 'Timestamp',
+            header: 'Date',
             key: 'date',
             render: (val) => <span className="text-[10px] text-slate-400 font-bold uppercase tabular-nums">{val}</span>
         },
@@ -139,11 +139,11 @@ export default function DashboardScreen() {
                         <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-r border-slate-200 pr-4">
                             <Home size={12} />
                             <ChevronRight size={10} />
-                            <span>Master Admin</span>
+                            <span>Admin Panel</span>
                             <ChevronRight size={10} />
-                            <span className="text-slate-900 uppercase tracking-widest">Global Operations</span>
+                            <span className="text-slate-900 uppercase tracking-widest">Dashboard</span>
                         </div>
-                        <h1 className="text-sm font-bold text-slate-900">System Command Center</h1>
+                        <h1 className="text-sm font-bold text-slate-900">Dashboard Overview</h1>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -170,7 +170,7 @@ export default function DashboardScreen() {
                 >
                     <div className="flex items-center gap-2">
                         {showMetrics ? <ChevronDown size={14} className="text-slate-400" /> : <ChevronRight size={14} className="text-slate-400" />}
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none">Primary Performance Metrics</span>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none">Key Metrics</span>
                     </div>
                     {!showMetrics && (
                         <div className="flex gap-4">
@@ -210,16 +210,16 @@ export default function DashboardScreen() {
                 {/* Visual Analytics */}
                 <div className="grid grid-cols-1 xl:grid-cols-2 bg-slate-200 gap-px border-b border-slate-200">
                     <ChartPanel
-                        title="Order Conversion & Lifecycle"
-                        subtitle="System-wide fulfillment velocity"
+                        title="Order Statistics"
+                        subtitle="Order fulfillment rate"
                         height={340}
                     >
                         <ComparisonChart
                             data={orderFlow}
                             type="composed"
                             metrics={[
-                                { key: "orders", name: "Inbound Capture", color: "#0f172a", type: "area" },
-                                { key: "fulfillment", name: "Outbound Success", color: "#64748b", type: "bar" }
+                                { key: "orders", name: "Orders", color: "#0f172a", type: "area" },
+                                { key: "fulfillment", name: "Fulfillment", color: "#64748b", type: "bar" }
                             ]}
                             height={300}
                             targetValue={80}
@@ -228,8 +228,8 @@ export default function DashboardScreen() {
                     </ChartPanel>
 
                     <ChartPanel
-                        title="Value Flow Analytics"
-                        subtitle="Gross revenue throughput (24h Window)"
+                        title="Revenue Trends"
+                        subtitle="Daily revenue (Last 24 hours)"
                         height={340}
                     >
                         <ResponsiveContainer width="100%" height="100%">
@@ -270,7 +270,7 @@ export default function DashboardScreen() {
                 <div className="bg-white">
                     <FilterBar />
                     <DataGrid
-                        title="Operational Settlement Pipeline"
+                        title="Recent Settlements"
                         columns={settlementColumns}
                         data={recentSettlements}
                         density="compact"
@@ -281,11 +281,11 @@ export default function DashboardScreen() {
                         <div className="flex items-center gap-4">
                             <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-50 border border-amber-100 rounded-sm">
                                 <AlertCircle size={10} className="text-amber-500" />
-                                <span className="text-[9px] font-bold text-amber-600 uppercase tracking-widest">4 Exceptions Pending</span>
+                                <span className="text-[9px] font-bold text-amber-600 uppercase tracking-widest">4 Pending Items</span>
                             </div>
                             <div className="h-3 w-px bg-slate-200" />
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest underline decoration-slate-200 underline-offset-4 cursor-help">
-                                Total Exposure: <span className="text-slate-900 tabular-nums">₹892,500.00</span>
+                                Total Amount: <span className="text-slate-900 tabular-nums">₹892,500.00</span>
                             </span>
                         </div>
                         <div className="flex items-center gap-1">
@@ -301,22 +301,22 @@ export default function DashboardScreen() {
                     <div className="flex items-center gap-6">
                         <div className="flex items-center gap-2">
                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
-                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Mainframe // <span className="text-white">Active</span></span>
+                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">System Status // <span className="text-white">Active</span></span>
                         </div>
                         <div className="flex items-center gap-2">
                             <Cpu size={11} className="text-blue-400" />
-                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Load // <span className="text-white">12%</span></span>
+                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Server Load // <span className="text-white">12%</span></span>
                         </div>
                         <div className="flex items-center gap-2">
                             <Terminal size={11} className="text-purple-400" />
-                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Node // <span className="text-white">UK-42-B</span></span>
+                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Server // <span className="text-white">UK-42-B</span></span>
                         </div>
                     </div>
                     <div className="flex items-center gap-4">
                         <span className="text-[9px] font-bold text-slate-500 tabular-nums">Uptime: 142d 12h 42m</span>
                         <div className="h-3 w-px bg-slate-800" />
                         <button className="text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-white transition-colors">
-                            Access Telemetry
+                            View Details
                         </button>
                     </div>
                 </div>

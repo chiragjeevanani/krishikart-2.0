@@ -22,7 +22,11 @@ import {
     Briefcase,
     TrendingUp,
     Building,
-    Home
+    Home,
+    Package,
+    Tags,
+    PlusCircle,
+    List
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
@@ -53,47 +57,69 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
     const navItems = [
         {
             group: 'Operations', items: [
-                { icon: LayoutDashboard, label: 'Overview', path: '/masteradmin/dashboard' },
-                { icon: ShoppingBag, label: 'Order Hub', path: '/masteradmin/orders' },
-                { icon: UserCheck, label: 'Vendor Assignment', path: '/masteradmin/assignment' },
-                { icon: Truck, label: 'Delivery Radar', path: '/masteradmin/delivery' },
+                { icon: LayoutDashboard, label: 'Dashboard', path: '/masteradmin/dashboard' },
+                { icon: ShoppingBag, label: 'Orders', path: '/masteradmin/orders' },
+                { icon: UserCheck, label: 'Assign Vendors', path: '/masteradmin/assignment' },
+                { icon: Truck, label: 'Delivery Tracking', path: '/masteradmin/delivery' },
             ]
         },
         {
-            group: 'Finance & Ledger', items: [
-                { icon: CreditCard, label: 'Credit Control', path: '/masteradmin/credit' },
-                { icon: BookOpen, label: 'Financial Ledgers', path: '/masteradmin/ledger' },
+            group: 'Finance', items: [
+                { icon: CreditCard, label: 'Credit Management', path: '/masteradmin/credit' },
+                { icon: BookOpen, label: 'Ledger', path: '/masteradmin/ledger' },
                 { icon: Percent, label: 'Commissions', path: '/masteradmin/commission' },
             ]
         },
         {
-            group: 'Network & Supply', items: [
-                { icon: Store, label: 'Franchise Network', path: '/masteradmin/franchises' },
-                { icon: Users, label: 'Vendor Pool', path: '/masteradmin/vendors' },
-                { icon: TrendingUp, label: 'Vendor Economics', path: '/masteradmin/vendor-economics' },
-                { icon: Monitor, label: 'Stock Monitoring', path: '/masteradmin/stock-monitoring' },
-                { icon: Briefcase, label: 'Purchase Manager', path: '/masteradmin/purchase' },
+            group: 'Network', items: [
+                { icon: Store, label: 'Franchises', path: '/masteradmin/franchises' },
+                { icon: Users, label: 'Vendors', path: '/masteradmin/vendors' },
+                { icon: TrendingUp, label: 'Vendor Reports', path: '/masteradmin/vendor-economics' },
+                { icon: Monitor, label: 'Stock Levels', path: '/masteradmin/stock-monitoring' },
+                { icon: Briefcase, label: 'Purchase Orders', path: '/masteradmin/purchase' },
             ]
         },
         {
-            group: 'Admin Controls', items: [
+            group: 'Catalog Management', items: [
+                {
+                    icon: Package,
+                    label: 'Product',
+                    path: '/masteradmin/products',
+                    submenu: [
+                        { label: 'Add Product', path: '/masteradmin/products/add', icon: PlusCircle },
+                        { label: 'Manage Product', path: '/masteradmin/products/manage', icon: List }
+                    ]
+                },
+                {
+                    icon: Tags,
+                    label: 'Category',
+                    path: '/masteradmin/categories',
+                    submenu: [
+                        { label: 'Manage Category', path: '/masteradmin/categories/manage', icon: List },
+                        { label: 'Manage Subcategory', path: '/masteradmin/subcategories/manage', icon: List }
+                    ]
+                }
+            ]
+        },
+        {
+            group: 'Settings', items: [
                 {
                     icon: ClipboardCheck,
-                    label: 'Approval Desk',
+                    label: 'Approvals',
                     path: '/masteradmin/approvals',
                     submenu: [
-                        { label: 'Vendor KYC', path: '/masteradmin/approvals?type=vendor', icon: Users },
-                        { label: 'Franchise Docs', path: '/masteradmin/approvals?type=franchise', icon: Building },
+                        { label: 'Vendor Documents', path: '/masteradmin/approvals?type=vendor', icon: Users },
+                        { label: 'Franchise Documents', path: '/masteradmin/approvals?type=franchise', icon: Building },
                         { label: 'Credit Requests', path: '/masteradmin/approvals?type=credit', icon: CreditCard }
                     ]
                 },
-                { icon: BarChart3, label: 'Business Insights', path: '/masteradmin/analytics' },
+                { icon: BarChart3, label: 'Analytics', path: '/masteradmin/analytics' },
                 {
                     icon: Settings,
-                    label: 'Platform Settings',
+                    label: 'Settings',
                     path: '/masteradmin/settings',
                     submenu: [
-                        { label: 'Admin Profile', path: '/masteradmin/settings?section=profile', icon: UserCircle },
+                        { label: 'My Profile', path: '/masteradmin/settings?section=profile', icon: UserCircle },
                     ]
                 }
             ]
@@ -114,7 +140,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                         </div>
                         <div className="flex flex-col">
                             <span className="font-black text-[13px] tracking-tight text-slate-900 leading-none">KRISHIKART</span>
-                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Enterprise Admin</span>
+                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Admin Panel</span>
                         </div>
                     </div>
                 ) : (
@@ -229,7 +255,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                     )}
                 >
                     <LogOut size={16} className="group-hover:scale-110 transition-transform" />
-                    {!isCollapsed && <span className="font-black text-[10px] uppercase tracking-[0.2em]">De-provision Access</span>}
+                    {!isCollapsed && <span className="font-black text-[10px] uppercase tracking-[0.2em]">Logout</span>}
                 </button>
             </div>
 

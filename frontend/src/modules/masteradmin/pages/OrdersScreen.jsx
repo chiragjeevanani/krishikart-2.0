@@ -98,11 +98,11 @@ export default function OrdersScreen() {
                         <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-r border-slate-200 pr-4">
                             <Home size={12} />
                             <ChevronRight size={10} />
-                            <span>Master Admin</span>
+                            <span>Admin Panel</span>
                             <ChevronRight size={10} />
-                            <span className="text-slate-900 uppercase tracking-widest">Order Management</span>
+                            <span className="text-slate-900 uppercase tracking-widest">Orders</span>
                         </div>
-                        <h1 className="text-sm font-bold text-slate-900">Platform Transaction Hub</h1>
+                        <h1 className="text-sm font-bold text-slate-900">Order Dashboard</h1>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -145,7 +145,7 @@ export default function OrdersScreen() {
                     sparklineData={[92, 93, 94, 93.5, 94.2, 94, 94.2].map(v => ({ value: v }))}
                 />
                 <MetricRow
-                    label="Mean Lead Time"
+                    label="Average Time"
                     value="18.5m"
                     change={-1.2}
                     trend="up"
@@ -219,8 +219,8 @@ export default function OrdersScreen() {
                             <div className="w-12 h-12 bg-slate-50 rounded-sm flex items-center justify-center text-slate-300 mb-4 border border-slate-100">
                                 <ShoppingBasket size={24} />
                             </div>
-                            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-tight">No matching transactions found</h3>
-                            <p className="text-[10px] text-slate-400 mt-1 font-medium uppercase tracking-widest">System idle for current filter parameters</p>
+                            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-tight">No orders found</h3>
+                            <p className="text-[10px] text-slate-400 mt-1 font-medium uppercase tracking-widest">Try changing your search or filters</p>
                         </div>
                     )}
                 </div>
@@ -252,8 +252,8 @@ export default function OrdersScreen() {
                                             <Briefcase size={16} />
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">Procurement Workflow</span>
-                                            <span className="text-xs font-bold text-slate-900 mt-1 uppercase tracking-tight">Assignment Engine</span>
+                                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">Order Assignment</span>
+                                            <span className="text-xs font-bold text-slate-900 mt-1 uppercase tracking-tight">Assign Vendor</span>
                                         </div>
                                     </div>
                                     <button
@@ -329,7 +329,7 @@ export default function OrdersScreen() {
                                 <div className="bg-slate-900 rounded-sm p-4 flex items-center justify-between">
                                     <div className="flex items-center gap-3">
                                         <Activity size={16} className="text-emerald-400" />
-                                        <span className="text-[10px] font-bold text-white uppercase tracking-widest">SLA Protection Policy Active</span>
+                                        <span className="text-[10px] font-bold text-white uppercase tracking-widest">Standard Service Active</span>
                                     </div>
                                     <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Policy Rev. 4.2</span>
                                 </div>

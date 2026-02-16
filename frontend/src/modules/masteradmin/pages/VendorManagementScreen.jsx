@@ -130,11 +130,11 @@ export default function VendorManagementScreen() {
                         <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-r border-slate-200 pr-4">
                             <Home size={12} />
                             <ChevronRight size={10} />
-                            <span>Master Admin</span>
+                            <span>Admin Panel</span>
                             <ChevronRight size={10} />
-                            <span className="text-slate-900 uppercase tracking-widest">Supply Ledger</span>
+                            <span className="text-slate-900 uppercase tracking-widest">Vendors</span>
                         </div>
-                        <h1 className="text-sm font-bold text-slate-900">Vendor Operational Directory</h1>
+                        <h1 className="text-sm font-bold text-slate-900">Vendor List</h1>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -147,7 +147,7 @@ export default function VendorManagementScreen() {
                             className="bg-slate-900 text-white px-3 py-1.5 rounded-sm text-[11px] font-bold flex items-center gap-2 hover:bg-slate-800 transition-colors shadow-sm"
                         >
                             <UserPlus size={13} />
-                            Provision Partner
+                            Add Vendor
                         </button>
                     </div>
                 </div>
@@ -164,7 +164,7 @@ export default function VendorManagementScreen() {
                     sparklineData={[135, 138, 140, 139, 142, 141, 142].map(v => ({ value: v }))}
                 />
                 <MetricRow
-                    label="Active Throughput"
+                    label="Performance"
                     value="98.4%"
                     change={0.2}
                     trend="up"
@@ -172,7 +172,7 @@ export default function VendorManagementScreen() {
                     sparklineData={[97.5, 98, 98.2, 98.1, 98.4, 98.3, 98.4].map(v => ({ value: v }))}
                 />
                 <MetricRow
-                    label="Compliance Avg"
+                    label="Average Rating"
                     value="4.82"
                     change={0.15}
                     trend="up"
@@ -180,7 +180,7 @@ export default function VendorManagementScreen() {
                     sparklineData={[4.7, 4.75, 4.8, 4.78, 4.82, 4.81, 4.82].map(v => ({ value: v }))}
                 />
                 <MetricRow
-                    label="Mean Lead Time"
+                    label="Average Time"
                     value="2.4h"
                     change={-5.8}
                     trend="up"
@@ -214,12 +214,12 @@ export default function VendorManagementScreen() {
                             />
                         </div>
                         <div className="flex items-center gap-4">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest tabular-nums">Entity Count: {filteredVendors.length}</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest tabular-nums">Total Vendors: {filteredVendors.length}</span>
                         </div>
                     </div>
 
                     <DataGrid
-                        title="Vendor Operational Ledger"
+                        title="Vendor List"
                         columns={vendorColumns}
                         data={filteredVendors}
                         density="compact"
@@ -230,8 +230,8 @@ export default function VendorManagementScreen() {
                             <div className="w-12 h-12 bg-slate-50 rounded-sm flex items-center justify-center text-slate-300 mb-4 border border-slate-100">
                                 <Users size={24} />
                             </div>
-                            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-tight">No entities matching criteria</h3>
-                            <p className="text-[10px] text-slate-400 mt-1 font-medium uppercase tracking-widest">Verify system identifiers or active filters</p>
+                            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-tight">No vendors found</h3>
+                            <p className="text-[10px] text-slate-400 mt-1 font-medium uppercase tracking-widest">Try changing your search or filters</p>
                         </div>
                     )}
                 </div>

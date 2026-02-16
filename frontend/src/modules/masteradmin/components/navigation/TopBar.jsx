@@ -13,7 +13,7 @@ export default function TopBar() {
                     <Search size={14} className="text-slate-400 group-focus-within:text-slate-900" />
                     <input
                         type="text"
-                        placeholder="Search system entities, transactions, or nodes..."
+                        placeholder="Search products, orders, or vendors..."
                         className="bg-transparent border-none outline-none text-[11px] w-full font-bold placeholder:text-slate-400 text-slate-900"
                     />
                     <div className="px-1.5 py-0.5 border border-slate-200 rounded-sm text-[8px] font-black text-slate-400 group-focus-within:opacity-0 transition-opacity">
@@ -49,8 +49,8 @@ export default function TopBar() {
                 {/* Identity Module */}
                 <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
                     <div className="text-right hidden sm:block">
-                        <p className="text-[11px] font-black text-slate-900 leading-none uppercase tracking-tight">Root Authority</p>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Operational Tier 0</p>
+                        <p className="text-[11px] font-black text-slate-900 leading-none uppercase tracking-tight">Administrator</p>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Main Control</p>
                     </div>
                     <div className="w-8 h-8 rounded-sm bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 group cursor-pointer hover:border-slate-900 transition-colors overflow-hidden">
                         <UserCircle size={24} className="group-hover:text-slate-900" />
