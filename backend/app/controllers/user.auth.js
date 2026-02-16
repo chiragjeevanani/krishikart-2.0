@@ -267,3 +267,76 @@ export const resetPassword = async (req, res) => {
     return handleResponse(res, 500, "Server error");
   }
 };
+
+/**
+ * UPDATE PROFILE
+ */
+export const updateUserProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const {
+      fullName,
+      email,
+      panNumber,
+      legalEntityName,
+      address,
+      preferences,
+      profileImage,
+    } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return handleResponse(res, 404, "User not found");
+    }
+
+    if (fullName !== undefined) user.fullName = fullName;
+    if (email !== undefined) user.email = email;
+    if (panNumber !== undefined) user.panNumber = panNumber;
+    if (legalEntityName !== undefined) user.legalEntityName = legalEntityName;
+    if (address !== undefined) user.address = address;
+    if (profileImage !== undefined) user.profileImage = profileImage;
+
+    if (preferences) {
+      user.preferences = {
+        ...user.preferences.toObject(),
+        ...preferences,
+      };
+    }
+
+    await user.save();
+
+    return handleResponse(res, 200, "Profile updated successfully", user);
+  } catch (error) {
+    console.error(error);
+    return handleResponse(res, 500, "Internal server error");
+  }
+};
+
+/**
+ * CHANGE PASSWORD
+ */
+export const changeUserPassword = async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    const user = await User.findById(req.user.id);
+
+    if (!user.password) {
+      user.password = await bcrypt.hash(newPassword, 10);
+      await user.save();
+      return handleResponse(res, 200, "Password set successfully");
+    }
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      return handleResponse(res, 400, "Invalid old password");
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    return handleResponse(res, 200, "Password changed successfully");
+  } catch (error) {
+    return handleResponse(res, 500, "Server error");
+  }
+};
+

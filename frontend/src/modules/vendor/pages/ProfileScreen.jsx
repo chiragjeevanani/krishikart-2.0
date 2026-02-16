@@ -231,7 +231,11 @@ export default function ProfileScreen() {
             setVendor(data.result);
         } catch (error) {
             console.error('Failed to fetch profile:', error);
-            // Optionally redirect to login if unauthorized
+            if (error.response?.status === 401) {
+                localStorage.removeItem('vendorToken');
+                localStorage.removeItem('vendorData');
+                navigate('/vendor/login');
+            }
         } finally {
             setLoading(false);
         }
@@ -400,23 +404,6 @@ export default function ProfileScreen() {
 
                 </section>
 
-                <div className="pt-8 space-y-4">
-                    <button
-                        onClick={() => {
-                            localStorage.removeItem('token');
-                            navigate('/vendor/login');
-                        }}
-                        className="w-full bg-white text-red-500 py-6 rounded-[36px] font-black text-sm flex items-center justify-center gap-3 border border-red-50 hover:bg-red-50 transition-all active:scale-[0.98] shadow-sm hover:shadow-red-100/50"
-                    >
-                        Terminate Session
-                        <LogOut size={18} />
-                    </button>
-
-                    <div className="text-center">
-                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em] leading-none">Powered by KrishiKart Ledger v1.0</p>
-                        <p className="text-[9px] font-bold text-slate-200 mt-2">DEPLOYMENT_NODE: PROD-MUM-882</p>
-                    </div>
-                </div>
             </div>
 
             <AnimatePresence>

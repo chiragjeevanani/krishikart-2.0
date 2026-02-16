@@ -16,6 +16,15 @@ export default function ProfileScreen() {
   const { balance } = useWallet()
   const [isVegMode, setIsVegMode] = useState(false)
 
+  const userData = JSON.parse(localStorage.getItem('userData') || '{}')
+
+  const handleLogout = () => {
+    localStorage.removeItem('userToken')
+    localStorage.removeItem('userData')
+    localStorage.removeItem('token') // Fallback
+    navigate('/login')
+  }
+
   const sections = [
     {
       title: "Orders & statements",
@@ -66,17 +75,19 @@ export default function ProfileScreen() {
       <div className="bg-[#f2f5f8] min-h-screen pb-32 font-sans md:hidden">
         {/* Profile Header */}
         <div className="bg-white px-5 pt-8 pb-5 rounded-b-[28px] shadow-sm mb-4">
-          <div className="flex items-center gap-3.5">
+          <div className="flex items-center gap-3.5" onClick={() => navigate('/edit-profile')}>
             <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center overflow-hidden border border-blue-100">
               <img
-                src="https://cdni.iconscout.com/illustration/premium/thumb/delivery-man-job-3829562-3199859.png"
+                src={userData.profileImage || "https://cdni.iconscout.com/illustration/premium/thumb/delivery-man-job-3829562-3199859.png"}
                 className="w-full h-full object-cover scale-150"
                 alt="avatar"
               />
             </div>
             <div className="flex flex-col">
-              <h1 className="text-[18px] font-black text-slate-900 leading-tight tracking-tight">chirag</h1>
-              <p className="text-[12px] font-medium text-slate-400">Guest Account</p>
+              <h1 className="text-[18px] font-black text-slate-900 leading-tight tracking-tight">
+                {userData.fullName || 'Guest User'}
+              </h1>
+              <p className="text-[12px] font-medium text-slate-400">{userData.legalEntityName || 'Guest Account'}</p>
             </div>
           </div>
         </div>
@@ -138,7 +149,7 @@ export default function ProfileScreen() {
 
           {/* Logout Button */}
           <button
-            onClick={() => navigate('/login')}
+            onClick={handleLogout}
             className="w-full bg-white rounded-[20px] px-6 py-3.5 flex items-center gap-3 text-emerald-600 font-extrabold text-[14.5px] shadow-sm active:bg-slate-50 transition-all mt-1"
           >
             <Power size={17} strokeWidth={3} />
@@ -184,7 +195,7 @@ export default function ProfileScreen() {
               ))}
 
               <button
-                onClick={() => navigate('/login')}
+                onClick={handleLogout}
                 className="w-full bg-white rounded-[32px] p-6 flex items-center justify-center gap-3 text-emerald-600 font-black border-2 border-dashed border-emerald-100 hover:bg-emerald-50 transition-all"
               >
                 <Power size={24} />

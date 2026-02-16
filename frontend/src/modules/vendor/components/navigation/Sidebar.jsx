@@ -59,7 +59,11 @@ export default function Sidebar() {
 
             <div className="pt-6 border-t border-slate-50">
                 <button
-                    onClick={() => navigate('/vendor/login')}
+                    onClick={() => {
+                        localStorage.removeItem('vendorToken');
+                        localStorage.removeItem('vendorData');
+                        navigate('/vendor/login');
+                    }}
                     className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all group"
                 >
                     <LogOut size={20} className="group-hover:-translate-x-1 transition-transform" />

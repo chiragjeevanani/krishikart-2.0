@@ -9,18 +9,18 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-    let token = localStorage.getItem('token'); // Default token
+    let token = null;
 
     // Intelligent Token Selection based on Route
     if (window.location.pathname.startsWith('/masteradmin')) {
-        token = localStorage.getItem('masterAdminToken') || token;
+        token = localStorage.getItem('masterAdminToken');
     } else if (window.location.pathname.startsWith('/vendor')) {
-        token = localStorage.getItem('vendorToken') || token;
+        token = localStorage.getItem('vendorToken');
     } else if (window.location.pathname.startsWith('/franchise')) {
-        token = localStorage.getItem('franchiseToken') || token;
+        token = localStorage.getItem('franchiseToken');
     } else {
-        // Fallback checks
-        token = token || localStorage.getItem('vendorToken') || localStorage.getItem('masterAdminToken') || localStorage.getItem('franchiseToken');
+        // User module or fallbacks
+        token = localStorage.getItem('userToken') || localStorage.getItem('token');
     }
 
     if (token) {

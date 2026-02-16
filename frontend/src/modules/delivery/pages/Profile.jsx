@@ -97,7 +97,14 @@ const Profile = () => {
                     </div>
                 </div>
 
-                <button className="w-full mt-10 p-4 rounded-2xl bg-rose-50 text-rose-500 font-bold flex items-center justify-center gap-2 border border-rose-100 mb-20 active:scale-95 transition-all">
+                <button
+                    onClick={() => {
+                        localStorage.removeItem('deliveryToken');
+                        localStorage.removeItem('deliveryData');
+                        window.location.href = '/delivery/login';
+                    }}
+                    className="w-full mt-10 p-4 rounded-2xl bg-rose-50 text-rose-500 font-bold flex items-center justify-center gap-2 border border-rose-100 mb-20 active:scale-95 transition-all"
+                >
                     <LogOut className="w-5 h-5" /> Logout Session
                 </button>
             </div>

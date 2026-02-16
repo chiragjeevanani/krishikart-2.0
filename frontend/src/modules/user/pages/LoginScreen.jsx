@@ -35,8 +35,8 @@ export default function LoginScreen() {
                 try {
                     const response = await api.post('/user/verify-otp', { mobile: phone, otp: otpValue });
 
-                    localStorage.setItem('userToken', response.data.token);
-                    localStorage.setItem('userData', JSON.stringify(response.data.user));
+                    localStorage.setItem('userToken', response.data.result.token);
+                    localStorage.setItem('userData', JSON.stringify(response.data.result.user));
 
                     navigate('/home')
                 } catch (error) {

@@ -1,22 +1,43 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     ArrowLeft, AlertCircle, MessageSquare,
     CircleDollarSign, FileText, Phone, Mail, Edit3,
     Smartphone, Receipt, X, CheckCircle2,
-    Plus, Briefcase, Info, Headset, Trash2
+    Plus, Briefcase, Info, Headset, Trash2, Loader2
 } from 'lucide-react'
 import PageTransition from '../components/layout/PageTransition'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import api from '../../../lib/axios'
 
 export default function EditProfileScreen() {
     const navigate = useNavigate()
     const [isPasswordDrawerOpen, setIsPasswordDrawerOpen] = useState(false)
     const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false)
+    const [isLoading, setIsLoading] = useState(false)
+    const [isSaving, setIsSaving] = useState(false)
+
+    // User State
+    const [user, setUser] = useState({
+        fullName: '',
+        mobile: '',
+        email: '',
+        panNumber: '',
+        legalEntityName: '',
+        address: ''
+    })
+
+    const [editData, setEditData] = useState({
+        fullName: '',
+        email: '',
+        panNumber: '',
+        legalEntityName: '',
+        address: ''
+    })
 
     // Dynamic Additional Numbers
     const [additionalNumbers, setAdditionalNumbers] = useState([])
@@ -33,8 +54,99 @@ export default function EditProfileScreen() {
         confirm: ''
     })
 
-    const togglePreference = (key) => {
-        setPreferences(prev => ({ ...prev, [key]: !prev[key] }))
+    useEffect(() => {
+        fetchProfile()
+    }, [])
+
+    const fetchProfile = async () => {
+        setIsLoading(true)
+        try {
+            const response = await api.get('/user/me')
+            const userData = response.data.result
+            setUser({
+                fullName: userData.fullName || '',
+                mobile: userData.mobile || '',
+                email: userData.email || '',
+                panNumber: userData.panNumber || '',
+                legalEntityName: userData.legalEntityName || '',
+                address: userData.address || ''
+            })
+            setEditData({
+                fullName: userData.fullName || '',
+                email: userData.email || '',
+                panNumber: userData.panNumber || '',
+                legalEntityName: userData.legalEntityName || '',
+                address: userData.address || ''
+            })
+            setPreferences({
+                whatsapp: userData.preferences?.whatsappUpdates || false,
+                tax: userData.preferences?.showTaxInclusive || false,
+                paper: userData.preferences?.paperInvoice || false
+            })
+        } catch (error) {
+            console.error('Failed to fetch profile:', error)
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const handleSaveProfile = async () => {
+        setIsSaving(true)
+        try {
+            const response = await api.put('/user/update-profile', {
+                fullName: editData.fullName,
+                email: editData.email,
+                panNumber: editData.panNumber,
+                legalEntityName: editData.legalEntityName,
+                address: editData.address
+            })
+            setUser(response.data.result)
+            setIsEditDrawerOpen(false)
+            alert('Profile updated successfully')
+        } catch (error) {
+            alert(error.response?.data?.message || 'Failed to update profile')
+        } finally {
+            setIsSaving(false)
+        }
+    }
+
+    const handleChangePassword = async () => {
+        if (passwordData.new !== passwordData.confirm) {
+            alert('Passwords do not match')
+            return
+        }
+        setIsSaving(true)
+        try {
+            await api.post('/user/change-password', {
+                oldPassword: passwordData.old,
+                newPassword: passwordData.new
+            })
+            setIsPasswordDrawerOpen(false)
+            setPasswordData({ old: '', new: '', confirm: '' })
+            alert('Password changed successfully')
+        } catch (error) {
+            alert(error.response?.data?.message || 'Failed to change password')
+        } finally {
+            setIsSaving(false)
+        }
+    }
+
+    const togglePreference = async (key) => {
+        const newPreferences = { ...preferences, [key]: !preferences[key] }
+        setPreferences(newPreferences)
+
+        try {
+            await api.put('/user/update-profile', {
+                preferences: {
+                    whatsappUpdates: newPreferences.whatsapp,
+                    showTaxInclusive: newPreferences.tax,
+                    paperInvoice: newPreferences.paper
+                }
+            })
+        } catch (error) {
+            console.error('Failed to update preferences:', error)
+            setPreferences(preferences) // revert on error
+        }
     }
 
     const addNumberRow = () => {
@@ -45,13 +157,12 @@ export default function EditProfileScreen() {
         setAdditionalNumbers(prev => prev.filter(row => row.id !== id))
     }
 
-    const userData = {
-        name: 'chirag',
-        phone: '8225819420',
-        email: 'chirag@gmail.com',
-        pan: 'Unverified',
-        entity: 'Guest Account',
-        address: 'pipliyahahna, Indore - 452012'
+    if (isLoading) {
+        return (
+            <div className="h-screen w-full flex items-center justify-center bg-slate-50">
+                <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+            </div>
+        )
     }
 
     return (
@@ -78,95 +189,49 @@ export default function EditProfileScreen() {
                             <div className="space-y-6">
                                 <div className="space-y-1.5">
                                     <label className="text-[13px] font-bold text-slate-400">User name</label>
-                                    <p className="text-[18px] font-bold text-slate-800 leading-none tracking-tight">{userData.name}</p>
+                                    <p className="text-[18px] font-bold text-slate-800 leading-none tracking-tight">{user.fullName || 'Guest User'}</p>
                                 </div>
 
                                 <div className="space-y-1.5">
                                     <label className="text-[13px] font-bold text-slate-400">Login phone number</label>
-                                    <p className="text-[18px] font-bold text-slate-800 leading-none tracking-tight">{userData.phone}</p>
+                                    <p className="text-[18px] font-bold text-slate-800 leading-none tracking-tight">{user.mobile || 'N/A'}</p>
                                 </div>
 
                                 <div className="space-y-1.5">
                                     <label className="text-[13px] font-bold text-slate-400">Email address</label>
-                                    <p className="text-[18px] font-bold text-slate-800 leading-none tracking-tight">{userData.email}</p>
+                                    <p className="text-[18px] font-bold text-slate-800 leading-none tracking-tight">{user.email || 'Not set'}</p>
                                 </div>
 
                                 <div className="space-y-1.5">
                                     <label className="text-[13px] font-bold text-slate-400">PAN card number</label>
                                     <div className="flex items-center gap-1.5 text-orange-500 font-black">
-                                        <div className="w-4 h-4 rounded-full bg-orange-500 flex items-center justify-center text-white">
-                                            <AlertCircle size={10} strokeWidth={4} />
-                                        </div>
-                                        <span className="text-[14px]">Unverified</span>
+                                        {user.panNumber ? (
+                                            <p className="text-[18px] font-bold text-slate-800 leading-none tracking-tight">{user.panNumber}</p>
+                                        ) : (
+                                            <>
+                                                <div className="w-4 h-4 rounded-full bg-orange-500 flex items-center justify-center text-white">
+                                                    <AlertCircle size={10} strokeWidth={4} />
+                                                </div>
+                                                <span className="text-[14px]">Unverified</span>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
 
                                 <div className="space-y-1.5">
                                     <label className="text-[13px] font-bold text-slate-400">Legal entity name</label>
-                                    <p className="text-[18px] font-bold text-slate-800 leading-none tracking-tight">{userData.entity}</p>
+                                    <p className="text-[18px] font-bold text-slate-800 leading-none tracking-tight">{user.legalEntityName || 'Guest Account'}</p>
                                 </div>
                             </div>
 
                             {/* Buttons Group */}
-                            <div className="flex gap-4 pt-4">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setIsPasswordDrawerOpen(true)}
-                                    className="flex-1 h-12 border-emerald-600 text-emerald-600 hover:bg-emerald-50 rounded-xl font-bold text-base transition-all active:scale-[0.98]"
-                                >
-                                    Change Password
-                                </Button>
+                            <div className="pt-4">
                                 <Button
                                     onClick={() => setIsEditDrawerOpen(true)}
-                                    className="flex-1 h-12 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-base shadow-lg shadow-emerald-100 transition-all active:scale-[0.98]"
+                                    className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-base shadow-lg shadow-emerald-100 transition-all active:scale-[0.98]"
                                 >
                                     Edit Details
                                 </Button>
-                            </div>
-
-                            {/* Switches Section */}
-                            <div className="pt-8 space-y-6">
-                                <div className="flex items-center justify-between group">
-                                    <div className="flex items-center gap-3.5">
-                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 group-hover:text-emerald-500 transition-colors">
-                                            <Smartphone size={20} />
-                                        </div>
-                                        <span className="text-[14px] font-bold text-slate-700">Send me order updates on WhatsApp</span>
-                                    </div>
-                                    <Switch
-                                        checked={preferences.whatsapp}
-                                        onCheckedChange={() => togglePreference('whatsapp')}
-                                        className="data-[state=checked]:bg-emerald-500"
-                                    />
-                                </div>
-
-                                <div className="flex items-center justify-between group">
-                                    <div className="flex items-center gap-3.5">
-                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 group-hover:text-emerald-500 transition-colors">
-                                            <CircleDollarSign size={20} />
-                                        </div>
-                                        <span className="text-[14px] font-bold text-slate-700">Show prices including tax</span>
-                                    </div>
-                                    <Switch
-                                        checked={preferences.tax}
-                                        onCheckedChange={() => togglePreference('tax')}
-                                        className="data-[state=checked]:bg-emerald-500"
-                                    />
-                                </div>
-
-                                <div className="flex items-center justify-between group">
-                                    <div className="flex items-center gap-3.5">
-                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 group-hover:text-emerald-500 transition-colors">
-                                            <Receipt size={20} />
-                                        </div>
-                                        <span className="text-[14px] font-bold text-slate-700">Send me paper invoice with orders.</span>
-                                    </div>
-                                    <Switch
-                                        checked={preferences.paper}
-                                        onCheckedChange={() => togglePreference('paper')}
-                                        className="data-[state=checked]:bg-emerald-500"
-                                    />
-                                </div>
                             </div>
                         </div>
 
@@ -174,8 +239,8 @@ export default function EditProfileScreen() {
                         <div className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-sm relative group hover:border-emerald-600/20 transition-all duration-300">
                             <div className="flex justify-between items-start mb-6">
                                 <div className="space-y-1">
-                                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">{userData.name}</h2>
-                                    <p className="text-[14px] font-medium text-slate-400">{userData.address}</p>
+                                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">{user.fullName || 'Guest User'}</h2>
+                                    <p className="text-[14px] font-medium text-slate-400">{user.address || 'Address not set'}</p>
                                 </div>
                             </div>
 
@@ -184,13 +249,13 @@ export default function EditProfileScreen() {
                                     <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-emerald-500 transition-colors">
                                         <Phone size={18} />
                                     </div>
-                                    <span className="text-base font-bold text-slate-800">{userData.phone}</span>
+                                    <span className="text-base font-bold text-slate-800">{user.mobile}</span>
                                 </div>
                                 <div className="flex items-center gap-4 text-slate-600">
                                     <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-emerald-500 transition-colors">
                                         <Mail size={18} />
                                     </div>
-                                    <span className="text-base font-bold text-slate-800">{userData.email}</span>
+                                    <span className="text-base font-bold text-slate-800">{user.email || 'Email not set'}</span>
                                 </div>
                             </div>
                         </div>
@@ -231,7 +296,8 @@ export default function EditProfileScreen() {
                                         <div className="space-y-1.5">
                                             <div className="relative">
                                                 <Input
-                                                    defaultValue={userData.email}
+                                                    value={editData.email}
+                                                    onChange={(e) => setEditData({ ...editData, email: e.target.value })}
                                                     placeholder="Email address"
                                                     className="h-14 bg-white border-slate-200 rounded-xl px-5 text-base font-bold focus:ring-[#10b981]/10"
                                                 />
@@ -242,18 +308,21 @@ export default function EditProfileScreen() {
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="relative">
                                                 <Input
-                                                    defaultValue={userData.phone}
+                                                    value={user.mobile}
+                                                    disabled
                                                     placeholder="Phone number"
-                                                    className="h-14 bg-white border-slate-200 rounded-xl px-5 text-base font-bold focus:ring-[#10b981]/10"
+                                                    className="h-14 bg-slate-50 border-slate-200 rounded-xl px-5 text-base font-bold opacity-70"
                                                 />
                                                 <span className="absolute -top-2 left-4 bg-white px-1 text-[10px] font-black text-slate-400 uppercase">Phone number</span>
                                             </div>
                                             <div className="relative">
                                                 <Input
+                                                    value={editData.fullName}
+                                                    onChange={(e) => setEditData({ ...editData, fullName: e.target.value })}
                                                     placeholder="Name"
                                                     className="h-14 bg-white border-slate-200 rounded-xl px-5 text-base font-bold focus:ring-[#10b981]/10"
                                                 />
-                                                <span className="absolute -top-2 left-4 bg-white px-1 text-[10px] font-black text-slate-400 uppercase invisible">Name</span>
+                                                <span className="absolute -top-2 left-4 bg-white px-1 text-[10px] font-black text-slate-400 uppercase">Name</span>
                                             </div>
                                         </div>
 
@@ -307,15 +376,33 @@ export default function EditProfileScreen() {
                                         </div>
 
                                         <div className="space-y-4 pt-2">
-                                            {[1, 2].map((i) => (
-                                                <div key={i} className="relative group">
-                                                    <Input
-                                                        placeholder=" "
-                                                        className="h-14 bg-white border-slate-200 rounded-xl px-5 text-base font-bold pr-16"
-                                                    />
-                                                    <button className="absolute right-4 top-1/2 -translate-y-1/2 text-[13px] font-black text-emerald-600 uppercase tracking-tight">Verify</button>
-                                                </div>
-                                            ))}
+                                            <div className="relative group">
+                                                <Input
+                                                    value={editData.panNumber}
+                                                    onChange={(e) => setEditData({ ...editData, panNumber: e.target.value })}
+                                                    placeholder="PAN Number"
+                                                    className="h-14 bg-white border-slate-200 rounded-xl px-5 text-base font-bold pr-16"
+                                                />
+                                                <span className="absolute -top-2 left-4 bg-white px-1 text-[10px] font-black text-slate-400 uppercase">PAN Number</span>
+                                            </div>
+                                            <div className="relative group">
+                                                <Input
+                                                    value={editData.legalEntityName}
+                                                    onChange={(e) => setEditData({ ...editData, legalEntityName: e.target.value })}
+                                                    placeholder="Legal Entity Name"
+                                                    className="h-14 bg-white border-slate-200 rounded-xl px-5 text-base font-bold pr-16"
+                                                />
+                                                <span className="absolute -top-2 left-4 bg-white px-1 text-[10px] font-black text-slate-400 uppercase">Legal Entity Name</span>
+                                            </div>
+                                            <div className="relative group">
+                                                <Input
+                                                    value={editData.address}
+                                                    onChange={(e) => setEditData({ ...editData, address: e.target.value })}
+                                                    placeholder="Address"
+                                                    className="h-14 bg-white border-slate-200 rounded-xl px-5 text-base font-bold"
+                                                />
+                                                <span className="absolute -top-2 left-4 bg-white px-1 text-[10px] font-black text-slate-400 uppercase">Address</span>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -348,8 +435,12 @@ export default function EditProfileScreen() {
                                 </div>
 
                                 <div className="p-8 bg-white border-t border-slate-100">
-                                    <Button className="w-full h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-lg shadow-lg shadow-emerald-100 active:scale-[0.98] transition-all">
-                                        Save Changes
+                                    <Button
+                                        onClick={handleSaveProfile}
+                                        disabled={isSaving}
+                                        className="w-full h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-lg shadow-lg shadow-emerald-100 active:scale-[0.98] transition-all"
+                                    >
+                                        {isSaving ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Save Changes'}
                                     </Button>
                                 </div>
                             </motion.div>
@@ -442,15 +533,16 @@ export default function EditProfileScreen() {
                                 {/* Drawer Footer */}
                                 <div className="p-8 border-t border-slate-50">
                                     <Button
-                                        disabled={!passwordData.old || !passwordData.new || !passwordData.confirm}
+                                        onClick={handleChangePassword}
+                                        disabled={!passwordData.old || !passwordData.new || !passwordData.confirm || isSaving}
                                         className={cn(
                                             "w-full h-14 rounded-xl text-base font-bold shadow-lg transition-all active:scale-[0.98]",
-                                            (!passwordData.old || !passwordData.new || !passwordData.confirm)
+                                            (!passwordData.old || !passwordData.new || !passwordData.confirm || isSaving)
                                                 ? "bg-slate-200 text-slate-400 shadow-none cursor-not-allowed"
                                                 : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-100"
                                         )}
                                     >
-                                        Change Password
+                                        {isSaving ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : 'Change Password'}
                                     </Button>
                                 </div>
                             </motion.div>
