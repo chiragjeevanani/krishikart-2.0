@@ -24,9 +24,11 @@ import {
 import { useNavigate } from 'react-router-dom';
 import products from '../../user/data/products.json';
 import { cn } from '@/lib/utils';
+import { useProcurement } from '../contexts/ProcurementContext';
 
 export default function ProcurementScreen() {
     const navigate = useNavigate();
+    const { addRequest } = useProcurement();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [cart, setCart] = useState({});
@@ -81,6 +83,14 @@ export default function ProcurementScreen() {
 
     const handlePlaceOrder = () => {
         setIsSubmitting(true);
+
+        const requestData = {
+            items: cartItems.map(item => ({ ...item, quotedPrice: 0 })),
+            totalEstimatedAmount: totalAmount
+        };
+
+        addRequest(requestData);
+
         setTimeout(() => {
             setIsSubmitting(false);
             setOrderSuccess(true);

@@ -26,6 +26,7 @@ import ManageProductScreen from '../pages/ManageProductScreen';
 import CategoryManagementScreen from '../pages/CategoryManagementScreen';
 import SubcategoryManagementScreen from '../pages/SubcategoryManagementScreen';
 import LoyaltyControlScreen from '../pages/LoyaltyControlScreen';
+import VendorQuotationScreen from '../pages/VendorQuotationScreen';
 import { Navigate } from 'react-router-dom';
 
 export const masterAdminRoutes = (
@@ -56,6 +57,7 @@ export const masterAdminRoutes = (
 
         {/* Admin Approval Routes */}
         <Route path="approvals" element={<OnboardingApprovalScreen />} />
+        <Route path="quotations" element={<VendorQuotationScreen />} />
 
         {/* Catalog Management Routes */}
         <Route path="products" element={<Navigate to="manage" replace />} />

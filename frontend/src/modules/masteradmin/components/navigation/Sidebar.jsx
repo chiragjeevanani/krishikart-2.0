@@ -79,6 +79,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                 { icon: TrendingUp, label: 'Vendor Reports', path: '/masteradmin/vendor-economics' },
                 { icon: Monitor, label: 'Stock Levels', path: '/masteradmin/stock-monitoring' },
                 { icon: Briefcase, label: 'Purchase Orders', path: '/masteradmin/purchase' },
+                { icon: Star, label: 'Vendor Quotations', path: '/masteradmin/quotations' },
             ]
         },
         {

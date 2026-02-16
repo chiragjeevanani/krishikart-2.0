@@ -19,6 +19,7 @@ import mockOrders from '../data/mockVendorOrders.json';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useOrders } from '@/modules/user/contexts/OrderContext';
+import { useProcurement } from '@/modules/franchise/contexts/ProcurementContext';
 import FilterBar from '../components/tables/FilterBar';
 import DataGrid from '../components/tables/DataGrid';
 
@@ -29,6 +30,7 @@ export default function OrdersScreen() {
     const [searchTerm, setSearchTerm] = useState('');
     const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
     const { orders: contextOrders } = useOrders();
+    const { procurementRequests } = useProcurement();
 
     const tabs = ['New', 'Preparing', 'Ready', 'Completed'];
 
@@ -46,7 +48,19 @@ export default function OrdersScreen() {
             deadline: o.deadline || new Date(Date.now() + 3600000).toISOString()
         }));
 
-    const allOrders = [...liveVendorOrders, ...mockOrders.filter(m => !liveVendorOrders.find(l => l.id === m.id))];
+    const mappedProcurementRequests = procurementRequests.map(req => ({
+        id: req.id,
+        franchiseName: 'Franchise Node 01',
+        total: req.totalQuotedAmount || 0,
+        status: req.status,
+        items: req.items,
+        date: req.date,
+        isProcurement: true,
+        priority: 'high',
+        deadline: new Date(new Date(req.date).getTime() + 7200000).toISOString()
+    }));
+
+    const allOrders = [...mappedProcurementRequests, ...liveVendorOrders, ...mockOrders.filter(m => !liveVendorOrders.find(l => l.id === m.id))];
 
     useEffect(() => {
         const timer = setTimeout(() => setIsLoading(false), 600);
@@ -55,8 +69,8 @@ export default function OrdersScreen() {
 
     const filteredOrders = allOrders.filter(order => {
         const statusMap = {
-            'New': ['new', 'assigned', 'bidding', 'accepted'],
-            'Preparing': ['preparing'],
+            'New': ['new', 'assigned', 'bidding', 'accepted', 'requested', 'quoted'],
+            'Preparing': ['preparing', 'approved'],
             'Ready': ['ready'],
             'Completed': ['completed', 'delivered']
         };
@@ -131,7 +145,10 @@ export default function OrdersScreen() {
         'ready': "bg-emerald-50 text-emerald-600 border-emerald-100",
         'preparing': "bg-amber-50 text-amber-600 border-amber-100",
         'completed': "bg-slate-50 text-slate-400 border-slate-100",
-        'delivered': "bg-slate-50 text-slate-400 border-slate-100"
+        'delivered': "bg-slate-50 text-slate-400 border-slate-100",
+        'requested': "bg-indigo-50 text-indigo-600 border-indigo-100",
+        'quoted': "bg-amber-50 text-amber-600 border-amber-100",
+        'approved': "bg-emerald-50 text-emerald-600 border-emerald-100"
     };
 
     if (isLoading) {

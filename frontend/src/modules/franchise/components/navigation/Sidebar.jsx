@@ -48,6 +48,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
         {
             group: 'Configuration', items: [
                 { icon: User, label: 'Node Profile', path: '/franchise/profile' },
+                { icon: Settings, label: 'Documentation', path: '/franchise/documentation' },
             ]
         }
     ];

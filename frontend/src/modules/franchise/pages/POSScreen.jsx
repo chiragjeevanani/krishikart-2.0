@@ -136,17 +136,17 @@ export default function POSScreen() {
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-2 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-px bg-slate-200 no-scrollbar">
+                <div className="flex-1 overflow-y-auto grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-px bg-slate-200 no-scrollbar content-start">
                     {filteredItems.map((item) => (
                         <div
                             key={item.id}
-                            onClick={() => item.unit === 'Kg' ? setSelectedItemForScale(item) : addToCart(item)}
-                            className="bg-white p-4 border border-transparent hover:border-slate-900 transition-all cursor-pointer flex flex-col group relative overflow-hidden"
+                            onClick={() => (item.unit === 'Kg' || item.unit === 'kg') ? setSelectedItemForScale(item) : addToCart(item)}
+                            className="bg-white p-2.5 border border-transparent hover:border-slate-900 transition-all cursor-pointer flex flex-col group relative overflow-hidden"
                         >
-                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Plus size={14} className="text-slate-900" />
+                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                <Plus size={12} className="text-slate-900" />
                             </div>
-                            <div className="w-full aspect-square bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-300 mb-4 rounded-sm transition-colors group-hover:bg-slate-100 overflow-hidden relative">
+                            <div className="w-full aspect-square bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-300 mb-2 rounded-sm transition-colors group-hover:bg-slate-100 overflow-hidden relative">
                                 {item.image ? (
                                     <img
                                         src={item.image}
@@ -158,19 +158,19 @@ export default function POSScreen() {
                                         }}
                                     />
                                 ) : (
-                                    <Package size={32} strokeWidth={1.5} />
+                                    <Package size={24} strokeWidth={1.5} />
                                 )}
                             </div>
-                            <div className="flex flex-col gap-1">
-                                <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-tight truncate leading-none">{item.name}</h4>
-                                <div className="flex items-baseline gap-1 mt-1">
-                                    <span className="text-[12px] font-black text-slate-900 tabular-nums">₹{(item.price || 0).toLocaleString()}</span>
-                                    <span className="text-[9px] font-bold text-slate-400 uppercase">/{item.unit}</span>
+                            <div className="flex flex-col gap-0.5">
+                                <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-tight truncate leading-tight h-7 line-clamp-2">{item.name}</h4>
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-[11px] font-black text-slate-900 tabular-nums">₹{(item.price || 0).toLocaleString()}</span>
+                                    <span className="text-[8px] font-bold text-slate-400 uppercase">/{item.unit}</span>
                                 </div>
                             </div>
-                            {item.unit === 'Kg' && (
-                                <div className="mt-4 pt-2 border-t border-slate-50 flex items-center gap-1 text-[9px] font-black uppercase text-emerald-600 tracking-widest">
-                                    <Scale size={12} />
+                            {(item.unit === 'Kg' || item.unit === 'kg') && (
+                                <div className="mt-2 pt-1 border-t border-slate-50 flex items-center gap-1 text-[8px] font-black uppercase text-emerald-600 tracking-widest">
+                                    <Scale size={10} />
                                     Scalable
                                 </div>
                             )}
@@ -311,11 +311,41 @@ export default function POSScreen() {
                             </div>
 
                             <div className="space-y-6">
-                                <input
-                                    type="range" min="0" max="10" step="0.05" value={weight}
-                                    onChange={(e) => setWeight(parseFloat(e.target.value))}
-                                    className="w-full h-1 bg-slate-200 rounded-sm appearance-none cursor-pointer accent-slate-900"
-                                />
+                                <div className="relative group">
+                                    <input
+                                        type="number"
+                                        step="0.001"
+                                        min="0"
+                                        autoFocus
+                                        value={weight === 0 ? '' : weight}
+                                        onChange={(e) => setWeight(parseFloat(e.target.value) || 0)}
+                                        placeholder="Enter weight in KG..."
+                                        className="w-full bg-slate-50 border-2 border-slate-200 rounded-sm py-4 px-6 text-2xl font-black text-slate-900 outline-none focus:border-slate-900 focus:bg-white transition-all tabular-nums"
+                                    />
+                                    <div className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 font-black text-sm uppercase tracking-widest pointer-events-none">
+                                        KG
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-4 gap-2">
+                                    {[0.25, 0.5, 1, 2, 5].map((val) => (
+                                        <button
+                                            key={val}
+                                            type="button"
+                                            onClick={() => setWeight(val)}
+                                            className="py-2.5 bg-slate-50 border border-slate-200 rounded-sm text-[10px] font-black uppercase tracking-widest text-slate-400 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all"
+                                        >
+                                            {val}kg
+                                        </button>
+                                    ))}
+                                    <button
+                                        type="button"
+                                        onClick={() => setWeight(0)}
+                                        className="py-2.5 bg-rose-50 border border-rose-100 rounded-sm text-[10px] font-black uppercase tracking-widest text-rose-500 hover:bg-rose-500 hover:text-white transition-all"
+                                    >
+                                        Clear
+                                    </button>
+                                </div>
 
                                 <div className="flex gap-3">
                                     <button
