@@ -21,7 +21,7 @@ import {
     Cpu,
     Network
 } from 'lucide-react';
-import mockFranchises from '../data/mockFranchises.json';
+import api from '@/lib/axios';
 import { cn } from '@/lib/utils';
 
 // Enterprise Components
@@ -32,15 +32,28 @@ export default function FranchiseManagementScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [expandedRow, setExpandedRow] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [franchises, setFranchises] = useState([]);
 
     useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 700);
-        return () => clearTimeout(timer);
+        const fetchFranchises = async () => {
+            try {
+                const response = await api.get('/masteradmin/franchises');
+                if (response.data.success) {
+                    setFranchises(response.data.results);
+                }
+            } catch (error) {
+                console.error("Error fetching franchises:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchFranchises();
     }, []);
 
-    const filteredFranchises = mockFranchises.filter(f =>
-        f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        f.region.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredFranchises = franchises.filter(f =>
+        f.franchiseName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        f.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        f.ownerName.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     if (isLoading) {
@@ -86,7 +99,7 @@ export default function FranchiseManagementScreen() {
             <div className="bg-white border-b border-slate-200 grid grid-cols-1 md:grid-cols-4">
                 <MetricRow
                     label="Nodes Online"
-                    value="24"
+                    value={franchises.filter(f => f.status === 'active').length.toString()}
                     change={4.2}
                     trend="up"
                     icon={Cpu}
@@ -159,14 +172,14 @@ export default function FranchiseManagementScreen() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {filteredFranchises.map((franchise) => (
-                                <React.Fragment key={franchise.id}>
+                            {filteredFranchises.map((franchise, idx) => (
+                                <React.Fragment key={franchise._id || idx}>
                                     <tr
                                         className={cn(
                                             "group cursor-pointer hover:bg-slate-50/80 transition-all",
-                                            expandedRow === franchise.id ? "bg-slate-50" : "bg-white"
+                                            expandedRow === (franchise._id || idx) ? "bg-slate-50" : "bg-white"
                                         )}
-                                        onClick={() => setExpandedRow(expandedRow === franchise.id ? null : franchise.id)}
+                                        onClick={() => setExpandedRow(expandedRow === (franchise._id || idx) ? null : (franchise._id || idx))}
                                     >
                                         <td className="px-4 py-4">
                                             <div className="flex items-center gap-3">
@@ -177,8 +190,8 @@ export default function FranchiseManagementScreen() {
                                                     <Store size={16} />
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-slate-900 text-[11px] tracking-tight leading-none mb-1">{franchise.name}</p>
-                                                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{franchise.region}</p>
+                                                    <p className="font-bold text-slate-900 text-[11px] tracking-tight leading-none mb-1">{franchise.franchiseName}</p>
+                                                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{franchise.city}</p>
                                                 </div>
                                             </div>
                                         </td>
@@ -187,26 +200,26 @@ export default function FranchiseManagementScreen() {
                                                 <div className="w-24 h-1 bg-slate-100 rounded-full overflow-hidden">
                                                     <motion.div
                                                         initial={{ width: 0 }}
-                                                        animate={{ width: `${franchise.performance}%` }}
+                                                        animate={{ width: `${franchise.performance || 85}%` }}
                                                         className={cn(
                                                             "h-full",
-                                                            franchise.performance > 90 ? "bg-emerald-500" :
-                                                                franchise.performance > 80 ? "bg-slate-900" : "bg-amber-400"
+                                                            (franchise.performance || 85) > 90 ? "bg-emerald-500" :
+                                                                (franchise.performance || 85) > 80 ? "bg-slate-900" : "bg-amber-400"
                                                         )}
                                                     />
                                                 </div>
-                                                <span className="text-[10px] font-black text-slate-900 tabular-nums">{franchise.performance}%</span>
+                                                <span className="text-[10px] font-black text-slate-900 tabular-nums">{franchise.performance || 85}%</span>
                                             </div>
                                         </td>
                                         <td className="px-4 py-4">
                                             <div className="flex flex-col">
-                                                <span className="font-bold text-slate-900 text-[11px] tabular-nums">₹{(franchise.orderVolume / 1000).toFixed(1)}k</span>
+                                                <span className="font-bold text-slate-900 text-[11px] tabular-nums">₹{((franchise.orderVolume || 15000) / 1000).toFixed(1)}k</span>
                                                 <span className="text-[9px] text-slate-300 font-bold uppercase tracking-tighter">Gross GMV</span>
                                             </div>
                                         </td>
                                         <td className="px-4 py-4">
                                             <span className="px-2 py-0.5 bg-slate-900 text-white text-[9px] font-black rounded-sm uppercase tracking-widest tabular-nums">
-                                                {franchise.activeOrders} Load
+                                                {franchise.activeOrders || 0} Load
                                             </span>
                                         </td>
                                         <td className="px-4 py-4">
@@ -220,13 +233,13 @@ export default function FranchiseManagementScreen() {
                                         </td>
                                         <td className="px-4 py-4 text-right">
                                             <button className="p-1.5 text-slate-400 hover:text-slate-900 border border-transparent hover:border-slate-200 rounded-sm transition-all">
-                                                {expandedRow === franchise.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                                {expandedRow === (franchise._id || idx) ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                                             </button>
                                         </td>
                                     </tr>
 
                                     <AnimatePresence>
-                                        {expandedRow === franchise.id && (
+                                        {expandedRow === (franchise._id || idx) && (
                                             <tr>
                                                 <td colSpan="6" className="p-0 border-b border-slate-200">
                                                     <motion.div
@@ -244,11 +257,11 @@ export default function FranchiseManagementScreen() {
                                                                 <div className="space-y-2">
                                                                     <div className="flex flex-col">
                                                                         <span className="text-[9px] text-slate-400 uppercase font-bold">Center Lead</span>
-                                                                        <p className="text-[11px] font-bold text-slate-900">Rajiv S.</p>
+                                                                        <p className="text-[11px] font-bold text-slate-900">{franchise.ownerName}</p>
                                                                     </div>
                                                                     <div className="flex flex-col">
                                                                         <span className="text-[9px] text-slate-400 uppercase font-bold">Network ID</span>
-                                                                        <p className="text-[11px] font-bold text-slate-900">SEC-42-CENTER</p>
+                                                                        <p className="text-[11px] font-bold text-slate-900">{franchise.mobile}</p>
                                                                     </div>
                                                                 </div>
                                                             </div>
