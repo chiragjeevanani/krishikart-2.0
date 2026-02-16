@@ -12,6 +12,11 @@ export const protect = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     req.user = await User.findById(decoded.id).select("-password -otp");
+
+    if (!req.user) {
+      return handleResponse(res, 401, "User not found or account deactivated");
+    }
+
     next();
   } catch (error) {
     return handleResponse(res, 401, "Invalid or expired token");

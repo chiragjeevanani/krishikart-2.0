@@ -39,8 +39,8 @@ export default function LoginScreen() {
                 try {
                     const response = await api.post('/user/verify-otp', { mobile: phone, otp: otpValue });
 
-                    localStorage.setItem('userToken', response.data.results.token);
-                    localStorage.setItem('userData', JSON.stringify(response.data.results.user));
+                    localStorage.setItem('userToken', response.data.result.token);
+                    localStorage.setItem('userData', JSON.stringify(response.data.result.user));
 
                     // Sync cart and wishlist immediately
                     fetchCart();
