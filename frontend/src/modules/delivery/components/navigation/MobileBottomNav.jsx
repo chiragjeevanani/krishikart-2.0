@@ -14,32 +14,42 @@ const MobileBottomNav = () => {
     ];
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-border px-2 safe-bottom z-50">
-            <div className="flex justify-around items-center h-16 max-w-lg mx-auto">
-                {navItems.map((item) => (
-                    <NavLink
-                        key={item.path}
-                        to={item.path}
-                        className={({ isActive }) => `
-              relative flex flex-col items-center justify-center w-full h-full transition-colors
-              ${isActive ? 'text-primary' : 'text-muted-foreground'}
+        <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none">
+            <div className="w-full max-w-md bg-white/80 backdrop-blur-lg border-t border-slate-200 safe-bottom pointer-events-auto shadow-lg">
+                <div className="flex items-center h-16 w-full">
+                    {navItems.map((item) => (
+                        <NavLink
+                            key={item.path}
+                            to={item.path}
+                            className={({ isActive }) => `
+              relative flex flex-1 flex-col items-center justify-center h-full transition-all duration-300
+              ${isActive ? 'text-primary' : 'text-slate-400 hover:text-slate-500'}
             `}
-                    >
-                        {({ isActive }) => (
-                            <>
-                                <item.icon className="w-5 h-5 mb-1" />
-                                <span className="text-[10px] font-medium">{item.label}</span>
-                                {isActive && (
-                                    <motion.div
-                                        layoutId="delivery-nav-indicator"
-                                        className="absolute -top-px left-1/4 right-1/4 h-0.5 bg-primary rounded-full"
-                                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                        >
+                            {({ isActive }) => (
+                                <>
+                                    <item.icon
+                                        className={`w-5 h-5 mb-1.5 transition-transform duration-300 ${isActive ? 'stroke-[2.5px] scale-110' : 'stroke-[1.5px]'}`}
                                     />
-                                )}
-                            </>
-                        )}
-                    </NavLink>
-                ))}
+                                    <span className={`text-[10px] font-bold tracking-tight transition-all duration-300 ${isActive ? 'opacity-100' : 'opacity-70'}`}>
+                                        {item.label}
+                                    </span>
+                                    {isActive && (
+                                        <motion.div
+                                            layoutId="delivery-active-indicator"
+                                            className="absolute bottom-0 left-1/4 right-1/4 h-1 bg-primary rounded-t-full"
+                                            transition={{
+                                                type: "spring",
+                                                stiffness: 400,
+                                                damping: 30
+                                            }}
+                                        />
+                                    )}
+                                </>
+                            )}
+                        </NavLink>
+                    ))}
+                </div>
             </div>
         </div>
     );

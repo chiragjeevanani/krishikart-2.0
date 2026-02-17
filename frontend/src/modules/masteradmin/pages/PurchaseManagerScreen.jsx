@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import POCreationDrawer from '../components/drawers/POCreationDrawer';
 import MultiVendorAssignmentDrawer from '../components/drawers/MultiVendorAssignmentDrawer';
+import DeliveryAssignmentDrawer from '../components/drawers/DeliveryAssignmentDrawer';
 import StatusBadge from '../components/common/StatusBadge';
 import MetricRow from '../components/cards/MetricRow';
 import FilterBar from '../components/tables/FilterBar';
@@ -32,6 +33,7 @@ export default function PurchaseManagerScreen() {
     const [searchTerm, setSearchTerm] = useState('');
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [selectedPOForAssignment, setSelectedPOForAssignment] = useState(null);
+    const [selectedPOForDelivery, setSelectedPOForDelivery] = useState(null);
     const [activeFilter, setActiveFilter] = useState('all');
 
     useEffect(() => {
@@ -49,6 +51,13 @@ export default function PurchaseManagerScreen() {
     const handleFinalizeAssignment = (assignments) => {
         console.log('Finalizing Procurement with assignments:', assignments);
         setSelectedPOForAssignment(null);
+        setIsLoading(true);
+        setTimeout(() => setIsLoading(false), 800);
+    };
+
+    const handleDeliveryAssignment = (partner) => {
+        console.log('Assigned Delivery Partner:', partner, 'to PO:', selectedPOForDelivery?.id);
+        setSelectedPOForDelivery(null);
         setIsLoading(true);
         setTimeout(() => setIsLoading(false), 800);
     };
@@ -208,6 +217,17 @@ export default function PurchaseManagerScreen() {
                                         Procure Items
                                         <ArrowUpRight size={14} />
                                     </button>
+                                ) : po.status === 'approved' && po.dispatchStatus === 'ready_for_pickup' ? (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedPOForDelivery(po);
+                                        }}
+                                        className="bg-emerald-600 text-white px-4 py-2 rounded-sm font-bold text-[10px] uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-sm flex items-center gap-2"
+                                    >
+                                        Assign Delivery
+                                        <Truck size={14} />
+                                    </button>
                                 ) : (
                                     <button className="bg-white border border-slate-200 text-slate-400 px-4 py-2 rounded-sm font-bold text-[10px] uppercase tracking-widest hover:text-slate-900 hover:border-slate-400 transition-all">
                                         View Details
@@ -251,6 +271,13 @@ export default function PurchaseManagerScreen() {
                 onClose={() => setSelectedPOForAssignment(null)}
                 po={selectedPOForAssignment}
                 onFinalize={handleFinalizeAssignment}
+            />
+
+            <DeliveryAssignmentDrawer
+                isOpen={!!selectedPOForDelivery}
+                onClose={() => setSelectedPOForDelivery(null)}
+                assignment={selectedPOForDelivery}
+                onAssign={handleDeliveryAssignment}
             />
         </div>
     );

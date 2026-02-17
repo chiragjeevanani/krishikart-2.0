@@ -1,0 +1,47 @@
+[
+    {
+        "id": "DP-001",
+        "name": "Rajesh Kumar",
+        "phone": "+91 98765 43210",
+        "vehicle": "Hero Splendor (Bike)",
+        "status": "available",
+        "rating": 4.8,
+        "completedTasks": 156
+    },
+    {
+        "id": "DP-002",
+        "name": "Suresh Singh",
+        "phone": "+91 98765 43211",
+        "vehicle": "Honda Activa (Scooter)",
+        "status": "in_transit",
+        "rating": 4.5,
+        "completedTasks": 89
+    },
+    {
+        "id": "DP-003",
+        "name": "Amit Patel",
+        "phone": "+91 98765 43212",
+        "vehicle": "TVS Apache (Bike)",
+        "status": "available",
+        "rating": 4.9,
+        "completedTasks": 243
+    },
+    {
+        "id": "DP-004",
+        "name": "Vikas Yadav",
+        "phone": "+91 98765 43213",
+        "vehicle": "Tata Ace (Mini Truck)",
+        "status": "available",
+        "rating": 4.7,
+        "completedTasks": 412
+    },
+    {
+        "id": "DP-005",
+        "name": "Deepak Sharma",
+        "phone": "+91 98765 43214",
+        "vehicle": "Mahindra Jeeto (Mini Truck)",
+        "status": "busy",
+        "rating": 4.6,
+        "completedTasks": 178
+    }
+]
