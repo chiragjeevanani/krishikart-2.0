@@ -22,10 +22,10 @@ import {
     FileText,
     Settings2
 } from 'lucide-react';
+import api from '@/lib/axios';
+import { toast } from 'sonner';
 import OrdersTable from '../components/tables/OrdersTable';
-import mockOrders from '../data/mockAdminOrders.json';
 import mockVendors from '../data/mockVendors.json';
-import { useOrders } from '@/modules/user/contexts/OrderContext';
 import { cn } from '@/lib/utils';
 
 // Enterprise Components
@@ -36,33 +36,40 @@ export default function OrdersScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState('all');
-    const { orders: contextOrders, updateOrderStatus } = useOrders();
-
-    // Combine context orders with mock orders
-    const allOrders = [...contextOrders, ...mockOrders.filter(m => !contextOrders.find(c => c.id === m.id))];
-
+    const [allOrders, setAllOrders] = useState([]);
     const [selectedOrderForProcurement, setSelectedOrderForProcurement] = useState(null);
 
-    const handleOrderAction = (orderId, newStatus, additionalData = {}) => {
-        if (newStatus === 'initiate_procurement') {
-            const order = allOrders.find(o => o.id === orderId);
-            setSelectedOrderForProcurement(order);
-            return;
-        }
-
-        if (contextOrders.find(o => o.id === orderId)) {
-            updateOrderStatus(orderId, newStatus, additionalData);
-        } else {
-            console.log(`Action: ${newStatus} for Order: ${orderId}`);
+    const fetchAllOrders = async () => {
+        setIsLoading(true);
+        try {
+            const response = await api.get('/orders/admin/all');
+            if (response.data.success) {
+                setAllOrders(response.data.results || []);
+            }
+        } catch (error) {
+            console.error('Fetch all orders error:', error);
+            toast.error('Failed to load orders');
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    const handleFinalizeProcurement = (vendor) => {
-        if (selectedOrderForProcurement) {
-            handleOrderAction(selectedOrderForProcurement.id, 'assigned', {
-                assignedVendor: vendor.name
+    useEffect(() => {
+        fetchAllOrders();
+    }, []);
+
+    const handleOrderAction = async (orderId, newStatus, additionalData = {}) => {
+        try {
+            const response = await api.put(`/orders/admin/${orderId}/status`, {
+                status: newStatus
             });
-            setSelectedOrderForProcurement(null);
+            if (response.data.success) {
+                toast.success(`Order status updated to ${newStatus}`);
+                setAllOrders(prev => prev.map(o => o._id === orderId ? { ...o, orderStatus: newStatus } : o));
+            }
+        } catch (error) {
+            console.error('Update status error:', error);
+            toast.error('Failed to update status');
         }
     };
 
@@ -72,10 +79,10 @@ export default function OrdersScreen() {
     }, []);
 
     const filteredOrders = allOrders.filter(order => {
-        const customerName = order.customer || 'Unknown';
+        const customerName = order.userId?.fullName || 'Unknown';
         const matchesSearch = customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            order.id.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesFilter = activeFilter === 'all' || order.status.toLowerCase() === activeFilter.toLowerCase();
+            order._id.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesFilter = activeFilter === 'all' || order.orderStatus.toLowerCase() === activeFilter.toLowerCase();
         return matchesSearch && matchesFilter;
     });
 
@@ -98,11 +105,11 @@ export default function OrdersScreen() {
                         <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-r border-slate-200 pr-4">
                             <Home size={12} />
                             <ChevronRight size={10} />
-                            <span>Admin Panel</span>
+                            <span>Admin</span>
                             <ChevronRight size={10} />
-                            <span className="text-slate-900 uppercase tracking-widest">Orders</span>
+                            <span className="text-slate-900">Orders</span>
                         </div>
-                        <h1 className="text-sm font-bold text-slate-900">Order Dashboard</h1>
+                        <h1 className="text-sm font-bold text-slate-900">Orders Management</h1>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -118,18 +125,18 @@ export default function OrdersScreen() {
                 </div>
             </div>
 
-            {/* Performance KPIs */}
+            {/* Performance Metrics */}
             <div className="bg-white border-b border-slate-200 grid grid-cols-1 md:grid-cols-4">
                 <MetricRow
-                    label="Active Payouts"
-                    value="₹1.4M"
+                    label="Total Revenue"
+                    value={`₹${allOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0).toLocaleString()}`}
                     change={8.4}
                     trend="up"
                     icon={Briefcase}
                     sparklineData={[1.1, 1.2, 1.4, 1.3, 1.4, 1.5, 1.4].map(v => ({ value: v }))}
                 />
                 <MetricRow
-                    label="Volume"
+                    label="Total Orders"
                     value={allOrders.length.toString()}
                     change={12.5}
                     trend="up"
@@ -137,16 +144,16 @@ export default function OrdersScreen() {
                     sparklineData={[110, 115, 120, 118, 125, 122, 125].map(v => ({ value: v }))}
                 />
                 <MetricRow
-                    label="Fulfillment Rate"
-                    value="94.2%"
+                    label="Completion Rate"
+                    value="98.5%"
                     change={2.1}
                     trend="up"
                     icon={Activity}
                     sparklineData={[92, 93, 94, 93.5, 94.2, 94, 94.2].map(v => ({ value: v }))}
                 />
                 <MetricRow
-                    label="Average Time"
-                    value="18.5m"
+                    label="Avg. Delivery Time"
+                    value="24m"
                     change={-1.2}
                     trend="up"
                     icon={Clock}
@@ -252,7 +259,7 @@ export default function OrdersScreen() {
                                             <Briefcase size={16} />
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">Order Assignment</span>
+                                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">Order Management</span>
                                             <span className="text-xs font-bold text-slate-900 mt-1 uppercase tracking-tight">Assign Vendor</span>
                                         </div>
                                     </div>
@@ -267,10 +274,10 @@ export default function OrdersScreen() {
                                 <div className="flex items-start justify-between">
                                     <div>
                                         <h2 className="text-2xl font-black text-slate-900 tracking-tighter tabular-nums">#{selectedOrderForProcurement.id}</h2>
-                                        <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider mt-1">{selectedOrderForProcurement.customer} • {selectedOrderForProcurement.franchise}</p>
+                                        <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider mt-1">{selectedOrderForProcurement.customer}</p>
                                     </div>
                                     <div className="text-right">
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Payload Value</span>
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Order Amount</span>
                                         <span className="text-xl font-black text-slate-900 tabular-nums">₹{selectedOrderForProcurement.total.toLocaleString()}</span>
                                     </div>
                                 </div>
@@ -278,7 +285,7 @@ export default function OrdersScreen() {
 
                             {/* Vendor Selection List */}
                             <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50">
-                                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2">Qualified Supply Partners</h3>
+                                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2">Available Vendors</h3>
                                 {mockVendors.map((vendor) => (
                                     <div
                                         key={vendor.id}
@@ -316,7 +323,7 @@ export default function OrdersScreen() {
                                                 onClick={() => handleFinalizeProcurement(vendor)}
                                                 className="bg-white border border-slate-900 text-slate-900 text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-sm hover:bg-slate-900 hover:text-white transition-all flex items-center gap-2"
                                             >
-                                                Assign Partner
+                                                Assign Vendor
                                                 <ArrowRight size={12} />
                                             </button>
                                         </div>
@@ -329,9 +336,9 @@ export default function OrdersScreen() {
                                 <div className="bg-slate-900 rounded-sm p-4 flex items-center justify-between">
                                     <div className="flex items-center gap-3">
                                         <Activity size={16} className="text-emerald-400" />
-                                        <span className="text-[10px] font-bold text-white uppercase tracking-widest">Standard Service Active</span>
+                                        <span className="text-[10px] font-bold text-white uppercase tracking-widest">System Status: Online</span>
                                     </div>
-                                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Policy Rev. 4.2</span>
+                                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest pr-2">KrishiKart Admin</span>
                                 </div>
                             </div>
                         </motion.div>

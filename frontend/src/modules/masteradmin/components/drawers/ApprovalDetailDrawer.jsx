@@ -27,8 +27,11 @@ export default function ApprovalDetailDrawer({ isOpen, onClose, item, type, onAp
         { type: 'Shop Proof', fileName: item.shopEstablishmentProof ? 'shop_proof.pdf' : 'Not Uploaded', url: item.shopEstablishmentProof },
         { type: 'FSSAI License', fileName: item.fssaiLicense || 'Not Provided', url: null }
     ] :
-        isFranchise ? Object.entries(item.checklist).map(([key, val]) => ({ type: key, ...val })) :
-            item.supportingDocs;
+        isFranchise ? [
+            { type: 'Aadhaar Card', fileName: `Aadhaar: ${item.kyc?.aadhaarNumber || 'N/A'}`, url: item.kyc?.aadhaarImage, submitted: !!item.kyc?.aadhaarImage },
+            { type: 'PAN Card', fileName: `PAN: ${item.kyc?.panNumber || 'N/A'}`, url: item.kyc?.panImage, submitted: !!item.kyc?.panImage }
+        ] :
+            item.supportingDocs || [];
 
     return (
         <AnimatePresence>
@@ -122,7 +125,7 @@ export default function ApprovalDetailDrawer({ isOpen, onClose, item, type, onAp
                                                 <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                                     <MapPin size={12} /> Operations Hub
                                                 </div>
-                                                <p className="font-black text-slate-900">{item.farmLocation || 'Benguluru Central'}</p>
+                                                <p className="font-black text-slate-900">{item.city || item.farmLocation || 'Benguluru Central'}</p>
                                             </div>
                                         )}
                                     </div>

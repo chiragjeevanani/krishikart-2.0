@@ -13,22 +13,31 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useFranchiseAuth } from '../contexts/FranchiseAuthContext';
+import api from '@/lib/axios';
+import { useNavigate } from 'react-router-dom';
 
 export default function DocumentationScreen() {
+    const { franchise, updateProfile } = useFranchiseAuth();
+    const navigate = useNavigate();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState({
-        aadhaarNumber: '',
-        panNumber: '',
+        aadhaarNumber: franchise?.kyc?.aadhaarNumber || '',
+        panNumber: franchise?.kyc?.panNumber || '',
         aadhaarImage: null,
         panImage: null
     });
 
     const [previews, setPreviews] = useState({
-        aadhaar: null,
-        pan: null
+        aadhaar: franchise?.kyc?.aadhaarImage || null,
+        pan: franchise?.kyc?.panImage || null
     });
 
+    const isVerified = franchise?.kyc?.status === 'verified';
+    const isPending = franchise?.kyc?.status === 'pending';
+
     const handleFileChange = (e, type) => {
+        if (isVerified || isPending) return;
         const file = e.target.files[0];
         if (file) {
             if (file.size > 5 * 1024 * 1024) {
@@ -46,12 +55,14 @@ export default function DocumentationScreen() {
     };
 
     const handleRemoveFile = (type) => {
+        if (isVerified || isPending) return;
         setFormData(prev => ({ ...prev, [`${type}Image`]: null }));
         setPreviews(prev => ({ ...prev, [type]: null }));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (isVerified || isPending) return;
 
         // Basic Validation
         if (!formData.aadhaarNumber || !formData.panNumber) {
@@ -59,18 +70,36 @@ export default function DocumentationScreen() {
             return;
         }
 
-        if (!formData.aadhaarImage || !formData.panImage) {
-            toast.error('Please upload both document images');
+        if (!formData.aadhaarImage && !previews.aadhaar) {
+            toast.error('Please upload Aadhaar image');
+            return;
+        }
+
+        if (!formData.panImage && !previews.pan) {
+            toast.error('Please upload PAN image');
             return;
         }
 
         setIsSubmitting(true);
-        // Simulate API call
         try {
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            toast.success('Documentation submitted successfully for verification!');
+            const data = new FormData();
+            data.append('aadhaarNumber', formData.aadhaarNumber);
+            data.append('panNumber', formData.panNumber);
+            if (formData.aadhaarImage) data.append('aadhaarImage', formData.aadhaarImage);
+            if (formData.panImage) data.append('panImage', formData.panImage);
+
+            const response = await api.post('/franchise/kyc/submit', data, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            if (response.data.success) {
+                toast.success('Documentation submitted successfully for verification!');
+                // Auto reload profile to get new kyc status
+                window.location.reload();
+            }
         } catch (error) {
-            toast.error('Failed to submit documentation. Please try again.');
+            console.error(error);
+            toast.error(error.response?.data?.message || 'Failed to submit documentation');
         } finally {
             setIsSubmitting(false);
         }
@@ -109,8 +138,9 @@ export default function DocumentationScreen() {
                                 type="text"
                                 placeholder="1234 5678 9012"
                                 value={formData.aadhaarNumber}
+                                readOnly={isVerified || isPending}
                                 onChange={(e) => setFormData(prev => ({ ...prev, aadhaarNumber: e.target.value }))}
-                                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all"
+                                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all disabled:opacity-50"
                             />
                         </div>
 
@@ -172,8 +202,9 @@ export default function DocumentationScreen() {
                                 type="text"
                                 placeholder="ABCDE1234F"
                                 value={formData.panNumber}
+                                readOnly={isVerified || isPending}
                                 onChange={(e) => setFormData(prev => ({ ...prev, panNumber: e.target.value.toUpperCase() }))}
-                                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all uppercase"
+                                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all uppercase disabled:opacity-50"
                             />
                         </div>
 
@@ -238,16 +269,27 @@ export default function DocumentationScreen() {
 
                         <button
                             type="submit"
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || isVerified || isPending}
                             className={cn(
                                 "px-8 py-4 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-[0.2em] shadow-xl shadow-slate-200 transition-all hover:scale-105 active:scale-95 disabled:bg-slate-300 disabled:shadow-none flex items-center gap-3",
-                                isSubmitting && "animate-pulse"
+                                isSubmitting && "animate-pulse",
+                                isVerified && "bg-emerald-600 shadow-emerald-100"
                             )}
                         >
                             {isSubmitting ? (
                                 <>
                                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                     Synchronizing...
+                                </>
+                            ) : isVerified ? (
+                                <>
+                                    <CheckCircle2 size={16} />
+                                    Account Verified
+                                </>
+                            ) : isPending ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    Verification Pending
                                 </>
                             ) : (
                                 <>

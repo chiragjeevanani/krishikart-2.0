@@ -18,7 +18,7 @@ export default function OrderTrackingScreen() {
     const { orders, updateOrderStatus } = useOrders()
     const [isUpdating, setIsUpdating] = useState(false)
 
-    const order = orders.find(o => o.id === id)
+    const order = orders.find(o => o._id === id)
 
     const handleMarkDelivered = () => {
         setIsUpdating(true)
@@ -87,8 +87,8 @@ export default function OrderTrackingScreen() {
                         <div className="space-y-8 relative">
                             <div className="absolute left-[19px] top-6 bottom-6 w-0.5 bg-slate-100" />
                             {steps.map((step, i) => {
-                                const isCompleted = order?.status === 'Delivered' || order?.status === 'Received' || (step.label !== 'Delivered' && step.status === 'completed') || (step.label === 'Out for Delivery' && order?.status === 'Shipped');
-                                const isCurrent = !isCompleted && ((step.label === 'Out for Delivery' && order?.status === 'Shipped') || step.status === 'current');
+                                const isCompleted = order?.orderStatus === 'delivered' || order?.orderStatus === 'received' || (step.label !== 'Delivered' && step.status === 'completed') || (step.label === 'Out for Delivery' && order?.orderStatus === 'shipped');
+                                const isCurrent = !isCompleted && ((step.label === 'Out for Delivery' && order?.orderStatus === 'shipped') || step.status === 'current');
 
                                 return (
                                     <div key={i} className="flex items-start gap-6 relative z-10">
@@ -116,7 +116,7 @@ export default function OrderTrackingScreen() {
                     </div>
 
                     {/* Manual Status Update Button */}
-                    {order?.status !== 'Delivered' && order?.status !== 'Received' && (
+                    {order?.orderStatus !== 'delivered' && order?.orderStatus !== 'received' && (
                         <Button
                             onClick={handleMarkDelivered}
                             disabled={isUpdating}
@@ -127,7 +127,7 @@ export default function OrderTrackingScreen() {
                     )}
 
                     {/* Final Verification Flow */}
-                    {order?.status === 'Delivered' && (
+                    {order?.orderStatus === 'delivered' && (
                         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <div className="p-8 rounded-[40px] bg-emerald-50 border border-emerald-100">
                                 <div className="flex items-center gap-4 mb-6">

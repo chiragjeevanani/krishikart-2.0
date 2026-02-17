@@ -15,7 +15,6 @@ import {
     Home,
     ChevronRight,
     FileText,
-    Settings2,
     Server,
     ShieldCheck,
     Cpu,
@@ -134,13 +133,7 @@ export default function FranchiseManagementScreen() {
             {/* Node Management Ledger */}
             <div className="flex flex-col gap-0 p-px">
                 <FilterBar
-                    actions={
-                        <div className="flex items-center gap-2">
-                            <button className="p-1.5 border border-slate-200 rounded-sm hover:bg-slate-100 transition-colors text-slate-400">
-                                <Settings2 size={14} />
-                            </button>
-                        </div>
-                    }
+                    actions={null}
                 />
 
                 <div className="bg-white border-t border-slate-200 overflow-hidden">
@@ -168,7 +161,6 @@ export default function FranchiseManagementScreen() {
                                 <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Annual Yield</th>
                                 <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Queue Density</th>
                                 <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Protocol</th>
-                                <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Settings</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -231,17 +223,13 @@ export default function FranchiseManagementScreen() {
                                                 {franchise.status}
                                             </div>
                                         </td>
-                                        <td className="px-4 py-4 text-right">
-                                            <button className="p-1.5 text-slate-400 hover:text-slate-900 border border-transparent hover:border-slate-200 rounded-sm transition-all">
-                                                {expandedRow === (franchise._id || idx) ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                            </button>
-                                        </td>
+
                                     </tr>
 
                                     <AnimatePresence>
                                         {expandedRow === (franchise._id || idx) && (
                                             <tr>
-                                                <td colSpan="6" className="p-0 border-b border-slate-200">
+                                                <td colSpan="5" className="p-0 border-b border-slate-200">
                                                     <motion.div
                                                         initial={{ opacity: 0, height: 0 }}
                                                         animate={{ opacity: 1, height: 'auto' }}

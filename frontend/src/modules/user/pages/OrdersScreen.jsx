@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Package, CheckCircle2, Clock, Truck, ChevronRight, Zap } from 'lucide-react'
+import { ArrowLeft, Package, CheckCircle2, Clock, Truck, ChevronRight, Zap, Receipt } from 'lucide-react'
 import PageTransition from '../components/layout/PageTransition'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -42,10 +42,10 @@ export default function OrdersScreen() {
     }
 
     const handleOrderClick = (order) => {
-        if (order.status === 'Delivered') {
-            navigate(`/order-summary/${order.id}`)
+        if (order.orderStatus === 'delivered') {
+            navigate(`/order-summary/${order._id}`)
         } else {
-            navigate(`/track-order/${order.id}`)
+            navigate(`/track-order/${order._id}`)
         }
     }
 
@@ -75,29 +75,53 @@ export default function OrdersScreen() {
                     ) : (
                         orders.map((order, idx) => (
                             <motion.div
-                                key={order.id}
+                                key={order._id}
                                 onClick={() => handleOrderClick(order)}
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ delay: idx * 0.1 }}
-                                className="p-5 rounded-[28px] bg-white border border-slate-100 shadow-sm active:scale-[0.98] transition-transform cursor-pointer"
+                                className="p-5 rounded-[32px] bg-white border border-slate-100 shadow-sm active:scale-[0.98] transition-all cursor-pointer hover:shadow-md"
                             >
-                                <div className="flex justify-between items-start mb-4">
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{order.id}</p>
-                                        <h3 className="text-sm font-bold text-slate-900 mt-0.5">{order.items.length} Items Ordered</h3>
+                                <div className="flex justify-between items-start mb-5">
+                                    <div className="flex gap-4">
+                                        <div className="flex -space-x-3 overflow-hidden">
+                                            {order.items?.slice(0, 3).map((item, i) => (
+                                                <div key={i} className="inline-block h-12 w-12 rounded-xl ring-4 ring-white bg-slate-100 overflow-hidden border border-slate-50 shadow-sm">
+                                                    <img
+                                                        src={item.image || 'https://images.unsplash.com/photo-1610348725531-843dff563e2c?w=100&q=80'}
+                                                        alt={item.name}
+                                                        className="h-full w-full object-cover"
+                                                    />
+                                                </div>
+                                            ))}
+                                            {order.items?.length > 3 && (
+                                                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900 text-[10px] font-black text-white ring-4 ring-white shadow-sm">
+                                                    +{order.items.length - 3}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest leading-none mb-1.5">#{order._id.slice(-8)}</p>
+                                            <h3 className="text-sm font-black text-slate-900 tracking-tight leading-none uppercase">{order.items?.length || 0} Products</h3>
+                                            <p className="text-[10px] font-bold text-slate-400 mt-1">{new Date(order.createdAt).toLocaleDateString()}</p>
+                                        </div>
                                     </div>
-                                    <Badge className={cn("rounded-lg border font-bold text-[10px] py-1 px-2.5 flex items-center gap-1", getStatusColor(order.status))}>
-                                        {getStatusIcon(order.status)}
-                                        <span className="uppercase tracking-wider">{order.status}</span>
+                                    <Badge className={cn("rounded-xl border font-black text-[9px] py-1.5 px-3 flex items-center gap-1.5 shadow-sm", getStatusColor(order.orderStatus))}>
+                                        <div className="w-1.5 h-1.5 rounded-full bg-current opacity-80" />
+                                        <span className="uppercase tracking-widest">{order.orderStatus?.replace(/_/g, ' ')}</span>
                                     </Badge>
                                 </div>
 
-                                <div className="flex justify-between items-end">
-                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                        {order.date}
+                                <div className="flex justify-between items-center bg-slate-50/50 p-4 rounded-2xl border border-slate-50">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm text-primary">
+                                            <Receipt size={14} />
+                                        </div>
+                                        <div className="text-lg font-black text-slate-900 tracking-tighter italic">₹{(order.totalAmount || 0).toLocaleString()}</div>
                                     </div>
-                                    <div className="text-lg font-black text-slate-900">₹{order.total}</div>
+                                    <div className="flex items-center gap-1 text-[10px] font-black text-primary uppercase tracking-widest">
+                                        Details <ChevronRight size={14} strokeWidth={3} />
+                                    </div>
                                 </div>
                             </motion.div>
                         ))

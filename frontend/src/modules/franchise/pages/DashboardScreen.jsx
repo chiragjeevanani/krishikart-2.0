@@ -29,6 +29,7 @@ import { useGRN } from '../contexts/GRNContext';
 import { useCOD } from '../contexts/CODContext';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import { useFranchiseAuth } from '../contexts/FranchiseAuthContext';
 
 // Enterprise Components
 import MetricRow from '../components/cards/MetricRow';
@@ -39,10 +40,18 @@ import FilterBar from '../components/tables/FilterBar';
 export default function DashboardScreen() {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(true);
+    const { franchise } = useFranchiseAuth();
     const { stats, orders } = useFranchiseOrders();
     const { getStockStats } = useInventory();
     const { purchaseOrders } = useGRN();
     const { summary: codSummary } = useCOD();
+    const [showKYCModal, setShowKYCModal] = useState(false);
+
+    useEffect(() => {
+        if (franchise && !franchise.isVerified) {
+            setShowKYCModal(true);
+        }
+    }, [franchise]);
 
     const inventoryStats = getStockStats();
     const recentOrders = orders.slice(0, 10);
@@ -292,6 +301,53 @@ export default function DashboardScreen() {
                     </button>
                 ))}
             </div>
+
+            {/* KYC Pending Modal */}
+            <AnimatePresence>
+                {showKYCModal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+                        />
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            className="bg-white rounded-sm shadow-2xl w-full max-w-md relative z-10 overflow-hidden"
+                        >
+                            <div className="p-8 text-center space-y-6">
+                                <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto border border-amber-100">
+                                    <ShieldCheck size={40} className="text-amber-500" />
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Node Verification Required</h3>
+                                    <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                                        Your franchise identity is currently <span className="text-amber-600 font-black">UNVERIFIED</span>.
+                                        Please complete your document submission to activate order processing and node settlement.
+                                    </p>
+                                </div>
+                                <div className="flex flex-col gap-3">
+                                    <button
+                                        onClick={() => navigate('/franchise/documentation')}
+                                        className="w-full py-4 bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-sm hover:bg-emerald-600 transition-all shadow-xl shadow-slate-100"
+                                    >
+                                        Go to Documentation
+                                    </button>
+                                    <button
+                                        onClick={() => setShowKYCModal(false)}
+                                        className="w-full py-3 bg-white text-slate-400 text-[9px] font-black uppercase tracking-widest hover:text-slate-900 transition-colors"
+                                    >
+                                        I'll do it later
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

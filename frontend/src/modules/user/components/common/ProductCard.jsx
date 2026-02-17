@@ -142,15 +142,17 @@ export default function ProductCard({ product, layout = 'grid' }) {
 
                     {/* Veg/Non-Veg Indicator (Bottom Left of Image Area) */}
                     <div className="absolute bottom-3 left-3">
-                        <div className={cn(
-                            "w-4 h-4 border-[1.2px] flex items-center justify-center rounded-[2px] bg-white",
-                            product.isVeg ? "border-emerald-600" : "border-red-600"
-                        )}>
+                        {product.dietaryType !== 'none' && (
                             <div className={cn(
-                                "w-[5px] h-[5px] rounded-full",
-                                product.isVeg ? "bg-emerald-600" : "bg-red-600"
-                            )} />
-                        </div>
+                                "w-4 h-4 border-[1.2px] flex items-center justify-center rounded-[2px] bg-white",
+                                product.dietaryType === 'veg' ? "border-emerald-600" : "border-red-600"
+                            )}>
+                                <div className={cn(
+                                    "w-[5px] h-[5px] rounded-full",
+                                    product.dietaryType === 'veg' ? "bg-emerald-600" : "bg-red-600"
+                                )} />
+                            </div>
+                        )}
                     </div>
 
                     {/* Floating Wishlist (Top Right) */}
@@ -202,7 +204,7 @@ export default function ProductCard({ product, layout = 'grid' }) {
                     {/* Unit & Dotted Line */}
                     <div className="flex items-center gap-2 mb-2 px-1">
                         <span className="bg-slate-100 text-slate-600 text-[11px] font-bold px-2 py-0.5 rounded-md min-w-[32px] text-center">
-                            {product.unit || '1 pc'}
+                            {product.unitValue} {product.unit}
                         </span>
                         <div className="flex-1 border-b border-dotted border-slate-200 mt-1" />
                     </div>
@@ -215,12 +217,14 @@ export default function ProductCard({ product, layout = 'grid' }) {
                         </div>
 
                         <p className="text-[11px] font-bold text-slate-400">
-                            ₹{product.price}/{product.unit?.split(' ')[1] || 'pc'}
+                            ₹{product.price}/{product.unit || 'unit'}
                         </p>
 
-                        <div className="bg-[#e7f9ee] text-[#1a8a4d] text-[11px] font-bold px-2 py-1 rounded-md w-fit mt-1 border border-[#c6f0d7]">
-                            ₹{Math.floor(product.price * 0.95)}/pc Best rate
-                        </div>
+                        {(product.bestPrice || product.price) && (
+                            <div className="bg-[#e7f9ee] text-[#1a8a4d] text-[11px] font-bold px-2 py-1 rounded-md w-fit mt-1 border border-[#c6f0d7]">
+                                ₹{product.bestPrice || Math.floor(product.price * 0.95)}/{product.unit === 'pcs' ? 'pc' : (product.unit || 'unit')} Best rate
+                            </div>
+                        )}
                     </div>
                 </div>
             </motion.div>

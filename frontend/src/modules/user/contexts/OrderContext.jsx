@@ -1,107 +1,80 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import mockProduce from '../../vendor/data/mockProduce.json';
+import api from '@/lib/axios';
+import { toast } from 'sonner';
 
 const OrderContext = createContext();
 
 export function OrderProvider({ children }) {
     const [orders, setOrders] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
 
-    // Load from localStorage on mount
-    useEffect(() => {
-        const savedOrders = localStorage.getItem('krishikart_orders');
-        if (savedOrders) {
-            setOrders(JSON.parse(savedOrders));
-        } else {
-            // Default mock data if nothing saved
-            setOrders([
-                {
-                    id: 'ORD-9921',
-                    date: 'Oct 12, 2024',
-                    status: 'Delivered',
-                    total: 4500,
-                    items: [
-                        { name: 'Shimla Apples', qty: '10kg', price: 1650 },
-                        { name: 'Organic Spinach', qty: '5kg', price: 425 }
-                    ],
-                    address: 'Flat 402, Galaxy Apartments, Kothrud, Pune'
-                }
-            ]);
-        }
-    }, []);
+    const fetchMyOrders = async () => {
+        const token = localStorage.getItem('userToken') || localStorage.getItem('token');
+        if (!token) return;
 
-    // Sync to localStorage on change
-    useEffect(() => {
-        if (orders.length > 0) {
-            localStorage.setItem('krishikart_orders', JSON.stringify(orders));
-        }
-    }, [orders]);
-
-    // Listen for changes from other tabs
-    useEffect(() => {
-        const handleStorageChange = (e) => {
-            if (e.key === 'krishikart_orders' && e.newValue) {
-                setOrders(JSON.parse(e.newValue));
+        setIsLoading(true);
+        try {
+            const response = await api.get('/orders/my-orders');
+            if (response.data.success) {
+                setOrders(response.data.results || []);
             }
-        };
+        } catch (error) {
+            console.error("Fetch orders error:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-        window.addEventListener('storage', handleStorageChange);
-        return () => window.removeEventListener('storage', handleStorageChange);
+    useEffect(() => {
+        fetchMyOrders();
     }, []);
 
-    const placeOrder = (orderDetails) => {
-        // In a real app, we would fetch the target franchise's inventory here
-        // For simulation, we import mock data or use a global state
-        // Updated IDs to match products.json (p1, p2, p3...)
-        const mockFranchiseInventory = [
-            { id: 'p1', productId: 'p1', currentStock: 500, mbq: 20 },  // High stock
-            { id: 'p9', productId: 'p9', currentStock: 800, mbq: 20 },  // High stock
-            { id: 'p2', productId: 'p2', currentStock: 5, mbq: 40 }    // Low stock
-        ];
+    const placeOrder = async (orderData) => {
+        try {
+            const response = await api.post('/orders/place', {
+                shippingAddress: orderData.shippingAddress,
+                paymentMethod: orderData.paymentMethod,
+            });
 
-        // Since we are in the user context, we simulate the strategy decision
-        const hasLowStock = orderDetails.items.some(item => {
-            const stock = mockFranchiseInventory.find(s => s.id === item.id || s.productId === item.id);
-            // If item.quantity is missing, try to parse from string '20kg'
-            const neededQty = item.quantity || parseInt(item.qty) || 0;
-            const isMissing = !stock || stock.currentStock < neededQty;
+            if (response.data.success) {
+                const newOrder = response.data.result;
+                setOrders(prev => [newOrder, ...prev]);
+                return { success: true, order: newOrder };
+            } else {
+                toast.error(response.data.message || "Failed to place order");
+                return { success: false, message: response.data.message };
+            }
+        } catch (error) {
+            console.error("Place order error:", error);
+            const msg = error.response?.data?.message || "Something went wrong";
+            toast.error(msg);
+            return { success: false, message: msg };
+        }
+    };
 
-            console.log('Stock Check:', item.name, { needed: neededQty, available: stock?.currentStock, isMissing });
-            return isMissing;
-        });
-
-        const procurementTotal = orderDetails.items.reduce((sum, item) => {
-            const vendorPrice = mockProduce.find(p => p.name === item.name || p.id === item.id)?.price || (item.price * 0.7);
-            const qty = item.quantity || parseInt(item.qty) || 0;
-            return sum + (vendorPrice * qty);
-        }, 0);
-
-        const newOrder = {
-            id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
-            date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-            status: 'new',
-            fulfillmentType: hasLowStock ? 'requires_procurement' : 'franchise_stock',
-            assignedVendor: hasLowStock ? 'KrishiKart Indore' : null,
-            stockStatus: hasLowStock ? 'Low Stock at Franchise' : 'In Stock',
-            procurementTotal: Math.round(procurementTotal),
-            ...orderDetails
-        };
-        setOrders(prev => [newOrder, ...prev]);
-        return newOrder;
+    const getOrderById = async (id) => {
+        try {
+            const response = await api.get(`/orders/${id}`);
+            return response.data.result;
+        } catch (error) {
+            console.error("Get order error:", error);
+            return null;
+        }
     };
 
     const updateOrderStatus = (orderId, status, additionalData = {}) => {
+        // This would typically be a backend call, but keeping local update for UI consistency if needed
         setOrders(prev => prev.map(order =>
-            order.id === orderId ? {
+            order._id === orderId ? {
                 ...order,
-                status,
+                orderStatus: status,
                 ...additionalData,
-                lastUpdated: new Date().toISOString()
             } : order
         ));
     };
 
     return (
-        <OrderContext.Provider value={{ orders, placeOrder, updateOrderStatus }}>
+        <OrderContext.Provider value={{ orders, placeOrder, updateOrderStatus, getOrderById, isLoading, fetchMyOrders }}>
             {children}
         </OrderContext.Provider>
     );

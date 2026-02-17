@@ -6,6 +6,7 @@ const AdminContext = createContext();
 
 export const AdminProvider = ({ children }) => {
     const [vendors, setVendors] = useState([]);
+    const [franchises, setFranchises] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
 
     const fetchVendors = async (status) => {
@@ -23,17 +24,45 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
+    const fetchPendingFranchises = async () => {
+        setIsLoading(true);
+        try {
+            const response = await api.get('/masteradmin/franchises/kyc/pending');
+            if (response.data.success) {
+                setFranchises(response.data.results || response.data.result || []);
+            }
+        } catch (error) {
+            console.error('Fetch franchises error:', error);
+            toast.error('Failed to fetch pending franchises');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const updateVendorStatus = async (id, status) => {
         try {
             const response = await api.put(`/masteradmin/vendors/${id}/status`, { status });
             if (response.data.success) {
                 toast.success(`Vendor ${status === 'active' ? 'approved' : 'updated'}`);
-                setVendors(prev => prev.filter(v => v._id !== id)); // Remove from pending list
+                setVendors(prev => prev.filter(v => v._id !== id));
                 return true;
             }
         } catch (error) {
-            console.error('Update status error:', error);
             toast.error(error.response?.data?.message || 'Update failed');
+            return false;
+        }
+    };
+
+    const reviewFranchiseKYC = async (id, status, rejectionReason) => {
+        try {
+            const response = await api.put(`/masteradmin/franchises/${id}/kyc-review`, { status, rejectionReason });
+            if (response.data.success) {
+                toast.success(`Franchise KYC ${status}`);
+                setFranchises(prev => prev.filter(f => f._id !== id));
+                return true;
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Review failed');
             return false;
         }
     };
@@ -41,9 +70,12 @@ export const AdminProvider = ({ children }) => {
     return (
         <AdminContext.Provider value={{
             vendors,
+            franchises,
             isLoading,
             fetchVendors,
-            updateVendorStatus
+            fetchPendingFranchises,
+            updateVendorStatus,
+            reviewFranchiseKYC
         }}>
             {children}
         </AdminContext.Provider>

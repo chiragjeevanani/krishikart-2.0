@@ -219,3 +219,46 @@ export const changeFranchisePassword = async (req, res) => {
         return handleResponse(res, 500, "Server error");
     }
 };
+
+/* ================= UPLOAD DOCUMENTS ================= */
+import { uploadToCloudinary } from "../utils/cloudinary.js";
+
+export const uploadFranchiseDocuments = async (req, res) => {
+    try {
+        const franchiseId = req.franchise._id;
+        const franchise = await Franchise.findById(franchiseId);
+
+        if (!franchise) return handleResponse(res, 404, "Franchise not found");
+
+        if (!req.files || req.files.length === 0) {
+            return handleResponse(res, 400, "No documents uploaded");
+        }
+
+        const uploadPromises = req.files.map(async (file) => {
+            const url = await uploadToCloudinary(file.buffer, "franchise/documents");
+            return {
+                name: file.originalname,
+                url: url,
+                status: "pending"
+            };
+        });
+
+        const uploadedDocs = await Promise.all(uploadPromises);
+
+        franchise.documents.push(...uploadedDocs);
+
+        // After documents are uploaded, we can mark as verified for now or leave for admin
+        // User said: "is verified franchise tab hogi jab vo api document daal de"
+        // So let's mark it as verified once they upload any document, or at least change status.
+        // Let's set isVerified to true for now since the user prompt implies this trigger.
+        franchise.isVerified = true;
+        franchise.status = "active";
+
+        await franchise.save();
+
+        return handleResponse(res, 200, "Documents uploaded and franchise verified", franchise);
+    } catch (err) {
+        console.error("Document upload error:", err);
+        return handleResponse(res, 500, "Server error during document upload");
+    }
+};

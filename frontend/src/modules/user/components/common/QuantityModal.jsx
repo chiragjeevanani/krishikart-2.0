@@ -55,9 +55,9 @@ export default function QuantityModal({ isOpen, onClose, product, onAdd }) {
                     <div className="px-8 pb-8">
                         <div className="bg-white border border-slate-100 rounded-[24px] p-6 shadow-sm">
                             <div className="flex gap-6 items-start">
-                                <div className="w-28 h-28 rounded-2xl bg-slate-50 overflow-hidden shrink-0 border border-slate-100">
+                                <div className="w-28 h-28 rounded-2xl bg-slate-50 overflow-hidden shrink-0 border border-slate-100 flex items-center justify-center p-2">
                                     <img
-                                        src={product.image}
+                                        src={product.primaryImage || product.image}
                                         alt={product.name}
                                         className="w-full h-full object-cover"
                                         onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=80' }}
@@ -65,7 +65,7 @@ export default function QuantityModal({ isOpen, onClose, product, onAdd }) {
                                 </div>
                                 <div className="flex-1 min-w-0 pt-1">
                                     <h3 className="text-lg font-bold text-slate-900 leading-snug line-clamp-2 mb-1">{product.name}</h3>
-                                    <p className="text-xs font-semibold text-slate-400 capitalize">{product.unit || '1 pc'}</p>
+                                    <p className="text-xs font-semibold text-slate-400 capitalize">{product.unitValue} {product.unit}</p>
                                 </div>
                             </div>
 
@@ -111,7 +111,7 @@ export default function QuantityModal({ isOpen, onClose, product, onAdd }) {
                                 {product.bulkPricing?.map((tier, idx) => (
                                     <div key={idx} className="bg-[#f4f7ff] rounded-2xl px-6 py-4 flex items-center justify-between">
                                         <div className="text-[#3b5998] font-bold text-sm">
-                                            ₹{tier.price}/{product.unit || 'pc'} for {tier.minQty} {product.unit || 'pcs'}+
+                                            ₹{tier.price}/{product.unit === 'pcs' ? 'pc' : product.unit} for {tier.minQty} {product.unit}+
                                         </div>
                                         <button
                                             onClick={() => setModalQty(tier.minQty)}

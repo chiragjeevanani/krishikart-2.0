@@ -16,7 +16,8 @@ import {
     CheckCircle2,
     Eye,
     EyeOff,
-    X
+    X,
+    ChevronDown
 } from 'lucide-react';
 import { useCatalog } from '../contexts/CatalogContext';
 import { useNavigate } from 'react-router-dom';
@@ -109,13 +110,14 @@ export default function ManageProductScreen() {
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
-                            className="w-full bg-white border border-slate-200 rounded-sm py-3 pl-12 pr-4 text-[11px] font-bold uppercase tracking-widest focus:outline-none appearance-none cursor-pointer shadow-sm"
+                            className="w-full bg-white border border-slate-200 rounded-sm py-3 pl-12 pr-10 text-[11px] font-bold uppercase tracking-widest focus:outline-none appearance-none cursor-pointer shadow-sm text-ellipsis overflow-hidden whitespace-nowrap"
                         >
                             <option value="all">ALL STATUSES</option>
                             <option value="active">ACTIVE ONLY</option>
                             <option value="draft">DRAFTS</option>
                             <option value="inactive">INACTIVE</option>
                         </select>
+                        <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                     </div>
                     <div className="bg-slate-900 rounded-sm p-3 flex items-center justify-between shadow-lg">
                         <div className="space-y-0.5">
@@ -187,6 +189,7 @@ export default function ManageProductScreen() {
                                         <td className="px-6 py-4">
                                             <div className="space-y-0.5">
                                                 <p className="text-[11px] font-black text-slate-900 tracking-tight">₹{product.price}</p>
+                                                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">per {product.unitValue > 1 ? product.unitValue : ''}{product.unit}</p>
                                                 {product.comparePrice && (
                                                     <p className="text-[9px] font-bold text-slate-400 line-through tracking-tighter">₹{product.comparePrice}</p>
                                                 )}
@@ -343,7 +346,7 @@ function QuickViewModal({ isOpen, onClose, product, onEdit }) {
                         <div className="grid grid-cols-2 gap-8">
                             <div className="space-y-1">
                                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Base Valuation</p>
-                                <p className="text-lg font-black text-slate-900">₹{product.price} <span className="text-xs text-slate-400 font-bold">/ {product.unit}</span></p>
+                                <p className="text-lg font-black text-slate-900">₹{product.price} <span className="text-xs text-slate-400 font-bold">/ {product.unitValue > 1 ? product.unitValue : ''}{product.unit}</span></p>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Live Inventory</p>

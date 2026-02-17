@@ -14,7 +14,12 @@ import {
   getVendorDetails,
   getAllFranchises,
   getFranchiseDetails,
-  updateFranchiseStatus
+  updateFranchiseStatus,
+  getPendingKYCFranchises,
+  reviewFranchiseKYC,
+  getAllCustomers,
+  getCustomerDetails,
+  updateCustomerCredit
 } from "../controllers/masteradmin.controller.js";
 
 import { protectMasterAdmin } from "../middlewares/masteradmin.auth.js";
@@ -36,7 +41,14 @@ router.put("/vendors/:id/status", protectMasterAdmin, updateVendorStatus);
 
 /* 🏪 Franchise Management */
 router.get("/franchises", protectMasterAdmin, getAllFranchises);
+router.get("/franchises/kyc/pending", protectMasterAdmin, getPendingKYCFranchises);
 router.get("/franchises/:id", protectMasterAdmin, getFranchiseDetails);
 router.put("/franchises/:id/status", protectMasterAdmin, updateFranchiseStatus);
+router.put("/franchises/:id/kyc-review", protectMasterAdmin, reviewFranchiseKYC);
+
+/* 👥 Customer Management */
+router.get("/customers", protectMasterAdmin, getAllCustomers);
+router.get("/customers/:id", protectMasterAdmin, getCustomerDetails);
+router.put("/customers/:id/credit", protectMasterAdmin, updateCustomerCredit);
 
 export default router;

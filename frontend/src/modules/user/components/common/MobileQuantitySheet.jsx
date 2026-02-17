@@ -20,11 +20,10 @@ export default function MobileQuantitySheet({ isOpen, onClose, product, onAdd })
         onClose()
     }
 
-    // Mock bulk deal data for UI demo
-    const bulkDeal = {
-        price: Math.floor(product.price * 0.95),
-        minQty: 3
-    }
+    // Use actual bulk pricing from product if available
+    const activeBulkDeal = product.bulkPricing && product.bulkPricing.length > 0
+        ? product.bulkPricing[0]
+        : { price: Math.floor(product.price * 0.95), minQty: 3 };
 
     return (
         <Sheet open={isOpen} onOpenChange={onClose}>
@@ -41,7 +40,7 @@ export default function MobileQuantitySheet({ isOpen, onClose, product, onAdd })
                         <div className="flex gap-4 mb-6">
                             <div className="w-20 h-20 rounded-2xl bg-slate-50 border border-slate-100 p-2 shrink-0">
                                 <img
-                                    src={product.image}
+                                    src={product.primaryImage || product.image || product.image}
                                     className="w-full h-full object-contain mix-blend-multiply"
                                     alt={product.name}
                                 />
@@ -51,7 +50,7 @@ export default function MobileQuantitySheet({ isOpen, onClose, product, onAdd })
                                     {product.name}
                                 </h3>
                                 <p className="text-[13px] font-bold text-slate-400">
-                                    {product.unit || '1 kg'}
+                                    {product.unitValue} {product.unit}
                                 </p>
                             </div>
                         </div>
@@ -70,22 +69,23 @@ export default function MobileQuantitySheet({ isOpen, onClose, product, onAdd })
                             </button>
                         </div>
 
-                        {/* Bulk Deal Strip */}
-                        <button
-                            onClick={() => {
-                                setQty(bulkDeal.minQty)
-                                onAdd(product, bulkDeal.minQty)
-                                onClose()
-                            }}
-                            className="w-full flex items-center justify-between px-4 py-3 bg-blue-50/50 rounded-2xl border border-blue-100/50 group active:scale-[0.98] transition-all"
-                        >
-                            <span className="text-[13px] font-bold text-blue-600">
-                                ₹{bulkDeal.price}/kg for {bulkDeal.minQty} kgs+
-                            </span>
-                            <span className="text-[13px] font-black text-emerald-600">
-                                Add {bulkDeal.minQty}
-                            </span>
-                        </button>
+                        {(product.bulkPricing && product.bulkPricing.length > 0) && (
+                            <button
+                                onClick={() => {
+                                    setQty(activeBulkDeal.minQty)
+                                    onAdd(product, activeBulkDeal.minQty)
+                                    onClose()
+                                }}
+                                className="w-full flex items-center justify-between px-4 py-3 bg-blue-50/50 rounded-2xl border border-blue-100/50 group active:scale-[0.98] transition-all"
+                            >
+                                <span className="text-[13px] font-bold text-blue-600">
+                                    ₹{activeBulkDeal.price}/{product.unit === 'pcs' ? 'pc' : product.unit} for {activeBulkDeal.minQty} {product.unit}+
+                                </span>
+                                <span className="text-[13px] font-black text-emerald-600">
+                                    Add {activeBulkDeal.minQty}
+                                </span>
+                            </button>
+                        )}
                     </div>
                 </div>
             </SheetContent>

@@ -42,7 +42,7 @@ export default function OrdersScreen() {
     }, [activeTab]);
 
     const handleAction = (orderId, newStatus) => {
-        const order = allOrders.find(o => o.id === orderId);
+        const order = allOrders.find(o => o._id === orderId);
         if (!order) return;
 
         // Stock Validation Logic (Simplified for UI display)
@@ -83,14 +83,15 @@ export default function OrdersScreen() {
 
     const filteredOrders = allOrders.filter(order => {
         let matchesTab = false;
-        const status = order.status.toLowerCase();
-        if (activeTab === 'new') matchesTab = status === 'new' || status === 'processing';
-        else if (activeTab === 'preparing') matchesTab = status === 'preparing';
-        else if (activeTab === 'ready') matchesTab = status === 'ready' || status === 'out_for_delivery';
+        const status = (order.orderStatus || order.status || '').toLowerCase();
+        if (activeTab === 'new') matchesTab = status === 'pending' || status === 'placed' || status === 'new' || status === 'processing';
+        else if (activeTab === 'preparing') matchesTab = status === 'processing' || status === 'confirmed' || status === 'preparing';
+        else if (activeTab === 'ready') matchesTab = status === 'ready' || status === 'out for delivery';
         else if (activeTab === 'delivered') matchesTab = status === 'delivered';
 
-        const hotelName = order.hotelName || 'Unknown';
-        const matchesSearch = order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        const hotelName = order.hotelName || order.userId?.fullName || 'Unknown';
+        const orderId = (order._id || order.id || '').toString();
+        const matchesSearch = orderId.toLowerCase().includes(searchQuery.toLowerCase()) ||
             hotelName.toLowerCase().includes(searchQuery.toLowerCase());
         return matchesTab && matchesSearch;
     });

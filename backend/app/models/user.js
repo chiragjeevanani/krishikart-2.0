@@ -71,6 +71,16 @@ const userSchema = new mongoose.Schema(
     loyaltyPoints: {
       type: Number,
       default: 0
+    },
+
+    creditLimit: {
+      type: Number,
+      default: 0
+    },
+
+    usedCredit: {
+      type: Number,
+      default: 0
     }
   },
   { timestamps: true }

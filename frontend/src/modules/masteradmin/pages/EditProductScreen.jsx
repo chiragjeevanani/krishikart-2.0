@@ -15,7 +15,8 @@ import {
     Truck,
     LayoutGrid,
     Trash2,
-    Zap
+    Zap,
+    ChevronDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCatalog } from '../contexts/CatalogContext';
@@ -46,6 +47,8 @@ export default function EditProductScreen() {
         comparePrice: '',
         stock: '',
         unit: 'kg',
+        unitValue: '1',
+        bulkUnit: 'kg',
         description: '',
         shortDescription: '',
         status: 'draft',
@@ -69,6 +72,8 @@ export default function EditProductScreen() {
                 comparePrice: product.comparePrice || '',
                 stock: product.stock || '',
                 unit: product.unit || 'kg',
+                unitValue: product.unitValue || '1',
+                bulkUnit: product.bulkUnit || 'kg',
                 description: product.description || '',
                 shortDescription: product.shortDescription || '',
                 status: product.status || 'draft',
@@ -383,17 +388,15 @@ export default function EditProductScreen() {
                             <div className="p-6">
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Standard Price</label>
-                                        <div className="relative">
-                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">₹</span>
-                                            <input
-                                                type="number"
-                                                name="price"
-                                                value={formData.price}
-                                                onChange={handleChange}
-                                                className="w-full bg-slate-50/50 border border-slate-200 rounded-sm pl-8 pr-4 py-2.5 text-sm font-bold tabular-nums outline-none transition-all"
-                                            />
-                                        </div>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Inventory Stock</label>
+                                        <input
+                                            type="number"
+                                            name="stock"
+                                            value={formData.stock}
+                                            onChange={handleChange}
+                                            placeholder="e.g. 100"
+                                            className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-2.5 text-sm font-bold tabular-nums focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-200"
+                                        />
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Comparison Price</label>
@@ -448,34 +451,59 @@ export default function EditProductScreen() {
                             <div className="p-6">
                                 {formData.bulkPricing.length > 0 ? (
                                     <div className="space-y-4">
-                                        {formData.bulkPricing?.map((tier, index) => (
-                                            <div key={index} className="grid grid-cols-12 gap-4 items-center bg-slate-50/50 p-2 rounded-sm border border-slate-100">
-                                                <div className="col-span-5">
-                                                    <input
-                                                        type="number"
-                                                        value={tier.minQty}
-                                                        onChange={(e) => handleBulkTierChange(index, 'minQty', e.target.value)}
-                                                        placeholder="Min Qty"
-                                                        className="w-full bg-white border border-slate-200 rounded-sm px-3 py-2 text-sm font-bold outline-none"
-                                                    />
-                                                </div>
-                                                <div className="col-span-5 relative">
-                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₹</span>
-                                                    <input
-                                                        type="number"
-                                                        value={tier.price}
-                                                        onChange={(e) => handleBulkTierChange(index, 'price', e.target.value)}
-                                                        placeholder="Price"
-                                                        className="w-full bg-white border border-slate-200 rounded-sm pl-7 pr-3 py-2 text-sm font-bold outline-none"
-                                                    />
-                                                </div>
-                                                <div className="col-span-2 flex justify-end">
-                                                    <button onClick={() => handleRemoveBulkTier(index)} className="p-2 text-slate-300 hover:text-rose-500">
-                                                        <Trash2 size={14} />
-                                                    </button>
+                                        <div className="grid grid-cols-12 gap-4 px-2">
+                                            <div className="flex items-center gap-2 col-span-5">
+                                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Min. Quantity in</span>
+                                                <div className="relative">
+                                                    <select
+                                                        name="bulkUnit"
+                                                        value={formData.bulkUnit}
+                                                        onChange={handleChange}
+                                                        className="bg-slate-100/50 border border-slate-200 rounded-sm pl-2 pr-6 py-0.5 text-[9px] font-black uppercase tracking-tight outline-none focus:border-emerald-500 cursor-pointer appearance-none"
+                                                    >
+                                                        <option value="kg">kg</option>
+                                                        <option value="gm">gm</option>
+                                                        <option value="pcs">pcs</option>
+                                                        <option value="ltr">lit</option>
+                                                        <option value="ml">ml</option>
+                                                        <option value="dz">dozen</option>
+                                                    </select>
+                                                    <ChevronDown size={10} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                                                 </div>
                                             </div>
-                                        ))}
+                                            <div className="col-span-5 text-[9px] font-black text-slate-400 uppercase tracking-widest">Slashed Price (₹)</div>
+                                            <div className="col-span-2"></div>
+                                        </div>
+                                        <div className="space-y-3">
+                                            {formData.bulkPricing?.map((tier, index) => (
+                                                <div key={index} className="grid grid-cols-12 gap-4 items-center bg-slate-50/50 p-2 rounded-sm border border-slate-100">
+                                                    <div className="col-span-5">
+                                                        <input
+                                                            type="number"
+                                                            value={tier.minQty}
+                                                            onChange={(e) => handleBulkTierChange(index, 'minQty', e.target.value)}
+                                                            placeholder="Min Qty"
+                                                            className="w-full bg-white border border-slate-200 rounded-sm px-3 py-2 text-sm font-bold outline-none"
+                                                        />
+                                                    </div>
+                                                    <div className="col-span-5 relative">
+                                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₹</span>
+                                                        <input
+                                                            type="number"
+                                                            value={tier.price}
+                                                            onChange={(e) => handleBulkTierChange(index, 'price', e.target.value)}
+                                                            placeholder="Price"
+                                                            className="w-full bg-white border border-slate-200 rounded-sm pl-7 pr-3 py-2 text-sm font-bold outline-none"
+                                                        />
+                                                    </div>
+                                                    <div className="col-span-2 flex justify-end">
+                                                        <button onClick={() => handleRemoveBulkTier(index)} className="p-2 text-slate-300 hover:text-rose-500">
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 ) : (
                                     <div className="text-center py-10 border-2 border-dashed border-slate-100 rounded-sm">
@@ -495,30 +523,49 @@ export default function EditProductScreen() {
                             </div>
                             <div className="p-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Unit Type</label>
-                                        <select
-                                            name="unit"
-                                            value={formData.unit}
-                                            onChange={handleChange}
-                                            className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-2.5 text-sm font-bold outline-none cursor-pointer"
-                                        >
-                                            <option value="kg">kg</option>
-                                            <option value="gm">gm</option>
-                                            <option value="pcs">pcs</option>
-                                            <option value="ltr">ltr</option>
-                                            <option value="box">box</option>
-                                        </select>
+                                    <div className="space-y-1.5 flex-1">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Product Quantity</label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="number"
+                                                name="unitValue"
+                                                value={formData.unitValue}
+                                                onChange={handleChange}
+                                                placeholder="e.g. 500"
+                                                className="w-24 bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-2.5 text-sm font-bold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                                            />
+                                            <div className="relative flex-1">
+                                                <select
+                                                    name="unit"
+                                                    value={formData.unit}
+                                                    onChange={handleChange}
+                                                    className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-2.5 text-sm font-bold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all appearance-none cursor-pointer"
+                                                >
+                                                    <option value="kg">kg</option>
+                                                    <option value="gm">gm</option>
+                                                    <option value="pcs">pcs</option>
+                                                    <option value="ltr">lit</option>
+                                                    <option value="ml">ml</option>
+                                                    <option value="dz">dozen</option>
+                                                    <option value="box">box</option>
+                                                </select>
+                                                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                            </div>
+                                        </div>
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Current Stock</label>
-                                        <input
-                                            type="number"
-                                            name="stock"
-                                            value={formData.stock}
-                                            onChange={handleChange}
-                                            className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-2.5 text-sm font-bold outline-none"
-                                        />
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Selling Price (₹)</label>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold">₹</span>
+                                            <input
+                                                type="number"
+                                                name="price"
+                                                value={formData.price}
+                                                onChange={handleChange}
+                                                placeholder="e.g. 180"
+                                                className="w-full bg-slate-50/50 border border-slate-200 rounded-sm pl-8 pr-4 py-2.5 text-sm font-black tabular-nums focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-300"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -580,32 +627,38 @@ export default function EditProductScreen() {
                             <div className="p-6 space-y-6">
                                 <div className="space-y-1.5">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Primary Category</label>
-                                    <select
-                                        name="category"
-                                        value={formData.category}
-                                        onChange={handleChange}
-                                        className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-2.5 text-sm font-bold outline-none appearance-none cursor-pointer"
-                                    >
-                                        <option value="">Select Category...</option>
-                                        {(categories || []).map(cat => (
-                                            <option key={cat._id} value={cat._id}>{cat.name}</option>
-                                        ))}
-                                    </select>
+                                    <div className="relative">
+                                        <select
+                                            name="category"
+                                            value={formData.category}
+                                            onChange={handleChange}
+                                            className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-2.5 text-sm font-bold outline-none appearance-none cursor-pointer"
+                                        >
+                                            <option value="">Select Category...</option>
+                                            {(categories || []).map(cat => (
+                                                <option key={cat._id} value={cat._id}>{cat.name}</option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                    </div>
                                 </div>
                                 <div className="space-y-1.5">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Secondary Branch</label>
-                                    <select
-                                        name="subcategory"
-                                        value={formData.subcategory}
-                                        onChange={handleChange}
-                                        disabled={!formData.category}
-                                        className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-2.5 text-sm font-bold outline-none appearance-none cursor-pointer disabled:bg-slate-100"
-                                    >
-                                        <option value="">Select Subcategory...</option>
-                                        {(getSubcategoriesByCategory(formData.category) || []).map(sub => (
-                                            <option key={sub._id} value={sub._id}>{sub.name}</option>
-                                        ))}
-                                    </select>
+                                    <div className="relative">
+                                        <select
+                                            name="subcategory"
+                                            value={formData.subcategory}
+                                            onChange={handleChange}
+                                            disabled={!formData.category}
+                                            className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-2.5 text-sm font-bold outline-none appearance-none cursor-pointer disabled:bg-slate-100"
+                                        >
+                                            <option value="">Select Subcategory...</option>
+                                            {(getSubcategoriesByCategory(formData.category) || []).map(sub => (
+                                                <option key={sub._id} value={sub._id}>{sub.name}</option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                    </div>
                                 </div>
                             </div>
                         </div>

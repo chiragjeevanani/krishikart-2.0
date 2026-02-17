@@ -49,7 +49,9 @@ export const createProduct = async (req, res) => {
         let parsedBulk = [];
         if (bulkPricing) {
             try {
-                parsedBulk = typeof bulkPricing === 'string' ? JSON.parse(bulkPricing) : bulkPricing;
+                const rawBulk = typeof bulkPricing === 'string' ? JSON.parse(bulkPricing) : bulkPricing;
+                // Filter only valid tiers
+                parsedBulk = (rawBulk || []).filter(tier => tier.minQty != null && tier.price != null && tier.minQty !== '' && tier.price !== '');
             } catch (e) {
                 console.error("Bulk Pricing Parse Error:", e);
             }
@@ -152,9 +154,11 @@ export const updateProduct = async (req, res) => {
         // Parse bulk pricing
         if (updateData.bulkPricing) {
             try {
-                updateData.bulkPricing = typeof updateData.bulkPricing === 'string'
+                const rawBulk = typeof updateData.bulkPricing === 'string'
                     ? JSON.parse(updateData.bulkPricing)
                     : updateData.bulkPricing;
+                // Filter only valid tiers
+                updateData.bulkPricing = (rawBulk || []).filter(tier => tier.minQty != null && tier.price != null && tier.minQty !== '' && tier.price !== '');
             } catch (e) {
                 console.error("Bulk Pricing Parse Error:", e);
             }

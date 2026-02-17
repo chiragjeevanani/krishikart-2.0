@@ -1,38 +1,55 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import api from '@/lib/axios';
 
 const WalletContext = createContext();
 
 export function WalletProvider({ children }) {
-    const [balance, setBalance] = useState(5000); // Initial mock balance
-    const [loyaltyPoints, setLoyaltyPoints] = useState(() => {
-        const saved = localStorage.getItem('krishikart_loyalty_points');
-        return saved ? parseInt(saved) : 0;
-    });
-    const [creditLimit, setCreditLimit] = useState(50000); // Business Credit Limit
-    const [creditUsed, setCreditUsed] = useState(12500); // Current credit used
-    const [transactions, setTransactions] = useState([
-        { id: 'TXN-101', type: 'Added', amount: 5000, date: 'Jan 15, 2026', status: 'Success' },
-    ]);
-    const [loyaltyConfig, setLoyaltyConfig] = useState(() => {
-        const saved = localStorage.getItem('krishikart_loyalty_config');
-        return saved ? JSON.parse(saved) : {
-            awardRate: 5, // 5% of order value
-            redemptionRate: 10, // 10 points = ₹1
-            minRedeemPoints: 100
-        };
+    const [balance, setBalance] = useState(0);
+    const [loyaltyPoints, setLoyaltyPoints] = useState(0);
+    const [creditLimit, setCreditLimit] = useState(0);
+    const [creditUsed, setCreditUsed] = useState(0);
+    const [transactions, setTransactions] = useState([]);
+    const [loyaltyConfig, setLoyaltyConfig] = useState({
+        awardRate: 5, // 5% of order value
+        redemptionRate: 10, // 10 points = ₹1
+        minRedeemPoints: 100
     });
 
+    const [isLoading, setIsLoading] = useState(false);
+
     useEffect(() => {
-        localStorage.setItem('krishikart_loyalty_config', JSON.stringify(loyaltyConfig));
-    }, [loyaltyConfig]);
+        fetchWalletData();
+    }, []);
+
+    const fetchWalletData = async () => {
+        setIsLoading(true);
+        try {
+            const token = localStorage.getItem('userToken') || localStorage.getItem('token');
+            if (token) {
+                const response = await api.get('/user/me');
+                if (response.data && response.data.result) {
+                    const user = response.data.result;
+                    setBalance(user.walletBalance || 0);
+                    setCreditLimit(user.creditLimit || 0);
+                    setCreditUsed(user.usedCredit || 0);
+                    setLoyaltyPoints(user.loyaltyPoints || 0);
+
+                    // Note: Transactions are currently mock as they aren't in User model
+                    setTransactions([
+                        { id: 'TXN-INIT', type: 'Added', amount: user.walletBalance || 0, date: 'Current Session', status: 'Success' }
+                    ]);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to fetch wallet data:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const updateLoyaltyConfig = (newConfig) => {
         setLoyaltyConfig(prev => ({ ...prev, ...newConfig }));
     };
-
-    useEffect(() => {
-        localStorage.setItem('krishikart_loyalty_points', loyaltyPoints.toString());
-    }, [loyaltyPoints]);
 
     const addLoyaltyPoints = (points) => {
         setLoyaltyPoints(prev => prev + points);
@@ -107,7 +124,9 @@ export function WalletProvider({ children }) {
             addLoyaltyPoints,
             redeemLoyaltyPoints,
             loyaltyConfig,
-            updateLoyaltyConfig
+            updateLoyaltyConfig,
+            fetchWalletData,
+            isLoading
         }}>
             {children}
         </WalletContext.Provider>

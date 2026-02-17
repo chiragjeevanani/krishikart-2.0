@@ -5,7 +5,8 @@ import vendorRoutes from "../../app/routes/vendor.js";
 import franchiseRoutes from "../../app/routes/franchise.js";
 import catalogRoutes from "../../app/routes/catalog.js";
 import productRoutes from "../../app/routes/product.js";
-
+import orderRoutes from "../../app/routes/order.js";
+import paymentRoutes from "../../app/routes/payment.js";
 
 const setupRoutes = (app) => {
     app.use("/user", userRoute);
@@ -15,7 +16,7 @@ const setupRoutes = (app) => {
     app.use("/franchise", franchiseRoutes);
     app.use("/catalog", catalogRoutes);
     app.use("/products", productRoutes);
-
-
+    app.use("/orders", orderRoutes);
+    app.use("/payment", paymentRoutes);
 }
 export default setupRoutes;

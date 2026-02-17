@@ -45,7 +45,16 @@ const productSchema = new mongoose.Schema({
     },
     unit: {
         type: String,
-        enum: ['kg', 'gm', 'pcs', 'ltr', 'box'],
+        enum: ['kg', 'gm', 'pcs', 'ltr', 'ml', 'box', 'dz'],
+        default: 'kg'
+    },
+    unitValue: {
+        type: Number,
+        default: 1
+    },
+    bulkUnit: {
+        type: String,
+        enum: ['kg', 'gm', 'pcs', 'ltr', 'ml', 'box', 'dz'],
         default: 'kg'
     },
     description: {

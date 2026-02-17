@@ -188,7 +188,11 @@ export const CatalogProvider = ({ children }) => {
             const formData = new FormData();
             Object.keys(productData).forEach(key => {
                 if (key === 'bulkPricing') {
-                    formData.append(key, JSON.stringify(productData[key]));
+                    const validTiers = (productData[key] || []).filter(tier =>
+                        tier.minQty !== '' && tier.price !== '' &&
+                        tier.minQty !== null && tier.price !== null
+                    );
+                    formData.append(key, JSON.stringify(validTiers));
                 } else if (key === 'primaryFile') {
                     if (productData[key]) formData.append('primaryImage', productData[key]);
                 } else if (key === 'galleryFiles') {
@@ -231,7 +235,11 @@ export const CatalogProvider = ({ children }) => {
             const formData = new FormData();
             Object.keys(updateData).forEach(key => {
                 if (key === 'bulkPricing') {
-                    formData.append(key, JSON.stringify(updateData[key]));
+                    const validTiers = (updateData[key] || []).filter(tier =>
+                        tier.minQty !== '' && tier.price !== '' &&
+                        tier.minQty !== null && tier.price !== null
+                    );
+                    formData.append(key, JSON.stringify(validTiers));
                 } else if (key === 'primaryFile' && updateData[key]) {
                     formData.append('primaryImage', updateData[key]);
                 } else if (key === 'galleryFiles' && updateData[key]) {

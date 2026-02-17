@@ -20,8 +20,9 @@ import {
 } from 'lucide-react';
 import CreditLimitCard from '../components/cards/CreditLimitCard';
 import CreditOverrideModal from '../components/modals/CreditOverrideModal';
-import mockData from '../data/mockCreditLimits.json';
+import api from '@/lib/axios';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 // Enterprise Components
 import MetricRow from '../components/cards/MetricRow';
@@ -32,35 +33,61 @@ export default function CreditManagementScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedHotel, setSelectedHotel] = useState(null);
+    const [customers, setCustomers] = useState([]);
+    const [selectedCustomer, setSelectedCustomer] = useState(null);
 
     useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 800);
-        return () => clearTimeout(timer);
+        fetchCustomers();
     }, []);
 
-    const filteredHotels = mockData.hotelCredits.filter(hotel =>
-        hotel.hotelName.toLowerCase().includes(searchTerm.toLowerCase())
+    const fetchCustomers = async () => {
+        setIsLoading(true);
+        try {
+            const response = await api.get('/masteradmin/customers');
+            setCustomers(response.data.results || []);
+        } catch (error) {
+            console.error('Error fetching customers:', error);
+            toast.error('Failed to load customers');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const filteredCustomers = customers.filter(customer =>
+        (customer.fullName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (customer.mobile || '').includes(searchTerm)
     );
 
-    const handleOverride = (hotel) => {
-        setSelectedHotel(hotel);
+    const handleOverride = (customer) => {
+        setSelectedCustomer(customer);
         setIsModalOpen(true);
     };
 
-    const handleSaveOverride = (data) => {
-        console.log('Saving override:', data, 'for hotel:', selectedHotel.hotelId);
-        setIsModalOpen(false);
+    const handleSaveOverride = async (data) => {
+        try {
+            const response = await api.put(`/masteradmin/customers/${selectedCustomer._id}/credit`, {
+                creditLimit: Number(data.limit)
+            });
+
+            if (response.data) {
+                toast.success('Credit limit updated successfully');
+                fetchCustomers();
+                setIsModalOpen(false);
+            }
+        } catch (error) {
+            console.error('Error updating credit:', error);
+            toast.error('Failed to update credit limit');
+        }
     };
 
-    const hotelColumns = [
+    const customerColumns = [
         {
-            header: 'Entity Identifer',
-            key: 'hotelName',
+            header: 'Customer Identifer',
+            key: 'fullName',
             render: (val, row) => (
                 <div className="flex flex-col">
-                    <span className="font-black text-slate-900 text-xs tracking-tight">{val}</span>
-                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-[0.1em] mt-0.5">{row.hotelId}</span>
+                    <span className="font-black text-slate-900 text-xs tracking-tight">{val || 'Unnamed Customer'}</span>
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-[0.1em] mt-0.5">{row.mobile}</span>
                 </div>
             )
         },
@@ -173,7 +200,7 @@ export default function CreditManagementScreen() {
             <div className="bg-white border-b border-slate-200 grid grid-cols-1 md:grid-cols-4">
                 <MetricRow
                     label="Total Net Exposure"
-                    value="₹4.28M"
+                    value={`₹${(customers.reduce((acc, curr) => acc + (curr.usedCredit || 0), 0) / 100000).toFixed(2)}L`}
                     change={12.4}
                     trend="up"
                     icon={IndianRupee}
@@ -181,19 +208,19 @@ export default function CreditManagementScreen() {
                 />
                 <MetricRow
                     label="Critical Nodes"
-                    value="03"
-                    sub="Over-Limit"
+                    value={customers.filter(c => ((c.usedCredit || 0) / (c.creditLimit || 1)) > 0.9).length.toString().padStart(2, '0')}
+                    sub="Over 90% Limit"
                     icon={AlertCircle}
                 />
                 <MetricRow
                     label="Aggregated Limit"
-                    value="₹12.5M"
+                    value={`₹${(customers.reduce((acc, curr) => acc + (curr.creditLimit || 0), 0) / 100000).toFixed(2)}L`}
                     sub="Allocated Capital"
                     icon={CreditCard}
                 />
                 <MetricRow
                     label="Node Integrity"
-                    value="98.2%"
+                    value={`${(customers.length > 0 ? ((customers.length - customers.filter(c => ((c.usedCredit || 0) / (c.creditLimit || 1)) > 0.9).length) / customers.length) * 100 : 100).toFixed(1)}%`}
                     trend="Stable"
                     isPositive={true}
                     icon={ShieldCheck}
@@ -208,7 +235,7 @@ export default function CreditManagementScreen() {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" size={14} />
                             <input
                                 type="text"
-                                placeholder="Filter by Hotel Name, ID or Risk Parameter..."
+                                placeholder="Filter by Customer Name, Mobile or Risk Parameter..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full bg-white border border-slate-200 rounded-sm py-2 pl-10 pr-4 outline-none text-[11px] font-bold text-slate-900 placeholder:text-slate-400 focus:ring-1 focus:ring-slate-900 transition-all font-sans"
@@ -222,9 +249,9 @@ export default function CreditManagementScreen() {
 
                     <div className="bg-white border border-slate-200 rounded-sm overflow-hidden shadow-sm">
                         <DataGrid
-                            title="Capital Allocation & Utilization Ledger"
-                            columns={hotelColumns}
-                            data={filteredHotels}
+                            title="Customer Credit Allocation & Utilization Ledger"
+                            columns={customerColumns}
+                            data={filteredCustomers}
                             density="compact"
                         />
                     </div>
@@ -234,7 +261,7 @@ export default function CreditManagementScreen() {
             <CreditOverrideModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
-                hotel={selectedHotel}
+                customer={selectedCustomer}
                 onSave={handleSaveOverride}
             />
         </div>

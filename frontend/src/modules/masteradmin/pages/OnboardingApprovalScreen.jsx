@@ -27,7 +27,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export default function OnboardingApprovalScreen() {
-    const { vendors, isLoading: adminLoading, fetchVendors, updateVendorStatus } = useAdmin();
+    const { vendors, franchises, isLoading: adminLoading, fetchVendors, fetchPendingFranchises, updateVendorStatus, reviewFranchiseKYC } = useAdmin();
     const [searchParams, setSearchParams] = useSearchParams();
     const activeTab = searchParams.get('type') || 'vendor';
     const [searchTerm, setSearchTerm] = useState('');
@@ -36,31 +36,42 @@ export default function OnboardingApprovalScreen() {
     useEffect(() => {
         if (activeTab === 'vendor') {
             fetchVendors('pending');
+        } else if (activeTab === 'franchise') {
+            fetchPendingFranchises();
         }
     }, [activeTab]);
 
     const tabs = [
         { id: 'vendor', label: 'Vendor KYC', icon: Users, count: vendors?.length || 0 },
-        { id: 'franchise', label: 'Franchise Docs', icon: Building, count: 0 },
+        { id: 'franchise', label: 'Franchise Docs', icon: Building, count: franchises?.length || 0 },
         { id: 'credit', label: 'Credit requests', icon: CreditCard, count: 0 }
     ];
 
     const currentItems = activeTab === 'vendor' ? (vendors || []).filter(v =>
         (v.fullName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
         (v.email || "").toLowerCase().includes(searchTerm.toLowerCase())
+    ) : activeTab === 'franchise' ? (franchises || []).filter(f =>
+        (f.franchiseName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (f.ownerName || "").toLowerCase().includes(searchTerm.toLowerCase())
     ) : [];
 
     const handleApprove = async (id) => {
-        const success = await updateVendorStatus(id, 'active');
-        if (success) {
-            setSelectedItem(null);
+        if (activeTab === 'vendor') {
+            const success = await updateVendorStatus(id, 'active');
+            if (success) setSelectedItem(null);
+        } else if (activeTab === 'franchise') {
+            const success = await reviewFranchiseKYC(id, 'verified');
+            if (success) setSelectedItem(null);
         }
     };
 
-    const handleReject = async (id) => {
-        const success = await updateVendorStatus(id, 'blocked');
-        if (success) {
-            setSelectedItem(null);
+    const handleReject = async (id, reason) => {
+        if (activeTab === 'vendor') {
+            const success = await updateVendorStatus(id, 'blocked');
+            if (success) setSelectedItem(null);
+        } else if (activeTab === 'franchise') {
+            const success = await reviewFranchiseKYC(id, 'rejected', reason);
+            if (success) setSelectedItem(null);
         }
     };
 
@@ -132,7 +143,9 @@ export default function OnboardingApprovalScreen() {
                 <div className="px-6 py-4 border-r border-slate-100">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Queue Status</p>
                     <div className="flex items-center gap-2">
-                        <span className="text-xl font-black text-slate-900 tabular-nums">{(vendors || []).length}</span>
+                        <span className="text-xl font-black text-slate-900 tabular-nums">
+                            {activeTab === 'vendor' ? vendors?.length : activeTab === 'franchise' ? franchises?.length : 0}
+                        </span>
                         <div className="px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded-sm text-[9px] font-bold uppercase tracking-wider border border-amber-100">Pending Review</div>
                     </div>
                 </div>

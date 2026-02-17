@@ -25,47 +25,77 @@ import {
     ArrowRight,
     Briefcase
 } from 'lucide-react';
+import api from '@/lib/axios';
+import { toast } from 'sonner';
 import { useFranchiseOrders } from '../contexts/FranchiseOrdersContext';
 import { cn } from '@/lib/utils';
-import { useOrders } from '@/modules/user/contexts/OrderContext';
 import DocumentViewer from '../../vendor/components/documents/DocumentViewer';
 
 export default function OrderDetailScreen() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { orders: localOrders, updateOrderStatus: updateLocalStatus } = useFranchiseOrders();
-    const { orders: liveOrders, updateOrderStatus: updateLiveStatus } = useOrders();
+    const { updateOrderStatus } = useFranchiseOrders();
+    const [order, setOrder] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
     const [isDocOpen, setIsDocOpen] = useState(false);
     const [docType, setDocType] = useState('GRN');
-    const [isLoading, setIsLoading] = useState(true);
+    const [isAccepting, setIsAccepting] = useState(false);
+
+    const fetchOrderDetail = async () => {
+        setIsLoading(true);
+        try {
+            const response = await api.get(`/orders/franchise/${id}`);
+            if (response.data.success) {
+                const o = response.data.result;
+                setOrder({
+                    id: o._id,
+                    customer: o.userId?.fullName || 'Guest Client',
+                    mobile: o.userId?.mobile || 'N/A',
+                    address: o.shippingAddress || o.userId?.address || 'N/A',
+                    total: o.totalAmount,
+                    status: o.orderStatus?.toLowerCase() || 'pending',
+                    items: o.items.map(i => ({
+                        name: i.name,
+                        quantity: i.quantity,
+                        price: i.price,
+                    })),
+                    createdAt: o.createdAt,
+                    paymentMethod: o.paymentMethod,
+                    franchiseId: o.franchiseId
+                });
+            }
+        } catch (error) {
+            console.error('Fetch order detail error:', error);
+            toast.error('Failed to load order details');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 500);
-        return () => clearTimeout(timer);
-    }, []);
+        fetchOrderDetail();
+    }, [id]);
 
-    let order = localOrders.find(o => o.id === id);
-    if (!order) {
-        const liveOrder = liveOrders.find(o => o.id === id);
-        if (liveOrder) {
-            order = {
-                id: liveOrder.id,
-                customer: liveOrder.customer || 'Standard Client',
-                address: liveOrder.address || 'Standard Delivery Zone',
-                total: liveOrder.total,
-                status: liveOrder.status === 'processing' ? 'incoming' : liveOrder.status,
-                items: liveOrder.items.map(i => ({
-                    name: i.name,
-                    quantity: i.quantity || parseInt(i.qty) || 1,
-                    price: i.price || 0
-                })),
-                deliveryChallan: liveOrder.deliveryChallan,
-                grn: liveOrder.grn,
-                type: 'direct',
-                timeline: liveOrder.timeline || []
-            };
+    const handleAcceptOrder = async () => {
+        setIsAccepting(true);
+        try {
+            const response = await api.put(`/orders/franchise/${id}/accept`);
+            if (response.data.success) {
+                toast.success('Order accepted successfully!');
+                await fetchOrderDetail(); // Refresh to show updated status
+            }
+        } catch (error) {
+            console.error('Accept order error:', error);
+            toast.error(error.response?.data?.message || 'Failed to accept order');
+        } finally {
+            setIsAccepting(false);
         }
-    }
+    };
+
+    const handleUpdateStatus = async (newStatus) => {
+        await updateOrderStatus(id, newStatus);
+        fetchOrderDetail(); // Refresh
+    };
 
     if (isLoading) {
         return (
@@ -91,10 +121,11 @@ export default function OrderDetailScreen() {
     }
 
     const timeline = [
-        { status: 'Order Placed', time: '10:30 AM', desc: 'Order received by system', active: true },
-        { status: 'Accepted', time: '10:35 AM', desc: 'Franchise accepted the order', active: order.status !== 'incoming' },
-        { status: 'Delivery Assigned', time: '10:45 AM', desc: 'Delivery partner assigned', active: order.status === 'assigned' || order.status === 'completed' || order.status === 'delivered' || order.status === 'out_for_delivery' },
-        { status: 'Delivered', time: '--:--', desc: 'Order delivered successfully', active: order.status === 'completed' || order.status === 'delivered' }
+        { status: 'Order Placed', time: order.createdAt ? new Date(order.createdAt).toLocaleTimeString() : '--', desc: 'Order received by system', active: true },
+        { status: 'Accepted', time: '--', desc: 'Franchise accepted the order', active: order.status !== 'new' },
+        { status: 'Processing', time: '--', desc: 'Order is being prepared', active: ['preparing', 'ready', 'out_for_delivery', 'delivered'].includes(order.status) },
+        { status: 'Dispatch', time: '--', desc: 'Out for delivery', active: ['out_for_delivery', 'delivered'].includes(order.status) },
+        { status: 'Delivered', time: '--', desc: 'Order delivered successfully', active: order.status === 'delivered' }
     ];
 
     return (
@@ -175,7 +206,7 @@ export default function OrderDetailScreen() {
                                         <div className="w-8 h-8 rounded-sm bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">
                                             <Phone size={14} />
                                         </div>
-                                        <span className="text-[10px] font-black text-slate-900">+91 98765 43210</span>
+                                        <span className="text-[10px] font-black text-slate-900">{order.mobile}</span>
                                     </div>
                                     <button className="text-[9px] font-black uppercase text-slate-400 hover:text-slate-900 transition-colors">View Map</button>
                                 </div>
@@ -291,9 +322,27 @@ export default function OrderDetailScreen() {
                         {/* Context Actions */}
                         <div className="bg-white border border-slate-200 p-6 rounded-sm space-y-4">
                             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Manage Order</h3>
-                            <button className="w-full h-12 bg-slate-900 text-white rounded-sm font-black uppercase text-[10px] tracking-[0.2em] shadow-lg hover:bg-slate-800 transition-all flex items-center justify-center gap-2">
-                                Update Status <ArrowRight size={14} />
-                            </button>
+
+                            {!order.franchiseId ? (
+                                <>
+                                    <button
+                                        onClick={handleAcceptOrder}
+                                        disabled={isAccepting}
+                                        className="w-full h-12 bg-emerald-600 text-white rounded-sm font-black uppercase text-[10px] tracking-[0.2em] shadow-lg hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {isAccepting ? 'Accepting...' : (<>Accept Order <CheckCircle2 size={14} /></>)}
+                                    </button>
+                                    <button className="w-full h-10 border border-red-200 text-red-600 rounded-sm font-black uppercase text-[9px] tracking-widest hover:bg-red-50 transition-all">
+                                        Reject Order
+                                    </button>
+                                </>
+                            ) : (
+                                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-sm">
+                                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest text-center flex items-center justify-center gap-2">
+                                        <CheckCircle2 size={14} /> Order Accepted
+                                    </p>
+                                </div>
+                            )}
                             <button className="w-full h-10 border border-slate-200 text-slate-400 rounded-sm font-black uppercase text-[9px] tracking-widest hover:bg-slate-50 hover:text-slate-900 transition-all">
                                 Report Issue
                             </button>

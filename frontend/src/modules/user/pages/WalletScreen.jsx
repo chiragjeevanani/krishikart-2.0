@@ -25,7 +25,7 @@ import { cn } from '@/lib/utils'
 
 export default function WalletScreen() {
     const navigate = useNavigate()
-    const { balance, transactions, addMoney, creditLimit, creditUsed, loyaltyPoints, redeemLoyaltyPoints, loyaltyConfig } = useWallet()
+    const { balance, transactions, addMoney, creditLimit, creditUsed, loyaltyPoints, redeemLoyaltyPoints, loyaltyConfig, fetchWalletData, isLoading: walletLoading } = useWallet()
     const [amountToAdd, setAmountToAdd] = useState('')
     const [isProcessing, setIsProcessing] = useState(false)
     const [showSuccess, setShowSuccess] = useState(false)
@@ -110,6 +110,53 @@ export default function WalletScreen() {
                                 </div>
                             </div>
 
+                            {/* Business Credit Ledger - New Section */}
+                            {creditLimit > 0 && (
+                                <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
+                                                <Zap size={20} />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-base font-bold text-slate-800 tracking-tight">Business Credit Limit</h3>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Enterprise Line of Credit</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-lg font-black text-slate-900 tabular-nums">₹{creditLimit.toLocaleString()}</p>
+                                            <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Total Approved</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between items-end">
+                                            <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Utilization Index</span>
+                                            <span className="text-[11px] font-black text-slate-900 tabular-nums">{((creditUsed / creditLimit) * 100).toFixed(1)}%</span>
+                                        </div>
+                                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                            <div
+                                                className={cn(
+                                                    "h-full transition-all duration-1000",
+                                                    (creditUsed / creditLimit) > 0.9 ? "bg-rose-500" : (creditUsed / creditLimit) > 0.7 ? "bg-amber-400" : "bg-emerald-500"
+                                                )}
+                                                style={{ width: `${Math.min((creditUsed / creditLimit) * 100, 100)}%` }}
+                                            />
+                                        </div>
+                                        <div className="flex justify-between items-center pt-1">
+                                            <div className="flex flex-col">
+                                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Used Credit</span>
+                                                <span className="text-xs font-bold text-slate-700">₹{creditUsed.toLocaleString()}</span>
+                                            </div>
+                                            <div className="flex flex-col items-end">
+                                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Available Credit</span>
+                                                <span className="text-xs font-bold text-emerald-600">₹{(creditLimit - creditUsed).toLocaleString()}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Statement Banner */}
                             <motion.div
                                 whileHover={{ scale: 1.005 }}
@@ -139,7 +186,13 @@ export default function WalletScreen() {
                             <div className="space-y-6">
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-lg font-bold text-slate-800 tracking-tight">Credit History</h3>
-                                    {isProcessing && <p className="text-[10px] font-bold text-blue-500 uppercase animate-pulse">Updating Transactions...</p>}
+                                    <button
+                                        onClick={fetchWalletData}
+                                        className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors"
+                                        disabled={walletLoading}
+                                    >
+                                        <RefreshCcw size={16} className={cn(walletLoading && "animate-spin")} />
+                                    </button>
                                 </div>
 
                                 {/* Filters Tags */}

@@ -59,6 +59,18 @@ export default function ApprovalCard({ item, type, onApprove, onReject, onViewDo
                                 {doc.value && <ExternalLink size={10} className="text-slate-300 group-hover:text-primary transition-colors" />}
                             </div>
                         ))}
+                        {isFranchise && [
+                            { label: 'Aadhaar Card', value: item.kyc?.aadhaarImage },
+                            { label: 'PAN Card', value: item.kyc?.panImage }
+                        ].map((doc, idx) => (
+                            <div key={idx} className="flex items-center justify-between py-1 border-b border-slate-50 last:border-0">
+                                <span className="text-[10px] font-medium text-slate-600 flex items-center gap-1.5">
+                                    <CheckCircle2 size={10} className={doc.value ? "text-emerald-500" : "text-slate-300"} />
+                                    {doc.label}
+                                </span>
+                                {doc.value && <ExternalLink size={10} className="text-slate-300 group-hover:text-primary transition-colors" />}
+                            </div>
+                        ))}
                         {isCredit && (
                             <div className="flex flex-col gap-1 p-2 bg-slate-50 border border-slate-100 rounded-sm">
                                 <span className="text-[9px] font-bold text-slate-400 uppercase">Exposure Requested</span>

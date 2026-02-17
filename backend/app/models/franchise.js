@@ -51,6 +51,21 @@ const franchiseSchema = new mongoose.Schema(
       default: false,
     },
 
+    kyc: {
+      aadhaarNumber: String,
+      aadhaarImage: String,
+      panNumber: String,
+      panImage: String,
+      status: {
+        type: String,
+        enum: ["unsubmitted", "pending", "verified", "rejected"],
+        default: "unsubmitted",
+      },
+      submittedAt: Date,
+      verifiedAt: Date,
+      rejectionReason: String
+    },
+
     status: {
       type: String,
       enum: ["pending", "active", "blocked"],

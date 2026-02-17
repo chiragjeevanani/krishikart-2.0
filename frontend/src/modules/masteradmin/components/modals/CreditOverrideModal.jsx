@@ -2,8 +2,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Save, AlertCircle, IndianRupee } from 'lucide-react';
 import { useState } from 'react';
 
-export default function CreditOverrideModal({ isOpen, onClose, hotel, onSave }) {
-    const [limit, setLimit] = useState(hotel?.creditLimit || 0);
+export default function CreditOverrideModal({ isOpen, onClose, customer, onSave }) {
+    const [limit, setLimit] = useState(customer?.creditLimit || 0);
     const [reason, setReason] = useState('');
 
     if (!isOpen) return null;
@@ -30,7 +30,7 @@ export default function CreditOverrideModal({ isOpen, onClose, hotel, onSave }) 
                             <div>
                                 <h3 className="text-2xl font-black text-slate-900 tracking-tight">Override Limit</h3>
                                 <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">
-                                    Updating limit for {hotel?.hotelName}
+                                    Updating limit for {customer?.fullName || customer?.mobile}
                                 </p>
                             </div>
                             <button
