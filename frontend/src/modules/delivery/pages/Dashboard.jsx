@@ -135,6 +135,49 @@ const Dashboard = () => {
                     </motion.div>
                 )}
 
+                {/* B2B Logistics Section */}
+                <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                        <h2 className="text-lg font-bold">B2B Logistics</h2>
+                        <span className="text-[10px] font-black bg-amber-500 text-white px-2 py-0.5 rounded-sm uppercase tracking-widest">New Priority</span>
+                    </div>
+                    <Link
+                        to="/delivery/assignment"
+                        className="block bg-white border border-slate-200 rounded-2xl p-5 shadow-sm active:scale-98 transition-all relative overflow-hidden group"
+                    >
+                        <div className="absolute top-0 right-0 p-3 text-slate-100 group-hover:text-primary/10 transition-colors">
+                            <Truck size={60} />
+                        </div>
+                        <div className="relative z-10 flex flex-col gap-3">
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                                    <Package className="w-4 h-4 text-primary" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold leading-none">Vendor → Franchise</h3>
+                                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-tight mt-1">Leg: Azadpur → Okhla</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between mt-1">
+                                <div className="flex items-center gap-4">
+                                    <div className="flex flex-col">
+                                        <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest leading-none">Payload</span>
+                                        <span className="text-xs font-black">800 kg</span>
+                                    </div>
+                                    <div className="w-px h-6 bg-slate-100" />
+                                    <div className="flex flex-col">
+                                        <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest leading-none">Earnings</span>
+                                        <span className="text-xs font-black text-emerald-600">₹850</span>
+                                    </div>
+                                </div>
+                                <div className="p-2 bg-slate-50 rounded-full group-hover:bg-primary group-hover:text-white transition-colors">
+                                    <ChevronRight size={16} />
+                                </div>
+                            </div>
+                        </div>
+                    </Link>
+                </div>
+
                 {/* Quick Actions / Insights */}
                 <div className="space-y-4">
                     <h2 className="text-lg font-bold">Quick Actions</h2>

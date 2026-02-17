@@ -12,6 +12,7 @@ const Profile = lazy(() => import('../pages/Profile'));
 const MapTracking = lazy(() => import('../pages/MapTracking'));
 const PickupConfirmation = lazy(() => import('../pages/PickupConfirmation'));
 const DeliveryCompletion = lazy(() => import('../pages/DeliveryCompletion'));
+const B2BAssignment = lazy(() => import('../pages/B2BAssignment'));
 
 // Helper to wrap lazy components with Suspense
 const withSuspense = (Component) => (
@@ -38,6 +39,7 @@ export const deliveryRoutes = (
             <Route path="map" element={withSuspense(MapTracking)} />
             <Route path="pickup" element={withSuspense(PickupConfirmation)} />
             <Route path="completion" element={withSuspense(DeliveryCompletion)} />
+            <Route path="assignment" element={withSuspense(B2BAssignment)} />
         </Route>
     </Route>
 );

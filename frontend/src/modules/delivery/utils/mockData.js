@@ -121,7 +121,42 @@ export const deliveryHistory = [
     }
 ];
 
-// Predefined route coordinates for simulation (Noida area)
+// B2B Assignments (Vendor to Franchise)
+export const b2bAssignments = [
+    {
+        id: "ASN-2026-001",
+        type: "B2B_LOGISTICS",
+        vendorName: "Nature Fresh Farms",
+        vendorAddress: "Subzi Mandi, Azadpur, Delhi",
+        franchiseName: "KrishiKart South Delhi",
+        franchiseAddress: "Okhla Phase III, New Delhi",
+        items: [
+            { name: "Potato - Grade A", qty: "500 kg" },
+            { name: "Onion - Red", qty: "300 kg" }
+        ],
+        payloadWeight: "800 kg",
+        priority: "High",
+        status: "pending_pickup",
+        amount: 850
+    },
+    {
+        id: "ASN-2026-002",
+        type: "B2B_LOGISTICS",
+        vendorName: "Green Valley Organics",
+        vendorAddress: "Ghazipur Market, UP Border",
+        franchiseName: "KrishiKart East Delhi",
+        franchiseAddress: "Preet Vihar, New Delhi",
+        items: [
+            { name: "Organic Spinach", qty: "50 kg" },
+            { name: "Cauliflower", qty: "100 kg" }
+        ],
+        payloadWeight: "150 kg",
+        priority: "Medium",
+        status: "completed",
+        amount: 320
+    }
+];
+
 export const routeCoordinates = [
     [28.6273, 77.3725], // Startup point
     [28.6250, 77.3700],
