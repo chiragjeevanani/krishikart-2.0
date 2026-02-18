@@ -25,7 +25,7 @@ import {
 import { useGRN } from '../contexts/GRNContext';
 import { useInventory } from '../contexts/InventoryContext';
 import { cn } from '@/lib/utils';
-import { useOrders } from '@/modules/user/contexts/OrderContext';
+import { useFranchiseOrders } from '../contexts/FranchiseOrdersContext';
 import DocumentViewer from '../../vendor/components/documents/DocumentViewer';
 
 // Enterprise Components
@@ -36,7 +36,7 @@ import FilterBar from '../components/tables/FilterBar';
 export default function ReceivingScreen() {
     const { purchaseOrders, submitGRN } = useGRN();
     const { inventory, addStock } = useInventory();
-    const { orders: contextOrders, updateOrderStatus } = useOrders();
+    const { orders: contextOrders, updateOrderStatus } = useFranchiseOrders();
     const [selectedPO, setSelectedPO] = useState(null);
     const [receivingData, setReceivingData] = useState({});
     const [isDocOpen, setIsDocOpen] = useState(false);

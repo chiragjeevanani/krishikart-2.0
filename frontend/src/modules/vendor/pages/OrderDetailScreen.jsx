@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import api from '@/lib/axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     ArrowLeft,
@@ -21,16 +22,17 @@ import {
     FileText,
     ExternalLink
 } from 'lucide-react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import mockOrders from '../data/mockVendorOrders.json';
 import { cn } from '@/lib/utils';
 import { useOrders } from '@/modules/user/contexts/OrderContext';
-import { useProcurement } from '@/modules/franchise/contexts/ProcurementContext';
+// import { useProcurement } from '@/modules/franchise/contexts/ProcurementContext';
 import DocumentViewer from '../components/documents/DocumentViewer';
 
 export default function OrderDetailScreen() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const [isLoading, setIsLoading] = useState(true);
     const [order, setOrder] = useState(null);
     const [status, setStatus] = useState(null);
@@ -39,52 +41,38 @@ export default function OrderDetailScreen() {
     const [docType, setDocType] = useState('DC');
     const [bidPrice, setBidPrice] = useState('');
     const { orders: contextOrders, updateOrderStatus } = useOrders();
-    const { procurementRequests, submitQuotation, updateRequestStatus } = useProcurement();
+    // const { procurementRequests, submitQuotation, updateRequestStatus } = useProcurement(); 
+    const procurementRequests = [];
+    const submitQuotation = async () => { };
+    const updateRequestStatus = async () => { };
     const [quotedItems, setQuotedItems] = useState([]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
-            let foundOrder = mockOrders.find(o => o.id === id);
-            if (!foundOrder) {
-                const liveOrder = contextOrders.find(o => o.id === id);
-                if (liveOrder) {
-                    foundOrder = {
-                        id: liveOrder.id,
-                        franchiseName: liveOrder.franchise || 'Main Center',
-                        total: liveOrder.procurementTotal || liveOrder.total,
-                        procurementTotal: liveOrder.procurementTotal,
-                        status: liveOrder.status,
-                        items: liveOrder.items,
-                        deliveryChallan: liveOrder.deliveryChallan,
-                        grn: liveOrder.grn,
-                        priority: liveOrder.priority || 'normal',
-                        deadline: liveOrder.deadline || new Date(Date.now() + 3600000).toISOString()
-                    };
-                } else {
-                    const procReq = procurementRequests.find(r => r.id === id);
-                    if (procReq) {
-                        foundOrder = {
-                            ...procReq,
-                            franchiseName: 'Franchise Node 01',
-                            total: procReq.totalQuotedAmount || 0,
-                            procurementTotal: procReq.totalQuotedAmount || 0,
-                            priority: 'high',
-                            deadline: new Date(new Date(procReq.date).getTime() + 7200000).toISOString()
-                        };
-                    }
-                }
-            }
+            let foundOrder = location.state?.order;
 
-            setOrder(foundOrder);
-            setStatus(foundOrder?.status?.toLowerCase());
-            setBidPrice(foundOrder?.total?.toString() || '');
-            if (foundOrder?.items) {
-                setQuotedItems(foundOrder.items.map(item => ({ ...item, quotedPrice: item.quotedPrice || 0 })));
+            if (foundOrder) {
+                // UI Fix: If status is 'assigned', treat it as 'requested' (new inquiry)
+                let currentStatus = foundOrder.status?.toLowerCase();
+                if (currentStatus === 'assigned') {
+                    currentStatus = 'requested';
+                }
+
+                setStatus(currentStatus);
+                setOrder(foundOrder);
+                setBidPrice(foundOrder.totalEstimatedAmount?.toString() || foundOrder.total?.toString() || '');
+                if (foundOrder.items) {
+                    setQuotedItems(foundOrder.items.map(item => ({
+                        ...item,
+                        quotedPrice: item.quotedPrice || 0,
+                        image: item.image
+                    })));
+                }
             }
             setIsLoading(false);
         }, 500);
         return () => clearTimeout(timer);
-    }, [id, contextOrders, procurementRequests]);
+    }, [id, location.state]);
 
     const handleAction = (newStatus, callback) => {
         setIsActionLoading(true);
@@ -101,14 +89,19 @@ export default function OrderDetailScreen() {
         }, 1000);
     };
 
-    const handleQuotationSubmit = () => {
+    const handleQuotationSubmit = async () => {
         setIsActionLoading(true);
-        setTimeout(() => {
-            submitQuotation(id, quotedItems);
-            setStatus('quoted');
+        try {
+            const response = await api.post(`/procurement/vendor/${id}/quote`, { items: quotedItems });
+            if (response.data.success) {
+                setStatus('quoted');
+                navigate('/vendor/orders');
+            }
+        } catch (error) {
+            console.error("Failed to submit quotation", error);
+        } finally {
             setIsActionLoading(false);
-            navigate('/vendor/orders');
-        }, 1000);
+        }
     };
 
     const updateItemQuotation = (idx, price) => {
@@ -116,7 +109,7 @@ export default function OrderDetailScreen() {
         newItems[idx].quotedPrice = parseFloat(price) || 0;
         setQuotedItems(newItems);
 
-        const total = newItems.reduce((sum, item) => sum + (item.quotedPrice * item.qty), 0);
+        const total = newItems.reduce((sum, item) => sum + (item.quotedPrice * (item.quantity || item.qty || 0)), 0);
         setBidPrice(total.toString());
     };
 
@@ -323,8 +316,12 @@ export default function OrderDetailScreen() {
                             <div key={idx} className="flex flex-col gap-3 p-4 rounded-2xl border border-slate-50 group hover:border-slate-200 hover:bg-slate-50 transition-all">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-white rounded-xl border border-slate-100 overflow-hidden shadow-sm">
-                                            <img src={item.image} className="w-full h-full object-cover" alt="" />
+                                        <div className="w-12 h-12 bg-white rounded-xl border border-slate-100 overflow-hidden shadow-sm flex items-center justify-center">
+                                            {item.image ? (
+                                                <img src={item.image} className="w-full h-full object-cover" alt={item.name} />
+                                            ) : (
+                                                <Package size={20} className="text-slate-300" />
+                                            )}
                                         </div>
                                         <div>
                                             <p className="font-black text-slate-900 text-sm tracking-tight">{item.name}</p>

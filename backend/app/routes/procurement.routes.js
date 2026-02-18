@@ -3,10 +3,16 @@ import {
     createProcurementRequest,
     getMyProcurementRequests,
     getAllProcurementRequests,
-    adminUpdateProcurementRequest
+    adminUpdateProcurementRequest,
+    getVendorAssignments,
+    vendorSubmitQuotation,
+    getVendorActiveDispatch,
+    vendorUpdateStatus,
+    getVendorReports
 } from "../controllers/procurement.controller.js";
 import { protectFranchise } from "../middlewares/franchise.auth.js";
 import { protectMasterAdmin } from "../middlewares/masteradmin.auth.js";
+import { protectVendor } from "../middlewares/vendor.auth.js";
 
 const router = express.Router();
 
@@ -14,8 +20,14 @@ const router = express.Router();
 router.post("/franchise/create", protectFranchise, createProcurementRequest);
 router.get("/franchise/my-requests", protectFranchise, getMyProcurementRequests);
 
+// Vendor Routes (View Assignment)
+router.get("/vendor/active-dispatch", protectVendor, getVendorActiveDispatch);
+router.post("/vendor/:requestId/quote", protectVendor, vendorSubmitQuotation);
+router.put("/vendor/:requestId/status", protectVendor, vendorUpdateStatus);
+
 // Admin Routes (Assign/View)
 router.get("/admin/all", protectMasterAdmin, getAllProcurementRequests);
+router.get("/admin/reports", protectMasterAdmin, getVendorReports);
 router.put("/admin/:requestId/status", protectMasterAdmin, adminUpdateProcurementRequest);
 
 export default router;

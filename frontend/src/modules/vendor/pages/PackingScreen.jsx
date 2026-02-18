@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import api from '@/lib/axios';
 import {
     Package,
     ArrowLeft,
@@ -32,60 +33,113 @@ export default function PackingScreen() {
     const [isDocOpen, setIsDocOpen] = useState(false);
     const { orders: contextOrders, updateOrderStatus } = useOrders();
 
-    const order = useMemo(() => {
-        const foundMock = mockOrders.find(o => o.id === orderId);
-        if (foundMock) return foundMock;
-
-        const liveOrder = contextOrders.find(o => o.id === orderId);
-        if (liveOrder) {
-            return {
-                id: orderId,
-                franchiseName: liveOrder.franchise || 'Main Center',
-                items: liveOrder.items.map(i => ({
-                    name: i.name,
-                    quantity: i.quantity || parseInt(i.qty),
-                    unit: i.unit || 'units',
-                    image: i.image
-                }))
-            };
-        }
-        return mockOrders[0];
-    }, [orderId, contextOrders]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [orders, setOrders] = useState([]);
 
     useEffect(() => {
-        const init = {};
-        order.items.forEach(item => {
-            init[item.name] = false;
-        });
-        setCheckedItems(init);
-    }, [order.id]);
-
-    const handleToggleCheck = (name) => {
-        setCheckedItems(prev => ({ ...prev, [name]: !prev[name] }));
-    };
-
-    const isPackingComplete = Object.values(checkedItems).every(v => v);
-
-    const handleFinalDispatch = () => {
-        setIsDispatching(true);
-        setTimeout(() => {
-            const deliveryChallan = {
-                id: `DC-${order.id.split('-')[1] || Math.floor(10000 + Math.random() * 90000)}`,
-                date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-                sourceNode: 'KrishiKart Hub Alpha',
-                destNode: order.franchiseName,
-                items: order.items.map(i => ({ ...i, quantity: i.quantity || i.qty })),
-                weight: '42.5 KG'
-            };
-
-            if (contextOrders.find(o => o.id === orderId)) {
-                updateOrderStatus(orderId, 'completed', { deliveryChallan });
+        const fetchOrder = async () => {
+            try {
+                // Fetch active dispatch orders to find current one
+                const response = await api.get('/procurement/vendor/active-dispatch');
+                if (response.data.success) {
+                    setOrders(response.data.results);
+                }
+            } catch (error) {
+                console.error("Failed to fetch order", error);
+            } finally {
+                setIsLoading(false);
             }
+        };
+        fetchOrder();
+    }, [orderId]);
 
-            setIsDispatching(false);
-            setStep(4);
-        }, 2000);
+    const order = useMemo(() => {
+        const foundOrder = orders.find(o => o._id === orderId);
+        if (foundOrder) {
+            return {
+                id: foundOrder._id,
+                franchiseName: foundOrder.franchiseId?.shopName || foundOrder.franchiseId?.ownerName || 'Franchise Node',
+                items: foundOrder.items.map(i => ({
+                    name: i.name,
+                    quantity: i.quantity || i.qty || 0,
+                    unit: i.unit || 'units',
+                    image: i.image
+                })),
+                status: foundOrder.status
+            };
+        }
+        // Fallback to mock for dev/demo if not found in active dispatch (e.g. already completed)
+        const mock = mockOrders.find(o => o.id === orderId);
+        return mock || mockOrders[0];
+    }, [orderId, orders]);
+
+    useEffect(() => {
+        if (order && order.items) {
+            const init = {};
+            order.items.forEach(item => {
+                init[item.name] = false;
+            });
+            setCheckedItems(init);
+        }
+    }, [order]);
+
+    /* const isPackingComplete = Object.values(checkedItems).every(v => v); */
+    // Ensure accurate check
+    const isPackingComplete = order?.items && Object.keys(checkedItems).length > 0 &&
+        order.items.every(item => checkedItems[item.name]);
+
+    const [actualWeight, setActualWeight] = useState(42.50);
+    const [isWeightLocked, setIsWeightLocked] = useState(false);
+    const [isReadingFromScale, setIsReadingFromScale] = useState(false);
+
+    const simulateScaleReading = () => {
+        setIsReadingFromScale(true);
+        let count = 0;
+        const interval = setInterval(() => {
+            setActualWeight(prev => {
+                const target = 45.32; // Random target for simulation
+                const diff = target - prev;
+                if (Math.abs(diff) < 0.1 || count > 20) {
+                    clearInterval(interval);
+                    setIsReadingFromScale(false);
+                    return target;
+                }
+                return +(prev + diff * 0.3).toFixed(2);
+            });
+            count++;
+        }, 100);
     };
+
+    const handleFinalDispatch = async () => {
+        setIsDispatching(true);
+        try {
+            // Update status on backend
+            // Status: 'ready_for_pickup' implies vendor has finished and goods are ready
+            await api.put(`/procurement/vendor/${orderId}/status`, {
+                status: 'ready_for_pickup',
+                weight: actualWeight
+            });
+            // Optionally update local context if needed, but we rely on API now
+            setStep(4);
+        } catch (error) {
+            console.error("Failed to update status", error);
+        } finally {
+            setIsDispatching(false);
+        }
+    };
+
+    if (isLoading) return (
+        <div className="flex items-center justify-center h-[60vh]">
+            <Loader2 className="animate-spin text-primary" size={40} />
+        </div>
+    );
+
+    if (!order && !isLoading) return (
+        <div className="text-center py-20">
+            <h2 className="text-xl font-black text-slate-900">Order Not Found</h2>
+            <button onClick={() => navigate('/vendor/orders')} className="text-primary font-bold mt-4">Back to Orders</button>
+        </div>
+    );
 
     return (
         <div className="space-y-6 pb-20 max-w-2xl mx-auto">
@@ -213,16 +267,25 @@ export default function PackingScreen() {
                                     <div className="flex items-center justify-center gap-3 mt-4">
                                         <input
                                             type="number"
-                                            defaultValue="42.50"
+                                            value={actualWeight}
+                                            onChange={(e) => setActualWeight(parseFloat(e.target.value))}
                                             step="0.01"
-                                            className="bg-transparent border-none p-0 outline-none text-5xl font-black text-slate-900 w-32 text-right tabular-nums focus:text-primary transition-colors"
+                                            className="bg-transparent border-none p-0 outline-none text-5xl font-black text-slate-900 w-40 text-right tabular-nums focus:text-primary transition-colors"
                                         />
                                         <span className="text-2xl font-black text-slate-300 uppercase mt-4">KG</span>
                                     </div>
-                                    <div className="mt-6 flex justify-center">
+                                    <div className="mt-8 flex flex-col items-center gap-4">
+                                        <button
+                                            onClick={simulateScaleReading}
+                                            disabled={isReadingFromScale}
+                                            className="px-6 py-2 bg-slate-900 text-white rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-slate-800 transition-colors"
+                                        >
+                                            {isReadingFromScale ? <Loader2 size={14} className="animate-spin" /> : <Activity size={14} />}
+                                            {isReadingFromScale ? "Capturing Data..." : "Capture from Scale"}
+                                        </button>
                                         <div className="px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-2">
-                                            <Activity size={12} className="animate-pulse" />
-                                            Live Sensor Active
+                                            <div className={cn("w-2 h-2 rounded-full", isReadingFromScale ? "bg-blue-500 animate-pulse" : "bg-blue-300")} />
+                                            {isReadingFromScale ? "Transmitting Waveform" : "Ready for Calibration"}
                                         </div>
                                     </div>
                                 </div>
@@ -266,7 +329,7 @@ export default function PackingScreen() {
                         <div className="bg-slate-50 p-6 rounded-[32px] space-y-4 border border-slate-100">
                             <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
                                 <span className="text-slate-400">Payload WT</span>
-                                <span className="text-slate-900 tabular-nums">42.50 KG</span>
+                                <span className="text-slate-900 tabular-nums font-black">{actualWeight} KG</span>
                             </div>
                             <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
                                 <span className="text-slate-400">Digital Seal</span>
@@ -301,9 +364,16 @@ export default function PackingScreen() {
                             <CheckCircle2 size={48} />
                         </div>
 
-                        <div className="space-y-2">
-                            <h3 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase">CYCLE SYNCHRONIZED</h3>
-                            <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em]">CONSGN REF: KK-IX-{Math.floor(Math.random() * 90000) + 10000}</p>
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <h3 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase">CYCLE SYNCHRONIZED</h3>
+                                <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em]">CONSGN REF: KK-IX-{Math.floor(Math.random() * 90000) + 10000}</p>
+                            </div>
+                            {orders.find(o => o._id === orderId)?.invoice && (
+                                <div className="bg-emerald-50 py-2 px-4 rounded-full inline-block">
+                                    <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Invoice Generated: {orders.find(o => o._id === orderId).invoice.invoiceNumber}</p>
+                                </div>
+                            )}
                         </div>
 
                         <div className="bg-slate-50 p-8 rounded-[40px] border border-slate-100 text-left space-y-6">
@@ -313,7 +383,7 @@ export default function PackingScreen() {
                             </div>
                             <div className="flex justify-between items-center border-b border-slate-100 pb-4">
                                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gross Payload</span>
-                                <span className="text-sm font-black text-slate-900 tabular-nums">42.50 KG</span>
+                                <span className="text-sm font-black text-slate-900 tabular-nums">{actualWeight} KG</span>
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Network Status</span>
@@ -329,7 +399,7 @@ export default function PackingScreen() {
                                 onClick={() => setIsDocOpen(true)}
                                 className="w-full bg-slate-50 text-slate-600 py-5 rounded-[24px] font-black text-[12px] uppercase tracking-widest flex items-center justify-center gap-3 border border-slate-100 hover:bg-white hover:shadow-xl hover:shadow-slate-100/50 transition-all active:scale-95 group"
                             >
-                                <FileText size={20} className="text-slate-300 group-hover:text-primary transition-colors" /> Generate Digital Manifest
+                                <FileText size={20} className="text-slate-300 group-hover:text-primary transition-colors" /> View Digital Invoice
                             </button>
                             <div className="flex gap-4">
                                 <button
@@ -353,13 +423,14 @@ export default function PackingScreen() {
             <DocumentViewer
                 isOpen={isDocOpen}
                 onClose={() => setIsDocOpen(false)}
-                type="DC"
-                data={contextOrders.find(o => o.id === orderId)?.deliveryChallan || {
-                    id: 'DC-AUTOGEN',
-                    date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+                type="INVOICE"
+                data={{
+                    invoiceNumber: orders.find(o => o._id === orderId)?.invoice?.invoiceNumber || 'INV-DEMO-001',
+                    invoiceDate: orders.find(o => o._id === orderId)?.invoice?.invoiceDate || new Date(),
                     items: order.items,
-                    destNode: order.franchiseName,
-                    weight: '42.50 KG'
+                    totalWeight: actualWeight,
+                    franchise: order.franchiseName,
+                    vendor: JSON.parse(localStorage.getItem('vendorData'))?.shopName || 'KrishiKart Vendor'
                 }}
             />
         </div>

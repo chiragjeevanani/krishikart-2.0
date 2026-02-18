@@ -12,6 +12,7 @@ import TakeawayMonitoringScreen from '../pages/TakeawayMonitoringScreen';
 import AnalyticsScreen from '../pages/AnalyticsScreen';
 import SettingsScreen from '../pages/SettingsScreen';
 import DeliveryConstraintsScreen from '../pages/DeliveryConstraintsScreen';
+import VendorReportsScreen from '../pages/VendorReportsScreen';
 
 // New Phase 2 & 3 Screens
 import CreditManagementScreen from '../pages/CreditManagementScreen';
@@ -60,6 +61,7 @@ export const masterAdminRoutes = (
         {/* Admin Approval Routes */}
         <Route path="approvals" element={<OnboardingApprovalScreen />} />
         <Route path="quotations" element={<VendorQuotationScreen />} />
+        <Route path="vendor-reports" element={<VendorReportsScreen />} />
 
         {/* Catalog Management Routes */}
         <Route path="products" element={<Navigate to="manage" replace />} />

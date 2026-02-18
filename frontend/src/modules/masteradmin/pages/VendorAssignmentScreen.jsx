@@ -30,6 +30,7 @@ export default function VendorAssignmentScreen() {
     const [pendingRequests, setPendingRequests] = useState([]);
     const [vendors, setVendors] = useState([]);
     const [isLoadingVendors, setIsLoadingVendors] = useState(false);
+    const [showVendorList, setShowVendorList] = useState(false);
 
     const fetchPendingRequests = async () => {
         try {
@@ -37,18 +38,23 @@ export default function VendorAssignmentScreen() {
             if (response.data.success) {
                 const mappedRequests = response.data.results.map(req => ({
                     id: req._id,
-                    customer: req.franchiseId?.ownerName || 'Unknown Owner',
-                    franchise: req.franchiseId?.shopName || 'Unknown Shop',
-                    type: 'Low Stock Request',
-                    total: req.totalEstimatedAmount,
-                    items: req.items,
-                    createdAt: req.createdAt
+                    ownerName: req.franchiseId?.ownerName || 'Unknown Owner',
+                    mobile: req.franchiseId?.mobile || '',
+                    items: req.items || [],
+                    total: req.totalEstimatedAmount || 0,
+                    createdAt: new Date(req.createdAt).toLocaleDateString('en-IN', {
+                        day: 'numeric',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })
                 }));
-                setPendingRequests(mappedRequests);
+                // Sort by newest first
+                const sortedRequests = mappedRequests.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                setPendingRequests(sortedRequests);
             }
         } catch (error) {
             console.error('Failed to fetch requests:', error);
-            // toast.error('Failed to load pending requests');
         } finally {
             setIsLoading(false);
         }
@@ -58,16 +64,18 @@ export default function VendorAssignmentScreen() {
         fetchPendingRequests();
     }, []);
 
-    const fetchVendorsForOrder = async (order) => {
+    const fetchVendorsForOrder = async (order, specificProductId = null, specificProductName = null) => {
         if (!order || !order.items || order.items.length === 0) {
             setVendors([]);
             return;
         }
         setIsLoadingVendors(true);
         try {
-            // Using the first product ID for filtering
-            const productId = order.items[0].productId;
-            const response = await api.get(`/masteradmin/vendors?productId=${productId}`);
+            // Use specific product if clicked, otherwise default to first item
+            const productId = specificProductId || order.items[0].productId;
+            const productName = specificProductName || order.items[0].name;
+
+            const response = await api.get(`/masteradmin/vendors?productId=${productId}&productName=${encodeURIComponent(productName)}`);
             if (response.data.success) {
                 const mappedVendors = response.data.results.map(v => ({
                     id: v._id,
@@ -77,6 +85,8 @@ export default function VendorAssignmentScreen() {
                     capacity: 85, // Fallback capacity
                     products: v.products
                 }));
+                // Filter locally just in case backend filter was too loose (optional but safer)
+                // Actually backend filter is strict on ID/Name match now.
                 setVendors(mappedVendors);
             }
         } catch (error) {
@@ -89,11 +99,23 @@ export default function VendorAssignmentScreen() {
 
     useEffect(() => {
         if (selectedOrder) {
-            fetchVendorsForOrder(selectedOrder);
+            setShowVendorList(false);
+            // Don't auto-fetch on open, wait for user to click assign on specific product
+            // or fetch default (first item) if general view is needed,
+            // but user requested "Assign button per product".
+            // We can pre-fetch default just in case, but let's stick to the flow.
+            // Actually, let's pre-fetch for the first item so the list isn't empty if they somehow see it,
+            // but the filtered fetch happens on click.
         } else {
             setVendors([]);
         }
     }, [selectedOrder]);
+
+    const handleAssignProduct = (item) => {
+        const productId = item.productId || item.id;
+        fetchVendorsForOrder(selectedOrder, productId, item.name);
+        setShowVendorList(true);
+    };
 
     const handleAssign = async (vendor) => {
         setIsAssigning(true);
@@ -176,29 +198,48 @@ export default function VendorAssignmentScreen() {
                                     transition={{ delay: index * 0.05 }}
                                     onClick={() => setSelectedOrder(order)}
                                     className={cn(
-                                        "px-4 py-3 flex items-center justify-between cursor-pointer transition-all border-l-2",
+                                        "px-4 py-4 flex items-start justify-between cursor-pointer transition-all border-l-2 group",
                                         selectedOrder?.id === order.id
                                             ? "bg-slate-50 border-slate-900"
                                             : "hover:bg-slate-50 border-transparent hover:border-slate-200"
                                     )}
                                 >
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-9 h-9 border border-slate-100 bg-slate-50 rounded-sm flex items-center justify-center text-slate-400 font-black text-[10px] tabular-nums">
-                                            {String(order.id).slice(-4).toUpperCase()}
+                                    <div className="flex gap-4 w-full">
+                                        <div className="w-8 h-8 bg-slate-100 rounded-sm flex items-center justify-center shrink-0 text-slate-400 group-hover:bg-slate-900 group-hover:text-white transition-colors">
+                                            <Users size={14} />
                                         </div>
-                                        <div>
-                                            <p className="font-bold text-slate-900 text-xs leading-none mb-1">{order.customer}</p>
-                                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{order.franchise} // {order.type}</p>
+
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <div>
+                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Franchise</span>
+                                                    <h4 className="font-black text-slate-900 text-xs tracking-tight uppercase">{order.ownerName}</h4>
+                                                </div>
+                                                <span className="text-[9px] font-bold text-slate-400 tabular-nums">{order.createdAt}</span>
+                                            </div>
+
+                                            <p className="text-[10px] text-slate-500 font-bold tracking-tight mb-2 flex items-center gap-1.5">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                                {order.mobile}
+                                            </p>
+
+                                            <div className="bg-slate-50 border border-slate-100 rounded-sm p-2">
+                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 border-b border-slate-200 pb-1">
+                                                    Required Items ({order.items.length})
+                                                </p>
+                                                <div className="space-y-1">
+                                                    {order.items.map((item, i) => (
+                                                        <div key={i} className="flex justify-between text-[10px] font-bold text-slate-700">
+                                                            <span>{item.name}</span>
+                                                            <span className="tabular-nums opacity-60 font-black">{item.quantity} * {item.unit}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-8">
-                                        <div className="text-right">
-                                            <p className="text-xs font-bold text-slate-900 tabular-nums">₹{order.total.toLocaleString()}</p>
-                                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter flex items-center justify-end gap-1">
-                                                <Clock size={10} />
-                                                Local
-                                            </p>
-                                        </div>
+
+                                    <div className="flex items-center self-center pl-4">
                                         <ChevronRight size={14} className={cn("text-slate-200 transition-all", selectedOrder?.id === order.id ? "text-slate-900 translate-x-1" : "")} />
                                     </div>
                                 </motion.div>
@@ -282,92 +323,170 @@ export default function VendorAssignmentScreen() {
                             transition={{ type: "spring", damping: 30, stiffness: 300 }}
                             className="fixed right-0 top-0 h-full w-full max-w-md bg-white border-l border-slate-200 shadow-2xl z-[70] overflow-hidden flex flex-col"
                         >
-                            <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-                                <div className="flex items-center justify-between mb-6">
-                                    <div className="px-2 py-0.5 bg-slate-900 text-white text-[9px] font-black rounded-sm uppercase tracking-widest">Order ID: {String(selectedOrder.id).slice(-4).toUpperCase()}</div>
-                                    <button onClick={() => setSelectedOrder(null)} className="p-1.5 hover:bg-white border border-transparent hover:border-slate-200 rounded-sm text-slate-400 transition-colors">
-                                        <X size={16} />
-                                    </button>
-                                </div >
-                                <h2 className="text-lg font-black text-slate-900 tracking-tight leading-none mb-1">Select A Vendor</h2>
-                                <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest italic opacity-60">Suggestions for {selectedOrder.franchise}</p>
-
-                                <div className="relative mt-4 group">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" size={12} />
-                                    <input
-                                        type="text"
-                                        placeholder="Search by vendor name..."
-                                        className="w-full bg-white border border-slate-200 rounded-sm py-2 pl-9 pr-4 outline-none text-[11px] font-bold focus:ring-2 focus:ring-slate-900/5 focus:border-slate-400 transition-all font-sans"
-                                    />
-                                </div>
-                            </div >
-
-                            <div className="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar">
-                                {isLoadingVendors ? (
-                                    <div className="py-10 flex flex-col items-center justify-center text-slate-400">
-                                        <div className="w-6 h-6 border-2 border-slate-200 border-t-slate-900 rounded-full animate-spin mb-3" />
-                                        <span className="text-[10px] font-black uppercase tracking-widest">Finding Vendors...</span>
+                            {!isAssigning && !showVendorList ? (
+                                /* STATE 1: ORDER DETAILS VIEW */
+                                <div className="flex flex-col h-full">
+                                    <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                                        <div className="flex items-center justify-between mb-6">
+                                            <div className="px-2 py-0.5 bg-slate-900 text-white text-[9px] font-black rounded-sm uppercase tracking-widest">Order ID: {String(selectedOrder.id).slice(-4).toUpperCase()}</div>
+                                            <button onClick={() => setSelectedOrder(null)} className="p-1.5 hover:bg-white border border-transparent hover:border-slate-200 rounded-sm text-slate-400 transition-colors">
+                                                <X size={16} />
+                                            </button>
+                                        </div>
+                                        <h2 className="text-xl font-black text-slate-900 tracking-tight leading-none mb-1">Procurement Details</h2>
+                                        <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest opacity-60">Review requirements before assignment</p>
                                     </div>
-                                ) : vendors.length > 0 ? (
-                                    vendors.map((vendor, index) => (
-                                        <motion.div
-                                            key={vendor.id}
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: index * 0.05 }}
-                                            className="bg-white p-4 border border-slate-200 rounded-sm hover:border-slate-400 transition-all flex flex-col gap-4 group"
-                                        >
-                                            <div className="flex items-start justify-between">
-                                                <div className="flex gap-3">
-                                                    <div className="w-10 h-10 border border-slate-100 bg-slate-50 text-slate-400 rounded-sm flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-colors">
-                                                        <Users size={18} />
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="font-black text-slate-900 text-xs tracking-tight leading-tight">{vendor.name}</h4>
-                                                        <div className="flex items-center gap-1.5 mt-1">
-                                                            <div className="flex items-center gap-1 text-amber-500 font-black text-[9px] tabular-nums">
-                                                                <Star size={9} fill="currentColor" /> {vendor.rating}
+
+                                    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                                        {/* Franchise Info Card */}
+                                        <div className="bg-white border border-slate-200 rounded-sm p-4 shadow-sm">
+                                            <div className="flex items-center gap-3 mb-4 pb-3 border-b border-slate-50">
+                                                <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400">
+                                                    <Users size={20} />
+                                                </div>
+                                                <div>
+                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Franchise Request From</span>
+                                                    <h3 className="font-black text-slate-900 text-sm">{selectedOrder.ownerName}</h3>
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Contact</span>
+                                                    <span className="text-xs font-bold text-slate-700">{selectedOrder.mobile}</span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Requested On</span>
+                                                    <span className="text-xs font-bold text-slate-700">{selectedOrder.createdAt}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Items List */}
+                                        <div className="space-y-3">
+                                            <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Required Items List</h3>
+                                            <div className="bg-slate-50 border border-slate-200 rounded-sm overflow-hidden border-b-0">
+                                                {selectedOrder.items.map((item, index) => (
+                                                    <div key={index} className="px-4 py-3 border-b border-slate-200 flex items-center justify-between bg-white group hover:bg-slate-50 transition-colors">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                            <div>
+                                                                <span className="block text-xs font-bold text-slate-700">{item.name}</span>
+                                                                <span className="text-[10px] font-medium text-slate-400 tabular-nums">
+                                                                    Qty: {item.quantity} * {item.unit}
+                                                                </span>
                                                             </div>
-                                                            <span className="text-slate-200">•</span>
-                                                            <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest">{vendor.category}</span>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => handleAssignProduct(item)}
+                                                            className="text-[9px] font-black uppercase text-slate-900 bg-white border border-slate-200 rounded-sm px-2 py-1.5 hover:bg-slate-900 hover:text-white transition-all shadow-sm flex items-center gap-1"
+                                                        >
+                                                            Assign <ArrowRight size={10} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-6 border-t border-slate-400/10 bg-slate-50">
+                                        <p className="text-[10px] text-slate-400 font-bold text-center">Select an item above to find vendors</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                /* STATE 2: VENDOR SELECTION VIEW */
+                                <div className="flex flex-col h-full">
+                                    <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <button
+                                                onClick={() => setShowVendorList(false)}
+                                                className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors"
+                                            >
+                                                <ChevronRight size={12} className="rotate-180" /> Back to Details
+                                            </button>
+                                            <button onClick={() => setSelectedOrder(null)} className="text-slate-400 hover:text-slate-900">
+                                                <X size={16} />
+                                            </button>
+                                        </div>
+                                        <h2 className="text-lg font-black text-slate-900 tracking-tight leading-none mb-1">Select A Vendor</h2>
+                                        <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest italic opacity-60">Matching vendors for {selectedOrder.ownerName}</p>
+
+                                        <div className="relative mt-4 group">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" size={12} />
+                                            <input
+                                                type="text"
+                                                placeholder="Search by vendor name..."
+                                                className="w-full bg-white border border-slate-200 rounded-sm py-2 pl-9 pr-4 outline-none text-[11px] font-bold focus:ring-2 focus:ring-slate-900/5 focus:border-slate-400 transition-all font-sans"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar bg-slate-50">
+                                        {isLoadingVendors ? (
+                                            <div className="py-10 flex flex-col items-center justify-center text-slate-400">
+                                                <div className="w-6 h-6 border-2 border-slate-200 border-t-slate-900 rounded-full animate-spin mb-3" />
+                                                <span className="text-[10px] font-black uppercase tracking-widest">Finding Best Matches...</span>
+                                            </div>
+                                        ) : vendors.length > 0 ? (
+                                            vendors.map((vendor, index) => (
+                                                <motion.div
+                                                    key={vendor.id}
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ delay: index * 0.05 }}
+                                                    className="bg-white p-4 border border-slate-200 rounded-sm hover:border-slate-400 transition-all flex flex-col gap-4 group"
+                                                >
+                                                    <div className="flex items-start justify-between">
+                                                        <div className="flex gap-3">
+                                                            <div className="w-10 h-10 border border-slate-100 bg-slate-50 text-slate-400 rounded-sm flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-colors">
+                                                                <Users size={18} />
+                                                            </div>
+                                                            <div>
+                                                                <h4 className="font-black text-slate-900 text-xs tracking-tight leading-tight">{vendor.name}</h4>
+                                                                <div className="flex items-center gap-1.5 mt-1">
+                                                                    <div className="flex items-center gap-1 text-amber-500 font-black text-[9px] tabular-nums">
+                                                                        <Star size={9} fill="currentColor" /> {vendor.rating}
+                                                                    </div>
+                                                                    <span className="text-slate-200">•</span>
+                                                                    <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest">{vendor.category}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Available</div>
+                                                            <div className="text-xs font-black text-slate-900 tabular-nums leading-none">{vendor.capacity}%</div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Available</div>
-                                                    <div className="text-xs font-black text-slate-900 tabular-nums leading-none">{vendor.capacity}%</div>
-                                                </div>
-                                            </div>
 
-                                            <div className="flex items-center justify-between gap-4 pt-3 border-t border-slate-50">
-                                                <div className="flex items-center gap-1.5 text-slate-400">
-                                                    <MapPin size={10} />
-                                                    <span className="text-[9px] font-bold tabular-nums">{index + 1}.2km away</span>
-                                                </div>
-                                                <button
-                                                    disabled={isAssigning}
-                                                    onClick={() => handleAssign(vendor)}
-                                                    className="bg-slate-900 text-white text-[9px] font-black uppercase tracking-wider px-3 py-2 rounded-sm hover:bg-slate-800 active:scale-[0.98] transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50"
-                                                >
-                                                    Assign Vendor
-                                                    <ArrowRight size={12} />
-                                                </button>
+                                                    <div className="flex items-center justify-between gap-4 pt-3 border-t border-slate-50">
+                                                        <div className="flex items-center gap-1.5 text-slate-400">
+                                                            <MapPin size={10} />
+                                                            <span className="text-[9px] font-bold tabular-nums">{index + 1}.2km away</span>
+                                                        </div>
+                                                        <button
+                                                            disabled={isAssigning}
+                                                            onClick={() => handleAssign(vendor)}
+                                                            className="bg-slate-900 text-white text-[9px] font-black uppercase tracking-wider px-3 py-2 rounded-sm hover:bg-slate-800 active:scale-[0.98] transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+                                                        >
+                                                            {isAssigning ? 'Assigning...' : 'Assign Vendor'}
+                                                            <ArrowRight size={12} />
+                                                        </button>
+                                                    </div>
+                                                </motion.div>
+                                            ))
+                                        ) : (
+                                            <div className="py-20 flex flex-col items-center justify-center text-center opacity-30 border border-slate-200 border-dashed rounded-sm bg-white">
+                                                <Users size={32} className="text-slate-300 mb-2" />
+                                                <h3 className="text-sm font-bold text-slate-900">No Match</h3>
+                                                <p className="text-[10px] font-bold uppercase tracking-widest px-10">No vendors sell this product</p>
                                             </div>
-                                        </motion.div>
-                                    ))
-                                ) : (
-                                    <div className="py-20 flex flex-col items-center justify-center text-center opacity-30 border border-slate-200 border-dashed rounded-sm bg-white">
-                                        <Users size={32} className="text-slate-300 mb-2" />
-                                        <h3 className="text-sm font-bold text-slate-900">No Match</h3>
-                                        <p className="text-[10px] font-bold uppercase tracking-widest px-10">No vendors found with these items</p>
+                                        )}
                                     </div>
-                                )}
-                            </div>
-                        </motion.div >
+                                </div>
+                            )}
+                        </motion.div>
                     </>
-                )
-                }
-            </AnimatePresence >
+                )}
+            </AnimatePresence>
 
             {/* Success Overlay - High Impact Enterprise Style */}
             < AnimatePresence >

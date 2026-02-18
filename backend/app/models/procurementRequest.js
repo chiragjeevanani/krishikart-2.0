@@ -16,12 +16,21 @@ const procurementRequestSchema = new mongoose.Schema({
             quantity: Number,
             unit: String,
             price: Number, // Estimated price
+            quotedPrice: {
+                type: Number, // Vendor's quoted price per item
+                default: 0
+            },
+            image: String
         },
     ],
     totalEstimatedAmount: Number,
+    totalQuotedAmount: {
+        type: Number,
+        default: 0
+    },
     status: {
         type: String,
-        enum: ["pending_assignment", "assigned", "completed", "rejected"],
+        enum: ["pending_assignment", "assigned", "quoted", "approved", "preparing", "ready_for_pickup", "completed", "rejected"],
         default: "pending_assignment",
     },
     assignedVendorId: {
@@ -33,6 +42,16 @@ const procurementRequestSchema = new mongoose.Schema({
         ref: "User", // Assuming MasterAdmin is a User
         default: null,
     },
+    actualWeight: {
+        type: Number,
+        default: 0
+    },
+    invoice: {
+        invoiceNumber: String,
+        invoiceDate: Date,
+        fileUrl: String, // PDF URL
+        generatedAt: Date
+    }
 }, { timestamps: true });
 
 const ProcurementRequest = mongoose.model("ProcurementRequest", procurementRequestSchema);

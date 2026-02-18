@@ -77,10 +77,10 @@ export default function OrdersScreen() {
                             <motion.div
                                 key={order._id}
                                 onClick={() => handleOrderClick(order)}
+                                className="p-5 rounded-[32px] bg-white border border-slate-100 shadow-sm active:scale-[0.98] transition-all cursor-pointer hover:shadow-md mb-4"
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ delay: idx * 0.1 }}
-                                className="p-5 rounded-[32px] bg-white border border-slate-100 shadow-sm active:scale-[0.98] transition-all cursor-pointer hover:shadow-md"
                             >
                                 <div className="flex justify-between items-start mb-5">
                                     <div className="flex gap-4">
@@ -95,7 +95,7 @@ export default function OrdersScreen() {
                                                 </div>
                                             ))}
                                             {order.items?.length > 3 && (
-                                                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900 text-[10px] font-black text-white ring-4 ring-white shadow-sm">
+                                                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900 text-[10px] font-black text-white ring-4 ring-white shadow-sm z-10 relative">
                                                     +{order.items.length - 3}
                                                 </div>
                                             )}

@@ -7,9 +7,10 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC' }) {
     if (!data) return null;
 
     const isDC = type === 'DC';
-    const accentColor = isDC ? 'text-indigo-600' : 'text-emerald-600';
-    const accentBg = isDC ? 'bg-indigo-50' : 'bg-emerald-50';
-    const accentBorder = isDC ? 'border-indigo-100' : 'border-emerald-100';
+    const isInvoice = type === 'INVOICE';
+    const accentColor = isInvoice ? 'text-primary' : (isDC ? 'text-indigo-600' : 'text-emerald-600');
+    const accentBg = isInvoice ? 'bg-primary/10' : (isDC ? 'bg-indigo-50' : 'bg-emerald-50');
+    const accentBorder = isInvoice ? 'border-primary/20' : (isDC ? 'border-indigo-100' : 'border-emerald-100');
 
     return (
         <AnimatePresence>
@@ -36,10 +37,10 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC' }) {
                                 </div>
                                 <div>
                                     <h2 className="text-lg font-black text-slate-900 tracking-tight">
-                                        {isDC ? 'Delivery Challan' : 'Goods Received Note'}
+                                        {isInvoice ? 'Tax Invoice' : (isDC ? 'Delivery Challan' : 'Goods Received Note')}
                                     </h2>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                        ID: {data.id} • {data.date}
+                                        ID: {data.invoiceNumber || data.id} • {data.date || new Date(data.invoiceDate).toLocaleDateString()}
                                     </p>
                                 </div>
                             </div>
@@ -62,7 +63,7 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC' }) {
                             <div className="flex flex-col lg:flex-row justify-between gap-8 pt-4">
                                 <div className="space-y-4">
                                     <div className="text-2xl font-black text-slate-900 tracking-tighter flex items-center gap-2">
-                                        <div className="w-8 h-8 bg-primary rounded-lg" />
+                                        <div className="w-8 h-8 bg-black rounded-lg" />
                                         KrishiKart <span className="text-primary font-light">Supply Chain</span>
                                     </div>
                                     <div className="text-[10px] font-bold text-slate-400 leading-relaxed uppercase tracking-widest max-w-xs">
@@ -73,9 +74,9 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC' }) {
                                 </div>
                                 <div className="text-right space-y-1">
                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Transaction Date</p>
-                                    <p className="text-sm font-black text-slate-900">{data.date}</p>
+                                    <p className="text-sm font-black text-slate-900">{data.date || new Date(data.invoiceDate).toLocaleDateString()}</p>
                                     <div className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black mt-4 uppercase border", accentBg, accentColor, accentBorder)}>
-                                        {isDC ? 'Dispatched' : 'Audited & Received'}
+                                        {isInvoice ? 'Invoice Finalized' : (isDC ? 'Dispatched' : 'Audited & Received')}
                                     </div>
                                 </div>
                             </div>
@@ -85,17 +86,17 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC' }) {
                                 <div className="p-6 bg-slate-50/50 rounded-3xl border border-slate-100">
                                     <div className="flex items-center gap-2 mb-4">
                                         <Truck size={14} className="text-slate-400" />
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Source Node</span>
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Source Node (Vendor)</span>
                                     </div>
-                                    <h4 className="text-sm font-black text-slate-900">{data.sourceNode || 'KrishiKart Global'}</h4>
-                                    <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-tighter">Vendor-Warehouse Partner</p>
+                                    <h4 className="text-sm font-black text-slate-900">{data.vendor || data.sourceNode || 'KrishiKart Global'}</h4>
+                                    <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-tighter">Handover Distribution Partner</p>
                                 </div>
                                 <div className="p-6 bg-slate-50/50 rounded-3xl border border-slate-100">
                                     <div className="flex items-center gap-2 mb-4">
                                         <CheckCircle2 size={14} className="text-slate-400" />
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Destination Node</span>
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Destination Node (Franchise)</span>
                                     </div>
-                                    <h4 className="text-sm font-black text-slate-900">{data.destNode || 'Main Center'}</h4>
+                                    <h4 className="text-sm font-black text-slate-900">{data.franchise || data.destNode || 'Main Center'}</h4>
                                     <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-tighter">Franchise Distribution Point</p>
                                 </div>
                             </div>
@@ -103,29 +104,29 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC' }) {
                             {/* Items Table */}
                             <div className="space-y-4">
                                 <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest ml-1">Consignment Manifest</h3>
-                                <div className="border border-slate-100 rounded-3xl overflow-hidden">
+                                <div className="border border-slate-100 rounded-3xl overflow-hidden shadow-sm">
                                     <table className="w-full text-left">
                                         <thead>
-                                            <tr className="bg-slate-50/50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                            <tr className="bg-slate-50/50 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
                                                 <th className="px-6 py-4">Item Details</th>
-                                                <th className="px-6 py-4 text-center">{isDC ? 'Sent' : 'Recv'}</th>
-                                                {!isDC && <th className="px-6 py-4 text-center">Dmg</th>}
-                                                <th className="px-6 py-4 text-right">Unit</th>
+                                                <th className="px-6 py-4 text-center">Quantity</th>
+                                                <th className="px-6 py-4 text-right">Unit Price</th>
+                                                <th className="px-6 py-4 text-right">Total</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-50">
                                             {data.items.map((item, idx) => (
-                                                <tr key={idx} className="text-sm font-bold text-slate-700">
+                                                <tr key={idx} className="text-sm font-bold text-slate-700 hover:bg-slate-50/50">
                                                     <td className="px-6 py-4">{item.name}</td>
                                                     <td className="px-6 py-4 text-center font-black text-slate-900">
-                                                        {isDC ? item.quantity : (item.receivedQty || item.quantity)}
+                                                        {item.quantity || item.qty} {item.unit}
                                                     </td>
-                                                    {!isDC && (
-                                                        <td className="px-6 py-4 text-center font-black text-red-500">
-                                                            {item.damageQty || 0}
-                                                        </td>
-                                                    )}
-                                                    <td className="px-6 py-4 text-right text-slate-400 uppercase text-[10px]">{item.unit}</td>
+                                                    <td className="px-6 py-4 text-right text-slate-400 tabular-nums">
+                                                        ₹{item.price || item.quotedPrice || '0.00'}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right font-black text-slate-900 tabular-nums">
+                                                        ₹{((item.quantity || item.qty) * (item.price || item.quotedPrice || 0)).toLocaleString()}
+                                                    </td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -135,27 +136,33 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC' }) {
 
                             {/* Summary & Signatures */}
                             <div className="grid lg:grid-cols-2 gap-12 pt-8">
-                                <div className="space-y-4">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
-                                        This document is electronically generated and serves as a legal proof of handover for the aforementioned goods. Discrepancies must be reported within 4 hours.
-                                    </p>
-                                    <div className="flex gap-4">
-                                        <div className="px-4 py-2 border border-slate-100 rounded-xl text-[9px] font-black text-slate-400 uppercase">
-                                            GROSS WT: 42.5 KG
+                                <div className="space-y-6">
+                                    <div className="p-6 bg-slate-900 text-white rounded-[32px] space-y-4">
+                                        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                            <span>Certified Packaging WT</span>
+                                            <span className="text-white">{data.totalWeight || data.weight || '42.5'} KG</span>
                                         </div>
-                                        <div className="px-4 py-2 border border-slate-100 rounded-xl text-[9px] font-black text-slate-400 uppercase">
-                                            SEALS: INTACT
+                                        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                            <span>Digital Security Code</span>
+                                            <span className="text-emerald-400">#KK-AUTH-SECURE</span>
                                         </div>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed pt-2 border-t border-white/10">
+                                            Handover finalized at KrishiKart Node Terminal. Gross payload synchronized for logistics leg.
+                                        </p>
                                     </div>
                                 </div>
-                                <div className="flex justify-between gap-8">
-                                    <div className="flex-1 text-center space-y-8 pt-8 border-t border-slate-100">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Authorized Signatory</p>
-                                        <div className="h-0.5 w-32 bg-slate-100 mx-auto" />
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Subtotal</span>
+                                        <span className="text-sm font-black text-slate-900">₹{data.items.reduce((acc, item) => acc + (item.quantity * (item.price || item.quotedPrice || 0)), 0).toLocaleString()}</span>
                                     </div>
-                                    <div className="flex-1 text-center space-y-8 pt-8 border-t border-slate-100">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Recipient Acknowledgement</p>
-                                        <div className="h-0.5 w-32 bg-slate-100 mx-auto" />
+                                    <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Handling Fee</span>
+                                        <span className="text-sm font-black text-slate-900">₹40.00</span>
+                                    </div>
+                                    <div className="flex justify-between items-center pt-2">
+                                        <span className="text-xs font-black text-slate-900 uppercase tracking-widest">Grand Total</span>
+                                        <span className="text-xl font-black text-primary">₹{(data.items.reduce((acc, item) => acc + (item.quantity * (item.price || item.quotedPrice || 0)), 0) + 40).toLocaleString()}</span>
                                     </div>
                                 </div>
                             </div>
@@ -163,7 +170,7 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC' }) {
 
                         {/* Footer Info */}
                         <div className="px-8 py-6 bg-slate-50 border-t border-slate-100 flex justify-between items-center text-[8px] font-black text-slate-400 uppercase tracking-widest shrink-0">
-                            <span>Printed Via KrishiKart Node Terminal</span>
+                            <span>Certified Digital Document • KrishiKart Node Architecture v2.0</span>
                             <span>{new Date().toLocaleString()}</span>
                         </div>
                     </motion.div>

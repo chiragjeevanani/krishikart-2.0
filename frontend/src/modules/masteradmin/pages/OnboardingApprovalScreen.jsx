@@ -43,8 +43,7 @@ export default function OnboardingApprovalScreen() {
 
     const tabs = [
         { id: 'vendor', label: 'Vendor KYC', icon: Users, count: vendors?.length || 0 },
-        { id: 'franchise', label: 'Franchise Docs', icon: Building, count: franchises?.length || 0 },
-        { id: 'credit', label: 'Credit requests', icon: CreditCard, count: 0 }
+        { id: 'franchise', label: 'Franchise Docs', icon: Building, count: franchises?.length || 0 }
     ];
 
     const currentItems = activeTab === 'vendor' ? (vendors || []).filter(v =>

@@ -29,7 +29,8 @@ import {
     List,
     Star,
     Clock,
-    CheckCircle2
+    CheckCircle2,
+    FileText
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
@@ -79,6 +80,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
             group: 'Network', items: [
                 { icon: Store, label: 'Franchises', path: '/masteradmin/franchises' },
                 { icon: Users, label: 'Vendors', path: '/masteradmin/vendors' },
+                { icon: FileText, label: 'Vendor Invoices', path: '/masteradmin/vendor-reports' },
                 { icon: TrendingUp, label: 'Vendor Reports', path: '/masteradmin/vendor-economics' },
                 { icon: Monitor, label: 'Stock Levels', path: '/masteradmin/stock-monitoring' },
                 { icon: Briefcase, label: 'Purchase Orders', path: '/masteradmin/purchase' },
@@ -116,7 +118,6 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                     submenu: [
                         { label: 'Vendor Documents', path: '/masteradmin/approvals?type=vendor', icon: Users },
                         { label: 'Franchise Documents', path: '/masteradmin/approvals?type=franchise', icon: Building },
-                        { label: 'Credit Requests', path: '/masteradmin/approvals?type=credit', icon: CreditCard }
                     ]
                 },
                 { icon: BarChart3, label: 'Analytics', path: '/masteradmin/analytics' },

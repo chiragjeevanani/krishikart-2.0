@@ -28,10 +28,13 @@ import { useProcurement } from '../contexts/ProcurementContext';
 
 export default function ProcurementScreen() {
     const navigate = useNavigate();
-    const { addRequest } = useProcurement();
+    const { addRequest, procurementRequests } = useProcurement();
     const [searchTerm, setSearchTerm] = useState('');
+    const [activeTab, setActiveTab] = useState('catalog');
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [cart, setCart] = useState({});
+
+    // ... rest of the existing state ...
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [orderSuccess, setOrderSuccess] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -121,21 +124,31 @@ export default function ProcurementScreen() {
     // Price calculation removed as per new requirement
     const totalAmount = 0;
 
-    const handlePlaceOrder = () => {
+    const handlePlaceOrder = async () => {
         setIsSubmitting(true);
 
         const requestData = {
-            items: cartItems.map(item => ({ ...item, quotedPrice: 0 })),
+            items: cartItems.map(item => ({
+                productId: item.id,
+                name: item.name,
+                quantity: item.qty,
+                unit: item.unit,
+                price: item.price,
+                quotedPrice: 0
+            })),
             totalEstimatedAmount: totalAmount
         };
 
-        addRequest(requestData);
-
-        setTimeout(() => {
-            setIsSubmitting(false);
+        try {
+            await addRequest(requestData);
             setOrderSuccess(true);
             setCart({});
-        }, 2000);
+        } catch (error) {
+            console.error("Order placement failed", error);
+            // You might want to add a toast notification here
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     if (orderSuccess) {
@@ -154,10 +167,13 @@ export default function ProcurementScreen() {
                 </p>
                 <div className="mt-12 flex flex-col gap-3 w-full max-w-xs">
                     <button
-                        onClick={() => navigate('/franchise/dashboard')}
+                        onClick={() => {
+                            setOrderSuccess(false);
+                            setActiveTab('history');
+                        }}
                         className="w-full bg-slate-900 text-white h-12 rounded-sm font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-slate-800 transition-all active:scale-95"
                     >
-                        Return to Command
+                        View Request History
                     </button>
                     <button
                         onClick={() => setOrderSuccess(false)}
@@ -188,99 +204,169 @@ export default function ProcurementScreen() {
                     </div>
 
                     <div className="flex items-center gap-3 shrink-0">
-                        <div className="relative group w-32 xl:w-64">
-                            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" size={14} />
-                            <input
-                                type="text"
-                                placeholder="Search..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full bg-slate-100 border border-slate-200 rounded-sm py-1.5 pl-9 pr-4 outline-none text-[11px] font-black text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-slate-400 transition-all font-sans"
-                            />
+                        <div className="flex bg-slate-100 p-1 rounded-sm border border-slate-200">
+                            <button
+                                onClick={() => setActiveTab('catalog')}
+                                className={cn(
+                                    "px-3 py-1 text-[10px] font-black uppercase tracking-wider rounded-sm transition-all",
+                                    activeTab === 'catalog' ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"
+                                )}
+                            >
+                                Catalog
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('history')}
+                                className={cn(
+                                    "px-3 py-1 text-[10px] font-black uppercase tracking-wider rounded-sm transition-all",
+                                    activeTab === 'history' ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"
+                                )}
+                            >
+                                History
+                            </button>
                         </div>
-                        <button className="p-1.5 border border-slate-200 rounded-sm hover:bg-slate-50 text-slate-400">
-                            <RefreshCw size={14} />
-                        </button>
+                        {activeTab === 'catalog' && (
+                            <div className="relative group w-32 xl:w-64 hidden sm:block">
+                                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" size={14} />
+                                <input
+                                    type="text"
+                                    placeholder="Search..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full bg-slate-100 border border-slate-200 rounded-sm py-1.5 pl-9 pr-4 outline-none text-[11px] font-black text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-slate-400 transition-all font-sans"
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                {/* Sub-header Categories Strip */}
-                <div className="bg-white border-b border-slate-200 px-4 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
-                    {categories.map(cat => (
-                        <button
-                            key={cat}
-                            onClick={() => setSelectedCategory(cat)}
-                            className={cn(
-                                "h-8 px-4 border rounded-sm text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
-                                selectedCategory === cat
-                                    ? "bg-slate-900 border-slate-900 text-white shadow-md"
-                                    : "bg-white border-slate-200 text-slate-400 hover:border-slate-400"
-                            )}
-                        >
-                            {cat}
-                        </button>
-                    ))}
-                </div>
+                {/* Sub-header Categories Strip (Only in Catalog) */}
+                {activeTab === 'catalog' && (
+                    <div className="bg-white border-b border-slate-200 px-4 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
+                        {categories.map(cat => (
+                            <button
+                                key={cat}
+                                onClick={() => setSelectedCategory(cat)}
+                                className={cn(
+                                    "h-8 px-4 border rounded-sm text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
+                                    selectedCategory === cat
+                                        ? "bg-slate-900 border-slate-900 text-white shadow-md"
+                                        : "bg-white border-slate-200 text-slate-400 hover:border-slate-400"
+                                )}
+                            >
+                                {cat}
+                            </button>
+                        ))}
+                    </div>
+                )}
 
-                {/* Products Grid */}
+                {/* Main Content Area */}
                 <div className="flex-1 overflow-y-auto p-4 no-scrollbar bg-slate-50">
-                    <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
-                        <AnimatePresence>
-                            {filteredProducts.map((p, idx) => (
-                                <motion.div
-                                    key={p.id}
-                                    layout
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="bg-white border border-slate-200 p-3 transition-all group hover:border-slate-900 rounded-sm hover:shadow-xl hover:shadow-slate-200/50 flex flex-col"
-                                >
-                                    <div className="aspect-[4/3] bg-slate-50 border border-slate-100 rounded-sm overflow-hidden mb-3 relative shrink-0">
-                                        <img
-                                            src={p.image}
-                                            className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110"
-                                            alt={p.name}
-                                            onError={(e) => {
-                                                e.target.onerror = null;
-                                                e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=40';
-                                            }}
-                                        />
-                                        <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-sm shadow-sm">
-                                            <p className="text-[7px] font-black text-slate-500 uppercase tracking-wider">{p.category}</p>
-                                        </div>
-                                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    </div>
-                                    <div className="flex-1 flex flex-col justify-between">
-                                        <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-tight line-clamp-2 leading-tight mb-2 min-h-[2.5em]">{p.name}</h4>
-                                        <div className="flex items-end justify-between">
-                                            <div className="flex flex-col">
-                                                <span className="text-[13px] font-black text-slate-900 tabular-nums leading-none mb-1">Make Request</span>
-                                                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Per {p.unit}</span>
+                    {activeTab === 'catalog' ? (
+                        <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+                            <AnimatePresence>
+                                {filteredProducts.map((p, idx) => (
+                                    <motion.div
+                                        key={p.id}
+                                        layout
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="bg-white border border-slate-200 p-3 transition-all group hover:border-slate-900 rounded-sm hover:shadow-xl hover:shadow-slate-200/50 flex flex-col"
+                                    >
+                                        <div className="aspect-[4/3] bg-slate-50 border border-slate-100 rounded-sm overflow-hidden mb-3 relative shrink-0">
+                                            <img
+                                                src={p.image}
+                                                className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110"
+                                                alt={p.name}
+                                                onError={(e) => {
+                                                    e.target.onerror = null;
+                                                    e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=40';
+                                                }}
+                                            />
+                                            <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-sm shadow-sm">
+                                                <p className="text-[7px] font-black text-slate-500 uppercase tracking-wider">{p.category}</p>
                                             </div>
-
-                                            {cart[p.id] ? (
-                                                <div className="flex items-center bg-slate-900 text-white rounded-sm p-0.5 shadow-lg shadow-slate-200">
-                                                    <button onClick={() => updateQty(p.id, -1)} className="w-6 h-6 flex items-center justify-center hover:bg-white/10 transition-colors">
-                                                        <Minus size={10} />
-                                                    </button>
-                                                    <span className="w-7 text-center font-black text-[9px] tabular-nums">{cart[p.id]?.qty}</span>
-                                                    <button onClick={() => updateQty(p.id, 1)} className="w-6 h-6 flex items-center justify-center hover:bg-white/10 transition-colors">
-                                                        <Plus size={10} />
-                                                    </button>
+                                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        </div>
+                                        <div className="flex-1 flex flex-col justify-between">
+                                            <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-tight line-clamp-2 leading-tight mb-2 min-h-[2.5em]">{p.name}</h4>
+                                            <div className="flex items-end justify-between">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[13px] font-black text-slate-900 tabular-nums leading-none mb-1">Make Request</span>
+                                                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Per {p.unit}</span>
                                                 </div>
-                                            ) : (
-                                                <button
-                                                    onClick={() => handleOpenModal(p)}
-                                                    className="w-8 h-8 rounded-sm border border-slate-200 text-slate-400 flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all shadow-sm hover:shadow-lg hover:shadow-slate-200 active:scale-90"
-                                                >
-                                                    <Plus size={14} />
-                                                </button>
-                                            )}
+
+                                                {cart[p.id] ? (
+                                                    <div className="flex items-center bg-slate-900 text-white rounded-sm p-0.5 shadow-lg shadow-slate-200">
+                                                        <button onClick={() => updateQty(p.id, -1)} className="w-6 h-6 flex items-center justify-center hover:bg-white/10 transition-colors">
+                                                            <Minus size={10} />
+                                                        </button>
+                                                        <span className="w-7 text-center font-black text-[9px] tabular-nums">{cart[p.id]?.qty}</span>
+                                                        <button onClick={() => updateQty(p.id, 1)} className="w-6 h-6 flex items-center justify-center hover:bg-white/10 transition-colors">
+                                                            <Plus size={10} />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => handleOpenModal(p)}
+                                                        className="w-8 h-8 rounded-sm border border-slate-200 text-slate-400 flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all shadow-sm hover:shadow-lg hover:shadow-slate-200 active:scale-90"
+                                                    >
+                                                        <Plus size={14} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+                        </motion.div>
+                    ) : (
+                        <div className="space-y-4 max-w-4xl mx-auto">
+                            {procurementRequests && procurementRequests.length > 0 ? (
+                                procurementRequests.map(request => (
+                                    <div key={request._id} className="bg-white border border-slate-200 p-4 rounded-sm hover:shadow-lg transition-shadow">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div>
+                                                <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider mb-1">Request #{request._id.slice(-6)}</h3>
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{new Date(request.createdAt).toLocaleDateString()}</p>
+                                            </div>
+                                            <span className={cn(
+                                                "px-2 py-1 text-[9px] font-black uppercase tracking-widest rounded-sm border",
+                                                request.status === 'pending_assignment' ? "bg-amber-50 text-amber-600 border-amber-200" :
+                                                    request.status === 'assigned' ? "bg-blue-50 text-blue-600 border-blue-200" :
+                                                        request.status === 'completed' ? "bg-emerald-50 text-emerald-600 border-emerald-200" :
+                                                            "bg-slate-50 text-slate-400 border-slate-200"
+                                            )}>
+                                                {request.status.replace('_', ' ')}
+                                            </span>
+                                        </div>
+                                        <div className="bg-slate-50 border border-slate-100 rounded-sm p-3">
+                                            <div className="grid grid-cols-4 gap-4 mb-2 pb-2 border-b border-slate-200 text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                                                <div className="col-span-2">Item</div>
+                                                <div className="text-right">Qty</div>
+                                                <div className="text-right">Unit</div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                {request.items && request.items.map((item, i) => (
+                                                    <div key={i} className="grid grid-cols-4 gap-4 text-[10px] font-bold text-slate-700">
+                                                        <div className="col-span-2">{item.name}</div>
+                                                        <div className="text-right font-black tabular-nums">{item.quantity}</div>
+                                                        <div className="text-right uppercase">{item.unit}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
-                                </motion.div>
-                            ))}
-                        </AnimatePresence>
-                    </motion.div>
+                                ))
+                            ) : (
+                                <div className="text-center py-20">
+                                    <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
+                                        <ShoppingBasket size={24} />
+                                    </div>
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">No Request History</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 

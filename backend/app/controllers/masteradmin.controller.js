@@ -1,16 +1,32 @@
 import Vendor from "../models/vendor.js";
 import Franchise from "../models/franchise.js";
 import User from "../models/user.js";
+import Product from "../models/product.js";
 import handleResponse from "../utils/helper.js";
 
 /* ================= VENDOR MANAGEMENT ================= */
 
 export const getAllVendors = async (req, res) => {
     try {
-        const { status, productId } = req.query;
+        const { status, productId, productName } = req.query;
         let query = status ? { status } : {};
 
-        if (productId) {
+        if (productName) {
+            const product = await Product.findOne({ name: productName });
+            if (product) {
+                // If product is found by name, use its ID to filter vendors
+                query.products = { $in: [product._id] };
+            } else {
+                // If product name provided but not found, return empty or handle as needed
+                // For now, let's return empty to stay consistent with "filter" behavior
+                // But if productId is also there, maybe try that?
+                // Let's stick to name preference if provided.
+                if (!productId) return handleResponse(res, 200, "No product found with that name", []);
+            }
+        }
+
+        // Only use productId if productName didn't result in a query (or wasn't provided)
+        if (productId && !query.products) {
             query.products = { $in: [productId] };
         }
 

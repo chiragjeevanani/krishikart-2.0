@@ -19,9 +19,11 @@ import mockOrders from '../data/mockVendorOrders.json';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useOrders } from '@/modules/user/contexts/OrderContext';
-import { useProcurement } from '@/modules/franchise/contexts/ProcurementContext';
+// import { useProcurement } from '@/modules/franchise/contexts/ProcurementContext';
 import FilterBar from '../components/tables/FilterBar';
 import DataGrid from '../components/tables/DataGrid';
+
+import api from '@/lib/axios';
 
 export default function OrdersScreen() {
     const navigate = useNavigate();
@@ -29,13 +31,11 @@ export default function OrdersScreen() {
     const [activeTab, setActiveTab] = useState('New');
     const [searchTerm, setSearchTerm] = useState('');
     const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
-    const { orders: contextOrders } = useOrders();
-    const { procurementRequests } = useProcurement();
-
+    // const { orders: contextOrders } = useOrders();
     const tabs = ['New', 'Preparing', 'Ready', 'Completed'];
 
     // Map context orders that require procurement into the vendor format
-    const liveVendorOrders = contextOrders
+    /* const liveVendorOrders = contextOrders
         .filter(o => o.fulfillmentType === 'requires_procurement')
         .map(o => ({
             id: o.id,
@@ -46,21 +46,41 @@ export default function OrdersScreen() {
             items: o.items,
             priority: o.priority || 'normal',
             deadline: o.deadline || new Date(Date.now() + 3600000).toISOString()
-        }));
+        })); */
+
+    const [procurementRequests, setProcurementRequests] = useState([]);
+
+    useEffect(() => {
+        const fetchAssignments = async () => {
+            try {
+                const response = await api.get('/procurement/vendor/my-assignments');
+                if (response.data.success) {
+                    setProcurementRequests(response.data.results);
+                }
+            } catch (error) {
+                console.error("Failed to fetch vendor assignments", error);
+            }
+        };
+        fetchAssignments();
+    }, []);
 
     const mappedProcurementRequests = procurementRequests.map(req => ({
-        id: req.id,
-        franchiseName: 'Franchise Node 01',
-        total: req.totalQuotedAmount || 0,
+        id: req._id,
+        franchiseName: req.franchiseId?.shopName || req.franchiseId?.ownerName || 'Franchise Request',
+        total: req.totalEstimatedAmount || 0,
         status: req.status,
-        items: req.items,
-        date: req.date,
+        items: req.items.map(i => ({
+            ...i,
+            image: i.image || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&q=20" // Placeholder
+        })),
+        date: req.createdAt,
         isProcurement: true,
         priority: 'high',
-        deadline: new Date(new Date(req.date).getTime() + 7200000).toISOString()
+        deadline: new Date(new Date(req.createdAt).getTime() + 7200000).toISOString()
     }));
 
-    const allOrders = [...mappedProcurementRequests, ...liveVendorOrders, ...mockOrders.filter(m => !liveVendorOrders.find(l => l.id === m.id))];
+    // const allOrders = [...mappedProcurementRequests, ...liveVendorOrders, ...mockOrders.filter(m => !liveVendorOrders.find(l => l.id === m.id))];
+    const allOrders = mappedProcurementRequests;
 
     useEffect(() => {
         const timer = setTimeout(() => setIsLoading(false), 600);
@@ -212,7 +232,7 @@ export default function OrdersScreen() {
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
                                 transition={{ duration: 0.3, delay: index * 0.05 }}
-                                onClick={() => navigate(`/vendor/orders/${order.id}`)}
+                                onClick={() => navigate(`/vendor/orders/${order.id}`, { state: { order } })}
                                 className="bg-white rounded-[32px] p-6 border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all cursor-pointer group relative overflow-hidden active:scale-[0.98]"
                             >
                                 <div className="flex justify-between items-start mb-6">

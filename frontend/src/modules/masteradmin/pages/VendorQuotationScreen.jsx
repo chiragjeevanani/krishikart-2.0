@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import api from '@/lib/axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     ShoppingBasket,
@@ -11,30 +12,75 @@ import {
     IndianRupee,
     Info,
     FileText,
-    ArrowUpRight
+    ArrowUpRight,
+    Loader2
 } from 'lucide-react';
-import { useProcurement } from '../../franchise/contexts/ProcurementContext';
+// import { useProcurement } from '../../franchise/contexts/ProcurementContext'; // Removed context
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export default function VendorQuotationScreen() {
-    const { procurementRequests, updateRequestStatus } = useProcurement();
+    // const { procurementRequests, updateRequestStatus } = useProcurement(); // Removed context usage
+    const [quotations, setQuotations] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [selectedRequest, setSelectedRequest] = useState(null);
 
-    // Filter requests that are in 'quoted' status
-    const quotations = procurementRequests.filter(req => req.status === 'quoted' || req.status === 'approved');
+    useEffect(() => {
+        fetchQuotations();
+    }, []);
 
-    const handleApprove = (id) => {
-        updateRequestStatus(id, 'approved');
-        toast.success('Quotation approved successfully! Vendor has been notified to proceed with packing.');
-        setSelectedRequest(null);
+    const fetchQuotations = async () => {
+        try {
+            const response = await api.get('/procurement/admin/all');
+            if (response.data.success) {
+                // Filter locally or rely on API params if available
+                const allRequests = response.data.results;
+                const filtered = allRequests.filter(req => req.status === 'quoted' || req.status === 'approved');
+                setQuotations(filtered);
+            }
+        } catch (error) {
+            console.error("Failed to fetch quotations:", error);
+            toast.error("Failed to load quotations");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const handleReject = (id) => {
-        updateRequestStatus(id, 'rejected');
-        toast.error('Quotation rejected.');
-        setSelectedRequest(null);
+    const handleApprove = async (id) => {
+        try {
+            const response = await api.put(`/procurement/admin/${id}/status`, { status: 'approved' });
+            if (response.data.success) {
+                toast.success('Quotation approved successfully! Vendor has been notified.');
+                setSelectedRequest(null);
+                fetchQuotations(); // Refresh list
+            }
+        } catch (error) {
+            console.error("Failed to approve:", error);
+            toast.error("Failed to approve quotation");
+        }
     };
+
+    const handleReject = async (id) => {
+        try {
+            const response = await api.put(`/procurement/admin/${id}/status`, { status: 'rejected' });
+            if (response.data.success) {
+                toast.success('Quotation rejected.');
+                setSelectedRequest(null);
+                fetchQuotations(); // Refresh list
+            }
+        } catch (error) {
+            console.error("Failed to reject:", error);
+            toast.error("Failed to reject quotation");
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center h-screen bg-slate-50">
+                <Loader2 className="animate-spin text-slate-400" size={32} />
+            </div>
+        );
+    }
 
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8 min-h-screen bg-slate-50">
@@ -57,12 +103,12 @@ export default function VendorQuotationScreen() {
                     <div className="space-y-3">
                         {quotations.length > 0 ? quotations.map((req) => (
                             <motion.button
-                                key={req.id}
+                                key={req._id || req.id}
                                 whileHover={{ x: 4 }}
                                 onClick={() => setSelectedRequest(req)}
                                 className={cn(
                                     "w-full p-4 rounded-xl border text-left transition-all group",
-                                    selectedRequest?.id === req.id
+                                    (selectedRequest?._id || selectedRequest?.id) === (req._id || req.id)
                                         ? "bg-slate-900 border-slate-900 text-white shadow-xl shadow-slate-200"
                                         : "bg-white border-slate-200 hover:border-slate-400 text-slate-600"
                                 )}
@@ -75,10 +121,10 @@ export default function VendorQuotationScreen() {
                                         {req.status}
                                     </span>
                                     <span className="text-[9px] font-bold opacity-60 tabular-nums">
-                                        {new Date(req.date).toLocaleDateString()}
+                                        {new Date(req.createdAt || req.date).toLocaleDateString()}
                                     </span>
                                 </div>
-                                <h4 className="text-[11px] font-black uppercase tracking-wider mb-1">REQ #{req.id.split('-')[1]}</h4>
+                                <h4 className="text-[11px] font-black uppercase tracking-wider mb-1">REQ #{(req._id || req.id).slice(-6)}</h4>
                                 <div className="flex items-center justify-between">
                                     <span className="text-[10px] font-bold opacity-60 uppercase tracking-widest">{req.items.length} items</span>
                                     <span className="text-sm font-black tabular-nums">₹{req.totalQuotedAmount?.toLocaleString()}</span>
@@ -108,7 +154,7 @@ export default function VendorQuotationScreen() {
                                     </div>
                                     <div>
                                         <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">Proposal Details</h3>
-                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">REQ #{selectedRequest.id.split('-')[1]}</p>
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">REQ #{(selectedRequest._id || selectedRequest.id).slice(-6)}</p>
                                     </div>
                                 </div>
                                 {selectedRequest.status === 'approved' && (
@@ -135,20 +181,24 @@ export default function VendorQuotationScreen() {
                                                 <tr key={idx} className="group italic-row hover:bg-slate-50/50 transition-colors">
                                                     <td className="py-4">
                                                         <div className="flex items-center gap-3">
-                                                            <div className="w-10 h-10 rounded-sm bg-slate-50 border border-slate-100 overflow-hidden shrink-0">
-                                                                <img src={item.image} className="w-full h-full object-cover" alt="" />
+                                                            <div className="w-10 h-10 rounded-sm bg-slate-50 border border-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
+                                                                {item.image ? (
+                                                                    <img src={item.image} className="w-full h-full object-cover" alt={item.name} />
+                                                                ) : (
+                                                                    <Package size={16} className="text-slate-300" />
+                                                                )}
                                                             </div>
                                                             <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest leading-none">{item.name}</span>
                                                         </div>
                                                     </td>
                                                     <td className="py-4 text-center">
-                                                        <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{item.qty} {item.unit}</span>
+                                                        <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{item.qty || item.quantity} {item.unit}</span>
                                                     </td>
                                                     <td className="py-4 text-right">
                                                         <span className="text-[11px] font-black text-slate-900 tabular-nums">₹{item.quotedPrice}</span>
                                                     </td>
                                                     <td className="py-4 text-right">
-                                                        <span className="text-[11px] font-black text-slate-900 tabular-nums">₹{(item.qty * item.quotedPrice).toLocaleString()}</span>
+                                                        <span className="text-[11px] font-black text-slate-900 tabular-nums">₹{((item.qty || item.quantity) * item.quotedPrice).toLocaleString()}</span>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -179,13 +229,13 @@ export default function VendorQuotationScreen() {
                                         {selectedRequest.status === 'quoted' && (
                                             <div className="flex gap-3">
                                                 <button
-                                                    onClick={() => handleReject(selectedRequest.id)}
+                                                    onClick={() => handleReject(selectedRequest._id || selectedRequest.id)}
                                                     className="flex-1 h-12 rounded-sm border border-slate-200 text-slate-400 font-black uppercase text-[10px] tracking-widest hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all flex items-center justify-center gap-2"
                                                 >
                                                     <XCircle size={16} /> Reject
                                                 </button>
                                                 <button
-                                                    onClick={() => handleApprove(selectedRequest.id)}
+                                                    onClick={() => handleApprove(selectedRequest._id || selectedRequest.id)}
                                                     className="flex-[2] h-12 bg-slate-900 text-white rounded-sm font-black uppercase text-[10px] tracking-[0.2em] shadow-xl shadow-slate-200 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
                                                 >
                                                     <CheckCircle2 size={16} /> Authorize Supply
