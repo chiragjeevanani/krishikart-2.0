@@ -108,6 +108,16 @@ export default function OrdersScreen() {
             )
         },
         {
+            header: 'Date & Time',
+            key: 'dateTime',
+            render: (val, row) => (
+                <div className="flex flex-col">
+                    <span className="font-bold text-slate-900 text-[10px] tracking-tight">{row.date || new Date(row.timeline?.[0]?.time || Date.now()).toLocaleDateString()}</span>
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-[0.1em] mt-0.5">{row.time || new Date(row.timeline?.[0]?.time || Date.now()).toLocaleTimeString()}</span>
+                </div>
+            )
+        },
+        {
             header: 'Delivery Slot',
             key: 'deliverySlot',
             render: (val) => <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{val}</span>

@@ -11,23 +11,12 @@ export function FranchiseOrdersProvider({ children }) {
     const fetchOrders = async () => {
         setLoading(true);
         try {
-            const franchiseData = JSON.parse(localStorage.getItem('franchiseData') || '{}');
-            console.log('=== Fetching Franchise Orders ===');
-            console.log('Franchise ID:', franchiseData?._id);
-            console.log('Franchise Name:', franchiseData?.shopName);
-
             const response = await api.get('/orders/franchise/all');
-            console.log('API Response - Success:', response.data.success);
-            console.log('Orders received:', response.data.results?.length || 0);
-
             if (response.data.success) {
                 setLiveOrders(response.data.results || []);
             }
         } catch (error) {
             console.error('Fetch franchise orders error:', error);
-            console.error('Franchise logged in?', !!localStorage.getItem('franchiseToken'));
-            console.error('Error details:', error.response?.data);
-            // toast.error('Failed to load live orders');
         } finally {
             setLoading(false);
         }
@@ -56,7 +45,9 @@ export function FranchiseOrdersProvider({ children }) {
             deliveryTime: "30 mins",
             deliverySlot: "Standard",
             paymentMode: o.paymentMethod || "Prepaid",
-            timeline: [{ status: 'Order Placed', time: o.createdAt, completed: true }]
+            timeline: [{ status: 'Order Placed', time: o.createdAt, completed: true }],
+            date: o.date,
+            time: o.time
         }));
     }, [liveOrders]);
 

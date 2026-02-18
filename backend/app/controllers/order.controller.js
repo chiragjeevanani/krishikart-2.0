@@ -182,8 +182,29 @@ export const getAllOrders = async (req, res) => {
             .populate('userId', 'fullName mobile')
             .populate('franchiseId', 'shopName ownerName mobile cityArea')
             .sort({ createdAt: -1 });
-        return handleResponse(res, 200, "All orders fetched", orders);
+
+        const formattedOrders = orders.map((order) => {
+            const dateObj = new Date(order.createdAt);
+            return {
+                ...order.toObject(),
+                date: dateObj.toLocaleDateString('en-IN', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    timeZone: 'Asia/Kolkata'
+                }),
+                time: dateObj.toLocaleTimeString('en-IN', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true,
+                    timeZone: 'Asia/Kolkata'
+                })
+            };
+        });
+
+        return handleResponse(res, 200, "All orders fetched", formattedOrders);
     } catch (error) {
+        console.error("Get all orders error:", error);
         return handleResponse(res, 500, "Server error");
     }
 };
@@ -213,7 +234,26 @@ export const getFranchiseOrders = async (req, res) => {
             console.log(`Unassigned: ${unassigned}, Accepted by this franchise: ${accepted}`);
         }
 
-        return handleResponse(res, 200, "Franchise orders fetched", orders);
+        const formattedOrders = orders.map((order) => {
+            const dateObj = new Date(order.createdAt);
+            return {
+                ...order.toObject(),
+                date: dateObj.toLocaleDateString('en-IN', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    timeZone: 'Asia/Kolkata'
+                }),
+                time: dateObj.toLocaleTimeString('en-IN', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true,
+                    timeZone: 'Asia/Kolkata'
+                })
+            };
+        });
+
+        return handleResponse(res, 200, "Franchise orders fetched", formattedOrders);
     } catch (error) {
         return handleResponse(res, 500, "Server error");
     }

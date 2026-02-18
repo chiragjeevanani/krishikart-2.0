@@ -37,7 +37,7 @@ export default function OrdersTable({ orders, onAction }) {
             <table className="w-full text-left border-collapse">
                 <thead>
                     <tr className="bg-slate-50 border-y border-slate-200">
-                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Order ID</th>
+                        <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Franchise</th>
                         <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Customer</th>
                         <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Items</th>
                         <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date & Time</th>
@@ -54,7 +54,19 @@ export default function OrdersTable({ orders, onAction }) {
                             className="group hover:bg-slate-50/80 transition-colors"
                         >
                             <td className="px-4 py-4">
-                                <span className="font-bold text-slate-900 text-[11px] tracking-widest tabular-nums">#{order._id?.slice(-8)}</span>
+                                <div className="flex flex-col">
+                                    <span className={cn(
+                                        "font-bold text-[11px] tracking-widest uppercase",
+                                        order.franchiseId ? "text-slate-900" : "text-amber-600"
+                                    )}>
+                                        {order.franchiseId ? (order.franchiseId.shopName || order.franchiseId.ownerName) : 'Unassigned'}
+                                    </span>
+                                    {order.franchiseId && (
+                                        <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wide mt-0.5">
+                                            {order.franchiseId.shopName ? order.franchiseId.ownerName : order.franchiseId.mobile}
+                                        </span>
+                                    )}
+                                </div>
                             </td>
                             <td className="px-4 py-4">
                                 <div className="flex flex-col">
@@ -69,8 +81,8 @@ export default function OrdersTable({ orders, onAction }) {
                             </td>
                             <td className="px-4 py-4">
                                 <div className="flex flex-col">
-                                    <span className="text-[10px] font-bold text-slate-700">{new Date(order.createdAt).toLocaleDateString()}</span>
-                                    <span className="text-[9px] text-slate-400 font-medium tabular-nums">{new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                    <span className="text-[10px] font-bold text-slate-700">{order.date || new Date(order.createdAt).toLocaleDateString()}</span>
+                                    <span className="text-[9px] text-slate-400 font-medium tabular-nums">{order.time || new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                 </div>
                             </td>
                             <td className="px-4 py-4">

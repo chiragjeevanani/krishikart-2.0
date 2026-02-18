@@ -11,16 +11,17 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
     let token = null;
 
-    // Intelligent Token Selection based on Route
-    if (window.location.pathname.startsWith('/masteradmin')) {
+    // Intelligent Token Selection based on URL or Context
+    const path = window.location.pathname;
+
+    if (path.includes('/masteradmin')) {
         token = localStorage.getItem('masterAdminToken');
-    } else if (window.location.pathname.startsWith('/vendor')) {
-        token = localStorage.getItem('vendorToken');
-    } else if (window.location.pathname.startsWith('/franchise')) {
+    } else if (path.includes('/franchise')) {
         token = localStorage.getItem('franchiseToken');
+    } else if (path.includes('/vendor')) {
+        token = localStorage.getItem('vendorToken');
     } else {
-        // User module or fallbacks
-        token = localStorage.getItem('userToken') || localStorage.getItem('token');
+        token = localStorage.getItem('userToken');
     }
 
     if (token) {

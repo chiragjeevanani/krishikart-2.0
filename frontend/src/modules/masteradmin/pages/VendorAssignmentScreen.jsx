@@ -18,7 +18,8 @@ import {
     Zap
 } from 'lucide-react';
 import mockVendors from '../data/mockVendors.json';
-import mockOrders from '../data/mockAdminOrders.json';
+import api from '@/lib/axios';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 export default function VendorAssignmentScreen() {
@@ -26,24 +27,59 @@ export default function VendorAssignmentScreen() {
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [isAssigning, setIsAssigning] = useState(false);
     const [assignmentSuccess, setAssignmentSuccess] = useState(false);
+    const [pendingRequests, setPendingRequests] = useState([]);
 
-    const pendingOrders = mockOrders.filter(o => o.status === 'pending_assignment');
+    const fetchPendingRequests = async () => {
+        try {
+            const response = await api.get('/procurement/admin/all?status=pending_assignment');
+            if (response.data.success) {
+                const mappedRequests = response.data.results.map(req => ({
+                    id: req._id,
+                    customer: req.franchiseId?.ownerName || 'Unknown Owner',
+                    franchise: req.franchiseId?.shopName || 'Unknown Shop',
+                    type: 'Low Stock Request',
+                    total: req.totalEstimatedAmount,
+                    items: req.items,
+                    createdAt: req.createdAt
+                }));
+                setPendingRequests(mappedRequests);
+            }
+        } catch (error) {
+            console.error('Failed to fetch requests:', error);
+            // toast.error('Failed to load pending requests');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 700);
-        return () => clearTimeout(timer);
+        fetchPendingRequests();
     }, []);
 
-    const handleAssign = (vendor) => {
+    const handleAssign = async (vendor) => {
         setIsAssigning(true);
-        setTimeout(() => {
+        try {
+            const response = await api.put(`/procurement/admin/${selectedOrder.id}/status`, {
+                status: 'assigned',
+                vendorId: vendor.id
+            });
+
+            if (response.data.success) {
+                setAssignmentSuccess(true);
+                // Remove from local list
+                setPendingRequests(prev => prev.filter(r => r.id !== selectedOrder.id));
+
+                setTimeout(() => {
+                    setAssignmentSuccess(false);
+                    setSelectedOrder(null);
+                }, 2000);
+            }
+        } catch (error) {
+            console.error('Assign vendor error:', error);
+            toast.error('Failed to assign vendor');
+        } finally {
             setIsAssigning(false);
-            setAssignmentSuccess(true);
-            setTimeout(() => {
-                setAssignmentSuccess(false);
-                setSelectedOrder(null);
-            }, 2000);
-        }, 1200);
+        }
     };
 
     if (isLoading) {
@@ -87,13 +123,13 @@ export default function VendorAssignmentScreen() {
                             </h3>
                             <div className="flex items-center gap-2">
                                 <span className="px-2 py-0.5 bg-amber-50 text-amber-600 border border-amber-100 text-[9px] font-black rounded-sm uppercase tracking-widest tabular-nums">
-                                    {pendingOrders.length} Objects Pending
+                                    {pendingRequests.length} Objects Pending
                                 </span>
                             </div>
                         </div>
 
                         <div className="divide-y divide-slate-50">
-                            {pendingOrders.map((order, index) => (
+                            {pendingRequests.map((order, index) => (
                                 <motion.div
                                     key={order.id}
                                     initial={{ opacity: 0, x: -10 }}
@@ -109,7 +145,7 @@ export default function VendorAssignmentScreen() {
                                 >
                                     <div className="flex items-center gap-4">
                                         <div className="w-9 h-9 border border-slate-100 bg-slate-50 rounded-sm flex items-center justify-center text-slate-400 font-black text-[10px] tabular-nums">
-                                            {order.id.split('-')[1]}
+                                            {String(order.id).slice(-4).toUpperCase()}
                                         </div>
                                         <div>
                                             <p className="font-bold text-slate-900 text-xs leading-none mb-1">{order.customer}</p>
@@ -121,7 +157,7 @@ export default function VendorAssignmentScreen() {
                                             <p className="text-xs font-bold text-slate-900 tabular-nums">₹{order.total.toLocaleString()}</p>
                                             <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter flex items-center justify-end gap-1">
                                                 <Clock size={10} />
-                                                12m ago
+                                                Local
                                             </p>
                                         </div>
                                         <ChevronRight size={14} className={cn("text-slate-200 transition-all", selectedOrder?.id === order.id ? "text-slate-900 translate-x-1" : "")} />
@@ -131,7 +167,7 @@ export default function VendorAssignmentScreen() {
                         </div>
                     </div>
 
-                    {pendingOrders.length === 0 && (
+                    {pendingRequests.length === 0 && (
                         <div className="py-20 flex flex-col items-center justify-center text-center opacity-30 border border-slate-200 border-dashed rounded-sm bg-white">
                             <Zap size={32} className="text-slate-300 mb-2" />
                             <h3 className="text-sm font-bold text-slate-900">Queue Synchronized</h3>
@@ -209,7 +245,7 @@ export default function VendorAssignmentScreen() {
                         >
                             <div className="p-6 border-b border-slate-100 bg-slate-50/50">
                                 <div className="flex items-center justify-between mb-6">
-                                    <div className="px-2 py-0.5 bg-slate-900 text-white text-[9px] font-black rounded-sm uppercase tracking-widest">Assigning ID- {selectedOrder.id.split('-')[1]}</div>
+                                    <div className="px-2 py-0.5 bg-slate-900 text-white text-[9px] font-black rounded-sm uppercase tracking-widest">Assigning ID- {String(selectedOrder.id).slice(-4).toUpperCase()}</div>
                                     <button onClick={() => setSelectedOrder(null)} className="p-1.5 hover:bg-white border border-transparent hover:border-slate-200 rounded-sm text-slate-400 transition-colors">
                                         <X size={16} />
                                     </button>
