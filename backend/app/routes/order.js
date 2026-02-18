@@ -22,6 +22,7 @@ router.get("/:id", protect, getOrderById);
 
 // Admin Routes
 router.get("/admin/all", protectMasterAdmin, getAllOrders);
+router.get("/admin/:id", protectMasterAdmin, getOrderById);
 router.put("/admin/:id/status", protectMasterAdmin, updateOrderStatus);
 
 // Franchise Routes

@@ -27,7 +27,9 @@ import {
     Tags,
     PlusCircle,
     List,
-    Star
+    Star,
+    Clock,
+    CheckCircle2
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';

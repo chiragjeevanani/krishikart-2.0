@@ -29,11 +29,23 @@ import { useWishlist } from '../contexts/WishlistContext'
 export default function ProductDetailScreen() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { addToCart } = useCart()
+  const { addToCart, cartItems, updateQuantity } = useCart()
   const { toggleWishlist, isWishlisted } = useWishlist()
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
+
+  // Get existing cart item if any
+  const cartItem = useMemo(() => cartItems.find(item => item.id === id || item._id === id), [cartItems, id])
+
+  // Initialize quantity from cart or default to 1
   const [quantity, setQuantity] = useState(1)
+
+  // Sync quantity with cart when product loads or cart changes
+  useEffect(() => {
+    if (cartItem) {
+      setQuantity(cartItem.quantity)
+    }
+  }, [cartItem])
   const isFavorite = isWishlisted(id)
 
   useEffect(() => {
@@ -138,6 +150,17 @@ export default function ProductDetailScreen() {
                     In Stock
                   </span>
                 )}
+                {product.dietaryType && product.dietaryType !== 'none' && (
+                  <div className={cn(
+                    "w-4 h-4 border-[1.2px] flex items-center justify-center rounded-[2px] bg-white",
+                    product.dietaryType === 'veg' ? "border-emerald-600" : "border-red-600"
+                  )}>
+                    <div className={cn(
+                      "w-[5px] h-[5px] rounded-full",
+                      product.dietaryType === 'veg' ? "bg-emerald-600" : "bg-red-600"
+                    )} />
+                  </div>
+                )}
               </div>
 
               <h1 className="text-2xl md:text-4xl font-black text-slate-900 leading-tight mb-2 uppercase md:normal-case md:font-bold">{product.name}</h1>
@@ -227,7 +250,7 @@ export default function ProductDetailScreen() {
               <div className="hidden md:flex flex-col gap-6 p-8 rounded-xl bg-white border border-slate-100 shadow-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-slate-500">Order Total</span>
-                  <span className="text-3xl font-bold text-slate-900">₹{currentPrice * quantity}</span>
+                  <span className="text-3xl font-bold text-slate-900">₹{currentPrice * (Number(quantity) || 1)}</span>
                 </div>
 
                 <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg p-1 h-12 w-32">
@@ -266,12 +289,19 @@ export default function ProductDetailScreen() {
                 <Button
                   onClick={() => {
                     const finalQty = Number(quantity) || 1;
-                    addToCart({ ...product, price: currentPrice }, finalQty)
+                    if (cartItem) {
+                      const delta = finalQty - cartItem.quantity;
+                      if (delta !== 0) {
+                        updateQuantity(id, delta);
+                      }
+                    } else {
+                      addToCart({ ...product, price: currentPrice }, finalQty);
+                    }
                     navigate('/cart')
                   }}
                   className="flex-1 h-12 rounded-lg bg-primary hover:bg-primary/90 text-md font-bold transition-all active:scale-[0.98]"
                 >
-                  Add to Cart
+                  {cartItem ? 'Update Cart' : 'Add to Cart'}
                 </Button>
               </div>
             </div>
@@ -318,12 +348,21 @@ export default function ProductDetailScreen() {
             <Button
               onClick={() => {
                 const finalQty = Number(quantity) || 1;
-                addToCart({ ...product, price: currentPrice }, finalQty)
+                if (cartItem) {
+                  const delta = finalQty - cartItem.quantity;
+                  if (delta !== 0) {
+                    updateQuantity(id, delta);
+                  }
+                } else {
+                  addToCart({ ...product, price: currentPrice }, finalQty);
+                }
                 navigate('/cart')
               }}
               className="flex-1 h-12 rounded-xl bg-primary hover:bg-primary/90 text-md font-black shadow-lg shadow-green-100 transition-all active:scale-[0.98] flex flex-col justify-center items-center gap-0"
             >
-              <span className="text-white/80 text-[8px] font-bold uppercase tracking-widest leading-none mb-1">Add to Cart</span>
+              <span className="text-white/80 text-[8px] font-bold uppercase tracking-widest leading-none mb-1">
+                {cartItem ? 'Update Cart' : 'Add to Cart'}
+              </span>
               <span className="leading-none text-[15px]">₹{currentPrice * (Number(quantity) || 1)}</span>
             </Button>
           </div>

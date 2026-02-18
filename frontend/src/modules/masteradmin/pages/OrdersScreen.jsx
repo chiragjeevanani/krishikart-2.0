@@ -26,11 +26,10 @@ import api from '@/lib/axios';
 import { toast } from 'sonner';
 import OrdersTable from '../components/tables/OrdersTable';
 import mockVendors from '../data/mockVendors.json';
+import { useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
-// Enterprise Components
-import MetricRow from '../components/cards/MetricRow';
-import FilterBar from '../components/tables/FilterBar';
+import OrderDetailModal from '../components/modals/OrderDetailModal';
 
 export default function OrdersScreen() {
     const [isLoading, setIsLoading] = useState(true);
@@ -38,6 +37,8 @@ export default function OrdersScreen() {
     const [activeFilter, setActiveFilter] = useState('all');
     const [allOrders, setAllOrders] = useState([]);
     const [selectedOrderForProcurement, setSelectedOrderForProcurement] = useState(null);
+    const [selectedOrderId, setSelectedOrderId] = useState(null);
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
     const fetchAllOrders = async () => {
         setIsLoading(true);
@@ -125,82 +126,9 @@ export default function OrdersScreen() {
                 </div>
             </div>
 
-            {/* Performance Metrics */}
-            <div className="bg-white border-b border-slate-200 grid grid-cols-1 md:grid-cols-4">
-                <MetricRow
-                    label="Total Revenue"
-                    value={`₹${allOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0).toLocaleString()}`}
-                    change={8.4}
-                    trend="up"
-                    icon={Briefcase}
-                    sparklineData={[1.1, 1.2, 1.4, 1.3, 1.4, 1.5, 1.4].map(v => ({ value: v }))}
-                />
-                <MetricRow
-                    label="Total Orders"
-                    value={allOrders.length.toString()}
-                    change={12.5}
-                    trend="up"
-                    icon={ShoppingBasket}
-                    sparklineData={[110, 115, 120, 118, 125, 122, 125].map(v => ({ value: v }))}
-                />
-                <MetricRow
-                    label="Completion Rate"
-                    value="98.5%"
-                    change={2.1}
-                    trend="up"
-                    icon={Activity}
-                    sparklineData={[92, 93, 94, 93.5, 94.2, 94, 94.2].map(v => ({ value: v }))}
-                />
-                <MetricRow
-                    label="Avg. Delivery Time"
-                    value="24m"
-                    change={-1.2}
-                    trend="up"
-                    icon={Clock}
-                    sparklineData={[20, 19, 18.5, 19, 18.5, 18.8, 18.5].map(v => ({ value: v }))}
-                />
-            </div>
 
             {/* Operational Ledger */}
             <div className="flex flex-col gap-0 p-px">
-                <FilterBar
-                    actions={
-                        <div className="flex items-center gap-2">
-                            <div className="flex items-center bg-slate-100 p-0.5 rounded-sm">
-                                <button
-                                    onClick={() => setActiveFilter('all')}
-                                    className={cn(
-                                        "px-3 py-1 text-[10px] font-bold transition-all",
-                                        activeFilter === 'all' ? "bg-white text-slate-900 shadow-sm rounded-sm" : "text-slate-500 hover:text-slate-900"
-                                    )}
-                                >
-                                    All Orders
-                                </button>
-                                <button
-                                    onClick={() => setActiveFilter('pending_assignment')}
-                                    className={cn(
-                                        "px-3 py-1 text-[10px] font-bold transition-all",
-                                        activeFilter === 'pending_assignment' ? "bg-white text-slate-900 shadow-sm rounded-sm" : "text-slate-500 hover:text-slate-900"
-                                    )}
-                                >
-                                    Pending
-                                </button>
-                                <button
-                                    onClick={() => setActiveFilter('in_transit')}
-                                    className={cn(
-                                        "px-3 py-1 text-[10px] font-bold transition-all",
-                                        activeFilter === 'in_transit' ? "bg-white text-slate-900 shadow-sm rounded-sm" : "text-slate-500 hover:text-slate-900"
-                                    )}
-                                >
-                                    In Transit
-                                </button>
-                            </div>
-                            <button className="p-1.5 border border-slate-200 rounded-sm hover:bg-slate-100 transition-colors text-slate-400">
-                                <Settings2 size={14} />
-                            </button>
-                        </div>
-                    }
-                />
 
                 <div className="bg-white border-t border-slate-200">
                     <div className="px-4 py-3 bg-slate-50/50 border-b border-slate-200 flex items-center justify-between">
@@ -219,7 +147,14 @@ export default function OrdersScreen() {
                         </div>
                     </div>
 
-                    <OrdersTable orders={filteredOrders} onAction={handleOrderAction} />
+                    <OrdersTable
+                        orders={filteredOrders}
+                        onAction={handleOrderAction}
+                        onOrderClick={(id) => {
+                            setSelectedOrderId(id);
+                            setIsDetailModalOpen(true);
+                        }}
+                    />
 
                     {filteredOrders.length === 0 && (
                         <div className="py-20 flex flex-col items-center text-center bg-white border-t border-slate-100">
@@ -345,6 +280,16 @@ export default function OrdersScreen() {
                     </>
                 )}
             </AnimatePresence>
+
+            {/* Order Detail Modal */}
+            <OrderDetailModal
+                isOpen={isDetailModalOpen}
+                onClose={() => {
+                    setIsDetailModalOpen(false);
+                    setSelectedOrderId(null);
+                }}
+                orderId={selectedOrderId}
+            />
         </div>
     );
 }
