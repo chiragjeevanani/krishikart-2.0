@@ -68,9 +68,16 @@ const orderSchema = new mongoose.Schema({
     },
     orderStatus: {
         type: String,
-        enum: ['Pending', 'Placed', 'Confirmed', 'Processing', 'Out for Delivery', 'Delivered', 'Cancelled'],
-        default: 'Pending'
+        enum: ['Placed', 'Packed', 'Dispatched', 'Delivered', 'Received', 'Cancelled'],
+        default: 'Placed'
     },
+    statusHistory: [
+        {
+            status: String,
+            updatedAt: { type: Date, default: Date.now },
+            updatedBy: String // role like 'user', 'franchise', 'delivery'
+        }
+    ],
     shippingAddress: {
         type: String,
         required: true

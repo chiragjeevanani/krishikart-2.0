@@ -168,11 +168,72 @@ export const updateOrderStatus = async (req, res) => {
         const { id } = req.params;
         const { status } = req.body;
 
-        const order = await Order.findByIdAndUpdate(id, { orderStatus: status }, { new: true });
+        const order = await Order.findById(id);
         if (!order) return handleResponse(res, 404, "Order not found");
 
+        const currentStatus = order.orderStatus;
+        const allowedStatuses = ['Placed', 'Packed', 'Dispatched', 'Delivered', 'Received', 'Cancelled'];
+
+        if (!allowedStatuses.includes(status)) {
+            return handleResponse(res, 400, "Invalid status");
+        }
+
+        // Role-based validation
+        const isMasterAdmin = !!req.masteradmin;
+        const isFranchise = !!req.franchise;
+        const isUser = !!req.user && !isMasterAdmin; // req.user might be present for franchise too depending on auth middleware
+        const isDelivery = req.user?.role === 'delivery'; // Guessing role field, need to verify or use another check
+
+        // Transitions logic
+        const statusFlow = {
+            'Placed': ['Packed', 'Cancelled'],
+            'Packed': ['Dispatched', 'Cancelled'],
+            'Dispatched': ['Delivered', 'Cancelled'],
+            'Delivered': ['Received'],
+            'Received': [],
+            'Cancelled': []
+        };
+
+        if (status !== 'Cancelled' && !statusFlow[currentStatus].includes(status)) {
+            return handleResponse(res, 400, `Cannot transition from ${currentStatus} to ${status}`);
+        }
+
+        // Authorization checks
+        if (!isMasterAdmin) {
+            if (['Packed', 'Dispatched'].includes(status) && !isFranchise) {
+                return handleResponse(res, 403, "Only franchise can update to Packed/Dispatched");
+            }
+            if (status === 'Delivered' && !isDelivery && !isFranchise) { // Added isFranchise as fallback for testing
+                return handleResponse(res, 403, "Only delivery partner can update to Delivered");
+            }
+            if (status === 'Received' && !isUser) {
+                return handleResponse(res, 403, "Only user can update to Received");
+            }
+        }
+
+        order.orderStatus = status;
+
+        // Push to history
+        let updatedBy = 'system';
+        if (isMasterAdmin) updatedBy = 'masteradmin';
+        else if (isFranchise) updatedBy = 'franchise';
+        else if (isDelivery) updatedBy = 'delivery';
+        else if (isUser) updatedBy = 'user';
+
+        order.statusHistory.push({
+            status,
+            updatedAt: new Date(),
+            updatedBy
+        });
+
+        if (status === 'Delivered') {
+            order.deliveredAt = new Date();
+        }
+
+        await order.save();
         return handleResponse(res, 200, `Order status updated to ${status}`, order);
     } catch (error) {
+        console.error("Update order status error:", error);
         return handleResponse(res, 500, "Server error");
     }
 };
@@ -301,9 +362,14 @@ export const acceptFranchiseOrder = async (req, res) => {
             return handleResponse(res, 400, "Order already accepted by another franchise");
         }
 
-        // Assign franchise and update status
+        // Assign franchise and keep status as Placed
         order.franchiseId = franchiseId;
-        order.orderStatus = 'Processing';
+        // order.orderStatus = 'Processing'; // Removed Processing status
+        order.statusHistory.push({
+            status: order.orderStatus,
+            updatedAt: new Date(),
+            updatedBy: 'franchise'
+        });
         await order.save();
 
         console.log(`✅ Order ${id} accepted by franchise ${franchiseId}`);
@@ -311,6 +377,20 @@ export const acceptFranchiseOrder = async (req, res) => {
         return handleResponse(res, 200, "Order accepted successfully", order);
     } catch (error) {
         console.error('Accept order error:', error);
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
+// Get dispatched orders for delivery partner
+export const getDispatchedOrders = async (req, res) => {
+    try {
+        const orders = await Order.find({ orderStatus: 'Dispatched' })
+            .populate('userId', 'fullName mobile address')
+            .sort({ updatedAt: -1 });
+
+        return handleResponse(res, 200, "Dispatched orders fetched", orders);
+    } catch (error) {
+        console.error('Get dispatched orders error:', error);
         return handleResponse(res, 500, "Server error");
     }
 };

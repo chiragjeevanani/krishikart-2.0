@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Phone,
@@ -11,19 +11,36 @@ import {
     MoreVertical,
     CheckCircle2
 } from 'lucide-react';
-import { activeDelivery } from '../utils/mockData';
 import StatusProgress from '../components/ui/StatusProgress';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../utils/constants';
+import { useDeliveryOrders } from '../contexts/DeliveryOrderContext';
 
 const ActiveDelivery = () => {
-    const [status, setStatus] = useState(activeDelivery.status);
     const navigate = useNavigate();
+    const { dispatchedOrders, loading, fetchDispatchedOrders } = useDeliveryOrders();
+    const [order, setOrder] = useState(null);
+    const [status, setStatus] = useState('assigned'); // local UI status for sub-steps
+
+    useEffect(() => {
+        const activeOrderId = localStorage.getItem('activeDeliveryId');
+        if (activeOrderId) {
+            const found = dispatchedOrders.find(o => o._id === activeOrderId);
+            if (found) {
+                setOrder(found);
+            } else {
+                // If not in dispatched (maybe just picked up), we'd usually fetch by ID
+                // For simplicity, we'll assume it's in the list or we need to navigate back
+            }
+        }
+    }, [dispatchedOrders]);
 
     const handleUpdateStatus = () => {
         if (status === 'assigned') setStatus('picked_up');
         else if (status === 'picked_up') setStatus('on_the_way');
-        else if (status === 'on_the_way') navigate(ROUTES.COMPLETION);
+        else if (status === 'on_the_way') {
+            navigate(ROUTES.COMPLETION);
+        }
     };
 
     const getButtonText = () => {
@@ -71,8 +88,8 @@ const ActiveDelivery = () => {
                             </div>
                             <div className="flex-1">
                                 <p className="text-[10px] font-bold text-muted-foreground uppercase mb-0.5">Pickup Location</p>
-                                <h3 className="text-sm font-bold">{activeDelivery.pickup.name}</h3>
-                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{activeDelivery.pickup.address}</p>
+                                <h3 className="text-sm font-bold">{order?.franchiseId?.shopName || 'Franchise'}</h3>
+                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{order?.franchiseId?.address || 'Pickup from Franchise'}</p>
                             </div>
                         </div>
 
@@ -93,8 +110,8 @@ const ActiveDelivery = () => {
                             </div>
                             <div className="flex-1">
                                 <p className="text-[10px] font-bold text-muted-foreground uppercase mb-0.5">Dropoff Location</p>
-                                <h3 className="text-sm font-bold">{activeDelivery.drop.name}</h3>
-                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{activeDelivery.drop.address}</p>
+                                <h3 className="text-sm font-bold">{order?.userId?.fullName || 'Customer'}</h3>
+                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{order?.shippingAddress || 'Delivery Address'}</p>
                             </div>
                         </div>
 
@@ -116,13 +133,13 @@ const ActiveDelivery = () => {
                         <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">{activeDelivery.items.length} Items</span>
                     </div>
                     <div className="p-0">
-                        {activeDelivery.items.map((item, i) => (
+                        {order?.items?.map((item, i) => (
                             <div key={i} className="px-4 py-3 flex justify-between items-center border-b border-border last:border-0">
                                 <div className="flex items-center gap-3">
                                     <div className="w-2 h-2 rounded-full bg-primary" />
                                     <span className="text-sm font-medium">{item.name}</span>
                                 </div>
-                                <span className="text-sm font-bold text-muted-foreground">{item.qty}</span>
+                                <span className="text-sm font-bold text-muted-foreground">{item.quantity}</span>
                             </div>
                         ))}
                     </div>

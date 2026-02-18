@@ -14,14 +14,12 @@ export default function OrdersScreen() {
     const getStatusColor = (status) => {
         const s = (status || '').toLowerCase();
         switch (s) {
+            case 'received':
             case 'delivered': return 'bg-green-50 text-green-600 border-green-100'
-            case 'in transit':
-            case 'out_for_delivery': return 'bg-blue-50 text-blue-600 border-blue-100'
-            case 'new':
-            case 'processing': return 'bg-amber-50 text-amber-600 border-amber-100'
-            case 'preparing': return 'bg-orange-50 text-orange-600 border-orange-100'
-            case 'ready': return 'bg-indigo-50 text-indigo-600 border-indigo-100'
-            case 'shipped': return 'bg-purple-50 text-purple-600 border-purple-100'
+            case 'dispatched': return 'bg-blue-50 text-blue-600 border-blue-100'
+            case 'placed': return 'bg-amber-50 text-amber-600 border-amber-100'
+            case 'packed': return 'bg-purple-50 text-purple-600 border-purple-100'
+            case 'cancelled': return 'bg-rose-50 text-rose-600 border-rose-100'
             default: return 'bg-slate-50 text-slate-600 border-slate-100'
         }
     }
@@ -29,24 +27,17 @@ export default function OrdersScreen() {
     const getStatusIcon = (status) => {
         const s = (status || '').toLowerCase();
         switch (s) {
+            case 'received':
             case 'delivered': return <CheckCircle2 size={12} />
-            case 'in transit':
-            case 'out_for_delivery': return <Truck size={12} />
-            case 'new':
-            case 'processing': return <Clock size={12} />
-            case 'preparing': return <Zap size={12} className="fill-current" />
-            case 'ready': return <Package size={12} />
-            case 'shipped': return <Package size={12} />
+            case 'dispatched': return <Truck size={12} />
+            case 'placed': return <Clock size={12} />
+            case 'packed': return <Zap size={12} className="fill-current" />
             default: return null
         }
     }
 
     const handleOrderClick = (order) => {
-        if (order.orderStatus === 'delivered') {
-            navigate(`/order-summary/${order._id}`)
-        } else {
-            navigate(`/track-order/${order._id}`)
-        }
+        navigate(`/order-detail/${order._id}`)
     }
 
     return (

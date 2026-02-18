@@ -62,15 +62,25 @@ export function OrderProvider({ children }) {
         }
     };
 
-    const updateOrderStatus = (orderId, status, additionalData = {}) => {
-        // This would typically be a backend call, but keeping local update for UI consistency if needed
-        setOrders(prev => prev.map(order =>
-            order._id === orderId ? {
-                ...order,
-                orderStatus: status,
-                ...additionalData,
-            } : order
-        ));
+    const updateOrderStatus = async (orderId, status, additionalData = {}) => {
+        try {
+            const response = await api.put(`/orders/${orderId}/status`, { status });
+            if (response.data.success) {
+                setOrders(prev => prev.map(order =>
+                    order._id === orderId ? {
+                        ...order,
+                        orderStatus: status,
+                        ...additionalData,
+                    } : order
+                ));
+                return { success: true };
+            }
+        } catch (error) {
+            console.error("Update order status error:", error);
+            const msg = error.response?.data?.message || "Failed to update status";
+            toast.error(msg);
+            return { success: false, message: msg };
+        }
     };
 
     return (

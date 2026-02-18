@@ -60,22 +60,35 @@ export function FranchiseOrdersProvider({ children }) {
             }
         } catch (error) {
             console.error('Update order status error:', error);
-            toast.error('Failed to update status');
+            toast.error(error.response?.data?.message || 'Failed to update status');
+        }
+    };
+
+    const acceptOrder = async (orderId) => {
+        try {
+            const response = await api.put(`/orders/franchise/${orderId}/accept`);
+            if (response.data.success) {
+                toast.success('Order accepted successfully');
+                setLiveOrders(prev => prev.map(o => o._id === orderId ? { ...o, franchiseId: "assigned", orderStatus: 'Placed' } : o));
+                fetchOrders(); // Refresh to get full details
+            }
+        } catch (error) {
+            console.error('Accept order error:', error);
+            toast.error(error.response?.data?.message || 'Failed to accept order');
         }
     };
 
     const stats = useMemo(() => ({
         todayOrders: orders.length,
-        newOrders: orders.filter(o => ['new', 'processing'].includes(o.status.toLowerCase())).length,
-        preparing: orders.filter(o => o.status.toLowerCase() === 'preparing').length,
-        outForDelivery: orders.filter(o => ['out_for_delivery', 'ready', 'shipped'].includes(o.status.toLowerCase())).length,
-        delivered: orders.filter(o => o.status.toLowerCase() === 'delivered').length,
-        revenue: orders.filter(o => o.status.toLowerCase() === 'delivered').reduce((acc, curr) => acc + (curr.total || 0), 0),
-        pendingCOD: orders.filter(o => o.status.toLowerCase() === 'delivered' && o.paymentMode === 'COD').reduce((acc, curr) => acc + (curr.total || 0), 0)
+        newOrders: orders.filter(o => o.status === 'placed' && !o.franchiseId).length,
+        packing: orders.filter(o => o.status === 'placed' && o.franchiseId).length,
+        dispatch: orders.filter(o => o.status === 'packed').length,
+        completed: orders.filter(o => ['dispatched', 'delivered', 'received'].includes(o.status)).length,
+        revenue: orders.filter(o => o.status === 'received').reduce((acc, curr) => acc + (curr.total || 0), 0)
     }), [orders]);
 
     return (
-        <FranchiseOrdersContext.Provider value={{ orders, updateOrderStatus, stats, loading, refreshOrders: fetchOrders }}>
+        <FranchiseOrdersContext.Provider value={{ orders, updateOrderStatus, acceptOrder, stats, loading, refreshOrders: fetchOrders }}>
             {children}
         </FranchiseOrdersContext.Provider>
     );
