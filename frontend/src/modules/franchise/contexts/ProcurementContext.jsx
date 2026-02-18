@@ -5,6 +5,16 @@ const ProcurementContext = createContext();
 
 export const ProcurementProvider = ({ children }) => {
     const [procurementRequests, setProcurementRequests] = useState([]);
+    const [cart, setCart] = useState(() => {
+        const savedCart = localStorage.getItem('procurementCart');
+        return savedCart ? JSON.parse(savedCart) : {};
+    });
+
+    useEffect(() => {
+        localStorage.setItem('procurementCart', JSON.stringify(cart));
+    }, [cart]);
+
+    const clearCart = () => setCart({});
 
     const addRequest = async (request) => {
         try {
@@ -44,6 +54,9 @@ export const ProcurementProvider = ({ children }) => {
     return (
         <ProcurementContext.Provider value={{
             procurementRequests,
+            cart,
+            setCart,
+            clearCart,
             addRequest,
             updateRequestStatus
         }}>

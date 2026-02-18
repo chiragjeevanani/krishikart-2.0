@@ -28,10 +28,9 @@ import { useProcurement } from '../contexts/ProcurementContext';
 
 export default function ProcurementScreen() {
     const navigate = useNavigate();
-    const { addRequest } = useProcurement();
+    const { addRequest, cart, setCart, clearCart } = useProcurement();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
-    const [cart, setCart] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [orderSuccess, setOrderSuccess] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -134,7 +133,7 @@ export default function ProcurementScreen() {
         setTimeout(() => {
             setIsSubmitting(false);
             setOrderSuccess(true);
-            setCart({});
+            clearCart();
         }, 2000);
     };
 
