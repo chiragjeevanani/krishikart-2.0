@@ -4,9 +4,11 @@ import { motion } from 'framer-motion';
 import { ShieldCheck, Mail, Lock, Loader2, ArrowRight } from 'lucide-react';
 
 import api from '../../../lib/axios';
+import { useMasterAdminAuth } from '../contexts/MasterAdminAuthContext';
 
 export default function LoginScreen() {
     const navigate = useNavigate();
+    const { loginSuccess } = useMasterAdminAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -17,10 +19,8 @@ export default function LoginScreen() {
         try {
             const response = await api.post('/masteradmin/login', { email, password });
 
-            // Store token and user data
-            localStorage.setItem('masterAdminToken', response.data.result.token);
-            localStorage.setItem('masterAdminData', JSON.stringify(response.data.result));
-
+            // Use auth context to store token and user data
+            loginSuccess(response.data.result, response.data.result.token);
             navigate('/masteradmin/dashboard');
         } catch (error) {
             console.error(error);

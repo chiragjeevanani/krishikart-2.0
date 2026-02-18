@@ -10,7 +10,8 @@ import {
 } from "../controllers/franchise.auth.js";
 import {
   submitKYC,
-  getKYCStatus
+  getKYCStatus,
+  getInventory
 } from "../controllers/franchise.controller.js";
 import { protectFranchise } from "../middlewares/franchise.auth.js";
 import upload from "../middlewares/upload.js";
@@ -32,5 +33,6 @@ router.post(
   submitKYC
 );
 router.get("/kyc/status", protectFranchise, getKYCStatus);
+router.get("/inventory", protectFranchise, getInventory);
 
 export default router;

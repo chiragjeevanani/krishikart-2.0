@@ -35,9 +35,11 @@ import {
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useMasterAdminAuth } from '../../contexts/MasterAdminAuthContext';
 
 export default function Sidebar({ isCollapsed, setIsCollapsed }) {
     const navigate = useNavigate();
+    const { logout } = useMasterAdminAuth();
     const location = useLocation();
     const [expandedMenu, setExpandedMenu] = useState(null);
 
@@ -81,9 +83,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                 { icon: Store, label: 'Franchises', path: '/masteradmin/franchises' },
                 { icon: Users, label: 'Vendors', path: '/masteradmin/vendors' },
                 { icon: FileText, label: 'Vendor Invoices', path: '/masteradmin/vendor-reports' },
-                { icon: TrendingUp, label: 'Vendor Reports', path: '/masteradmin/vendor-economics' },
                 { icon: Monitor, label: 'Stock Levels', path: '/masteradmin/stock-monitoring' },
-                { icon: Briefcase, label: 'Purchase Orders', path: '/masteradmin/purchase' },
                 { icon: Star, label: 'Vendor Quotations', path: '/masteradmin/quotations' },
             ]
         },
@@ -252,8 +252,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
             <div className="p-3 border-t border-slate-100 bg-slate-50/50">
                 <button
                     onClick={() => {
-                        localStorage.removeItem('masterAdminToken');
-                        localStorage.removeItem('masterAdminData');
+                        logout();
                         navigate('/masteradmin/login');
                     }}
                     className={cn(

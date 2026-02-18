@@ -53,12 +53,16 @@ export default function InventoryScreen() {
             key: 'name',
             render: (val, row) => (
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-sm bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-slate-900 group-hover:text-white transition-all">
-                        <Scale size={14} />
+                    <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 overflow-hidden border border-slate-100/50 group-hover:border-slate-300 transition-all">
+                        {row.image ? (
+                            <img src={row.image} alt={val} className="w-full h-full object-cover" />
+                        ) : (
+                            <Scale size={16} />
+                        )}
                     </div>
                     <div className="flex flex-col">
                         <span className="font-black text-slate-900 text-[11px] tracking-tight leading-none mb-1">{val}</span>
-                        <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{row.id}</span>
+                        <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">#{row.id?.slice(-8).toUpperCase()}</span>
                     </div>
                 </div>
             )
@@ -165,7 +169,7 @@ export default function InventoryScreen() {
             <div className="bg-white border-b border-slate-200 grid grid-cols-1 md:grid-cols-4">
                 <MetricRow
                     label="Stock Health"
-                    value={`${Math.round((stats.healthyCount / stats.totalItems) * 100)}%`}
+                    value={`${stats.healthPercentage}%`}
                     trend="Stable"
                     icon={ShieldCheck}
                 />
@@ -178,7 +182,7 @@ export default function InventoryScreen() {
                 />
                 <MetricRow
                     label="Total Value"
-                    value={`₹${((stats.totalItems || 0) * 240).toLocaleString()}`}
+                    value={`₹${(stats.totalValue || 0).toLocaleString()}`}
                     trend="Stable"
                     icon={RefreshCw}
                 />

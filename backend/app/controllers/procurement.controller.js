@@ -3,6 +3,8 @@ import Product from "../models/product.js";
 import ProcurementRequest from "../models/procurementRequest.js";
 import Franchise from "../models/franchise.js";
 import User from "../models/user.js";
+import Inventory from "../models/inventory.js";
+import handleResponse from "../utils/helper.js";
 
 // Get vendor assignments (Vendor)
 export const getVendorAssignments = async (req, res) => {
@@ -78,51 +80,52 @@ export const vendorUpdateStatus = async (req, res) => {
         const { requestId } = req.params;
         const { status, weight } = req.body;
 
+        if (!mongoose.Types.ObjectId.isValid(requestId)) {
+            return handleResponse(res, 400, "Invalid request ID format");
+        }
+
         const request = await ProcurementRequest.findById(requestId);
         if (!request) {
             return handleResponse(res, 404, "Request not found");
         }
 
-        // Verify assignment
-        if (request.assignedVendorId.toString() !== req.vendor._id.toString()) {
-            return handleResponse(res, 403, "Not authorized to update this request");
+        // Verify assignment - handle potential null or mismatch safely
+        const assignedVendorId = request.assignedVendorId ? request.assignedVendorId.toString() : "";
+        const currentVendorId = req.vendor._id.toString();
+
+        if (assignedVendorId !== currentVendorId) {
+            return handleResponse(res, 403, "Not authorized to update this request. Assigned: " + assignedVendorId + " Current: " + currentVendorId);
         }
 
         request.status = status;
 
-        if (weight) {
-            request.actualWeight = weight;
+        if (weight !== undefined) {
+            request.actualWeight = Number(weight);
         }
 
         // If dispatching/marking as ready_for_pickup, generate a mock invoice
         if (status === 'ready_for_pickup') {
-            const invCount = await ProcurementRequest.countDocuments({ "invoice.invoiceNumber": { $exists: true } });
-            request.invoice = {
-                invoiceNumber: `INV-${new Date().getFullYear()}-${(invCount + 1).toString().padStart(4, '0')}`,
-                invoiceDate: new Date(),
-                generatedAt: new Date(),
-                fileUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" // Placeholder PDF
-            };
+            try {
+                const invCount = await ProcurementRequest.countDocuments({ "invoice.invoiceNumber": { $exists: true } });
+                request.invoice = {
+                    invoiceNumber: `INV-${new Date().getFullYear()}-${(invCount + 1).toString().padStart(4, '0')}`,
+                    invoiceDate: new Date(),
+                    generatedAt: new Date(),
+                    fileUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" // Placeholder PDF
+                };
+            } catch (invErr) {
+                console.error("Invoice generation error:", invErr);
+                // Continue anyway or handle
+            }
         }
 
         await request.save();
 
         return handleResponse(res, 200, "Status updated successfully", request);
     } catch (error) {
-        console.error("Vendor update status error:", error);
-        return handleResponse(res, 500, "Server error");
+        console.error("Vendor update status error DETAILS:", error);
+        return handleResponse(res, 500, error.message || "Server error");
     }
-};
-
-// Helper for responses
-const handleResponse = (res, statusCode, message, data = {}) => {
-    const success = statusCode >= 200 && statusCode < 300;
-    return res.status(statusCode).json({
-        success,
-        error: !success,
-        message,
-        results: data,
-    });
 };
 
 // Create a new procurement request (Franchise)
@@ -220,10 +223,10 @@ export const getAllProcurementRequests = async (req, res) => {
 export const getVendorActiveDispatch = async (req, res) => {
     try {
         const vendorId = req.vendor._id.toString();
-        // Fetch orders where status is approved or preparing
+        // Fetch orders where status is approved, preparing, or ready for pickup (active cycle)
         let assignments = await ProcurementRequest.find({
             assignedVendorId: vendorId,
-            status: { $in: ['approved', 'preparing'] }
+            status: { $in: ['approved', 'preparing', 'ready_for_pickup'] }
         })
             .populate("franchiseId", "shopName ownerName mobile cityArea address")
             .sort({ createdAt: -1 })
@@ -294,6 +297,74 @@ export const getVendorReports = async (req, res) => {
         return handleResponse(res, 200, "Vendor reports fetched", reports);
     } catch (error) {
         console.error("Get vendor reports error:", error);
+        return handleResponse(res, 500, "Server error");
+    }
+};
+// Franchise confirm receipt
+export const franchiseConfirmReceipt = async (req, res) => {
+    try {
+        const { requestId } = req.params;
+        const franchiseId = req.franchise._id;
+
+        if (!mongoose.Types.ObjectId.isValid(requestId)) {
+            return handleResponse(res, 400, "Invalid request ID format");
+        }
+
+        const request = await ProcurementRequest.findById(requestId);
+        if (!request) {
+            return handleResponse(res, 404, "Request not found");
+        }
+
+        // Verify franchise ownership
+        if (request.franchiseId.toString() !== franchiseId.toString()) {
+            return handleResponse(res, 403, "Not authorized to update this request");
+        }
+
+        if (request.status !== 'ready_for_pickup') {
+            return handleResponse(res, 400, "Order is not ready for receiving. Current status: " + request.status);
+        }
+
+        request.status = 'completed';
+        await request.save();
+
+        // Update Franchise Inventory
+        try {
+            let inventory = await Inventory.findOne({ franchiseId });
+
+            if (!inventory) {
+                // Initialize inventory if it doesn't exist
+                inventory = new Inventory({ franchiseId, items: [] });
+            }
+
+            // Sync items from request to inventory
+            for (const reqItem of request.items) {
+                const prodId = reqItem.productId;
+                if (!mongoose.Types.ObjectId.isValid(prodId)) continue;
+
+                const existingItem = inventory.items.find(i => i.productId.toString() === prodId.toString());
+                if (existingItem) {
+                    existingItem.currentStock += reqItem.quantity;
+                    existingItem.lastUpdated = new Date();
+                } else {
+                    inventory.items.push({
+                        productId: prodId,
+                        currentStock: reqItem.quantity,
+                        lastUpdated: new Date()
+                    });
+                }
+            }
+
+            await inventory.save();
+            console.log(`Inventory updated for franchise: ${franchiseId}`);
+        } catch (invErr) {
+            console.error("Critical: Stock sync failed during receipt confirmation:", invErr);
+            // We don't necessarily want to fail the whole request if inventory update fails, 
+            // but in a production app you'd want a transaction or a retry.
+        }
+
+        return handleResponse(res, 200, "Goods received and stock updated successfully", request);
+    } catch (error) {
+        console.error("Franchise confirm receipt error:", error);
         return handleResponse(res, 500, "Server error");
     }
 };

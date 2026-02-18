@@ -8,7 +8,8 @@ import {
     vendorSubmitQuotation,
     getVendorActiveDispatch,
     vendorUpdateStatus,
-    getVendorReports
+    getVendorReports,
+    franchiseConfirmReceipt
 } from "../controllers/procurement.controller.js";
 import { protectFranchise } from "../middlewares/franchise.auth.js";
 import { protectMasterAdmin } from "../middlewares/masteradmin.auth.js";
@@ -19,8 +20,10 @@ const router = express.Router();
 // Franchise Routes (Request)
 router.post("/franchise/create", protectFranchise, createProcurementRequest);
 router.get("/franchise/my-requests", protectFranchise, getMyProcurementRequests);
+router.put("/franchise/:requestId/receive", protectFranchise, franchiseConfirmReceipt);
 
 // Vendor Routes (View Assignment)
+router.get("/vendor/my-assignments", protectVendor, getVendorAssignments);
 router.get("/vendor/active-dispatch", protectVendor, getVendorActiveDispatch);
 router.post("/vendor/:requestId/quote", protectVendor, vendorSubmitQuotation);
 router.put("/vendor/:requestId/status", protectVendor, vendorUpdateStatus);

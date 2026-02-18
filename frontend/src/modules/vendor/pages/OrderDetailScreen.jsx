@@ -74,19 +74,19 @@ export default function OrderDetailScreen() {
         return () => clearTimeout(timer);
     }, [id, location.state]);
 
-    const handleAction = (newStatus, callback) => {
+    const handleAction = async (newStatus, callback) => {
         setIsActionLoading(true);
-        setTimeout(() => {
-            if (contextOrders.find(o => o.id === id)) {
-                updateOrderStatus(id, newStatus);
+        try {
+            const response = await api.put(`/procurement/vendor/${id}/status`, { status: newStatus });
+            if (response.data.success) {
+                setStatus(newStatus);
+                if (callback) callback();
             }
-            if (procurementRequests.find(r => r.id === id)) {
-                updateRequestStatus(id, newStatus);
-            }
-            setStatus(newStatus);
+        } catch (error) {
+            console.error("Failed to update status", error);
+        } finally {
             setIsActionLoading(false);
-            if (callback) callback();
-        }, 1000);
+        }
     };
 
     const handleQuotationSubmit = async () => {
@@ -373,7 +373,7 @@ export default function OrderDetailScreen() {
                                     </div>
                                     <div>
                                         <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Node Ops Contact</p>
-                                        <p className="text-sm font-black tabular-nums">+91 90000 12345</p>
+                                        <p className="text-sm font-black tabular-nums">{order.franchiseMobile}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-md group-hover:border-white/20 transition-colors">

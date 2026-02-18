@@ -1,4 +1,5 @@
 import Franchise from "../models/franchise.js";
+import Inventory from "../models/inventory.js";
 import handleResponse from "../utils/helper.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 
@@ -58,6 +59,35 @@ export const getKYCStatus = async (req, res) => {
         const franchise = await Franchise.findById(req.franchise._id).select("kyc isVerified");
         return handleResponse(res, 200, "KYC Status Fetched", franchise);
     } catch (err) {
+        return handleResponse(res, 500, "Internal server error");
+    }
+};
+
+/**
+ * @desc Get Franchise Inventory
+ * @route GET /franchise/inventory
+ * @access Private (Franchise)
+ */
+export const getInventory = async (req, res) => {
+    try {
+        const franchiseId = req.franchise._id;
+        const inventory = await Inventory.findOne({ franchiseId })
+            .populate({
+                path: 'items.productId',
+                select: 'name primaryImage price unit category subcategory',
+                populate: [
+                    { path: 'category', select: 'name' },
+                    { path: 'subcategory', select: 'name' }
+                ]
+            });
+
+        if (!inventory) {
+            return handleResponse(res, 200, "Inventory empty", { items: [] });
+        }
+
+        return handleResponse(res, 200, "Inventory fetched", inventory);
+    } catch (err) {
+        console.error("Get Inventory Error:", err);
         return handleResponse(res, 500, "Internal server error");
     }
 };

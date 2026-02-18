@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import AppLayout from './modules/user/layouts/AppLayout'
 import SplashScreen from './modules/user/pages/SplashScreen'
 import LoginScreen from './modules/user/pages/LoginScreen'
@@ -50,6 +50,7 @@ const FranchiseLogin = lazy(() => import('./modules/franchise/pages/LoginScreen'
 const FranchiseSignup = lazy(() => import('./modules/franchise/pages/SignupScreen'));
 
 // Master Admin Module Imports
+import { MasterAdminAuthProvider } from './modules/masteradmin/contexts/MasterAdminAuthContext';
 import { masterAdminRoutes } from './modules/masteradmin/routes/masterAdminRoutes';
 import { vendorRoutes } from './modules/vendor/routes/vendorRoutes';
 import { deliveryRoutes } from './modules/delivery/routes/deliveryRoutes';
@@ -92,6 +93,12 @@ const DeliveryProviders = ({ children }) => (
   <DeliveryOrderProvider>
     {children}
   </DeliveryOrderProvider>
+);
+
+const MasterAdminProviders = () => (
+  <MasterAdminAuthProvider>
+    <Outlet />
+  </MasterAdminAuthProvider>
 );
 
 function App() {
@@ -152,7 +159,9 @@ function App() {
             </Route>
           </Route>
 
-          {masterAdminRoutes}
+          <Route element={<MasterAdminProviders />}>
+            {masterAdminRoutes}
+          </Route>
           {vendorRoutes}
           <Route path="/delivery/*">
             <Route element={<DeliveryProviders />}>

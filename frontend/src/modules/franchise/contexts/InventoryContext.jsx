@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import mockInventory from '../data/mockInventory.json';
+import api from '@/lib/axios';
 
 const InventoryContext = createContext();
 
@@ -7,38 +8,38 @@ export const InventoryProvider = ({ children }) => {
     const [inventory, setInventory] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        // Initialize from mock data or localStorage
-        const savedInventory = localStorage.getItem('franchise_inventory');
-        if (savedInventory) {
-            const parsed = JSON.parse(savedInventory);
-            // Migration/Sync: Ensure older saved data gets new fields (price, image) from mockInventory
-            const syncedInventory = parsed.map(item => {
-                const mockItem = mockInventory.find(m => m.id === item.id);
-                if (mockItem) {
-                    return {
-                        ...item,
-                        // Force update fields that should be synced with master catalog
-                        price: (item.price && item.price > 0) ? item.price : mockItem.price,
-                        image: (item.image && item.image.length > 5) ? item.image : mockItem.image,
-                        unit: item.unit || mockItem.unit,
-                        category: item.category || mockItem.category
-                    };
-                }
-                return item;
-            });
-            setInventory(syncedInventory);
-        } else {
+    const fetchInventory = async () => {
+        setLoading(true);
+        try {
+            const response = await api.get('/franchise/inventory');
+            if (response.data.success && response.data.results?.items) {
+                const mappedInventory = response.data.results.items.map(item => ({
+                    id: item.productId?._id || item._id,
+                    productId: item.productId?._id,
+                    name: item.productId?.name || 'Unknown Product',
+                    currentStock: item.currentStock,
+                    mbq: item.mbq,
+                    price: item.productId?.price || 0,
+                    image: item.productId?.primaryImage || '',
+                    unit: item.productId?.unit || 'kg',
+                    category: item.productId?.category?.name || 'General',
+                    lastUpdated: item.lastUpdated
+                }));
+                setInventory(mappedInventory);
+            } else {
+                setInventory(mockInventory);
+            }
+        } catch (error) {
+            console.error("Failed to fetch inventory from server:", error);
             setInventory(mockInventory);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
-    }, []);
+    };
 
     useEffect(() => {
-        if (inventory.length > 0) {
-            localStorage.setItem('franchise_inventory', JSON.stringify(inventory));
-        }
-    }, [inventory]);
+        fetchInventory();
+    }, []);
 
     const updateStock = (productId, newQty) => {
         setInventory(prev => prev.map(item =>
@@ -96,8 +97,16 @@ export const InventoryProvider = ({ children }) => {
         const healthyCount = inventory.filter(item => item.currentStock > item.mbq).length;
         const lowStockCount = getLowStockItems().length;
         const outOfStockCount = inventory.filter(item => item.currentStock === 0).length;
+        const totalValue = inventory.reduce((sum, item) => sum + (item.currentStock * (item.price || 0)), 0);
 
-        return { totalItems, healthyCount, lowStockCount, outOfStockCount };
+        return {
+            totalItems,
+            healthyCount,
+            lowStockCount,
+            outOfStockCount,
+            totalValue,
+            healthPercentage: totalItems > 0 ? Math.round((healthyCount / totalItems) * 100) : 100
+        };
     };
 
     const categories = Array.from(new Set(inventory.map(item => item.category)));
@@ -111,7 +120,8 @@ export const InventoryProvider = ({ children }) => {
             addStock,
             deductStock,
             getLowStockItems,
-            getStockStats
+            getStockStats,
+            refreshInventory: fetchInventory
         }}>
             {children}
         </InventoryContext.Provider>

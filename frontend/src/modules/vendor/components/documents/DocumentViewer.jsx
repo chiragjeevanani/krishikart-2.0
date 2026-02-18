@@ -1,9 +1,19 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Printer, Download, FileText, CheckCircle2, Truck, Calendar, User } from 'lucide-react';
+import { X, Printer, Download, FileText, CheckCircle2, Truck, Calendar, User, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import html2pdf from 'html2pdf.js';
 
-export default function DocumentViewer({ isOpen, onClose, data, type = 'DC' }) {
+export default function DocumentViewer({ isOpen, onClose, data, type = 'DC', autoDownload = false }) {
+    const reportRef = useRef();
+    const [isGenerating, setIsGenerating] = React.useState(false);
+
+    React.useEffect(() => {
+        if (isOpen && autoDownload && !isGenerating) {
+            handleDownload();
+        }
+    }, [isOpen, autoDownload]);
+
     if (!data) return null;
 
     const isDC = type === 'DC';
@@ -11,6 +21,30 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC' }) {
     const accentColor = isInvoice ? 'text-primary' : (isDC ? 'text-indigo-600' : 'text-emerald-600');
     const accentBg = isInvoice ? 'bg-primary/10' : (isDC ? 'bg-indigo-50' : 'bg-emerald-50');
     const accentBorder = isInvoice ? 'border-primary/20' : (isDC ? 'border-indigo-100' : 'border-emerald-100');
+
+    const handleDownload = async () => {
+        if (!reportRef.current) return;
+        setIsGenerating(true);
+        try {
+            const element = reportRef.current;
+            const opt = {
+                margin: 10,
+                filename: `${type}_${data.invoiceNumber || data.id}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            await html2pdf().set(opt).from(element).save();
+        } catch (error) {
+            console.error('PDF generation failed:', error);
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    const handlePrint = () => {
+        window.print();
+    };
 
     return (
         <AnimatePresence>
@@ -21,16 +55,16 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC' }) {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100]"
+                        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] print:hidden"
                     />
                     <motion.div
                         initial={{ y: '100%' }}
                         animate={{ y: 0 }}
                         exit={{ y: '100%' }}
-                        className="fixed inset-x-0 bottom-0 top-10 lg:inset-y-20 lg:inset-x-64 bg-white rounded-t-[40px] lg:rounded-[40px] shadow-2xl z-[110] overflow-hidden flex flex-col"
+                        className="fixed inset-x-0 bottom-0 top-10 lg:inset-y-20 lg:inset-x-64 bg-white rounded-t-[40px] lg:rounded-[40px] shadow-2xl z-[110] overflow-hidden flex flex-col print:relative print:inset-0 print:m-0 print:p-0 print:shadow-none print:w-full"
                     >
                         {/* Header Actions */}
-                        <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+                        <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white shrink-0 print:hidden">
                             <div className="flex items-center gap-3">
                                 <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", accentBg, accentColor)}>
                                     <FileText size={20} />
@@ -45,11 +79,18 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC' }) {
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
-                                <button className="p-3 text-slate-400 hover:text-slate-900 transition-colors">
+                                <button
+                                    onClick={handlePrint}
+                                    className="p-3 text-slate-400 hover:text-slate-900 transition-colors"
+                                >
                                     <Printer size={20} />
                                 </button>
-                                <button className="p-3 text-slate-400 hover:text-slate-900 transition-colors">
-                                    <Download size={20} />
+                                <button
+                                    disabled={isGenerating}
+                                    onClick={handleDownload}
+                                    className="p-3 text-slate-400 hover:text-slate-900 transition-colors disabled:opacity-50"
+                                >
+                                    {isGenerating ? <Loader2 className="animate-spin" size={20} /> : <Download size={20} />}
                                 </button>
                                 <button onClick={onClose} className="p-3 text-slate-400 hover:text-red-500 transition-colors ml-2">
                                     <X size={20} />
@@ -58,7 +99,7 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC' }) {
                         </div>
 
                         {/* Document Content */}
-                        <div className="flex-1 overflow-y-auto p-8 lg:p-12 space-y-10 custom-scrollbar">
+                        <div ref={reportRef} className="flex-1 overflow-y-auto p-8 lg:p-12 space-y-10 custom-scrollbar print:overflow-visible print:p-0">
                             {/* Branding & Top Info */}
                             <div className="flex flex-col lg:flex-row justify-between gap-8 pt-4">
                                 <div className="space-y-4">
@@ -88,16 +129,16 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC' }) {
                                         <Truck size={14} className="text-slate-400" />
                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Source Node (Vendor)</span>
                                     </div>
-                                    <h4 className="text-sm font-black text-slate-900">{data.vendor || data.sourceNode || 'KrishiKart Global'}</h4>
-                                    <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-tighter">Handover Distribution Partner</p>
+                                    <h4 className="text-sm font-black text-slate-900">{data.vendor || 'KrishiKart Partner'}</h4>
+                                    <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-tighter">{data.sourceDetails || 'Verified Distribution Partner'}</p>
                                 </div>
                                 <div className="p-6 bg-slate-50/50 rounded-3xl border border-slate-100">
                                     <div className="flex items-center gap-2 mb-4">
                                         <CheckCircle2 size={14} className="text-slate-400" />
                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Destination Node (Franchise)</span>
                                     </div>
-                                    <h4 className="text-sm font-black text-slate-900">{data.franchise || data.destNode || 'Main Center'}</h4>
-                                    <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-tighter">Franchise Distribution Point</p>
+                                    <h4 className="text-sm font-black text-slate-900">{data.franchise || 'Main Center'}</h4>
+                                    <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-tighter">{data.destNode || 'Franchise Node'}</p>
                                 </div>
                             </div>
 
@@ -122,10 +163,10 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC' }) {
                                                         {item.quantity || item.qty} {item.unit}
                                                     </td>
                                                     <td className="px-6 py-4 text-right text-slate-400 tabular-nums">
-                                                        ₹{item.price || item.quotedPrice || '0.00'}
+                                                        ₹{item.quotedPrice || item.price || '0.00'}
                                                     </td>
                                                     <td className="px-6 py-4 text-right font-black text-slate-900 tabular-nums">
-                                                        ₹{((item.quantity || item.qty) * (item.price || item.quotedPrice || 0)).toLocaleString()}
+                                                        ₹{((item.quantity || item.qty) * (item.quotedPrice || item.price || 0)).toLocaleString()}
                                                     </td>
                                                 </tr>
                                             ))}
@@ -140,29 +181,29 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC' }) {
                                     <div className="p-6 bg-slate-900 text-white rounded-[32px] space-y-4">
                                         <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
                                             <span>Certified Packaging WT</span>
-                                            <span className="text-white">{data.totalWeight || data.weight || '42.5'} KG</span>
+                                            <span className="text-white">{data.totalWeight || data.weight || '0.00'} KG</span>
                                         </div>
                                         <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
                                             <span>Digital Security Code</span>
-                                            <span className="text-emerald-400">#KK-AUTH-SECURE</span>
+                                            <span className="text-emerald-400">#{data.id?.slice(-8).toUpperCase() || 'AUTH-SECURE'}</span>
                                         </div>
                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed pt-2 border-t border-white/10">
-                                            Handover finalized at KrishiKart Node Terminal. Gross payload synchronized for logistics leg.
+                                            Handover finalized at {data.vendor || 'KrishiKart'} Terminal. Gross payload synchronized for logistics leg.
                                         </p>
                                     </div>
                                 </div>
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Subtotal</span>
-                                        <span className="text-sm font-black text-slate-900">₹{data.items.reduce((acc, item) => acc + (item.quantity * (item.price || item.quotedPrice || 0)), 0).toLocaleString()}</span>
+                                        <span className="text-sm font-black text-slate-900">₹{data.items.reduce((acc, item) => acc + ((item.quantity || item.qty) * (item.quotedPrice || item.price || 0)), 0).toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Handling Fee</span>
-                                        <span className="text-sm font-black text-slate-900">₹40.00</span>
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Platform Fee</span>
+                                        <span className="text-sm font-black text-slate-900">₹{(data.handlingFee || 0).toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between items-center pt-2">
                                         <span className="text-xs font-black text-slate-900 uppercase tracking-widest">Grand Total</span>
-                                        <span className="text-xl font-black text-primary">₹{(data.items.reduce((acc, item) => acc + (item.quantity * (item.price || item.quotedPrice || 0)), 0) + 40).toLocaleString()}</span>
+                                        <span className="text-xl font-black text-primary">₹{(data.items.reduce((acc, item) => acc + ((item.quantity || item.qty) * (item.quotedPrice || item.price || 0)), 0) + (data.handlingFee || 0)).toLocaleString()}</span>
                                     </div>
                                 </div>
                             </div>

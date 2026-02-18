@@ -16,11 +16,15 @@ import {
     Package
 } from 'lucide-react';
 import api from '@/lib/axios';
+import DocumentViewer from '../../vendor/components/documents/DocumentViewer';
 
 export default function VendorReportsScreen() {
     const [reports, setReports] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedReport, setSelectedReport] = useState(null);
+    const [isViewerOpen, setIsViewerOpen] = useState(false);
+    const [shouldAutoDownload, setShouldAutoDownload] = useState(false);
 
     useEffect(() => {
         const fetchReports = async () => {
@@ -184,13 +188,21 @@ export default function VendorReportsScreen() {
                                 <td className="px-6 py-5">
                                     <div className="flex items-center justify-end gap-2">
                                         <button
-                                            onClick={() => window.open(report.invoice?.fileUrl, '_blank')}
+                                            onClick={() => {
+                                                setSelectedReport(report);
+                                                setShouldAutoDownload(false);
+                                                setIsViewerOpen(true);
+                                            }}
                                             className="p-2 bg-white border border-slate-200 text-slate-400 hover:text-primary hover:border-primary/30 rounded-lg transition-all shadow-sm"
                                         >
                                             <Eye size={16} />
                                         </button>
                                         <button
-                                            onClick={() => window.open(report.invoice?.fileUrl, '_blank')}
+                                            onClick={() => {
+                                                setSelectedReport(report);
+                                                setShouldAutoDownload(true);
+                                                setIsViewerOpen(true);
+                                            }}
                                             className="p-2 bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-lg transition-all"
                                         >
                                             <Download size={16} />
@@ -210,6 +222,34 @@ export default function VendorReportsScreen() {
                     </div>
                 )}
             </div>
+
+            {selectedReport && (
+                <DocumentViewer
+                    isOpen={isViewerOpen}
+                    onClose={() => {
+                        setIsViewerOpen(false);
+                        setShouldAutoDownload(false);
+                    }}
+                    autoDownload={shouldAutoDownload}
+                    type="INVOICE"
+                    data={{
+                        invoiceNumber: selectedReport.invoice?.invoiceNumber,
+                        invoiceDate: selectedReport.invoice?.invoiceDate,
+                        items: selectedReport.items?.map(i => ({
+                            name: i.name,
+                            quantity: i.quantity || 0,
+                            unit: i.unit || 'KG',
+                            quotedPrice: i.quotedPrice || 0,
+                            price: i.price || 0
+                        })),
+                        totalWeight: selectedReport.actualWeight,
+                        franchise: selectedReport.franchiseId?.shopName,
+                        destNode: selectedReport.franchiseId?.cityArea,
+                        vendor: selectedReport.assignedVendorId?.shopName || 'KrishiKart Partner',
+                        handlingFee: 40
+                    }}
+                />
+            )}
         </div>
     );
 }

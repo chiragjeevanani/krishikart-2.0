@@ -67,6 +67,7 @@ export default function OrdersScreen() {
     const mappedProcurementRequests = procurementRequests.map(req => ({
         id: req._id,
         franchiseName: req.franchiseId?.shopName || req.franchiseId?.ownerName || 'Franchise Request',
+        franchiseMobile: req.franchiseId?.mobile || '+91 00000 00000',
         total: req.totalEstimatedAmount || 0,
         status: req.status,
         items: req.items.map(i => ({

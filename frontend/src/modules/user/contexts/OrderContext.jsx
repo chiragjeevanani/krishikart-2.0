@@ -9,8 +9,16 @@ export function OrderProvider({ children }) {
     const [isLoading, setIsLoading] = useState(false);
 
     const fetchMyOrders = async () => {
-        const token = localStorage.getItem('userToken') || localStorage.getItem('token');
-        if (!token) return;
+        const token = localStorage.getItem('userToken');
+        const path = window.location.pathname;
+
+        // Skip fetching if no user token or if we are in a different module
+        if (!token ||
+            path.includes('/masteradmin') ||
+            path.includes('/vendor') ||
+            path.includes('/franchise') ||
+            path.includes('/delivery')
+        ) return;
 
         setIsLoading(true);
         try {

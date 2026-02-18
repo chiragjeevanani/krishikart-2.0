@@ -22,6 +22,7 @@ import mockOrders from '../data/mockVendorOrders.json';
 import { cn } from '@/lib/utils';
 import { useOrders } from '@/modules/user/contexts/OrderContext';
 import DocumentViewer from '../components/documents/DocumentViewer';
+import { toast } from 'sonner';
 
 export default function PackingScreen() {
     const navigate = useNavigate();
@@ -54,24 +55,38 @@ export default function PackingScreen() {
     }, [orderId]);
 
     const order = useMemo(() => {
-        const foundOrder = orders.find(o => o._id === orderId);
-        if (foundOrder) {
-            return {
-                id: foundOrder._id,
-                franchiseName: foundOrder.franchiseId?.shopName || foundOrder.franchiseId?.ownerName || 'Franchise Node',
-                items: foundOrder.items.map(i => ({
-                    name: i.name,
-                    quantity: i.quantity || i.qty || 0,
-                    unit: i.unit || 'units',
-                    image: i.image
-                })),
-                status: foundOrder.status
-            };
+        // 1. Try to find the specific order by ID from URL
+        if (orderId) {
+            const foundOrder = orders.find(o => o._id === orderId);
+            if (foundOrder) return formatOrder(foundOrder);
         }
-        // Fallback to mock for dev/demo if not found in active dispatch (e.g. already completed)
+
+        // 2. If no ID or ID not found, take the first order from active dispatches list
+        if (orders.length > 0) {
+            return formatOrder(orders[0]);
+        }
+
+        // 3. Fallback to mock only if no active orders exist at all
         const mock = mockOrders.find(o => o.id === orderId);
         return mock || mockOrders[0];
     }, [orderId, orders]);
+
+    function formatOrder(foundOrder) {
+        return {
+            id: foundOrder._id,
+            franchiseName: foundOrder.franchiseId?.shopName || foundOrder.franchiseId?.ownerName || 'Franchise Node',
+            franchiseLocation: foundOrder.franchiseId?.cityArea || foundOrder.franchiseId?.address || 'Main Hub',
+            items: foundOrder.items.map(i => ({
+                name: i.name,
+                quantity: i.quantity || i.qty || 0,
+                unit: i.unit || 'units',
+                price: i.price || 0,
+                quotedPrice: i.quotedPrice || 0,
+                image: i.image
+            })),
+            status: foundOrder.status
+        };
+    }
 
     useEffect(() => {
         if (order && order.items) {
@@ -82,6 +97,13 @@ export default function PackingScreen() {
             setCheckedItems(init);
         }
     }, [order]);
+
+    const handleToggleCheck = (itemName) => {
+        setCheckedItems(prev => ({
+            ...prev,
+            [itemName]: !prev[itemName]
+        }));
+    };
 
     /* const isPackingComplete = Object.values(checkedItems).every(v => v); */
     // Ensure accurate check
@@ -95,9 +117,13 @@ export default function PackingScreen() {
     const simulateScaleReading = () => {
         setIsReadingFromScale(true);
         let count = 0;
+
+        // Calculate target weight based on real order quantities
+        const totalItemsQty = order.items?.reduce((sum, i) => sum + (Number(i.quantity) || 0), 0) || 45.32;
+        const target = +(totalItemsQty * (0.95 + Math.random() * 0.1)).toFixed(2); // +/- 5% variance
+
         const interval = setInterval(() => {
             setActualWeight(prev => {
-                const target = 45.32; // Random target for simulation
                 const diff = target - prev;
                 if (Math.abs(diff) < 0.1 || count > 20) {
                     clearInterval(interval);
@@ -111,18 +137,28 @@ export default function PackingScreen() {
     };
 
     const handleFinalDispatch = async () => {
+        if (!order || !order.id) {
+            toast.error("No active order selected for dispatch");
+            return;
+        }
+
         setIsDispatching(true);
         try {
             // Update status on backend
             // Status: 'ready_for_pickup' implies vendor has finished and goods are ready
-            await api.put(`/procurement/vendor/${orderId}/status`, {
+            const response = await api.put(`/procurement/vendor/${order.id}/status`, {
                 status: 'ready_for_pickup',
                 weight: actualWeight
             });
-            // Optionally update local context if needed, but we rely on API now
-            setStep(4);
+
+            if (response.data.success) {
+                setStep(4);
+            } else {
+                toast.error(response.data.message || "Finalization failed");
+            }
         } catch (error) {
-            console.error("Failed to update status", error);
+            console.error("Finalization error", error);
+            toast.error(error.response?.data?.message || "Internal server error during finalization");
         } finally {
             setIsDispatching(false);
         }
@@ -367,7 +403,7 @@ export default function PackingScreen() {
                         <div className="space-y-4">
                             <div className="space-y-2">
                                 <h3 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase">CYCLE SYNCHRONIZED</h3>
-                                <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em]">CONSGN REF: KK-IX-{Math.floor(Math.random() * 90000) + 10000}</p>
+                                <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em]">CONSGN REF: KK-IX-{order.id?.slice(-8).toUpperCase()}</p>
                             </div>
                             {orders.find(o => o._id === orderId)?.invoice && (
                                 <div className="bg-emerald-50 py-2 px-4 rounded-full inline-block">
@@ -425,12 +461,13 @@ export default function PackingScreen() {
                 onClose={() => setIsDocOpen(false)}
                 type="INVOICE"
                 data={{
-                    invoiceNumber: orders.find(o => o._id === orderId)?.invoice?.invoiceNumber || 'INV-DEMO-001',
-                    invoiceDate: orders.find(o => o._id === orderId)?.invoice?.invoiceDate || new Date(),
+                    invoiceNumber: orders.find(o => o._id === order.id)?.invoice?.invoiceNumber || `KK-INV-${order.id?.slice(-6).toUpperCase()}`,
+                    invoiceDate: orders.find(o => o._id === order.id)?.invoice?.invoiceDate || new Date(),
                     items: order.items,
                     totalWeight: actualWeight,
                     franchise: order.franchiseName,
-                    vendor: JSON.parse(localStorage.getItem('vendorData'))?.shopName || 'KrishiKart Vendor'
+                    destNode: order.franchiseLocation,
+                    vendor: JSON.parse(localStorage.getItem('vendorData'))?.shopName || 'KrishiKart Partner'
                 }}
             />
         </div>

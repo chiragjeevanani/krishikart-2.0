@@ -20,61 +20,65 @@ import DataGrid from '../components/tables/DataGrid';
 export default function DashboardScreen() {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(true);
+    const [activeDispatches, setActiveDispatches] = useState([]);
     const { stats, performance } = mockData;
     const { orders: contextOrders } = useOrders();
-
-    const liveActiveOrders = contextOrders.filter(o =>
-        o.fulfillmentType === 'requires_procurement' &&
-        ['assigned', 'accepted', 'preparing', 'ready'].includes(o.status)
-    ).length;
-
-    const pendingSettlement = contextOrders
-        .filter(o => o.fulfillmentType === 'requires_procurement' && ['assigned', 'accepted', 'preparing', 'ready'].includes(o.status))
-        .reduce((sum, o) => sum + (o.procurementTotal || 0), 0);
 
     const totalTurnover = contextOrders
         .filter(o => o.fulfillmentType === 'requires_procurement' && o.status === 'completed')
         .reduce((sum, o) => sum + (o.procurementTotal || 0), 0) + performance.monthlyRevenue;
 
     useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 800);
-        return () => clearTimeout(timer);
+        const fetchData = async () => {
+            try {
+                const response = await api.get('/procurement/vendor/active-dispatch');
+                if (response.data.success) {
+                    setActiveDispatches(response.data.results);
+                }
+            } catch (error) {
+                console.error("Failed to fetch active dispatches", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
     }, []);
+
+    const liveActiveOrders = activeDispatches.length;
+
+    const pendingSettlement = activeDispatches
+        .reduce((sum, o) => sum + (o.totalQuotedAmount || 0), 0);
 
     const dispatchColumns = [
         {
-            header: 'Dispatch ID',
-            key: 'id',
-            render: (val) => <span className="text-primary font-black uppercase tracking-widest">{val}</span>
+            header: 'Dispatch Ref',
+            key: '_id',
+            render: (val) => <span className="text-primary font-black uppercase tracking-widest">{val.slice(-6)}</span>
         },
         {
-            header: 'Destination Hub',
-            key: 'hub',
-            render: (val) => <span className="text-slate-900 font-bold">{val}</span>
+            header: 'Franchise Node',
+            key: 'franchiseId',
+            render: (val) => <span className="text-slate-900 font-bold">{val?.shopName || val?.ownerName || 'Node'}</span>
         },
         {
-            header: 'Batch Weight',
-            key: 'wt',
-            render: (val) => <span className="text-slate-600 font-black tabular-nums">{val}</span>
+            header: 'Payload',
+            key: 'actualWeight',
+            render: (val) => <span className="text-slate-600 font-black tabular-nums">{val ? `${val} KG` : 'TBD'}</span>
         },
         {
-            header: 'Status',
+            header: 'Cycle Status',
             key: 'status',
             align: 'right',
             render: (val) => (
                 <span className={cn(
                     "px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tighter",
-                    val === 'Delivered' ? "bg-emerald-100 text-emerald-600" : "bg-blue-100 text-blue-600"
+                    val === 'ready_for_pickup' ? "bg-emerald-100 text-emerald-600" :
+                        val === 'approved' ? "bg-blue-100 text-blue-600" : "bg-amber-100 text-amber-600"
                 )}>
-                    {val}
+                    {val.replace('_', ' ')}
                 </span>
             )
         }
-    ];
-
-    const dispatchLogs = [
-        { id: 'GC-12894', hub: 'South Delhi Hub', wt: '42.5 KG', time: '14:30', status: 'In Transit' },
-        { id: 'GC-11562', hub: 'Gurugram Hub', wt: '68.2 KG', time: '10:15', status: 'Delivered' }
     ];
 
     if (isLoading) {
@@ -233,7 +237,8 @@ export default function DashboardScreen() {
 
                     <DataGrid
                         columns={dispatchColumns}
-                        data={dispatchLogs}
+                        data={activeDispatches}
+                        onRowClick={(row) => navigate(`/vendor/dispatch?order=${row._id}`)}
                         className="border-none shadow-none"
                     />
                 </div>
