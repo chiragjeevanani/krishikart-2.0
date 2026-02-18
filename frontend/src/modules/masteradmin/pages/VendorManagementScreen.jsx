@@ -265,6 +265,15 @@ export default function VendorManagementScreen() {
                     fetchVendors();
                 }}
             />
+
+            <VendorProductDrawer
+                isOpen={!!productDrawerVendor}
+                onClose={() => {
+                    setProductDrawerVendor(null);
+                    fetchVendors();
+                }}
+                vendor={productDrawerVendor}
+            />
         </div>
     );
 }

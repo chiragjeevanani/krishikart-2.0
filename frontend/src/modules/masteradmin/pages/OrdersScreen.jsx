@@ -30,6 +30,7 @@ import { useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 import OrderDetailModal from '../components/modals/OrderDetailModal';
+import { exportToCSV } from '@/lib/exportToCSV';
 
 export default function OrdersScreen() {
     const [isLoading, setIsLoading] = useState(true);
@@ -39,6 +40,24 @@ export default function OrdersScreen() {
     const [selectedOrderForProcurement, setSelectedOrderForProcurement] = useState(null);
     const [selectedOrderId, setSelectedOrderId] = useState(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
+    const handleExport = () => {
+        const columns = [
+            { header: 'Order ID', key: '_id' },
+            { header: 'Customer', key: 'customerName' },
+            { header: 'Status', key: 'orderStatus' },
+            { header: 'Total Amount', key: 'totalAmount' },
+            { header: 'Date', key: 'createdAt' }
+        ];
+
+        const data = filteredOrders.map(order => ({
+            ...order,
+            customerName: order.userId?.fullName || 'Unknown',
+            totalAmount: order.items?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0
+        }));
+
+        exportToCSV('Orders_Report', columns, data);
+    };
 
     const fetchAllOrders = async () => {
         setIsLoading(true);
@@ -114,7 +133,10 @@ export default function OrdersScreen() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <button className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-sm text-[10px] font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+                        <button
+                            onClick={handleExport}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-sm text-[10px] font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+                        >
                             <FileText size={13} className="text-slate-400" />
                             <span>Export CSV</span>
                         </button>

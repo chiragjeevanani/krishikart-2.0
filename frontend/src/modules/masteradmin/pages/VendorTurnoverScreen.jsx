@@ -21,12 +21,42 @@ import {
 } from 'lucide-react';
 import mockVendors from '../data/mockVendors.json';
 import { cn } from '@/lib/utils';
+import { exportToCSV } from '@/lib/exportToCSV';
 
 export default function VendorTurnoverScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedVendorId, setSelectedVendorId] = useState(null);
     const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'detail'
+    const [selectedFY, setSelectedFY] = useState('2025-26');
+    const [isFYLoading, setIsFYLoading] = useState(false);
+
+    const handleExport = () => {
+        const columns = [
+            { header: 'Vendor ID', key: 'id' },
+            { header: 'Merchant Name', key: 'name' },
+            { header: 'Category', key: 'category' },
+            { header: 'Total Turnover', key: 'totalTurnover' },
+            { header: 'Growth %', key: 'growth' },
+            { header: 'Status', key: 'status' }
+        ];
+
+        const data = filteredVendors.map(v => ({
+            ...v,
+            totalTurnover: `₹${v.totalTurnover.toLocaleString()}`,
+            growth: '12.5%' // Mock growth
+        }));
+
+        exportToCSV(`Vendor_Turnover_FY${selectedFY}`, columns, data);
+    };
+
+    const toggleFY = () => {
+        setIsFYLoading(true);
+        setTimeout(() => {
+            setSelectedFY(prev => prev === '2025-26' ? '2024-25' : '2025-26');
+            setIsFYLoading(false);
+        }, 500);
+    };
 
     useEffect(() => {
         const timer = setTimeout(() => setIsLoading(false), 600);
@@ -80,12 +110,21 @@ export default function VendorTurnoverScreen() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <button className="p-1.5 text-slate-400 hover:text-slate-900 transition-colors border border-slate-200 rounded-sm bg-white">
+                        <button
+                            onClick={handleExport}
+                            className="p-1.5 text-slate-400 hover:text-slate-900 transition-colors border border-slate-200 rounded-sm bg-white"
+                        >
                             <Download size={14} />
                         </button>
-                        <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-900 text-white text-[9px] font-black rounded-sm uppercase tracking-widest cursor-pointer">
+                        <div
+                            onClick={toggleFY}
+                            className={cn(
+                                "flex items-center gap-1.5 px-2 py-1 bg-slate-900 text-white text-[9px] font-black rounded-sm uppercase tracking-widest cursor-pointer transition-all active:scale-95",
+                                isFYLoading && "opacity-50 pointer-events-none"
+                            )}
+                        >
                             <Calendar size={12} />
-                            FY 2025-26
+                            {isFYLoading ? 'Switching...' : `FY ${selectedFY}`}
                         </div>
                     </div>
                 </div>

@@ -28,6 +28,8 @@ export default function VendorAssignmentScreen() {
     const [isAssigning, setIsAssigning] = useState(false);
     const [assignmentSuccess, setAssignmentSuccess] = useState(false);
     const [pendingRequests, setPendingRequests] = useState([]);
+    const [vendors, setVendors] = useState([]);
+    const [isLoadingVendors, setIsLoadingVendors] = useState(false);
 
     const fetchPendingRequests = async () => {
         try {
@@ -55,6 +57,43 @@ export default function VendorAssignmentScreen() {
     useEffect(() => {
         fetchPendingRequests();
     }, []);
+
+    const fetchVendorsForOrder = async (order) => {
+        if (!order || !order.items || order.items.length === 0) {
+            setVendors([]);
+            return;
+        }
+        setIsLoadingVendors(true);
+        try {
+            // Using the first product ID for filtering
+            const productId = order.items[0].productId;
+            const response = await api.get(`/masteradmin/vendors?productId=${productId}`);
+            if (response.data.success) {
+                const mappedVendors = response.data.results.map(v => ({
+                    id: v._id,
+                    name: v.fullName,
+                    rating: 4.8, // Fallback rating
+                    category: v.farmLocation,
+                    capacity: 85, // Fallback capacity
+                    products: v.products
+                }));
+                setVendors(mappedVendors);
+            }
+        } catch (error) {
+            console.error('Failed to fetch vendors for order:', error);
+            setVendors([]);
+        } finally {
+            setIsLoadingVendors(false);
+        }
+    };
+
+    useEffect(() => {
+        if (selectedOrder) {
+            fetchVendorsForOrder(selectedOrder);
+        } else {
+            setVendors([]);
+        }
+    }, [selectedOrder]);
 
     const handleAssign = async (vendor) => {
         setIsAssigning(true);
@@ -264,52 +303,65 @@ export default function VendorAssignmentScreen() {
                             </div >
 
                             <div className="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar">
-                                {mockVendors.map((vendor, index) => (
-                                    <motion.div
-                                        key={vendor.id}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: index * 0.05 }}
-                                        className="bg-white p-4 border border-slate-200 rounded-sm hover:border-slate-400 transition-all flex flex-col gap-4 group"
-                                    >
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex gap-3">
-                                                <div className="w-10 h-10 border border-slate-100 bg-slate-50 text-slate-400 rounded-sm flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-colors">
-                                                    <Users size={18} />
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-black text-slate-900 text-xs tracking-tight leading-tight">{vendor.name}</h4>
-                                                    <div className="flex items-center gap-1.5 mt-1">
-                                                        <div className="flex items-center gap-1 text-amber-500 font-black text-[9px] tabular-nums">
-                                                            <Star size={9} fill="currentColor" /> {vendor.rating}
+                                {isLoadingVendors ? (
+                                    <div className="py-10 flex flex-col items-center justify-center text-slate-400">
+                                        <div className="w-6 h-6 border-2 border-slate-200 border-t-slate-900 rounded-full animate-spin mb-3" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest">Finding Vendors...</span>
+                                    </div>
+                                ) : vendors.length > 0 ? (
+                                    vendors.map((vendor, index) => (
+                                        <motion.div
+                                            key={vendor.id}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: index * 0.05 }}
+                                            className="bg-white p-4 border border-slate-200 rounded-sm hover:border-slate-400 transition-all flex flex-col gap-4 group"
+                                        >
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex gap-3">
+                                                    <div className="w-10 h-10 border border-slate-100 bg-slate-50 text-slate-400 rounded-sm flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-colors">
+                                                        <Users size={18} />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-black text-slate-900 text-xs tracking-tight leading-tight">{vendor.name}</h4>
+                                                        <div className="flex items-center gap-1.5 mt-1">
+                                                            <div className="flex items-center gap-1 text-amber-500 font-black text-[9px] tabular-nums">
+                                                                <Star size={9} fill="currentColor" /> {vendor.rating}
+                                                            </div>
+                                                            <span className="text-slate-200">•</span>
+                                                            <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest">{vendor.category}</span>
                                                         </div>
-                                                        <span className="text-slate-200">•</span>
-                                                        <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest">{vendor.category}</span>
                                                     </div>
                                                 </div>
+                                                <div className="text-right">
+                                                    <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Available</div>
+                                                    <div className="text-xs font-black text-slate-900 tabular-nums leading-none">{vendor.capacity}%</div>
+                                                </div>
                                             </div>
-                                            <div className="text-right">
-                                                <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Available</div>
-                                                <div className="text-xs font-black text-slate-900 tabular-nums leading-none">{vendor.capacity}%</div>
-                                            </div>
-                                        </div>
 
-                                        <div className="flex items-center justify-between gap-4 pt-3 border-t border-slate-50">
-                                            <div className="flex items-center gap-1.5 text-slate-400">
-                                                <MapPin size={10} />
-                                                <span className="text-[9px] font-bold tabular-nums">{index + 1}.2km away</span>
+                                            <div className="flex items-center justify-between gap-4 pt-3 border-t border-slate-50">
+                                                <div className="flex items-center gap-1.5 text-slate-400">
+                                                    <MapPin size={10} />
+                                                    <span className="text-[9px] font-bold tabular-nums">{index + 1}.2km away</span>
+                                                </div>
+                                                <button
+                                                    disabled={isAssigning}
+                                                    onClick={() => handleAssign(vendor)}
+                                                    className="bg-slate-900 text-white text-[9px] font-black uppercase tracking-wider px-3 py-2 rounded-sm hover:bg-slate-800 active:scale-[0.98] transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+                                                >
+                                                    Assign Vendor
+                                                    <ArrowRight size={12} />
+                                                </button>
                                             </div>
-                                            <button
-                                                disabled={isAssigning}
-                                                onClick={() => handleAssign(vendor)}
-                                                className="bg-slate-900 text-white text-[9px] font-black uppercase tracking-wider px-3 py-2 rounded-sm hover:bg-slate-800 active:scale-[0.98] transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50"
-                                            >
-                                                Assign Vendor
-                                                <ArrowRight size={12} />
-                                            </button>
-                                        </div>
-                                    </motion.div>
-                                ))}
+                                        </motion.div>
+                                    ))
+                                ) : (
+                                    <div className="py-20 flex flex-col items-center justify-center text-center opacity-30 border border-slate-200 border-dashed rounded-sm bg-white">
+                                        <Users size={32} className="text-slate-300 mb-2" />
+                                        <h3 className="text-sm font-bold text-slate-900">No Match</h3>
+                                        <p className="text-[10px] font-bold uppercase tracking-widest px-10">No vendors found with these items</p>
+                                    </div>
+                                )}
                             </div>
                         </motion.div >
                     </>

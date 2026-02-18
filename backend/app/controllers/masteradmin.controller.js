@@ -7,10 +7,16 @@ import handleResponse from "../utils/helper.js";
 
 export const getAllVendors = async (req, res) => {
     try {
-        const { status } = req.query;
-        const query = status ? { status } : {};
+        const { status, productId } = req.query;
+        let query = status ? { status } : {};
 
-        const vendors = await Vendor.find(query).select("-password -resetPasswordToken -resetPasswordExpires");
+        if (productId) {
+            query.products = { $in: [productId] };
+        }
+
+        const vendors = await Vendor.find(query)
+            .select("-password -resetPasswordToken -resetPasswordExpires")
+            .populate('products', 'name category');
 
         return handleResponse(res, 200, "Vendors fetched successfully", vendors);
     } catch (err) {

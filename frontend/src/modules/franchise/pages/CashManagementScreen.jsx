@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useCOD } from '../contexts/CODContext';
 import { cn } from '@/lib/utils';
+import { exportToCSV } from '@/lib/exportToCSV';
 
 // Enterprise Components
 import MetricRow from '../components/cards/MetricRow';
@@ -36,6 +37,25 @@ export default function CashManagementScreen() {
     const [selectedTx, setSelectedTx] = useState(null);
     const [referenceId, setReferenceId] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+
+    const handleExport = () => {
+        const columns = [
+            { header: 'Order ID', key: 'orderId' },
+            { header: 'Entity', key: 'hotelName' },
+            { header: 'Amount', key: 'amount' },
+            { header: 'Status', key: 'status' },
+            { header: 'Date', key: 'date' },
+            { header: 'Reference', key: 'bankReference' }
+        ];
+
+        const data = filteredTransactions.map(tx => ({
+            ...tx,
+            amount: `₹${tx.amount?.toLocaleString()}`,
+            status: tx.status === 'pending' ? 'Unreconciled' : 'Deposited'
+        }));
+
+        exportToCSV('Cash_Reconciliation_Report', columns, data);
+    };
 
     useEffect(() => {
         const timer = setTimeout(() => setIsLoading(false), 700);
@@ -148,7 +168,10 @@ export default function CashManagementScreen() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <button className="p-1.5 text-slate-400 hover:text-slate-900 transition-colors border border-slate-200 rounded-sm bg-white">
+                        <button
+                            onClick={handleExport}
+                            className="p-1.5 text-slate-400 hover:text-slate-900 transition-colors border border-slate-200 rounded-sm bg-white"
+                        >
                             <Download size={14} />
                         </button>
                         <button className="bg-slate-900 text-white px-3 py-1.5 rounded-sm text-[11px] font-bold flex items-center gap-2 hover:bg-slate-800 transition-colors shadow-sm uppercase tracking-widest">

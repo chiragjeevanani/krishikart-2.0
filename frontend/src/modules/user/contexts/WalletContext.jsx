@@ -22,9 +22,14 @@ export function WalletProvider({ children }) {
     }, []);
 
     const fetchWalletData = async () => {
+        // Skip user profile fetch if we are in Master Admin module
+        if (window.location.pathname.startsWith('/masteradmin')) {
+            return;
+        }
+
         setIsLoading(true);
         try {
-            const token = localStorage.getItem('userToken') || localStorage.getItem('token');
+            const token = localStorage.getItem('userToken');
             if (token) {
                 const response = await api.get('/user/me');
                 if (response.data && response.data.result) {

@@ -26,12 +26,33 @@ import DataGrid from '../components/tables/DataGrid';
 import FilterBar from '../components/tables/FilterBar';
 import ProfessionalTooltip from '../components/common/ProfessionalTooltip';
 
+import { exportToCSV } from '@/lib/exportToCSV';
+
 export default function DeliveryMonitoringScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('active');
 
     const inTransitOrders = mockOrders.filter(o => o.status === 'in_transit');
     const deliveredOrders = mockOrders.filter(o => o.status === 'delivered');
+
+    const handleExport = () => {
+        const columns = [
+            { header: 'Order ID', key: 'id' },
+            { header: 'Customer', key: 'customer' },
+            { header: 'Shop', key: 'franchise' },
+            { header: 'Rider', key: 'vendor' },
+            { header: 'Status', key: 'status' },
+            { header: 'Amount', key: 'total' }
+        ];
+
+        const data = (activeTab === 'active' ? inTransitOrders : deliveredOrders).map(o => ({
+            ...o,
+            franchise: o.franchise || 'Main Shop',
+            vendor: o.vendor || 'Not Assigned'
+        }));
+
+        exportToCSV(`Delivery_Report_${activeTab}`, columns, data);
+    };
 
     useEffect(() => {
         const timer = setTimeout(() => setIsLoading(false), 700);
@@ -143,7 +164,10 @@ export default function DeliveryMonitoringScreen() {
                                 Past Orders
                             </button>
                         </div>
-                        <button className="bg-slate-900 text-white px-4 py-2 rounded-sm text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-slate-800 transition-colors">
+                        <button
+                            onClick={handleExport}
+                            className="bg-slate-900 text-white px-4 py-2 rounded-sm text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-slate-800 transition-colors"
+                        >
                             <Download size={13} />
                             Download Report
                         </button>

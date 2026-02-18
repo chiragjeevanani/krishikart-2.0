@@ -30,20 +30,6 @@ export default function FilterBar({
                     <button className="px-3 py-1 text-[10px] font-bold text-slate-500 hover:text-slate-900 transition-colors">Verified</button>
                 </div>
 
-                <div className="h-4 w-px bg-slate-300" />
-
-                {/* Date Controls */}
-                <button className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-sm text-[10px] font-bold text-slate-600 hover:bg-slate-50 transition-colors">
-                    <Calendar size={13} className="text-slate-400" />
-                    <span>Last 30 Days</span>
-                    <ChevronDown size={12} className="text-slate-300" />
-                </button>
-
-                {/* More Filters */}
-                <button className="flex items-center gap-2 px-3 py-1.5 bg-slate-900 text-white rounded-sm text-[10px] font-bold hover:bg-slate-800 transition-colors">
-                    <Filter size={13} />
-                    <span>Advanced</span>
-                </button>
             </div>
 
             <div className="flex items-center gap-2">

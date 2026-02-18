@@ -26,10 +26,75 @@ import { cn } from '@/lib/utils';
 import MetricRow from '../components/cards/MetricRow';
 import FilterBar from '../components/tables/FilterBar';
 
+import { exportToCSV } from '@/lib/exportToCSV';
+
 export default function LedgerSystemScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('hotel');
     const [searchTerm, setSearchTerm] = useState('');
+    const [dateRange, setDateRange] = useState({ start: '', end: '' });
+    const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+    const [activeRangeLabel, setActiveRangeLabel] = useState('All Time');
+
+    const quickRanges = [
+        { label: 'Today', getValue: () => ({ start: new Date().toISOString().split('T')[0], end: new Date().toISOString().split('T')[0] }) },
+        {
+            label: 'Yesterday', getValue: () => {
+                const d = new Date(); d.setDate(d.getDate() - 1);
+                const s = d.toISOString().split('T')[0];
+                return { start: s, end: s };
+            }
+        },
+        {
+            label: 'Last 7 Days', getValue: () => {
+                const end = new Date();
+                const start = new Date(); start.setDate(start.getDate() - 7);
+                return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+            }
+        },
+        {
+            label: 'Last 30 Days', getValue: () => {
+                const end = new Date();
+                const start = new Date(); start.setDate(start.getDate() - 30);
+                return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+            }
+        },
+        {
+            label: 'This Month', getValue: () => {
+                const now = new Date();
+                const start = new Date(now.getFullYear(), now.getMonth(), 1);
+                const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+            }
+        },
+        { label: 'All Time', getValue: () => ({ start: '', end: '' }) }
+    ];
+
+    const handleQuickRange = (range) => {
+        const value = range.getValue();
+        setDateRange(value);
+        setActiveRangeLabel(range.label);
+        setIsDatePickerOpen(false);
+    };
+
+    const handleExport = () => {
+        const columns = [
+            { header: 'ID', key: 'id' },
+            { header: 'Source/Entity', key: 'name' },
+            { header: 'Type', key: 'type' },
+            { header: 'Amount', key: 'amount' },
+            { header: 'Date', key: 'date' },
+            { header: 'Status', key: 'status' }
+        ];
+
+        const data = currentTransactions.map(txn => ({
+            ...txn,
+            name: txn.hotelName || txn.vendorName || txn.franchiseName || txn.source || 'N/A',
+            amount: `₹${txn.amount?.toLocaleString()}`
+        }));
+
+        exportToCSV(`Ledger_${activeTab}`, columns, data);
+    };
 
     useEffect(() => {
         const timer = setTimeout(() => setIsLoading(false), 800);
@@ -55,7 +120,15 @@ export default function LedgerSystemScreen() {
 
     const currentTransactions = getLedgerData().filter(txn => {
         const name = txn.hotelName || txn.vendorName || txn.franchiseName || txn.source || '';
-        return name.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase());
+
+        let matchesDate = true;
+        if (dateRange.start && dateRange.end) {
+            const txnDate = new Date(txn.date);
+            matchesDate = txnDate >= new Date(dateRange.start) && txnDate <= new Date(dateRange.end);
+        }
+
+        return matchesSearch && matchesDate;
     });
 
     if (isLoading && !currentTransactions.length) {
@@ -85,11 +158,105 @@ export default function LedgerSystemScreen() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <button className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-sm text-[10px] font-bold text-slate-600 hover:bg-slate-50 transition-colors">
-                            <Calendar size={13} className="text-slate-400" />
-                            <span>Jan 2026 Fiscal</span>
-                        </button>
-                        <button className="bg-slate-900 text-white px-3 py-1.5 rounded-sm text-[11px] font-bold flex items-center gap-2 hover:bg-slate-800 transition-colors uppercase tracking-widest">
+                        <div className="relative">
+                            <button
+                                onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+                                className="flex flex-col items-center justify-center min-w-[100px] px-4 py-1.5 bg-white border border-slate-200 rounded-sm hover:bg-slate-50 transition-all group shadow-sm active:scale-95"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <Calendar size={13} className="text-slate-400 group-hover:text-slate-900 transition-colors" />
+                                    <span className="text-[11px] font-black text-slate-900 uppercase tracking-tight leading-none">
+                                        {activeRangeLabel}
+                                    </span>
+                                    <ChevronRight size={10} className={cn("text-slate-400 transition-transform duration-200", isDatePickerOpen ? "rotate-90" : "rotate-0")} />
+                                </div>
+                                {dateRange.start && (
+                                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                                        {dateRange.start} → {dateRange.end}
+                                    </span>
+                                )}
+                            </button>
+
+                            <AnimatePresence>
+                                {isDatePickerOpen && (
+                                    <>
+                                        <motion.div
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            onClick={() => setIsDatePickerOpen(false)}
+                                            className="fixed inset-0 z-40 bg-slate-900/5 backdrop-blur-[1px]"
+                                        />
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            className="absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-sm shadow-2xl z-50 p-4 font-sans origin-top-right"
+                                        >
+                                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Select Period</h4>
+
+                                            <div className="grid grid-cols-2 gap-1 mb-4">
+                                                {quickRanges.map((range) => (
+                                                    <button
+                                                        key={range.label}
+                                                        onClick={() => handleQuickRange(range)}
+                                                        className={cn(
+                                                            "px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-left rounded-sm transition-all",
+                                                            activeRangeLabel === range.label
+                                                                ? "bg-slate-900 text-white shadow-lg"
+                                                                : "bg-slate-50 text-slate-600 hover:bg-slate-100"
+                                                        )}
+                                                    >
+                                                        {range.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            <div className="border-t border-slate-100 pt-4 mt-2">
+                                                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Custom Range</h4>
+                                                <div className="space-y-3">
+                                                    <div className="space-y-1">
+                                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">From</label>
+                                                        <input
+                                                            type="date"
+                                                            value={dateRange.start}
+                                                            onChange={(e) => {
+                                                                setDateRange(prev => ({ ...prev, start: e.target.value }));
+                                                                setActiveRangeLabel('Custom');
+                                                            }}
+                                                            className="w-full bg-slate-50 border border-slate-100 rounded-sm py-1.5 px-3 text-[10px] font-bold text-slate-900 outline-none focus:border-slate-400 transition-all font-sans"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">To</label>
+                                                        <input
+                                                            type="date"
+                                                            value={dateRange.end}
+                                                            onChange={(e) => {
+                                                                setDateRange(prev => ({ ...prev, end: e.target.value }));
+                                                                setActiveRangeLabel('Custom');
+                                                            }}
+                                                            className="w-full bg-slate-50 border border-slate-100 rounded-sm py-1.5 px-3 text-[10px] font-bold text-slate-900 outline-none focus:border-slate-400 transition-all font-sans"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                onClick={() => setIsDatePickerOpen(false)}
+                                                className="w-full mt-6 bg-slate-900 text-white py-2 text-[10px] font-black uppercase tracking-widest rounded-sm hover:bg-slate-800 transition-all shadow-lg active:scale-95"
+                                            >
+                                                Apply Filter
+                                            </button>
+                                        </motion.div>
+                                    </>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                        <button
+                            onClick={handleExport}
+                            className="bg-slate-900 text-white px-4 py-1.5 h-[38px] rounded-sm text-[11px] font-bold flex items-center gap-2 hover:bg-slate-800 transition-colors uppercase tracking-widest shadow-sm active:scale-95"
+                        >
                             <Download size={13} />
                             Export Ledger
                         </button>
