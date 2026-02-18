@@ -220,40 +220,7 @@ const OrderDetailModal = ({ isOpen, onClose, orderId }) => {
                                                 </div>
                                             </div>
 
-                                            {/* Management Actions */}
-                                            <div className="bg-white border border-slate-200 rounded-sm p-4 shadow-sm">
-                                                <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-4">Command Center</h2>
-                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                                    <button
-                                                        onClick={() => handleUpdateStatus('Confirmed')}
-                                                        className="p-2.5 bg-white border border-slate-200 rounded-sm flex flex-col items-center justify-center gap-1.5 hover:border-slate-900 transition-all text-slate-600 hover:text-slate-900"
-                                                    >
-                                                        <CheckCircle2 size={16} />
-                                                        <span className="text-[8px] font-black uppercase tracking-widest">Confirm</span>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleUpdateStatus('Processing')}
-                                                        className="p-2.5 bg-white border border-slate-200 rounded-sm flex flex-col items-center justify-center gap-1.5 hover:border-slate-900 transition-all text-slate-600 hover:text-slate-900"
-                                                    >
-                                                        <Clock size={16} />
-                                                        <span className="text-[8px] font-black uppercase tracking-widest">Process</span>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleUpdateStatus('Delivered')}
-                                                        className="p-2.5 bg-white border border-slate-200 rounded-sm flex flex-col items-center justify-center gap-1.5 hover:border-slate-900 transition-all text-slate-600 hover:text-slate-900"
-                                                    >
-                                                        <ShieldCheck size={16} />
-                                                        <span className="text-[8px] font-black uppercase tracking-widest">Complete</span>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleUpdateStatus('Cancelled')}
-                                                        className="p-2.5 bg-white border border-red-100 rounded-sm flex flex-col items-center justify-center gap-1.5 hover:border-red-500 transition-all text-slate-400 hover:text-red-600"
-                                                    >
-                                                        <AlertCircle size={16} />
-                                                        <span className="text-[8px] font-black uppercase tracking-widest">Cancel</span>
-                                                    </button>
-                                                </div>
-                                            </div>
+
                                         </div>
 
                                         {/* Right Column - Customer & Info */}
@@ -306,15 +273,27 @@ const OrderDetailModal = ({ isOpen, onClose, orderId }) => {
                                                             <Building2 size={16} />
                                                         </div>
                                                         <div>
-                                                            <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-tight">{order.franchiseId?.storeName || 'Primary Facility'}</h4>
+                                                            <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-tight">{order.franchiseId?.shopName || order.franchiseId?.storeName || 'Primary Facility'}</h4>
                                                             <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Assigned Unit</p>
                                                         </div>
                                                     </div>
                                                 ) : (
-                                                    <div className="p-4 border border-dashed border-slate-200 rounded-sm flex flex-col items-center text-center gap-2">
-                                                        <AlertCircle size={16} className="text-slate-300" />
-                                                        <p className="text-[9px] font-black text-slate-900 uppercase tracking-widest">Unassigned</p>
-                                                    </div>
+                                                    ['Confirmed', 'Processing', 'Out for Delivery', 'Delivered', 'Completed'].includes(order.orderStatus) ? (
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 bg-emerald-50 rounded-sm flex items-center justify-center text-emerald-600 border border-emerald-100">
+                                                                <Building2 size={16} />
+                                                            </div>
+                                                            <div>
+                                                                <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-tight">Appzeto Fulfillment</h4>
+                                                                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Central Facility</p>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="p-4 border border-dashed border-slate-200 rounded-sm flex flex-col items-center text-center gap-2">
+                                                            <AlertCircle size={16} className="text-slate-300" />
+                                                            <p className="text-[9px] font-black text-slate-900 uppercase tracking-widest">Unassigned</p>
+                                                        </div>
+                                                    )
                                                 )}
                                             </div>
 

@@ -17,6 +17,7 @@ const setupRoutes = (app) => {
     app.use("/franchise", franchiseRoutes);
     app.use("/catalog", catalogRoutes);
     app.use("/products", productRoutes);
+    app.use("/products", productRoutes);
     app.use("/orders", orderRoutes);
     app.use("/payment", paymentRoutes);
     app.use("/procurement", procurementRoutes);

@@ -26,6 +26,7 @@ import { useAdmin } from '../contexts/AdminContext';
 import { cn } from '@/lib/utils';
 import VendorOnboardingDrawer from '../components/drawers/VendorOnboardingDrawer';
 import ApprovalDetailDrawer from '../components/drawers/ApprovalDetailDrawer';
+import VendorProductDrawer from '../components/drawers/VendorProductDrawer';
 
 // Enterprise Components
 import MetricRow from '../components/cards/MetricRow';
@@ -37,6 +38,7 @@ export default function VendorManagementScreen() {
     const [searchTerm, setSearchTerm] = useState('');
     const [isOnboardOpen, setIsOnboardOpen] = useState(false);
     const [selectedVendor, setSelectedVendor] = useState(null);
+    const [productDrawerVendor, setProductDrawerVendor] = useState(null);
 
     useEffect(() => {
         fetchVendors(); // Fetch all vendors
@@ -68,16 +70,7 @@ export default function VendorManagementScreen() {
             key: 'farmLocation',
             render: (val) => <span className="text-[10px] font-bold text-slate-600 bg-slate-50 px-2 py-0.5 rounded-sm border border-slate-200 uppercase tracking-tight">{val || 'N/A'}</span>
         },
-        {
-            header: 'Trust Score',
-            key: 'rating',
-            render: (val) => (
-                <div className="flex items-center gap-1.5">
-                    <Star size={10} className="text-amber-500 fill-amber-500" />
-                    <span className="text-[11px] font-bold text-slate-900 tabular-nums">{val}</span>
-                </div>
-            )
-        },
+
         {
             header: 'Mobile',
             key: 'mobile',
@@ -97,6 +90,24 @@ export default function VendorManagementScreen() {
                     val === 'active' ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-rose-50 text-rose-600 border-rose-100"
                 )}>
                     {val}
+                </div>
+            )
+        },
+        {
+            header: 'Actions',
+            key: 'actions',
+            render: (_, row) => (
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setProductDrawerVendor(row);
+                        }}
+                        className="px-3 py-1.5 bg-slate-900 text-white rounded-sm hover:bg-slate-800 transition-colors flex items-center gap-2 shadow-sm group"
+                    >
+                        <Package size={12} className="text-slate-200 group-hover:text-white" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest">Assign Items</span>
+                    </button>
                 </div>
             )
         }

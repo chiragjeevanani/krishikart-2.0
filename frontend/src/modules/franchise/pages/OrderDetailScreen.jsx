@@ -47,12 +47,17 @@ export default function OrderDetailScreen() {
             const response = await api.get(`/orders/franchise/${id}`);
             if (response.data.success) {
                 const o = response.data.result;
+                console.log('Order API Data:', o);
+                console.log('Fields:', { subtotal: o.subtotal, deliveryFee: o.deliveryFee, tax: o.tax, total: o.totalAmount, paymentStatus: o.paymentStatus });
                 setOrder({
                     id: o._id,
                     customer: o.userId?.fullName || 'Guest Client',
                     mobile: o.userId?.mobile || 'N/A',
                     address: o.shippingAddress || o.userId?.address || 'N/A',
                     total: o.totalAmount,
+                    subtotal: o.subtotal,
+                    deliveryFee: o.deliveryFee,
+                    tax: o.tax,
                     status: o.orderStatus?.toLowerCase() || 'pending',
                     items: o.items.map(i => ({
                         name: i.name,
@@ -61,6 +66,7 @@ export default function OrderDetailScreen() {
                     })),
                     createdAt: o.createdAt,
                     paymentMethod: o.paymentMethod,
+                    paymentStatus: o.paymentStatus || 'Pending',
                     franchiseId: o.franchiseId
                 });
             }
@@ -279,12 +285,31 @@ export default function OrderDetailScreen() {
                                     </div>
                                 ))}
                             </div>
-                            <div className="bg-slate-900 p-6 flex items-center justify-between text-white">
-                                <div className="flex flex-col">
-                                    <span className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.3em] mb-1">Total Bill</span>
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase">Including all charges</span>
+                            <div className="bg-slate-900 p-6 flex flex-col gap-3">
+                                <div className="flex items-center justify-between text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                                    <span>Subtotal</span>
+                                    <span className="tabular-nums">₹{order.subtotal?.toLocaleString()}</span>
                                 </div>
-                                <span className="text-2xl font-black tracking-tighter tabular-nums">₹{order.total.toLocaleString()}</span>
+                                <div className="flex items-center justify-between text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                                    <span>Delivery Fee</span>
+                                    <span className="tabular-nums">₹{order.deliveryFee?.toLocaleString() || '0'}</span>
+                                </div>
+                                {order.tax > 0 && (
+                                    <div className="flex items-center justify-between text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                                        <span>Tax</span>
+                                        <span className="tabular-nums">₹{order.tax?.toLocaleString()}</span>
+                                    </div>
+                                )}
+                                <div className="h-px bg-slate-800 my-1" />
+                                <div className="flex items-center justify-between">
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Total</span>
+                                        <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">
+                                            {order.paymentMethod} • {order.paymentStatus}
+                                        </span>
+                                    </div>
+                                    <span className="text-xl font-black text-white tracking-tighter tabular-nums">₹{order.total.toLocaleString()}</span>
+                                </div>
                             </div>
                         </div>
                     </div>

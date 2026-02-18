@@ -126,8 +126,16 @@ function App() {
           {/* Franchise Module */}
           <Route path="/franchise">
             <Route index element={<Navigate to="login" replace />} />
-            <Route path="login" element={<FranchiseLogin />} />
-            <Route path="signup" element={<FranchiseSignup />} />
+            <Route path="login" element={
+              <FranchiseAuthProvider>
+                <FranchiseLogin />
+              </FranchiseAuthProvider>
+            } />
+            <Route path="signup" element={
+              <FranchiseAuthProvider>
+                <FranchiseSignup />
+              </FranchiseAuthProvider>
+            } />
             <Route element={<FranchiseProviders><FranchiseLayout /></FranchiseProviders>}>
               <Route path="dashboard" element={<FranchiseDashboard />} />
               <Route path="orders" element={<FranchiseOrders />} />

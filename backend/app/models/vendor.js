@@ -77,6 +77,11 @@ const vendorSchema = new mongoose.Schema(
       bankName: { type: String, required: true },
     },
 
+    products: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product'
+    }],
+
     password: {
       type: String,
       required: true,

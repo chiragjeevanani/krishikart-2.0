@@ -1,5 +1,6 @@
 import { Route } from 'react-router-dom';
 import VendorLayout from '../components/layout/VendorLayout';
+import { OrderProvider } from '../../user/contexts/OrderContext';
 import DashboardScreen from '../pages/DashboardScreen';
 import LoginScreen from '../pages/LoginScreen';
 import ForgotPasswordScreen from '../pages/ForgotPasswordScreen';
@@ -18,7 +19,11 @@ import * as Placeholders from '../pages/Placeholders';
 
 // For now using placeholders, will replace with real components as built
 export const vendorRoutes = (
-    <Route path="/vendor" element={<VendorLayout />}>
+    <Route path="/vendor" element={
+        <OrderProvider>
+            <VendorLayout />
+        </OrderProvider>
+    }>
         <Route index element={<DashboardScreen />} />
         <Route path="login" element={<LoginScreen />} />
         <Route path="forgot-password" element={<ForgotPasswordScreen />} />

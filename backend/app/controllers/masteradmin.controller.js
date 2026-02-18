@@ -61,6 +61,32 @@ export const getVendorDetails = async (req, res) => {
     }
 };
 
+export const assignProductsToVendor = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { productIds } = req.body;
+
+        if (!Array.isArray(productIds)) {
+            return handleResponse(res, 400, "productIds must be an array");
+        }
+
+        const vendor = await Vendor.findByIdAndUpdate(
+            id,
+            { products: productIds },
+            { new: true }
+        ).select("-password");
+
+        if (!vendor) {
+            return handleResponse(res, 404, "Vendor not found");
+        }
+
+        return handleResponse(res, 200, "Products assigned to vendor successfully", vendor);
+    } catch (err) {
+        console.error(err);
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
 /* ================= FRANCHISE MANAGEMENT ================= */
 
 export const getAllFranchises = async (req, res) => {

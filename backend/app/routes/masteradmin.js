@@ -19,7 +19,8 @@ import {
   reviewFranchiseKYC,
   getAllCustomers,
   getCustomerDetails,
-  updateCustomerCredit
+  updateCustomerCredit,
+  assignProductsToVendor
 } from "../controllers/masteradmin.controller.js";
 
 import { protectMasterAdmin } from "../middlewares/masteradmin.auth.js";
@@ -38,6 +39,7 @@ router.post("/reset-password", resetMasterAdminPassword);
 router.get("/vendors", protectMasterAdmin, getAllVendors);
 router.get("/vendors/:id", protectMasterAdmin, getVendorDetails);
 router.put("/vendors/:id/status", protectMasterAdmin, updateVendorStatus);
+router.put("/vendors/:id/products", protectMasterAdmin, assignProductsToVendor);
 
 /* 🏪 Franchise Management */
 router.get("/franchises", protectMasterAdmin, getAllFranchises);

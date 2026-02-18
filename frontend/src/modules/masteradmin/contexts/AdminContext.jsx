@@ -67,6 +67,33 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
+    const fetchProducts = async () => {
+        try {
+            const response = await api.get('/products');
+            if (response.data.success) {
+                return response.data.results || response.data.result || [];
+            }
+            return [];
+        } catch (error) {
+            console.error('Fetch products error:', error);
+            return [];
+        }
+    };
+
+    const assignProductsToVendor = async (vendorId, productIds) => {
+        try {
+            const response = await api.put(`/masteradmin/vendors/${vendorId}/products`, { productIds });
+            if (response.data.success) {
+                toast.success('Products assigned successfully');
+                return true;
+            }
+        } catch (error) {
+            console.error('Assign products error:', error);
+            toast.error(error.response?.data?.message || 'Assignment failed');
+            return false;
+        }
+    };
+
     return (
         <AdminContext.Provider value={{
             vendors,
@@ -75,7 +102,9 @@ export const AdminProvider = ({ children }) => {
             fetchVendors,
             fetchPendingFranchises,
             updateVendorStatus,
-            reviewFranchiseKYC
+            reviewFranchiseKYC,
+            fetchProducts,
+            assignProductsToVendor
         }}>
             {children}
         </AdminContext.Provider>
