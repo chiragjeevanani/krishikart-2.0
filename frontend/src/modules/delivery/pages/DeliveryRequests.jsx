@@ -5,31 +5,21 @@ import { deliveryRequests as initialRequests } from '../utils/mockData';
 import DeliveryCard from '../components/cards/DeliveryCard';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../utils/constants';
+import { useDeliveryOrders } from '../contexts/DeliveryOrderContext';
 
 const DeliveryRequests = () => {
-    const [requests, setRequests] = useState(initialRequests);
-    const [refreshing, setRefreshing] = useState(false);
+    const { dispatchedOrders: requests, loading, fetchDispatchedOrders: handleRefresh } = useDeliveryOrders();
     const navigate = useNavigate();
 
-    const handleRefresh = () => {
-        setRefreshing(true);
-        setTimeout(() => {
-            setRequests(initialRequests);
-            setRefreshing(false);
-        }, 1000);
-    };
-
     const handleAccept = (id) => {
-        // In a real app, this would hit an API
-        setRequests(requests.filter(req => req.id !== id));
-        // Navigate to active delivery as feedback
-        setTimeout(() => {
-            navigate(ROUTES.ACTIVE);
-        }, 400);
+        // In this flow, "Accept" just navigates to the active delivery.
+        // We'll store the ID in localStorage or state to simulate "active"
+        localStorage.setItem('activeDeliveryId', id);
+        navigate(ROUTES.ACTIVE);
     };
 
     const handleReject = (id) => {
-        setRequests(requests.filter(req => req.id !== id));
+        // Just local filter for now
     };
 
     return (

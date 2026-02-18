@@ -30,7 +30,7 @@ import FilterBar from '../components/tables/FilterBar';
 
 export default function OrdersScreen() {
     const navigate = useNavigate();
-    const { orders: allOrders, updateOrderStatus } = useFranchiseOrders();
+    const { orders: allOrders, updateOrderStatus, acceptOrder, stats } = useFranchiseOrders();
     const { inventory, deductStock } = useInventory();
     const [activeTab, setActiveTab] = useState('new');
     const [searchQuery, setSearchQuery] = useState('');
@@ -46,7 +46,8 @@ export default function OrdersScreen() {
         if (!order) return;
 
         // Stock Validation Logic (Simplified for UI display)
-        if (newStatus === 'preparing' || newStatus === 'out_for_delivery') {
+        // Stock Validation Logic (Simplified for UI display)
+        if (newStatus === 'Packed' || newStatus === 'Dispatched') {
             const itemsToValidate = order.items.map(i => ({
                 id: i.id || i.productId,
                 qty: i.quantity || i.qty,
@@ -64,7 +65,7 @@ export default function OrdersScreen() {
             }
         }
 
-        if (newStatus === 'out_for_delivery') {
+        if (newStatus === 'Dispatched') {
             deductStock(order.items.map(i => ({
                 id: i.id || i.productId,
                 qty: i.quantity || i.qty
@@ -76,18 +77,18 @@ export default function OrdersScreen() {
 
     const tabs = [
         { id: 'new', label: 'New', icon: ShoppingBag },
-        { id: 'preparing', label: 'Preparing', icon: Zap },
-        { id: 'ready', label: 'Dispatch', icon: Truck },
-        { id: 'delivered', label: 'Completed', icon: History }
+        { id: 'packing', label: 'Packing', icon: Zap },
+        { id: 'dispatch', label: 'Dispatch', icon: Truck },
+        { id: 'completed', label: 'Completed', icon: History }
     ];
 
     const filteredOrders = allOrders.filter(order => {
         let matchesTab = false;
         const status = (order.orderStatus || order.status || '').toLowerCase();
-        if (activeTab === 'new') matchesTab = status === 'pending' || status === 'placed' || status === 'new' || status === 'processing';
-        else if (activeTab === 'preparing') matchesTab = status === 'processing' || status === 'confirmed' || status === 'preparing';
-        else if (activeTab === 'ready') matchesTab = status === 'ready' || status === 'out for delivery';
-        else if (activeTab === 'delivered') matchesTab = status === 'delivered';
+        if (activeTab === 'new') matchesTab = status === 'placed' && !order.franchiseId;
+        else if (activeTab === 'packing') matchesTab = status === 'placed' && !!order.franchiseId;
+        else if (activeTab === 'dispatch') matchesTab = status === 'packed';
+        else if (activeTab === 'completed') matchesTab = ['dispatched', 'delivered', 'received'].includes(status);
 
         const hotelName = order.hotelName || order.userId?.fullName || 'Unknown';
         const orderId = (order._id || order.id || '').toString();
@@ -139,25 +140,25 @@ export default function OrdersScreen() {
             align: 'right',
             render: (_, row) => (
                 <div className="flex items-center justify-end gap-2">
-                    {row.status === 'new' && (
+                    {activeTab === 'new' && (
                         <button
-                            onClick={() => handleAction(row.id, 'preparing')}
+                            onClick={() => acceptOrder(row.id)}
                             className="p-1 px-3 text-[9px] font-black uppercase text-emerald-600 border border-emerald-600 rounded-sm hover:bg-emerald-600 hover:text-white transition-all"
                         >
                             Accept
                         </button>
                     )}
-                    {row.status === 'preparing' && (
+                    {activeTab === 'packing' && (
                         <button
-                            onClick={() => handleAction(row.id, 'ready')}
+                            onClick={() => handleAction(row.id, 'Packed')}
                             className="p-1 px-3 text-[9px] font-black uppercase text-blue-600 border border-blue-600 rounded-sm hover:bg-blue-600 hover:text-white transition-all"
                         >
-                            Ready
+                            Mark Packed
                         </button>
                     )}
-                    {row.status === 'ready' && (
+                    {activeTab === 'dispatch' && (
                         <button
-                            onClick={() => handleAction(row.id, 'out_for_delivery')}
+                            onClick={() => handleAction(row.id, 'Dispatched')}
                             className="p-1 px-3 text-[9px] font-black uppercase text-orange-600 border border-orange-600 rounded-sm hover:bg-orange-600 hover:text-white transition-all"
                         >
                             Dispatch
@@ -216,27 +217,27 @@ export default function OrdersScreen() {
             <div className="bg-white border-b border-slate-200 grid grid-cols-1 md:grid-cols-4">
                 <MetricRow
                     label="New Orders"
-                    value={allOrders.filter(o => o.status === 'new').length}
+                    value={stats.newOrders}
                     trend="Stable"
                     icon={ShoppingBag}
                 />
                 <MetricRow
-                    label="Success Rate"
-                    value="94.2%"
-                    change={2.1}
+                    label="Packing"
+                    value={stats.packing}
+                    change={0}
                     trend="up"
                     icon={CheckCircle2}
                 />
                 <MetricRow
-                    label="Avg Prep Time"
-                    value="18m"
-                    change={-5.4}
+                    label="Ready to Dispatch"
+                    value={stats.dispatch}
+                    change={0}
                     trend="up"
                     icon={Clock}
                 />
                 <MetricRow
-                    label="Total Sales"
-                    value={`₹${allOrders.reduce((acc, curr) => acc + (curr.total || 0), 0).toLocaleString()}`}
+                    label="Total Revenue"
+                    value={`₹${stats.revenue.toLocaleString()}`}
                     trend="Stable"
                     icon={IndianRupee}
                 />
@@ -313,6 +314,6 @@ export default function OrdersScreen() {
                     </AnimatePresence>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

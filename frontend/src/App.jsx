@@ -15,6 +15,7 @@ import EditProfileScreen from './modules/user/pages/EditProfileScreen'
 import AddressBookScreen from './modules/user/pages/AddressBookScreen'
 import OrderTrackingScreen from './modules/user/pages/OrderTrackingScreen'
 import OrderSummaryScreen from './modules/user/pages/OrderSummaryScreen'
+import OrderDetailScreen from './modules/user/pages/OrderDetailScreen'
 import WalletScreen from './modules/user/pages/WalletScreen'
 import NotificationsScreen from './modules/user/pages/NotificationsScreen'
 import FavoritesScreen from './modules/user/pages/FavoritesScreen'
@@ -56,6 +57,7 @@ import { deliveryRoutes } from './modules/delivery/routes/deliveryRoutes';
 import { CartProvider } from './modules/user/contexts/CartContext'
 import { OrderProvider } from '@/modules/user/contexts/OrderContext'
 import { WalletProvider } from './modules/user/contexts/WalletContext'
+import { DeliveryOrderProvider } from './modules/delivery/contexts/DeliveryOrderContext'
 import { Toaster } from 'sonner'
 
 const UserProviders = ({ children }) => (
@@ -86,6 +88,12 @@ const FranchiseProviders = ({ children }) => (
   </FranchiseAuthProvider>
 );
 
+const DeliveryProviders = ({ children }) => (
+  <DeliveryOrderProvider>
+    {children}
+  </DeliveryOrderProvider>
+);
+
 function App() {
   return (
     <BrowserRouter>
@@ -113,6 +121,7 @@ function App() {
             <Route path="/address-book" element={<AddressBookScreen />} />
             <Route path="/track-order/:id" element={<OrderTrackingScreen />} />
             <Route path="/order-summary/:id" element={<OrderSummaryScreen />} />
+            <Route path="/order-detail/:id" element={<OrderDetailScreen />} />
             <Route path="/wallet" element={<WalletScreen />} />
             <Route path="/notifications" element={<NotificationsScreen />} />
             <Route path="/favorites" element={<FavoritesScreen />} />
@@ -145,7 +154,11 @@ function App() {
 
           {masterAdminRoutes}
           {vendorRoutes}
-          {deliveryRoutes}
+          <Route path="/delivery/*">
+            <Route element={<DeliveryProviders />}>
+              {deliveryRoutes}
+            </Route>
+          </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

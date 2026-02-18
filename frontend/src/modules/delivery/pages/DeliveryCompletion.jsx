@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Camera,
@@ -9,10 +9,10 @@ import {
     ChevronLeft,
     X
 } from 'lucide-react';
-import { activeDelivery } from '../utils/mockData';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../utils/constants';
 import { useWallet } from '../../user/contexts/WalletContext';
+import { useDeliveryOrders } from '../contexts/DeliveryOrderContext';
 
 const DeliveryCompletion = () => {
     const [photo, setPhoto] = useState(null);
@@ -20,11 +20,27 @@ const DeliveryCompletion = () => {
     const [isSuccess, setIsSuccess] = useState(false);
     const navigate = useNavigate();
     const { addLoyaltyPoints, loyaltyConfig } = useWallet();
+    const { dispatchedOrders, updateStatus } = useDeliveryOrders();
+    const [order, setOrder] = useState(null);
 
-    const handleComplete = () => {
-        // Award points based on admin configuration (percentage of total bill)
+    useEffect(() => {
+        const activeOrderId = localStorage.getItem('activeDeliveryId');
+        if (activeOrderId) {
+            const found = dispatchedOrders.find(o => o._id === activeOrderId);
+            if (found) setOrder(found);
+        }
+    }, [dispatchedOrders]);
+
+    const handleComplete = async () => {
+        if (!order) return;
+
+        // Update status to Delivered in backend
+        await updateStatus(order._id, 'Delivered');
+        localStorage.removeItem('activeDeliveryId');
+
+        // Award points based on admin configuration
         const rate = loyaltyConfig?.awardRate || 5;
-        const points = Math.max(10, Math.floor((activeDelivery.totalBill * rate) / 100));
+        const points = Math.max(10, Math.floor(((order.totalAmount || 0) * rate) / 100));
         addLoyaltyPoints(points);
 
         setIsSuccess(true);
@@ -69,12 +85,12 @@ const DeliveryCompletion = () => {
                 >
                     <h1 className="text-3xl font-bold text-white mb-2">Excellent Work!</h1>
                     <p className="text-white/80 max-w-[240px] mx-auto">
-                        Order successfully delivered to {activeDelivery.drop.name}.
+                        Order successfully delivered to {order?.userId?.fullName || 'Customer'}.
                     </p>
 
                     <div className="mt-8 bg-white/20 backdrop-blur-md px-6 py-4 rounded-2xl border border-white/30">
                         <p className="text-xs text-white/70 uppercase font-bold tracking-widest mb-1">Earned Today</p>
-                        <p className="text-2xl font-bold text-white">₹915.00</p>
+                        <p className="text-2xl font-bold text-white">₹{order?.totalAmount || '0.00'}</p>
                     </div>
                 </motion.div>
             </div>
@@ -101,13 +117,13 @@ const DeliveryCompletion = () => {
                             <User className="text-primary w-6 h-6" />
                         </div>
                         <div>
-                            <h3 className="text-sm font-bold text-foreground">{activeDelivery.drop.name}</h3>
-                            <p className="text-xs text-muted-foreground">{activeDelivery.id} • Cash on Delivery</p>
+                            <h3 className="text-sm font-bold text-foreground">{order?.userId?.fullName}</h3>
+                            <p className="text-xs text-muted-foreground">{order?._id} • {order?.paymentMethod}</p>
                         </div>
                     </div>
                     <div className="text-right">
                         <p className="text-xs text-muted-foreground">Amount</p>
-                        <p className="text-sm font-bold text-primary">₹{activeDelivery.totalBill}</p>
+                        <p className="text-sm font-bold text-primary">₹{order?.totalAmount}</p>
                     </div>
                 </div>
 
@@ -149,8 +165,8 @@ const DeliveryCompletion = () => {
 
                     <div className="bg-white rounded-2xl border border-border p-5">
                         <div className="flex justify-between items-center mb-4">
-                            <span className="text-xs font-bold text-foreground">Collect Cash</span>
-                            <span className="text-lg font-bold text-primary">₹{activeDelivery.totalBill}</span>
+                            <span className="text-xs font-bold text-foreground">Collect Payment</span>
+                            <span className="text-lg font-bold text-primary">₹{order?.totalAmount}</span>
                         </div>
                         <div className="flex gap-2 p-1 bg-muted rounded-xl">
                             <button className="flex-1 py-1.5 text-[10px] font-bold bg-white rounded-lg shadow-sm text-primary uppercase tracking-wider">Cash</button>
