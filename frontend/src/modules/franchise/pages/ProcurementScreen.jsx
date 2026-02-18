@@ -28,6 +28,7 @@ import { useProcurement } from '../contexts/ProcurementContext';
 
 export default function ProcurementScreen() {
     const navigate = useNavigate();
+    const { addRequest, cart, setCart, clearCart } = useProcurement();
     const { addRequest, procurementRequests } = useProcurement();
     const [searchTerm, setSearchTerm] = useState('');
     const [activeTab, setActiveTab] = useState('catalog');
@@ -142,6 +143,8 @@ export default function ProcurementScreen() {
         try {
             await addRequest(requestData);
             setOrderSuccess(true);
+            clearCart();
+        }, 2000);
             setCart({});
         } catch (error) {
             console.error("Order placement failed", error);
