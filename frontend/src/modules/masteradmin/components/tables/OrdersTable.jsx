@@ -12,6 +12,7 @@ import {
     Package,
     AlertCircle
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 const PaymentBadge = ({ method }) => {
@@ -31,7 +32,9 @@ const PaymentBadge = ({ method }) => {
     );
 };
 
-export default function OrdersTable({ orders, onAction }) {
+export default function OrdersTable({ orders, onAction, onOrderClick }) {
+    const navigate = useNavigate();
+
     return (
         <div className="overflow-x-auto no-scrollbar">
             <table className="w-full text-left border-collapse">
@@ -51,7 +54,8 @@ export default function OrdersTable({ orders, onAction }) {
                     {orders.map((order) => (
                         <tr
                             key={order._id}
-                            className="group hover:bg-slate-50/80 transition-colors"
+                            onClick={() => onOrderClick?.(order._id)}
+                            className="group hover:bg-slate-50/80 transition-colors cursor-pointer"
                         >
                             <td className="px-4 py-4">
                                 <div className="flex flex-col">
@@ -98,17 +102,29 @@ export default function OrdersTable({ orders, onAction }) {
                                 <div className="flex items-center justify-end gap-1">
                                     {(order.orderStatus === 'Placed' || order.orderStatus === 'Pending') && (
                                         <button
-                                            onClick={() => onAction?.(order._id, 'Confirmed')}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onAction?.(order._id, 'Confirmed');
+                                            }}
                                             className="px-3 py-1 bg-slate-900 text-white text-[9px] font-black rounded-sm hover:bg-slate-800 transition-all flex items-center gap-1.5 uppercase tracking-widest"
                                         >
                                             <ShoppingBag size={10} />
                                             Confirm
                                         </button>
                                     )}
-                                    <button className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-sm transition-all">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onOrderClick?.(order._id);
+                                        }}
+                                        className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-sm transition-all"
+                                    >
                                         <ExternalLink size={14} />
                                     </button>
-                                    <button className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-sm transition-all">
+                                    <button
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-sm transition-all"
+                                    >
                                         <MoreVertical size={14} />
                                     </button>
                                 </div>

@@ -55,7 +55,7 @@ export default function InventoryScreen() {
                             src={row.image}
                             className={cn("w-full h-full object-cover", !row.available && "grayscale")}
                             alt=""
-                            onError={(e) => { e.target.src = 'https://via.placeholder.com/100'; }}
+                            onError={(e) => { e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(row.name)}&background=f1f5f9&color=94a3b8&size=100`; }}
                         />
                     </div>
                     <div>
@@ -184,7 +184,7 @@ export default function InventoryScreen() {
                                         src={item.image}
                                         className={cn("w-full h-full object-cover transition-all duration-700 group-hover:scale-110", !item.available && "grayscale")}
                                         alt={item.name}
-                                        onError={(e) => { e.target.src = 'https://via.placeholder.com/150'; }}
+                                        onError={(e) => { e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=f1f5f9&color=94a3b8&size=150`; }}
                                     />
                                     {!item.available && (
                                         <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[1px] flex items-center justify-center">

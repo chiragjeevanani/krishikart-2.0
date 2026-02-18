@@ -140,7 +140,8 @@ export const getOrderById = async (req, res) => {
     try {
         const order = await Order.findById(req.params.id)
             .populate('items.productId')
-            .populate('userId', 'fullName mobile address');
+            .populate('userId', 'fullName mobile address')
+            .populate('franchiseId', 'storeName shopName ownerName mobile');
         if (!order) return handleResponse(res, 404, "Order not found");
 
         // Authorization logic

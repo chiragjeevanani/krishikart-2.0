@@ -142,7 +142,7 @@ export default function ProductCard({ product, layout = 'grid' }) {
 
                     {/* Veg/Non-Veg Indicator (Bottom Left of Image Area) */}
                     <div className="absolute bottom-3 left-3">
-                        {product.dietaryType !== 'none' && (
+                        {product.dietaryType && product.dietaryType !== 'none' && (
                             <div className={cn(
                                 "w-4 h-4 border-[1.2px] flex items-center justify-center rounded-[2px] bg-white",
                                 product.dietaryType === 'veg' ? "border-emerald-600" : "border-red-600"
