@@ -118,10 +118,6 @@ export default function OrdersScreen() {
                             <FileText size={13} className="text-slate-400" />
                             <span>Export CSV</span>
                         </button>
-                        <button className="bg-slate-900 text-white px-3 py-1.5 rounded-sm text-[11px] font-bold flex items-center gap-2 hover:bg-slate-800 transition-colors">
-                            <Plus size={13} />
-                            New Order
-                        </button>
                     </div>
                 </div>
             </div>
@@ -168,7 +164,7 @@ export default function OrdersScreen() {
                 </div>
             </div>
 
-            {/* Enterprise Procurement Drawer */}
+            {/* Assign Vendor Drawer */}
             <AnimatePresence>
                 {selectedOrderForProcurement && (
                     <>
@@ -194,7 +190,7 @@ export default function OrdersScreen() {
                                             <Briefcase size={16} />
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">Order Management</span>
+                                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">Assignment</span>
                                             <span className="text-xs font-bold text-slate-900 mt-1 uppercase tracking-tight">Assign Vendor</span>
                                         </div>
                                     </div>
@@ -244,7 +240,7 @@ export default function OrdersScreen() {
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1 tracking-widest">Efficiency</span>
+                                                <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1 tracking-widest">Available</span>
                                                 <span className="text-xs font-bold text-slate-900 tabular-nums">{vendor.capacity}%</span>
                                             </div>
                                         </div>
@@ -252,7 +248,7 @@ export default function OrdersScreen() {
                                         <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
                                             <div className="flex items-center gap-2 text-slate-400">
                                                 <MapPin size={12} />
-                                                <span className="text-[10px] font-bold uppercase tracking-wide">Primary Hub</span>
+                                                <span className="text-[10px] font-bold uppercase tracking-wide">Vendor Shop</span>
                                             </div>
                                             <button
                                                 onClick={() => handleFinalizeProcurement(vendor)}
@@ -271,9 +267,9 @@ export default function OrdersScreen() {
                                 <div className="bg-slate-900 rounded-sm p-4 flex items-center justify-between">
                                     <div className="flex items-center gap-3">
                                         <Activity size={16} className="text-emerald-400" />
-                                        <span className="text-[10px] font-bold text-white uppercase tracking-widest">System Status: Online</span>
+                                        <span className="text-[10px] font-bold text-white uppercase tracking-widest">Status: Online</span>
                                     </div>
-                                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest pr-2">KrishiKart Admin</span>
+                                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest pr-2">KrishiKart System</span>
                                 </div>
                             </div>
                         </motion.div>

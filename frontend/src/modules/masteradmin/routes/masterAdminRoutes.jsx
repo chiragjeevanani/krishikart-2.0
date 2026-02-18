@@ -11,6 +11,7 @@ import DeliveryMonitoringScreen from '../pages/DeliveryMonitoringScreen';
 import TakeawayMonitoringScreen from '../pages/TakeawayMonitoringScreen';
 import AnalyticsScreen from '../pages/AnalyticsScreen';
 import SettingsScreen from '../pages/SettingsScreen';
+import DeliveryConstraintsScreen from '../pages/DeliveryConstraintsScreen';
 
 // New Phase 2 & 3 Screens
 import CreditManagementScreen from '../pages/CreditManagementScreen';
@@ -50,6 +51,7 @@ export const masterAdminRoutes = (
         <Route path="ledger" element={<LedgerSystemScreen />} />
         <Route path="commission" element={<CommissionControlScreen />} />
         <Route path="loyalty" element={<LoyaltyControlScreen />} />
+        <Route path="delivery-constraints" element={<DeliveryConstraintsScreen />} />
 
         {/* Inventory & Supply Routes */}
         <Route path="stock-monitoring" element={<FranchiseStockMonitoringScreen />} />

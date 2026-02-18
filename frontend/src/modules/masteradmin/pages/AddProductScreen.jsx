@@ -586,7 +586,6 @@ export default function AddProductScreen() {
                                                     <option value="ltr">Liter (lit)</option>
                                                     <option value="ml">Milliliter (ml)</option>
                                                     <option value="dz">Dozen (dz)</option>
-                                                    <option value="box">Box (box)</option>
                                                 </select>
                                                 <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                                             </div>

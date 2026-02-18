@@ -105,9 +105,9 @@ export default function VendorAssignmentScreen() {
                             <ChevronRight size={10} />
                             <span>Logistics</span>
                             <ChevronRight size={10} />
-                            <span className="text-slate-900 uppercase tracking-widest">Assignment Command</span>
+                            <span className="text-slate-900 uppercase tracking-widest">Assign Vendors</span>
                         </div>
-                        <h1 className="text-sm font-bold text-slate-900">Optimization Queue</h1>
+                        <h1 className="text-sm font-bold text-slate-900">Order Assignments</h1>
                     </div>
                 </div>
             </div>
@@ -119,11 +119,11 @@ export default function VendorAssignmentScreen() {
                         <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-white">
                             <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
                                 <Activity className="text-amber-500" size={14} />
-                                Operational Queue
+                                Pending Orders
                             </h3>
                             <div className="flex items-center gap-2">
                                 <span className="px-2 py-0.5 bg-amber-50 text-amber-600 border border-amber-100 text-[9px] font-black rounded-sm uppercase tracking-widest tabular-nums">
-                                    {pendingRequests.length} Objects Pending
+                                    {pendingRequests.length} Orders Waiting
                                 </span>
                             </div>
                         </div>
@@ -170,8 +170,8 @@ export default function VendorAssignmentScreen() {
                     {pendingRequests.length === 0 && (
                         <div className="py-20 flex flex-col items-center justify-center text-center opacity-30 border border-slate-200 border-dashed rounded-sm bg-white">
                             <Zap size={32} className="text-slate-300 mb-2" />
-                            <h3 className="text-sm font-bold text-slate-900">Queue Synchronized</h3>
-                            <p className="text-[10px] font-bold uppercase tracking-widest">No active objects requiring assignment</p>
+                            <h3 className="text-sm font-bold text-slate-900">All Done</h3>
+                            <p className="text-[10px] font-bold uppercase tracking-widest">No active orders need assignment</p>
                         </div>
                     )}
                 </div>
@@ -185,14 +185,14 @@ export default function VendorAssignmentScreen() {
                         <div className="relative z-10">
                             <div className="flex items-center gap-2 mb-6">
                                 <Cpu className="text-emerald-400" size={16} />
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400/80">Operational Protocols</span>
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400/80">How it Works</span>
                             </div>
-                            <h3 className="text-lg font-black tracking-tight leading-none mb-8">Assignment Logic // <span className="text-slate-500 font-bold">V 2.1</span></h3>
+                            <h3 className="text-lg font-black tracking-tight leading-none mb-8">Assignment Steps</h3>
                             <div className="space-y-5">
                                 {[
-                                    { step: "01", label: "Queue Selection", desc: "Isolate pending objects from the primary optimization queue." },
-                                    { step: "02", label: "Vendor Audit", desc: "Review real-time capacity and geospatial proximity data." },
-                                    { step: "03", label: "Protocol Lock", desc: "Initialize the assignment to synchronize node notifications." }
+                                    { step: "01", label: "Select an Order", desc: "Pick an order from the list that needs a vendor." },
+                                    { step: "02", label: "Check Vendors", desc: "Compare vendors based on distance and capacity." },
+                                    { step: "03", label: "Finish Assignment", desc: "Assign the vendor and notify all parties." }
                                 ].map((step) => (
                                     <div key={step.step} className="flex gap-4">
                                         <span className="text-[10px] font-black tabular-nums text-slate-600 border border-slate-800 h-fit px-1.5 py-0.5 rounded-sm">{step.step}</span>
@@ -208,17 +208,17 @@ export default function VendorAssignmentScreen() {
 
                     <div className="p-4 bg-white border border-slate-200 rounded-sm">
                         <div className="flex items-center justify-between mb-3 pb-3 border-b border-slate-50">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">System Load</span>
-                            <span className="text-[10px] font-bold text-emerald-500 tabular-nums">Normal</span>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">System Status</span>
+                            <span className="text-[10px] font-bold text-emerald-500 tabular-nums">Online</span>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <span className="text-[9px] font-bold text-slate-400 block uppercase">Throughput</span>
-                                <span className="text-xs font-black text-slate-900 tabular-nums">1.2ms/req</span>
+                                <span className="text-[9px] font-bold text-slate-400 block uppercase">Server Speed</span>
+                                <span className="text-xs font-black text-slate-900 tabular-nums">Excellent</span>
                             </div>
                             <div>
-                                <span className="text-[9px] font-bold text-slate-400 block uppercase">Reliability</span>
-                                <span className="text-xs font-black text-slate-900 tabular-nums">99.98%</span>
+                                <span className="text-[9px] font-bold text-slate-400 block uppercase">Uptime</span>
+                                <span className="text-xs font-black text-slate-900 tabular-nums">99.9%</span>
                             </div>
                         </div>
                     </div>
@@ -245,23 +245,23 @@ export default function VendorAssignmentScreen() {
                         >
                             <div className="p-6 border-b border-slate-100 bg-slate-50/50">
                                 <div className="flex items-center justify-between mb-6">
-                                    <div className="px-2 py-0.5 bg-slate-900 text-white text-[9px] font-black rounded-sm uppercase tracking-widest">Assigning ID- {String(selectedOrder.id).slice(-4).toUpperCase()}</div>
+                                    <div className="px-2 py-0.5 bg-slate-900 text-white text-[9px] font-black rounded-sm uppercase tracking-widest">Order ID: {String(selectedOrder.id).slice(-4).toUpperCase()}</div>
                                     <button onClick={() => setSelectedOrder(null)} className="p-1.5 hover:bg-white border border-transparent hover:border-slate-200 rounded-sm text-slate-400 transition-colors">
                                         <X size={16} />
                                     </button>
-                                </div>
-                                <h2 className="text-lg font-black text-slate-900 tracking-tight leading-none mb-1">Select Fulfillment Partner</h2>
-                                <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest italic opacity-60">Fulfillment Recommendations for {selectedOrder.franchise}</p>
+                                </div >
+                                <h2 className="text-lg font-black text-slate-900 tracking-tight leading-none mb-1">Select A Vendor</h2>
+                                <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest italic opacity-60">Suggestions for {selectedOrder.franchise}</p>
 
                                 <div className="relative mt-4 group">
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" size={12} />
                                     <input
                                         type="text"
-                                        placeholder="Filter nodes by ID or Name..."
+                                        placeholder="Search by vendor name..."
                                         className="w-full bg-white border border-slate-200 rounded-sm py-2 pl-9 pr-4 outline-none text-[11px] font-bold focus:ring-2 focus:ring-slate-900/5 focus:border-slate-400 transition-all font-sans"
                                     />
                                 </div>
-                            </div>
+                            </div >
 
                             <div className="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar">
                                 {mockVendors.map((vendor, index) => (
@@ -289,7 +289,7 @@ export default function VendorAssignmentScreen() {
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Utilization</div>
+                                                <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Available</div>
                                                 <div className="text-xs font-black text-slate-900 tabular-nums leading-none">{vendor.capacity}%</div>
                                             </div>
                                         </div>
@@ -297,27 +297,28 @@ export default function VendorAssignmentScreen() {
                                         <div className="flex items-center justify-between gap-4 pt-3 border-t border-slate-50">
                                             <div className="flex items-center gap-1.5 text-slate-400">
                                                 <MapPin size={10} />
-                                                <span className="text-[9px] font-bold tabular-nums">2.4km Proximity</span>
+                                                <span className="text-[9px] font-bold tabular-nums">{index + 1}.2km away</span>
                                             </div>
                                             <button
                                                 disabled={isAssigning}
                                                 onClick={() => handleAssign(vendor)}
                                                 className="bg-slate-900 text-white text-[9px] font-black uppercase tracking-wider px-3 py-2 rounded-sm hover:bg-slate-800 active:scale-[0.98] transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50"
                                             >
-                                                Initialize Assignment
+                                                Assign Vendor
                                                 <ArrowRight size={12} />
                                             </button>
                                         </div>
                                     </motion.div>
                                 ))}
                             </div>
-                        </motion.div>
+                        </motion.div >
                     </>
-                )}
-            </AnimatePresence>
+                )
+                }
+            </AnimatePresence >
 
             {/* Success Overlay - High Impact Enterprise Style */}
-            <AnimatePresence>
+            < AnimatePresence >
                 {assignmentSuccess && (
                     <motion.div
                         initial={{ opacity: 0 }}
@@ -338,23 +339,23 @@ export default function VendorAssignmentScreen() {
                             >
                                 <CheckCircle2 size={32} className="text-slate-900" />
                             </motion.div>
-                            <h3 className="text-lg font-black tracking-tight leading-none mb-2">Protocol Verified</h3>
-                            <p className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.2em]">Partner Link Synchronized</p>
+                            <h3 className="text-lg font-black tracking-tight leading-none mb-2">Assignment Done</h3>
+                            <p className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.2em]">Vendor linked successfully</p>
                         </motion.div>
                     </motion.div>
                 )}
-            </AnimatePresence>
+            </AnimatePresence >
 
-            {/* Diagnostics Strip */}
-            <div className="px-4 py-1.5 bg-slate-900 text-white/40 flex items-center justify-between border-t border-slate-800">
+            {/* Status Footer */}
+            < div className="px-4 py-1.5 bg-slate-900 text-white/40 flex items-center justify-between border-t border-slate-800" >
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest">
                         <div className="w-1 h-1 rounded-full bg-emerald-400" />
-                        Logistics Gate: Active
+                        System Status: Active
                     </div>
                 </div>
-                <div className="text-[9px] font-bold uppercase tracking-widest tabular-nums">Node:KK-ASSIGN-v2.1</div>
-            </div>
-        </div>
+                <div className="text-[9px] font-bold uppercase tracking-widest tabular-nums">KrishiKart Assignment v1.0</div>
+            </div >
+        </div >
     );
 }

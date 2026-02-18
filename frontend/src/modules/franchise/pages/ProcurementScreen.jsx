@@ -35,6 +35,19 @@ export default function ProcurementScreen() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [orderSuccess, setOrderSuccess] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [isQtyModalOpen, setIsQtyModalOpen] = useState(false);
+    const [modalProduct, setModalProduct] = useState(null);
+    const [modalQty, setModalQty] = useState(1);
+    const [modalUnit, setModalUnit] = useState('Kilogram (kg)');
+
+    const units = [
+        'Kilogram (kg)',
+        'Gram (gm)',
+        'Piece (pcs)',
+        'Liter (lit)',
+        'Milliliter (ml)',
+        'Dozen (dz)'
+    ];
 
     useEffect(() => {
         const timer = setTimeout(() => setIsLoading(false), 600);
@@ -51,14 +64,37 @@ export default function ProcurementScreen() {
 
     const updateQty = (productId, delta) => {
         setCart(prev => {
-            const current = prev[productId] || 0;
-            const next = current + delta;
-            if (next <= 0) {
+            const currentItem = prev[productId];
+            if (!currentItem) return prev;
+
+            const nextQty = currentItem.qty + delta;
+            if (nextQty <= 0) {
                 const { [productId]: removed, ...rest } = prev;
                 return rest;
             }
-            return { ...prev, [productId]: next };
+            return { ...prev, [productId]: { ...currentItem, qty: nextQty } };
         });
+    };
+
+    const handleOpenModal = (product) => {
+        setModalProduct(product);
+        setModalQty(1);
+        setModalUnit(product.unit || 'KG');
+        setIsQtyModalOpen(true);
+    };
+
+    const handleConfirmQty = () => {
+        if (modalProduct && modalQty > 0) {
+            setCart(prev => ({
+                ...prev,
+                [modalProduct.id]: {
+                    qty: (prev[modalProduct.id]?.qty || 0) + modalQty,
+                    unit: modalUnit // Store selected unit
+                }
+            }));
+            setIsQtyModalOpen(false);
+            setModalProduct(null);
+        }
     };
 
     const setManualQty = (productId, value) => {
@@ -69,17 +105,21 @@ export default function ProcurementScreen() {
                 return rest;
             });
         } else {
-            setCart(prev => ({ ...prev, [productId]: qty }));
+            setCart(prev => ({
+                ...prev,
+                [productId]: { ...prev[productId], qty }
+            }));
         }
     };
 
-    const cartItems = Object.entries(cart).map(([id, qty]) => {
+    const cartItems = Object.entries(cart).map(([id, item]) => {
         const product = products.find(p => p.id === id);
-        if (!product) return { id, name: 'Unknown Product', price: 0, qty, image: '' };
-        return { ...product, qty };
+        if (!product) return { id, name: 'Unknown Product', price: 0, qty: item.qty, unit: item.unit, image: '' };
+        return { ...product, qty: item.qty, unit: item.unit };
     });
 
-    const totalAmount = cartItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    // Price calculation removed as per new requirement
+    const totalAmount = 0;
 
     const handlePlaceOrder = () => {
         setIsSubmitting(true);
@@ -213,7 +253,7 @@ export default function ProcurementScreen() {
                                         <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-tight line-clamp-2 leading-tight mb-2 min-h-[2.5em]">{p.name}</h4>
                                         <div className="flex items-end justify-between">
                                             <div className="flex flex-col">
-                                                <span className="text-[13px] font-black text-slate-900 tabular-nums leading-none mb-1">₹{p.price.toLocaleString()}</span>
+                                                <span className="text-[13px] font-black text-slate-900 tabular-nums leading-none mb-1">Make Request</span>
                                                 <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Per {p.unit}</span>
                                             </div>
 
@@ -222,14 +262,14 @@ export default function ProcurementScreen() {
                                                     <button onClick={() => updateQty(p.id, -1)} className="w-6 h-6 flex items-center justify-center hover:bg-white/10 transition-colors">
                                                         <Minus size={10} />
                                                     </button>
-                                                    <span className="w-7 text-center font-black text-[9px] tabular-nums">{cart[p.id]}</span>
+                                                    <span className="w-7 text-center font-black text-[9px] tabular-nums">{cart[p.id]?.qty}</span>
                                                     <button onClick={() => updateQty(p.id, 1)} className="w-6 h-6 flex items-center justify-center hover:bg-white/10 transition-colors">
                                                         <Plus size={10} />
                                                     </button>
                                                 </div>
                                             ) : (
                                                 <button
-                                                    onClick={() => updateQty(p.id, 1)}
+                                                    onClick={() => handleOpenModal(p)}
                                                     className="w-8 h-8 rounded-sm border border-slate-200 text-slate-400 flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all shadow-sm hover:shadow-lg hover:shadow-slate-200 active:scale-90"
                                                 >
                                                     <Plus size={14} />
@@ -281,9 +321,8 @@ export default function ProcurementScreen() {
                                     <div className="flex-1 min-w-0">
                                         <div className="flex justify-between items-start mb-1">
                                             <h4 className="text-[10px] xl:text-[11px] font-black text-slate-900 uppercase truncate leading-none">{item.name}</h4>
-                                            <span className="text-[10px] font-black text-slate-900 tabular-nums ml-2 whitespace-nowrap">₹{(item.qty * item.price).toLocaleString()}</span>
                                         </div>
-                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{item.qty} {item.unit} × ₹{item.price}</p>
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Qty: {item.qty} {item.unit}</p>
 
                                         <div className="flex items-center justify-end mt-2">
                                             <div className="flex items-center border border-slate-200 rounded-sm p-0.5 bg-white shadow-sm">
@@ -318,32 +357,13 @@ export default function ProcurementScreen() {
                 </div>
 
                 <div className="p-5 xl:p-6 bg-slate-900 text-white shadow-[0_-10px_40px_rgba(15,23,42,0.15)] relative z-10">
-                    {cartItems.length > 0 ? (
-                        <div className="space-y-4 mb-6 xl:mb-8">
-                            <div className="flex justify-between items-center px-1">
-                                <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider">Gross Terminal Value</span>
-                                <span className="text-[11px] font-black tabular-nums tracking-tight">₹{(totalAmount || 0).toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between items-center px-1">
-                                <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider">Logistics Surcharge</span>
-                                <span className="text-[11px] font-black text-emerald-400 uppercase tracking-wider">Waived</span>
-                            </div>
-                            <div className="h-px bg-slate-800" />
-                            <div className="flex flex-col px-1">
-                                <span className="text-[9px] font-black text-emerald-500/80 uppercase tracking-wider mb-2">Commitment Total</span>
-                                <div className="flex items-baseline gap-1">
-                                    <span className="text-2xl xl:text-3xl font-black tracking-tighter tabular-nums leading-none">₹{(totalAmount || 0).toLocaleString()}</span>
-                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">INR</span>
-                                </div>
-                            </div>
+                    <div className="mb-6 xl:mb-8">
+                        <div className="flex justify-between items-center px-1 mb-2">
+                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider">Total SKUs</span>
+                            <span className="text-[11px] font-black tabular-nums tracking-tight text-white">{cartItems.length}</span>
                         </div>
-                    ) : (
-                        <div className="flex flex-col items-center gap-4 mb-6 xl:mb-8 opacity-20 py-4">
-                            <div className="w-full h-px bg-slate-800" />
-                            <span className="text-[9px] font-black uppercase tracking-wider">Awaiting Data</span>
-                            <div className="w-full h-px bg-slate-800" />
-                        </div>
-                    )}
+                        <div className="h-px bg-slate-800" />
+                    </div>
 
                     <button
                         onClick={handlePlaceOrder}
@@ -372,6 +392,85 @@ export default function ProcurementScreen() {
                     </div>
                 </div>
             </div>
+            {/* Quantity Selection Modal */}
+            <AnimatePresence>
+                {isQtyModalOpen && modalProduct && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsQtyModalOpen(false)}
+                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                            className="bg-white rounded-sm shadow-2xl w-full max-w-xs relative z-10 overflow-hidden"
+                        >
+                            <div className="p-6">
+                                <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight mb-1">{modalProduct.name}</h3>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-6">Select Procurement Quantity</p>
+
+                                <div className="flex items-center justify-center gap-4 mb-8">
+                                    <button
+                                        onClick={() => setModalQty(Math.max(1, modalQty - 1))}
+                                        className="w-12 h-12 rounded-sm border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors"
+                                    >
+                                        <Minus size={18} className="text-slate-600" />
+                                    </button>
+                                    <div className="flex flex-col items-center gap-2">
+                                        <input
+                                            type="number"
+                                            value={modalQty}
+                                            onChange={(e) => {
+                                                const val = parseInt(e.target.value);
+                                                if (!isNaN(val) && val > 0) setModalQty(val);
+                                                else if (e.target.value === '') setModalQty('');
+                                            }}
+                                            onBlur={() => {
+                                                if (modalQty === '' || modalQty < 1) setModalQty(1);
+                                            }}
+                                            className="w-20 text-center text-3xl font-black text-slate-900 tabular-nums bg-transparent border-b border-slate-200 focus:border-slate-900 outline-none p-1"
+                                        />
+                                        <select
+                                            value={modalUnit}
+                                            onChange={(e) => setModalUnit(e.target.value)}
+                                            className="bg-slate-100 border border-slate-200 rounded-sm px-2 py-1 text-[10px] font-black text-slate-900 uppercase tracking-wider outline-none focus:border-slate-400 cursor-pointer"
+                                        >
+                                            {units.map(u => (
+                                                <option key={u} value={u}>{u}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <button
+                                        onClick={() => setModalQty(modalQty + 1)}
+                                        className="w-12 h-12 rounded-sm border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors"
+                                    >
+                                        <Plus size={18} className="text-slate-600" />
+                                    </button>
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => setIsQtyModalOpen(false)}
+                                        className="flex-1 h-10 border border-slate-200 rounded-sm font-black text-[10px] uppercase tracking-wider hover:bg-slate-50 transition-colors text-slate-500"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={handleConfirmQty}
+                                        className="flex-1 h-10 bg-slate-900 text-white rounded-sm font-black text-[10px] uppercase tracking-wider hover:bg-slate-800 transition-colors shadow-lg active:scale-95"
+                                    >
+                                        Confirm Quantity
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

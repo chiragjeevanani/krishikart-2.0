@@ -37,10 +37,10 @@ export default function LedgerSystemScreen() {
     }, [activeTab]);
 
     const tabs = [
-        { id: 'hotel', label: 'Hotel Accounts', icon: Building2 },
-        { id: 'vendor', label: 'Supply Partners', icon: Users },
-        { id: 'franchise', label: 'Node Distribution', icon: Briefcase },
-        { id: 'company', label: 'Central Treasury', icon: BookOpen }
+        { id: 'hotel', label: 'Hotel Dues', icon: Building2 },
+        { id: 'vendor', label: 'Vendor Payments', icon: Users },
+        { id: 'franchise', label: 'Shop Accounts', icon: Briefcase },
+        { id: 'company', label: 'Main Balance', icon: BookOpen }
     ];
 
     const getLedgerData = () => {
@@ -77,11 +77,11 @@ export default function LedgerSystemScreen() {
                         <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-r border-slate-200 pr-4">
                             <Home size={12} />
                             <ChevronRight size={10} />
-                            <span>Financials</span>
+                            <span>Accounts</span>
                             <ChevronRight size={10} />
-                            <span className="text-slate-900 uppercase tracking-widest">Transaction Ledgers</span>
+                            <span className="text-slate-900 uppercase tracking-widest">Payment History</span>
                         </div>
-                        <h1 className="text-sm font-bold text-slate-900">Unified Reconciliation Engine</h1>
+                        <h1 className="text-sm font-bold text-slate-900">Transaction Ledgers</h1>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -100,7 +100,7 @@ export default function LedgerSystemScreen() {
             {/* Fiscal Performance Corridor */}
             <div className="bg-white border-b border-slate-200 grid grid-cols-1 md:grid-cols-4">
                 <MetricRow
-                    label="Current Outstanding"
+                    label="Outstanding Payments"
                     value="₹40,250"
                     change={-12.4}
                     trend="up"
@@ -108,7 +108,7 @@ export default function LedgerSystemScreen() {
                     sparklineData={[45, 42, 43, 41, 40, 40.5, 40.25].map(v => ({ value: v }))}
                 />
                 <MetricRow
-                    label="Settled Volume"
+                    label="Money Settled"
                     value="₹1.24M"
                     change={8.2}
                     trend="up"
@@ -116,13 +116,13 @@ export default function LedgerSystemScreen() {
                     sparklineData={[1.1, 1.15, 1.2, 1.22, 1.24].map(v => ({ value: v }))}
                 />
                 <MetricRow
-                    label="Treasury Balance"
+                    label="Main Wallet Balance"
                     value="₹2.54M"
-                    sub="Liquid Capital"
+                    sub="Available Cash"
                     icon={BookOpen}
                 />
                 <MetricRow
-                    label="SLA Compliance"
+                    label="Payment Success"
                     value="99.8%"
                     trend="Stable"
                     icon={RefreshCw}
@@ -166,14 +166,14 @@ export default function LedgerSystemScreen() {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" size={14} />
                             <input
                                 type="text"
-                                placeholder="Filter by Transaction ID, Entity Name, or Source Protocol..."
+                                placeholder="Search by ID, Name or Source..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full bg-white border border-slate-200 rounded-sm py-2 pl-10 pr-4 outline-none text-[11px] font-bold text-slate-900 placeholder:text-slate-400 focus:border-slate-400 transition-all font-sans"
                             />
                         </div>
                         <div className="flex items-center gap-4">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] tabular-nums">Sync Status: Active // {currentTransactions.length} Records</span>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] tabular-nums">Status: Live // {currentTransactions.length} Records</span>
                         </div>
                     </div>
 
