@@ -28,12 +28,10 @@ import { useProcurement } from '../contexts/ProcurementContext';
 
 export default function ProcurementScreen() {
     const navigate = useNavigate();
-    const { addRequest, cart, setCart, clearCart } = useProcurement();
-    const { addRequest, procurementRequests } = useProcurement();
+    const { addRequest, cart, setCart, clearCart, procurementRequests } = useProcurement();
     const [searchTerm, setSearchTerm] = useState('');
     const [activeTab, setActiveTab] = useState('catalog');
     const [selectedCategory, setSelectedCategory] = useState('All');
-    const [cart, setCart] = useState({});
 
     // ... rest of the existing state ...
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -144,8 +142,6 @@ export default function ProcurementScreen() {
             await addRequest(requestData);
             setOrderSuccess(true);
             clearCart();
-        }, 2000);
-            setCart({});
         } catch (error) {
             console.error("Order placement failed", error);
             // You might want to add a toast notification here
