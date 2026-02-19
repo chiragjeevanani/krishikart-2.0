@@ -14,6 +14,7 @@ import {
     IndianRupee,
     Truck,
     LayoutGrid,
+    Check,
     Trash2,
     Zap,
     ChevronDown
@@ -51,14 +52,16 @@ export default function EditProductScreen() {
         bulkUnit: 'kg',
         description: '',
         shortDescription: '',
-        status: 'draft',
+        status: 'active',
         images: [],
         primaryImage: null,
         primaryFile: null,
         galleryFiles: [],
         bulkPricing: [],
         bestPrice: '',
-        dietaryType: 'veg'
+        dietaryType: 'veg',
+        showOnPOS: true,
+        showOnStorefront: true
     });
 
     useEffect(() => {
@@ -76,14 +79,16 @@ export default function EditProductScreen() {
                 bulkUnit: product.bulkUnit || 'kg',
                 description: product.description || '',
                 shortDescription: product.shortDescription || '',
-                status: product.status || 'draft',
+                status: 'active',
                 images: product.images || [],
                 primaryImage: product.primaryImage || null,
                 primaryFile: null,
                 galleryFiles: [],
                 bulkPricing: product.bulkPricing || [],
                 bestPrice: product.bestPrice || '',
-                dietaryType: product.dietaryType || 'veg'
+                dietaryType: product.dietaryType || 'veg',
+                showOnPOS: product.showOnPOS !== undefined ? product.showOnPOS : true,
+                showOnStorefront: product.showOnStorefront !== undefined ? product.showOnStorefront : true
             });
             setIsLoading(false);
         } else if (products.length > 0) {
@@ -570,6 +575,50 @@ export default function EditProductScreen() {
                                 </div>
                             </div>
                         </div>
+
+                        {/* 4. Visibility Control */}
+                        <div className="bg-white border border-slate-200 rounded-sm shadow-sm overflow-hidden group">
+                            <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
+                                <div className="w-8 h-8 bg-indigo-50 text-indigo-600 flex items-center justify-center rounded-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
+                                    <LayoutGrid size={16} />
+                                </div>
+                                <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Visibility Channels</h3>
+                            </div>
+                            <div className="p-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="flex items-start gap-4 p-4 bg-slate-50/50 rounded-sm border border-slate-100 transition-all hover:bg-white hover:shadow-md cursor-pointer select-none"
+                                        onClick={() => setFormData(prev => ({ ...prev, showOnStorefront: !prev.showOnStorefront }))}
+                                    >
+                                        <div className={cn(
+                                            "w-5 h-5 rounded border-2 flex items-center justify-center transition-all",
+                                            formData.showOnStorefront ? "bg-slate-900 border-slate-900" : "bg-white border-slate-200"
+                                        )}>
+                                            {formData.showOnStorefront && <Check size={14} className="text-white" strokeWidth={3} />}
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Show on User Storefront</p>
+                                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Make this product visible to retail customers</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-start gap-4 p-4 bg-slate-50/50 rounded-sm border border-slate-100 transition-all hover:bg-white hover:shadow-md cursor-pointer select-none"
+                                        onClick={() => setFormData(prev => ({ ...prev, showOnPOS: !prev.showOnPOS }))}
+                                    >
+                                        <div className={cn(
+                                            "w-5 h-5 rounded border-2 flex items-center justify-center transition-all",
+                                            formData.showOnPOS ? "bg-slate-900 border-slate-900" : "bg-white border-slate-200"
+                                        )}>
+                                            {formData.showOnPOS && <Check size={14} className="text-white" strokeWidth={3} />}
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Show on POS Terminal</p>
+                                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Make this product available for in-store billing</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
 
                     {/* Sidebar Area */}

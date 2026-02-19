@@ -62,6 +62,7 @@ export const CatalogProvider = ({ children }) => {
             const formData = new FormData();
             formData.append('name', categoryData.name);
             formData.append('description', categoryData.description);
+            if (categoryData.adminCommission !== undefined) formData.append('adminCommission', categoryData.adminCommission);
             if (categoryData.file) {
                 formData.append('image', categoryData.file);
             }
@@ -140,6 +141,7 @@ export const CatalogProvider = ({ children }) => {
             const formData = new FormData();
             if (updateData.name) formData.append('name', updateData.name);
             if (updateData.description) formData.append('description', updateData.description);
+            if (updateData.adminCommission !== undefined) formData.append('adminCommission', updateData.adminCommission);
             if (updateData.isVisible !== undefined) formData.append('isVisible', updateData.isVisible);
             if (updateData.file) formData.append('image', updateData.file);
 

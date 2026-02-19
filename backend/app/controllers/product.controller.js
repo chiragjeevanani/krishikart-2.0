@@ -19,7 +19,9 @@ export const createProduct = async (req, res) => {
             shortDescription,
             dietaryType,
             status,
-            bulkPricing
+            bulkPricing,
+            showOnPOS,
+            showOnStorefront
         } = req.body;
 
         if (!name || !category || !price) {
@@ -72,7 +74,9 @@ export const createProduct = async (req, res) => {
             status: status || 'draft',
             primaryImage: primaryImageUrl,
             images: galleryImages,
-            bulkPricing: parsedBulk
+            bulkPricing: parsedBulk,
+            showOnPOS: showOnPOS === 'true' || showOnPOS === true,
+            showOnStorefront: showOnStorefront === 'true' || showOnStorefront === true,
         });
 
         return handleResponse(res, 201, "Product created and documented in SKU ledger", product);
@@ -84,12 +88,14 @@ export const createProduct = async (req, res) => {
 
 export const getProducts = async (req, res) => {
     try {
-        const { category, subcategory, status, search } = req.query;
+        const { category, subcategory, status, search, showOnPOS, showOnStorefront } = req.query;
         const filter = {};
 
         if (category) filter.category = category;
         if (subcategory) filter.subcategory = subcategory;
         if (status) filter.status = status;
+        if (showOnPOS !== undefined) filter.showOnPOS = showOnPOS === 'true';
+        if (showOnStorefront !== undefined) filter.showOnStorefront = showOnStorefront === 'true';
         if (search) {
             filter.$or = [
                 { name: { $regex: search, $options: 'i' } },
@@ -162,6 +168,14 @@ export const updateProduct = async (req, res) => {
             } catch (e) {
                 console.error("Bulk Pricing Parse Error:", e);
             }
+        }
+
+        // Normalize booleans
+        if (updateData.showOnPOS !== undefined) {
+            updateData.showOnPOS = updateData.showOnPOS === 'true' || updateData.showOnPOS === true;
+        }
+        if (updateData.showOnStorefront !== undefined) {
+            updateData.showOnStorefront = updateData.showOnStorefront === 'true' || updateData.showOnStorefront === true;
         }
 
         const updatedProduct = await Product.findByIdAndUpdate(id, updateData, { new: true });

@@ -12,8 +12,8 @@ export default function CategoryManagementScreen() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Form State
-    const [newCat, setNewCat] = useState({ name: '', description: '', image: null, file: null });
-    const [editCat, setEditCat] = useState({ id: '', name: '', description: '', image: null, file: null, isVisible: true });
+    const [newCat, setNewCat] = useState({ name: '', description: '', adminCommission: 0, image: null, file: null });
+    const [editCat, setEditCat] = useState({ id: '', name: '', description: '', adminCommission: 0, image: null, file: null, isVisible: true });
 
     useEffect(() => {
         const timer = setTimeout(() => setIsLoading(false), 500);
@@ -25,7 +25,7 @@ export default function CategoryManagementScreen() {
         setIsSubmitting(true);
         try {
             await addCategory(newCat);
-            setNewCat({ name: '', description: '', image: null, file: null });
+            setNewCat({ name: '', description: '', adminCommission: 0, image: null, file: null });
             setShowAddModal(false);
         } catch (error) {
             console.error(error);
@@ -40,7 +40,7 @@ export default function CategoryManagementScreen() {
         try {
             await updateCategory(editCat.id, editCat);
             setShowEditModal(false);
-            setEditCat({ id: '', name: '', description: '', image: null, file: null, isVisible: true });
+            setEditCat({ id: '', name: '', description: '', adminCommission: 0, image: null, file: null, isVisible: true });
         } catch (error) {
             console.error(error);
         } finally {
@@ -98,6 +98,16 @@ export default function CategoryManagementScreen() {
                                         placeholder="Briefly define the scope of this category..."
                                         className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-3 text-sm font-medium focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-300 resize-none"
                                     ></textarea>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Admin Commission (%)</label>
+                                    <input
+                                        type="number"
+                                        value={newCat.adminCommission}
+                                        onChange={(e) => setNewCat(prev => ({ ...prev, adminCommission: e.target.value }))}
+                                        placeholder="0"
+                                        className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-3 text-sm font-bold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-300"
+                                    />
                                 </div>
 
                                 <div className="space-y-1.5">
@@ -186,6 +196,15 @@ export default function CategoryManagementScreen() {
                                         onChange={(e) => setEditCat(prev => ({ ...prev, description: e.target.value }))}
                                         className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-3 text-sm font-medium focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none"
                                     ></textarea>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Admin Commission (%)</label>
+                                    <input
+                                        type="number"
+                                        value={editCat.adminCommission}
+                                        onChange={(e) => setEditCat(prev => ({ ...prev, adminCommission: e.target.value }))}
+                                        className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-3 text-sm font-bold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                                    />
                                 </div>
 
                                 <div className="flex items-center gap-2">
@@ -304,6 +323,8 @@ export default function CategoryManagementScreen() {
                                                 <div className="flex items-center gap-2 pt-1">
                                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">ID: {cat._id}</span>
                                                     <span className="w-1 h-1 rounded-full bg-slate-200" />
+                                                    <span className="text-[9px] font-bold text-blue-600 uppercase tracking-tighter">Comm: {cat.adminCommission || 0}%</span>
+                                                    <span className="w-1 h-1 rounded-full bg-slate-200" />
                                                     <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-tighter">
                                                         {cat.isVisible ? 'Visible Globally' : 'Hidden'}
                                                     </span>
@@ -317,6 +338,7 @@ export default function CategoryManagementScreen() {
                                                         id: cat._id,
                                                         name: cat.name,
                                                         description: cat.description,
+                                                        adminCommission: cat.adminCommission || 0,
                                                         image: cat.image,
                                                         isVisible: cat.isVisible,
                                                         file: null

@@ -7,7 +7,7 @@ import { uploadToCloudinary } from "../utils/cloudinary.js";
 
 export const createCategory = async (req, res) => {
     try {
-        const { name, description } = req.body;
+        const { name, description, adminCommission } = req.body;
 
         if (!name) {
             return handleResponse(res, 400, "Category name is required");
@@ -27,6 +27,7 @@ export const createCategory = async (req, res) => {
             name,
             description,
             image: imageUrl,
+            adminCommission: adminCommission || 0,
         });
 
         return handleResponse(res, 201, "Category created successfully", category);
@@ -48,7 +49,7 @@ export const getCategories = async (req, res) => {
 export const updateCategory = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, description, isVisible } = req.body;
+        const { name, description, isVisible, adminCommission } = req.body;
 
         const category = await Category.findById(id);
         if (!category) {
@@ -58,6 +59,7 @@ export const updateCategory = async (req, res) => {
         if (name) category.name = name;
         if (description !== undefined) category.description = description;
         if (isVisible !== undefined) category.isVisible = isVisible;
+        if (adminCommission !== undefined) category.adminCommission = adminCommission;
 
         if (req.file) {
             category.image = await uploadToCloudinary(req.file.buffer, "categories");

@@ -59,8 +59,10 @@ export default function POSScreen() {
     }, [cart]);
 
     const filteredItems = inventory.filter(item =>
-        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.category.toLowerCase().includes(searchQuery.toLowerCase())
+        item.showOnPOS !== false && (
+            item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.category.toLowerCase().includes(searchQuery.toLowerCase())
+        )
     );
 
     const addToCart = (item, qty = 1) => {

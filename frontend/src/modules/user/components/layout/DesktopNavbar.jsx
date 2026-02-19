@@ -71,9 +71,16 @@ export default function DesktopNavbar() {
                     </div>
                 </div>
 
-                {/* Search Bar - Center Pill */}
                 <div className="flex-1 max-w-2xl px-4">
-                    <div className="relative group">
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            if (searchValue.trim()) {
+                                navigate(`/products/all?search=${encodeURIComponent(searchValue.trim())}`);
+                            }
+                        }}
+                        className="relative group"
+                    >
                         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500 z-10">
                             <Search size={18} strokeWidth={2.5} />
                         </div>
@@ -99,7 +106,7 @@ export default function DesktopNavbar() {
                                 </AnimatePresence>
                             </div>
                         )}
-                    </div>
+                    </form>
                 </div>
 
                 {/* Actions */}

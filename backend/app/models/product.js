@@ -81,9 +81,17 @@ const productSchema = new mongoose.Schema({
     status: {
         type: String,
         enum: ['draft', 'active', 'inactive'],
-        default: 'draft'
+        default: 'active'
     },
     isVisible: {
+        type: Boolean,
+        default: true
+    },
+    showOnPOS: {
+        type: Boolean,
+        default: true
+    },
+    showOnStorefront: {
         type: Boolean,
         default: true
     }

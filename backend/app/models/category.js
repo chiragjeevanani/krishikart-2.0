@@ -20,6 +20,10 @@ const categorySchema = new mongoose.Schema(
             type: Boolean,
             default: true,
         },
+        adminCommission: {
+            type: Number,
+            default: 0,
+        },
     },
     { timestamps: true }
 );

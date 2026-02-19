@@ -54,7 +54,12 @@ export default function ProductDetailScreen() {
         setLoading(true)
         const response = await api.get(`/products/${id}`)
         if (response.data.success) {
-          setProduct(response.data.result)
+          const prod = response.data.result;
+          if (prod.showOnStorefront === false) {
+            setProduct(null);
+          } else {
+            setProduct(prod);
+          }
         }
       } catch (error) {
         console.error('Fetch Product Detail Error:', error)

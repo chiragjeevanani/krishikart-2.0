@@ -58,8 +58,7 @@ export default function ManageProductScreen() {
     const filteredProducts = products.filter(p => {
         const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             p._id.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
-        return matchesSearch && matchesStatus;
+        return matchesSearch;
     });
 
     if (contextLoading && products.length === 0) {
@@ -105,21 +104,7 @@ export default function ManageProductScreen() {
                             className="w-full bg-white border border-slate-200 rounded-sm py-3 pl-12 pr-4 text-[11px] font-bold uppercase tracking-widest focus:outline-none focus:ring-1 focus:ring-slate-900 transition-all shadow-sm"
                         />
                     </div>
-                    <div className="relative">
-                        <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className="w-full bg-white border border-slate-200 rounded-sm py-3 pl-12 pr-10 text-[11px] font-bold uppercase tracking-widest focus:outline-none appearance-none cursor-pointer shadow-sm text-ellipsis overflow-hidden whitespace-nowrap"
-                        >
-                            <option value="all">ALL STATUSES</option>
-                            <option value="active">ACTIVE ONLY</option>
-                            <option value="draft">DRAFTS</option>
-                            <option value="inactive">INACTIVE</option>
-                        </select>
-                        <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                    </div>
-                    <div className="bg-slate-900 rounded-sm p-3 flex items-center justify-between shadow-lg">
+                    <div className="bg-slate-900 rounded-sm p-3 flex-1 flex items-center justify-between shadow-lg">
                         <div className="space-y-0.5">
                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total SKU Count</p>
                             <p className="text-lg font-black text-white leading-none">{products.length}</p>
@@ -164,15 +149,19 @@ export default function ManageProductScreen() {
                                                 <div className="space-y-0.5">
                                                     <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-tight line-clamp-1">{product.name}</h4>
                                                     <div className="flex items-center gap-2">
-                                                        <span className={cn(
-                                                            "px-1.5 py-0.5 rounded-[2px] text-[8px] font-black uppercase tracking-widest",
-                                                            product.status === 'active' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
-                                                                product.status === 'draft' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
-                                                                    'bg-slate-100 text-slate-500 border border-slate-200'
-                                                        )}>
-                                                            {product.status}
-                                                        </span>
                                                         <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">ID: {product._id.slice(-8)}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        {product.showOnStorefront !== false && (
+                                                            <div className="flex items-center gap-1 bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded-[2px] border border-indigo-100/50">
+                                                                <span className="text-[7px] font-black uppercase tracking-widest">Storefront</span>
+                                                            </div>
+                                                        )}
+                                                        {product.showOnPOS !== false && (
+                                                            <div className="flex items-center gap-1 bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded-[2px] border border-amber-100/50">
+                                                                <span className="text-[7px] font-black uppercase tracking-widest">POS</span>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
@@ -318,16 +307,7 @@ function QuickViewModal({ isOpen, onClose, product, onEdit }) {
                                 <Package size={64} />
                             </div>
                         )}
-                        <div className="absolute top-4 left-4">
-                            <span className={cn(
-                                "px-2 py-1 rounded-[2px] text-[9px] font-black uppercase tracking-widest shadow-lg border",
-                                product.status === 'active' ? 'bg-emerald-500 text-white border-emerald-400' :
-                                    product.status === 'draft' ? 'bg-amber-500 text-white border-amber-400' :
-                                        'bg-slate-500 text-white border-slate-400'
-                            )}>
-                                {product.status}
-                            </span>
-                        </div>
+                        {/* Status removed */}
                     </div>
                     <div className="flex-1 p-8 space-y-6 relative">
                         <button

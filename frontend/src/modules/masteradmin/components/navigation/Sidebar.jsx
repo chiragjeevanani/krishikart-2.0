@@ -72,8 +72,6 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
         {
             group: 'Finance', items: [
                 { icon: CreditCard, label: 'Credit Management', path: '/masteradmin/credit' },
-                { icon: BookOpen, label: 'Ledger', path: '/masteradmin/ledger' },
-                { icon: Percent, label: 'Commissions', path: '/masteradmin/commission' },
                 { icon: Star, label: 'Loyalty Engine', path: '/masteradmin/loyalty' },
                 { icon: Truck, label: 'Delivery Constraints', path: '/masteradmin/delivery-constraints' },
             ]

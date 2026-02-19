@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, SlidersHorizontal, Search, X, Check, ChevronRight, LayoutGrid, Star, ChevronDown, ShoppingCart, Heart, Loader2 } from 'lucide-react'
@@ -23,10 +23,12 @@ import {
 
 export default function ProductListScreen() {
     const { category } = useParams()
+    const [searchParams] = useSearchParams()
     const navigate = useNavigate()
     const { cartCount } = useCart()
     const { wishlistCount } = useWishlist()
-    const [searchQuery, setSearchQuery] = useState('')
+    const queryFromUrl = searchParams.get('search') || ''
+    const [searchQuery, setSearchQuery] = useState(queryFromUrl)
     const [categories, setCategories] = useState([])
     const [subcategories, setSubcategories] = useState([])
     const [products, setProducts] = useState([])
@@ -39,6 +41,11 @@ export default function ProductListScreen() {
         brand: null,
         type: null
     })
+
+    // Update searchQuery when URL search param changes
+    useEffect(() => {
+        setSearchQuery(queryFromUrl)
+    }, [queryFromUrl])
 
     // Fetch Categories
     useEffect(() => {
@@ -53,7 +60,7 @@ export default function ProductListScreen() {
         fetchCategories()
     }, [])
 
-    // Fetch Products and Subcategories when Category changes
+    // Fetch Products and Subcategories when Category or Search changes
     useEffect(() => {
         const fetchData = async () => {
             setIsLoading(true)
@@ -61,6 +68,9 @@ export default function ProductListScreen() {
                 // Products
                 const params = {}
                 if (selectedCategory !== 'all') params.category = selectedCategory
+                if (queryFromUrl) params.search = queryFromUrl
+                params.showOnStorefront = true;
+
                 const prodRes = await api.get('/products', { params })
                 if (prodRes.data.success) setProducts(prodRes.data.results)
 
@@ -80,7 +90,7 @@ export default function ProductListScreen() {
             }
         }
         fetchData()
-    }, [selectedCategory, category])
+    }, [selectedCategory, category, queryFromUrl])
 
     // Filter by Subcategory
     useEffect(() => {
@@ -91,7 +101,7 @@ export default function ProductListScreen() {
             setIsLoading(true)
             try {
                 const response = await api.get('/products', {
-                    params: { category: selectedCategory, subcategory: activeSubCategory }
+                    params: { category: selectedCategory, subcategory: activeSubCategory, showOnStorefront: true }
                 })
                 if (response.data.success) setProducts(response.data.results)
             } catch (error) {

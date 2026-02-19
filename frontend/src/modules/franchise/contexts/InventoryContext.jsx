@@ -27,6 +27,7 @@ export const InventoryProvider = ({ children }) => {
                     unitValue: item.productId?.unitValue || 1,
                     dietaryType: item.productId?.dietaryType || 'none',
                     category: item.productId?.category?.name || 'General',
+                    showOnPOS: item.productId?.showOnPOS !== undefined ? item.productId?.showOnPOS : true,
                     lastUpdated: item.lastUpdated
                 }));
                 setInventory(mappedInventory);

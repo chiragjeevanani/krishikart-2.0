@@ -49,7 +49,7 @@ export default function HomeScreen() {
             try {
                 const [catRes, prodRes, franRes] = await Promise.all([
                     api.get('/catalog/categories'),
-                    api.get('/products'),
+                    api.get('/products', { params: { showOnStorefront: true } }),
                     api.get('/franchise/active-stores')
                 ])
                 if (catRes.data.success) setCategories(catRes.data.results)
