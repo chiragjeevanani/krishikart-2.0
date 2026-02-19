@@ -12,7 +12,7 @@ api.interceptors.request.use((config) => {
     let token = null;
 
     // Intelligent Token Selection based on URL or Context
-    const path = window.location.pathname;
+    const path = window.location.pathname.toLowerCase();
 
     if (path.includes('/masteradmin')) {
         token = localStorage.getItem('masterAdminToken');
@@ -47,6 +47,7 @@ api.interceptors.response.use(
                 localStorage.removeItem('vendorToken');
             } else if (path.includes('/delivery')) {
                 localStorage.removeItem('deliveryToken');
+                localStorage.removeItem('deliveryData');
             } else {
                 localStorage.removeItem('userToken');
             }

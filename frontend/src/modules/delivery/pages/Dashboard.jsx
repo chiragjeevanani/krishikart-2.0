@@ -1,30 +1,53 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
     Bell,
     Power,
     TrendingUp,
     Package,
     CheckCircle2,
-    ChevronRight,
-    Navigation,
     Star,
-    Truck
 } from 'lucide-react';
-import { dashboardMetrics, deliveryPartner, activeDelivery } from '../utils/mockData';
 import MetricCard from '../components/cards/MetricCard';
-import { ROUTES } from '../utils/constants';
-import { Link } from 'react-router-dom';
+import { useDeliveryAuth } from '../contexts/DeliveryAuthContext';
+import { useDeliveryOrders } from '../contexts/DeliveryOrderContext';
+import api from '@/lib/axios';
+import axios from 'axios';
 
 const Dashboard = () => {
+    const { delivery } = useDeliveryAuth();
+    const { dispatchedOrders } = useDeliveryOrders();
     const [isOnline, setIsOnline] = useState(true);
+    const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Simulate initial load
-        const timer = setTimeout(() => setLoading(false), 800);
-        return () => clearTimeout(timer);
+        const fetchData = async () => {
+            try {
+                const token = localStorage.getItem('deliveryToken');
+
+                const response = await api.get('/orders/delivery/history');
+                if (response.data.success) {
+                    setHistory(response.data.results || []);
+                }
+            } catch (error) {
+                console.error('Fetch history error:', error);
+                if (error.response?.status === 401) {
+                    console.warn('Unauthorized access. Clearing token and redirecting...');
+                    localStorage.removeItem('deliveryToken');
+                    localStorage.removeItem('deliveryData');
+                    window.location.href = '/delivery/login';
+                }
+                // alert('Fetch failed: ' + (error.response?.status || error.message)); // Optional alert for user feedback
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
     }, []);
+
+    const totalEarnings = history.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+    const completedCount = history.length;
 
     if (loading) {
         return (
@@ -40,164 +63,99 @@ const Dashboard = () => {
     }
 
     return (
-        <div className="flex flex-col min-h-full pb-24">
+        <div className="flex flex-col min-h-full bg-slate-50 pb-24">
             {/* Header */}
-            <div className="px-6 pt-8 pb-4 flex justify-between items-center bg-white sticky top-0 z-10">
+            <div className="px-6 pt-8 pb-4 flex justify-between items-center bg-white sticky top-0 z-10 border-b border-border/5">
                 <div>
-                    <h1 className="text-2xl font-bold text-foreground">Hello, {deliveryPartner.name.split(' ')[0]}!</h1>
-                    <p className="text-muted-foreground text-sm flex items-center gap-1 mt-0.5">
-                        <span className="w-2 h-2 bg-primary rounded-full animate-pulse" /> Ready for deliveries
+                    <h1 className="text-2xl font-black text-foreground">Hello, {delivery?.fullName?.split(' ')[0] || 'Partner'}!</h1>
+                    <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 mt-1">
+                        <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-primary animate-pulse' : 'bg-muted-foreground'}`} />
+                        {isOnline ? 'Online & Available' : 'Currently Offline'}
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button className="relative p-2 rounded-full bg-muted/50 text-foreground active:scale-95 transition-all">
+                    <button className="relative p-3 rounded-2xl bg-muted/30 text-foreground active:scale-95 transition-all">
                         <Bell className="w-5 h-5" />
-                        <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-destructive rounded-full border-2 border-white" />
+                        <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
                     </button>
                     <button
                         onClick={() => setIsOnline(!isOnline)}
-                        className={`p-2 rounded-full active:scale-95 transition-all ${isOnline ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-muted text-muted-foreground'}`}
+                        className={`p-3 rounded-2xl active:scale-95 transition-all shadow-sm ${isOnline ? 'bg-primary text-white shadow-primary/20' : 'bg-white text-muted-foreground border border-border'}`}
                     >
                         <Power className="w-5 h-5" />
                     </button>
                 </div>
             </div>
 
-            <div className="px-6 space-y-6 pt-4">
+            <div className="px-6 space-y-6 pt-6">
                 {/* Availability Toggle UI Block */}
                 <motion.div
-                    className={`px-4 py-3 rounded-2xl flex items-center justify-between border ${isOnline ? 'bg-primary/5 border-primary/20' : 'bg-muted border-transparent'}`}
+                    onClick={() => setIsOnline(!isOnline)}
+                    className={`cursor-pointer px-5 py-4 rounded-3xl flex items-center justify-between border-2 transition-all ${isOnline ? 'bg-primary/5 border-primary/20 shadow-lg shadow-primary/5' : 'bg-white border-border shadow-sm grayscale opacity-70'}`}
                 >
-                    <div className="flex items-center gap-3">
-                        <div className={`w-3 h-3 rounded-full ${isOnline ? 'bg-primary shadow-[0_0_8px_rgba(22,163,74,0.5)]' : 'bg-muted-foreground'}`} />
-                        <span className="font-medium">{isOnline ? 'You are Online' : 'You are Offline'}</span>
+                    <div className="flex items-center gap-4">
+                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-colors ${isOnline ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>
+                            <Power className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <span className="text-sm font-black uppercase tracking-widest block leading-none mb-1">{isOnline ? 'Active' : 'Resting'}</span>
+                            <span className="text-[10px] text-muted-foreground font-medium">{isOnline ? 'Ready for new requests' : 'Status set to offline'}</span>
+                        </div>
                     </div>
-                    <button
-                        onClick={() => setIsOnline(!isOnline)}
-                        className="text-sm font-semibold text-primary"
-                    >
-                        Change
-                    </button>
+                    <div className={`w-12 h-6 rounded-full p-1 relative transition-colors ${isOnline ? 'bg-primary' : 'bg-muted'}`}>
+                        <div className={`w-4 h-4 bg-white rounded-full shadow-sm absolute top-1 transition-all ${isOnline ? 'left-7' : 'left-1'}`} />
+                    </div>
                 </motion.div>
 
                 {/* Metrics Grid */}
                 <div className="grid grid-cols-2 gap-4">
                     <MetricCard
-                        title="Active"
-                        value={dashboardMetrics.activeDeliveries}
+                        title="New Tasks"
+                        value={dispatchedOrders.length}
                         icon={Package}
-                        color="bg-blue-500"
+                        color="bg-blue-600 shadow-blue-200"
                     />
                     <MetricCard
-                        title="Today"
-                        value={dashboardMetrics.completedToday}
+                        title="Today Done"
+                        value={completedCount}
                         icon={CheckCircle2}
-                        color="bg-primary"
+                        color="bg-primary shadow-emerald-200"
                     />
                     <MetricCard
                         title="Earnings"
-                        value={dashboardMetrics.totalEarningsToday}
+                        value={totalEarnings}
                         icon={TrendingUp}
-                        color="bg-amber-500"
+                        color="bg-amber-500 shadow-amber-200"
                         suffix=" ₹"
                     />
                     <MetricCard
                         title="Rating"
-                        value={dashboardMetrics.performanceRating}
+                        value="4.8"
                         icon={Star}
-                        color="bg-purple-500"
+                        color="bg-purple-600 shadow-purple-200"
                     />
                 </div>
 
-                {/* Active Delivery Shortcut */}
-                {activeDelivery && (
-                    <motion.div
-                        whileTap={{ scale: 0.98 }}
-                        className="bg-primary text-white p-5 rounded-2xl shadow-xl shadow-primary/20 relative overflow-hidden"
-                    >
-                        <div className="relative z-10">
-                            <div className="flex justify-between items-start mb-4">
-                                <span className="bg-white/20 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm">
-                                    Active Delivery
-                                </span>
-                                <span className="text-white/80 text-xs font-medium">{activeDelivery.eta} ETA</span>
-                            </div>
-
-                            <h3 className="text-lg font-bold mb-1">On the way to customer</h3>
-                            <p className="text-white/80 text-sm mb-4 truncate">{activeDelivery.drop.address}</p>
-
-                            <Link
-                                to={ROUTES.MAP}
-                                className="inline-flex items-center gap-2 bg-white text-primary px-4 py-2 rounded-xl text-sm font-bold active:scale-95 transition-all"
-                            >
-                                Open Map Tracker <ChevronRight className="w-4 h-4" />
-                            </Link>
-                        </div>
-                    </motion.div>
-                )}
-
-                {/* B2B Logistics Section */}
-                <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                        <h2 className="text-lg font-bold">B2B Logistics</h2>
-                        <span className="text-[10px] font-black bg-amber-500 text-white px-2 py-0.5 rounded-sm uppercase tracking-widest">New Priority</span>
+                {/* Task Feed Link */}
+                <motion.div
+                    whileTap={{ scale: 0.98 }}
+                    className="bg-slate-900 rounded-3xl p-6 text-white shadow-2xl shadow-slate-200 overflow-hidden relative"
+                >
+                    <div className="relative z-10">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-2">Live Status</p>
+                        <h3 className="text-xl font-black mb-1">Task Feed Ready</h3>
+                        <p className="text-white/60 text-xs mb-6">Check and accept incoming delivery requests near you.</p>
+                        <button
+                            onClick={() => window.location.href = '/delivery/requests'}
+                            className="bg-white text-slate-900 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest active:scale-95 transition-all shadow-xl"
+                        >
+                            Open Task Feed
+                        </button>
                     </div>
-                    <Link
-                        to="/delivery/assignment"
-                        className="block bg-white border border-slate-200 rounded-2xl p-5 shadow-sm active:scale-98 transition-all relative overflow-hidden group"
-                    >
-                        <div className="relative z-10 flex flex-col gap-3">
-                            <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                                    <Package className="w-4 h-4 text-primary" />
-                                </div>
-                                <div>
-                                    <h3 className="text-sm font-bold leading-none">Order Delivery</h3>
-                                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-tight mt-1">Leg: Franchise → Customer</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between mt-1">
-                                <div className="flex items-center gap-4">
-                                    <div className="flex flex-col">
-                                        <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest leading-none">Payload</span>
-                                        <span className="text-xs font-black">800 kg</span>
-                                    </div>
-                                    <div className="w-px h-6 bg-slate-100" />
-                                    <div className="flex flex-col">
-                                        <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest leading-none">Earnings</span>
-                                        <span className="text-xs font-black text-emerald-600">₹850</span>
-                                    </div>
-                                </div>
-                                <div className="p-2 bg-slate-50 rounded-full group-hover:bg-primary group-hover:text-white transition-colors">
-                                    <ChevronRight size={16} />
-                                </div>
-                            </div>
-                        </div>
-                    </Link>
-                </div>
-
-                {/* Quick Actions / Insights */}
-                <div className="space-y-4">
-                    <h2 className="text-lg font-bold">Quick Actions</h2>
-                    <div className="grid grid-cols-3 gap-4">
-                        {[
-                            { label: 'Map', icon: Navigation, path: ROUTES.MAP, color: 'text-blue-500 bg-blue-50' },
-                            { label: 'Pickup', icon: Package, path: ROUTES.PICKUP, color: 'text-purple-500 bg-purple-50' },
-                            { label: 'Help', icon: Bell, path: ROUTES.PROFILE, color: 'text-rose-500 bg-rose-50' },
-                        ].map((action, i) => (
-                            <Link
-                                key={i}
-                                to={action.path}
-                                className="flex flex-col items-center gap-2"
-                            >
-                                <div className={`w-14 h-14 ${action.color} rounded-2xl flex items-center justify-center shadow-sm`}>
-                                    <action.icon className="w-6 h-6" />
-                                </div>
-                                <span className="text-xs font-medium text-muted-foreground">{action.label}</span>
-                            </Link>
-                        ))}
+                    <div className="absolute top-0 right-0 p-8 opacity-10">
+                        <Package size={120} />
                     </div>
-                </div>
+                </motion.div>
             </div>
         </div>
     );

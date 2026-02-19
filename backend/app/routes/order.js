@@ -8,7 +8,8 @@ import {
     getFranchiseOrders,
     getFranchiseOrderById,
     acceptFranchiseOrder,
-    getDispatchedOrders
+    getDispatchedOrders,
+    getDeliveryOrderHistory
 } from "../controllers/order.controller.js";
 import { protect } from "../middlewares/authmiddleware.js";
 import { protectMasterAdmin } from "../middlewares/masteradmin.auth.js";
@@ -35,6 +36,7 @@ router.put("/franchise/:id/status", protectFranchise, updateOrderStatus);
 
 // Delivery Routes
 router.get("/delivery/dispatched", protectDelivery, getDispatchedOrders);
+router.get("/delivery/history", protectDelivery, getDeliveryOrderHistory);
 router.put("/delivery/:id/status", protectDelivery, updateOrderStatus);
 
 export default router;

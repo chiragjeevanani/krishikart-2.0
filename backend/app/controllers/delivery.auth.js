@@ -8,7 +8,7 @@ const generateToken = (id) =>
   jwt.sign({ id, role: "delivery" }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN,
   });
-  /* ================= REGISTER DELIVERY ================= */
+/* ================= REGISTER DELIVERY ================= */
 export const registerDelivery = async (req, res) => {
   try {
     const { fullName, mobile, vehicleNumber, vehicleType } = req.body;
@@ -117,6 +117,9 @@ export const verifyDeliveryOTP = async (req, res) => {
       if (!delivery) {
         delivery = await Delivery.create({
           mobile,
+          fullName: "Dev Partner",
+          vehicleNumber: "DEV-1234",
+          vehicleType: "bike",
           isVerified: true,
           status: "active",
         });
@@ -169,7 +172,7 @@ export const verifyDeliveryOTP = async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    return handleResponse(res, 500, "Server error");
+    return handleResponse(res, 500, "Server error: " + err.message);
   }
 };
 
@@ -234,6 +237,31 @@ export const resetDeliveryPassword = async (req, res) => {
 
     return handleResponse(res, 200, "Password reset successful");
   } catch (err) {
+    return handleResponse(res, 500, "Server error");
+  }
+};
+/* ================= UPDATE PROFILE ================= */
+export const updateDeliveryProfile = async (req, res) => {
+  try {
+    const { fullName, vehicleNumber, vehicleType } = req.body;
+    const delivery = await Delivery.findById(req.delivery._id);
+
+    if (!delivery) return handleResponse(res, 404, "Delivery partner not found");
+
+    if (fullName) delivery.fullName = fullName;
+    if (vehicleNumber) delivery.vehicleNumber = vehicleNumber;
+    if (vehicleType) {
+      if (!["bike", "scooter"].includes(vehicleType)) {
+        return handleResponse(res, 400, "Invalid vehicle type");
+      }
+      delivery.vehicleType = vehicleType;
+    }
+
+    await delivery.save();
+
+    return handleResponse(res, 200, "Profile updated successfully", delivery);
+  } catch (err) {
+    console.error("Update profile error:", err);
     return handleResponse(res, 500, "Server error");
   }
 };

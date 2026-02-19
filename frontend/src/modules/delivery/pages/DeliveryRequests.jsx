@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, Search, RotateCcw } from 'lucide-react';
+import { RotateCcw, Package } from 'lucide-react';
 import { deliveryRequests as initialRequests } from '../utils/mockData';
 import DeliveryCard from '../components/cards/DeliveryCard';
 import { useNavigate } from 'react-router-dom';
@@ -8,7 +8,7 @@ import { ROUTES } from '../utils/constants';
 import { useDeliveryOrders } from '../contexts/DeliveryOrderContext';
 
 const DeliveryRequests = () => {
-    const { dispatchedOrders: requests, loading, fetchDispatchedOrders: handleRefresh } = useDeliveryOrders();
+    const { dispatchedOrders: requests, loading: refreshing, fetchDispatchedOrders: handleRefresh } = useDeliveryOrders();
     const navigate = useNavigate();
 
     const handleAccept = (id) => {
@@ -36,21 +36,6 @@ const DeliveryRequests = () => {
                         className={`p-2 rounded-full bg-muted/50 text-foreground transition-all active:scale-95 ${refreshing ? 'animate-spin' : ''}`}
                     >
                         <RotateCcw className="w-5 h-5" />
-                    </button>
-                </div>
-
-                {/* Search & Filter */}
-                <div className="flex gap-2">
-                    <div className="flex-1 relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <input
-                            type="text"
-                            placeholder="Search locations..."
-                            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-border bg-muted/30 focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
-                        />
-                    </div>
-                    <button className="p-2.5 rounded-xl border border-border bg-white text-foreground active:scale-95">
-                        <Filter className="w-5 h-5" />
                     </button>
                 </div>
             </div>
