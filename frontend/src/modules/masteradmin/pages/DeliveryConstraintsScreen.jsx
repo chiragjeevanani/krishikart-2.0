@@ -11,6 +11,7 @@ import {
     Settings2,
     CheckCircle2
 } from 'lucide-react';
+import api from '@/lib/axios';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -20,33 +21,59 @@ export default function DeliveryConstraintsScreen() {
 
     // Initial state matching mock values or localStorage
     const [constraints, setConstraints] = useState({
-        baseFee: '40',
-        freeMov: '500',
-        perKmRate: '5',
-        maxFee: '150',
-        activeZones: true
+        baseFee: '',
+        freeMov: '',
+        tax: '',
+        platformFee: '',
+        activeZones: false
     });
 
     useEffect(() => {
-        const saved = localStorage.getItem('delivery_constraints');
-        if (saved) {
-            setConstraints(JSON.parse(saved));
-        }
-        const timer = setTimeout(() => setIsLoading(false), 500);
-        return () => clearTimeout(timer);
+        const fetchSettings = async () => {
+            try {
+                const response = await api.get('/masteradmin/settings');
+                if (response.data.success) {
+                    const deliverySetting = response.data.results.find(s => s.key === 'delivery_constraints');
+                    if (deliverySetting) {
+                        setConstraints(deliverySetting.value);
+                    }
+                }
+            } catch (error) {
+                console.error('Fetch settings error:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchSettings();
     }, []);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         setIsSaving(true);
-        // Simulate API delay
-        setTimeout(() => {
-            localStorage.setItem('delivery_constraints', JSON.stringify(constraints));
-            setIsSaving(false);
-            toast.success('Delivery Settings Updated', {
-                description: 'New fees are now active for all orders.',
-                icon: <CheckCircle2 size={16} className="text-emerald-500" />
+        try {
+            const response = await api.post('/masteradmin/settings/update', {
+                key: 'delivery_constraints',
+                value: {
+                    baseFee: constraints.baseFee,
+                    freeMov: constraints.freeMov,
+                    tax: constraints.tax,
+                    platformFee: constraints.platformFee,
+                    activeZones: constraints.activeZones
+                }
             });
-        }, 800);
+
+            if (response.data.success) {
+                toast.success('Delivery Settings Updated', {
+                    description: 'New fees and tax rates are now active.',
+                    icon: <CheckCircle2 size={16} className="text-emerald-500" />
+                });
+            }
+        } catch (error) {
+            console.error('Save settings error:', error);
+            toast.error('Failed to save settings');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleChange = (e) => {
@@ -164,38 +191,35 @@ export default function DeliveryConstraintsScreen() {
                             </div>
                         </div>
 
-                        {/* 2. Advanced Metrics */}
+                        {/* 2. Tax & Platform Fees */}
                         <div className="bg-white border border-slate-200 rounded-sm shadow-sm overflow-hidden group">
                             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-slate-50 text-slate-600 flex items-center justify-center rounded-sm group-hover:bg-slate-900 group-hover:text-white transition-colors duration-350">
+                                    <div className="w-8 h-8 bg-slate-50 text-slate-600 flex items-center justify-center rounded-sm group-hover:bg-blue-600 group-hover:text-white transition-colors duration-350">
                                         <Settings2 size={16} />
                                     </div>
-                                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Distance Fees</h3>
+                                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Tax & Platform Fees</h3>
                                 </div>
                             </div>
                             <div className="p-6 space-y-6">
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Extra Fee per KM (₹)</label>
-                                    <input
-                                        type="number"
-                                        name="perKmRate"
-                                        value={constraints.perKmRate}
-                                        onChange={handleChange}
-                                        className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-2.5 text-sm font-black focus:ring-1 focus:ring-slate-900 focus:border-slate-900 outline-none transition-all"
-                                    />
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5 flex items-center justify-between">
+                                        GST / Service Tax (%)
+                                        <Info size={10} className="text-slate-300" />
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type="number"
+                                            name="tax"
+                                            value={constraints.tax ?? ''}
+                                            onChange={handleChange}
+                                            className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-2.5 text-sm font-black focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                            placeholder="5"
+                                        />
+                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">%</span>
+                                    </div>
                                 </div>
 
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Maximum Delivery Fee (₹)</label>
-                                    <input
-                                        type="number"
-                                        name="maxFee"
-                                        value={constraints.maxFee}
-                                        onChange={handleChange}
-                                        className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-2.5 text-sm font-black focus:ring-1 focus:ring-slate-900 focus:border-slate-900 outline-none transition-all"
-                                    />
-                                </div>
                             </div>
                         </div>
                     </div>

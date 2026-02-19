@@ -101,13 +101,30 @@ export default function FranchiseStockMonitoringScreen() {
         setCommissionModal({
             isOpen: true,
             category: cat,
-            value: '5' // Mock default or existing value
+            value: cat.commissionPercentage || '0'
         });
     };
 
-    const handleSaveCommission = () => {
-        toast.success(`Commission for ${commissionModal.category.name} updated to ${commissionModal.value}%`);
-        setCommissionModal({ isOpen: false, category: null, value: '' });
+    const handleSaveCommission = async () => {
+        if (!selectedFranchiseId || !commissionModal.category?.id) return;
+
+        try {
+            const response = await api.post('/masteradmin/commissions/update', {
+                franchiseId: selectedFranchiseId,
+                categoryId: commissionModal.category.id,
+                commissionPercentage: parseFloat(commissionModal.value)
+            });
+
+            if (response.data.success) {
+                toast.success(`Commission for ${commissionModal.category.name} updated successfully`);
+                setCommissionModal({ isOpen: false, category: null, value: '' });
+                // Refresh data
+                fetchFranchiseDetails(selectedFranchiseId);
+            }
+        } catch (error) {
+            console.error('Update commission error:', error);
+            toast.error('Failed to update commission');
+        }
     };
 
     const franchises = useMemo(() => networkData.map(f => ({
@@ -129,7 +146,8 @@ export default function FranchiseStockMonitoringScreen() {
                     name: catName,
                     totalItems: 0,
                     lowStockItems: 0,
-                    criticalItems: 0
+                    criticalItems: 0,
+                    commissionPercentage: item.commissionPercentage || 0
                 };
             }
             cats[catName].totalItems++;
@@ -366,7 +384,12 @@ export default function FranchiseStockMonitoringScreen() {
                                         </div>
                                     </div>
 
-                                    <h3 className="text-sm font-bold text-slate-900 tracking-tight mb-4">{cat.name}</h3>
+                                    <h3 className="text-sm font-bold text-slate-900 tracking-tight mb-2">{cat.name}</h3>
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <div className="px-1.5 py-0.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-sm text-[9px] font-black uppercase tracking-widest">
+                                            {cat.commissionPercentage}% Commission
+                                        </div>
+                                    </div>
 
                                     <div className="flex items-center justify-between pt-4 border-t border-slate-50">
                                         <div className="flex gap-4">

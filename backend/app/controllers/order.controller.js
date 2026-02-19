@@ -5,6 +5,7 @@ import Product from "../models/product.js";
 import Cart from "../models/cart.js";
 import User from "../models/user.js";
 import Franchise from "../models/franchise.js";
+import GlobalSetting from "../models/globalSetting.js";
 import { geocodeAddress, getDistance } from "../utils/geo.js";
 
 /**
@@ -62,7 +63,11 @@ export const createOrder = async (req, res) => {
         const user = await User.findById(userId);
         if (!user) return handleResponse(res, 404, "User not found");
 
-        // 2. Process Items and Calculate Totals
+        // 2.5 Fetch Delivery Constraints from Admin Settings
+        const settings = await GlobalSetting.findOne({ key: 'delivery_constraints' });
+        const constraints = settings?.value || { baseFee: 40, freeMov: 500, tax: 5, platformFee: 2 };
+
+        // 3. Process Items and Calculate Totals
         let subtotal = 0;
         const orderItems = [];
 
@@ -89,12 +94,16 @@ export const createOrder = async (req, res) => {
             subtotal += itemSubtotal;
         }
 
-        // Fixed fees for now (could be dynamic)
-        const deliveryFee = subtotal > 1000 ? 0 : 50;
-        const tax = Math.round(subtotal * 0.05); // 5% GST
-        const totalAmount = subtotal + deliveryFee + tax;
+        // 4. Calculate Delivery Fee and Tax
+        const deliveryFee = subtotal >= parseFloat(constraints.freeMov) ? 0 : parseFloat(constraints.baseFee);
+        const platformFee = 0; // Explicitly removed
 
-        // 3. Handle Payments (Wallet/Credit)
+        // Dynamic Tax applied to the entire order (Subtotal + Fees)
+        const taxRate = parseFloat(constraints.tax || 0) / 100;
+        const tax = Number(((subtotal + deliveryFee) * taxRate).toFixed(2));
+        const totalAmount = Number((subtotal + deliveryFee + tax).toFixed(2));
+
+        // 5. Handle Payments (Wallet/Credit)
         if (paymentMethod === 'Wallet') {
             if (user.walletBalance < totalAmount) {
                 return handleResponse(res, 400, "Insufficient wallet balance");
@@ -108,10 +117,11 @@ export const createOrder = async (req, res) => {
             user.usedCredit += totalAmount;
         }
 
-        // 3.5 Auto Franchise Assignment
+        // 6. Auto Franchise Assignment
         let assignedFranchiseId = null;
+        let userCoords = null;
         try {
-            const userCoords = await geocodeAddress(shippingAddress);
+            userCoords = await geocodeAddress(shippingAddress);
             if (userCoords) {
                 const activeFranchises = await Franchise.find({
                     status: 'active',
@@ -120,38 +130,29 @@ export const createOrder = async (req, res) => {
                 });
 
                 let minDistance = Infinity;
-
                 for (const franchise of activeFranchises) {
                     const dist = getDistance(
                         userCoords.lat, userCoords.lng,
                         franchise.location.lat, franchise.location.lng
                     );
-
                     if (dist < minDistance) {
                         minDistance = dist;
                         assignedFranchiseId = franchise._id;
                     }
                 }
-
-                if (assignedFranchiseId) {
-                    console.log(`✅ Order auto-assigned to closest franchise: ${assignedFranchiseId} (${minDistance.toFixed(2)}km)`);
-                } else {
-                    console.log('⚠️ No active franchises with locations found for auto-assignment');
-                }
-            } else {
-                console.warn('⚠️ Could not geocode shipping address for auto-assignment');
             }
         } catch (geoErr) {
             console.error("Auto-assignment error:", geoErr);
         }
 
-        // 4. Create Order
+        // 7. Create Order
         const order = new Order({
             userId,
             franchiseId: assignedFranchiseId,
             items: orderItems,
             subtotal,
             deliveryFee,
+            platformFee, // Note: Order model might need this field if tracking separately
             tax,
             totalAmount,
             paymentMethod,

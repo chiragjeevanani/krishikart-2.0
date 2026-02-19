@@ -209,7 +209,7 @@ export default function OrderDetailScreen() {
                                 <div className="space-y-4 pb-6 border-b border-slate-50 border-dashed">
                                     <div className="flex justify-between text-xs font-bold text-slate-400">
                                         <span className="uppercase tracking-widest text-[10px]">Item Total</span>
-                                        <span className="text-slate-800 font-black tabular-nums">₹{(order.itemTotal || 0).toLocaleString()}</span>
+                                        <span className="text-slate-800 font-black tabular-nums">₹{(order.subtotal || 0).toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between text-xs font-bold text-slate-400">
                                         <span className="uppercase tracking-widest text-[10px]">Delivery Charge</span>
@@ -217,9 +217,15 @@ export default function OrderDetailScreen() {
                                             {order.deliveryFee === 0 ? "Free" : `₹${order.deliveryFee}`}
                                         </span>
                                     </div>
+                                    {order.platformFee > 0 && (
+                                        <div className="flex justify-between text-xs font-bold text-slate-400">
+                                            <span className="uppercase tracking-widest text-[10px]">Platform Fee</span>
+                                            <span className="text-slate-800 font-black tabular-nums">₹{order.platformFee}</span>
+                                        </div>
+                                    )}
                                     <div className="flex justify-between text-xs font-bold text-slate-400">
                                         <span className="uppercase tracking-widest text-[10px]">GST & Taxes</span>
-                                        <span className="text-slate-800 font-black tabular-nums">₹{(order.taxAmount || 0).toLocaleString()}</span>
+                                        <span className="text-slate-800 font-black tabular-nums">₹{(order.tax || 0).toLocaleString()}</span>
                                     </div>
                                 </div>
 

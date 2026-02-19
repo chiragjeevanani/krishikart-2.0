@@ -2,6 +2,7 @@ import Category from "../models/category.js";
 import Subcategory from "../models/subcategory.js";
 import handleResponse from "../utils/helper.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
+import GlobalSetting from "../models/globalSetting.js";
 
 /* ================= CATEGORY CONTROLLERS ================= */
 
@@ -183,6 +184,17 @@ export const deleteSubcategory = async (req, res) => {
         }
 
         return handleResponse(res, 200, "Subcategory deleted successfully");
+    } catch (err) {
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
+/* ================= SETTINGS CONTROLLERS ================= */
+
+export const getPublicSettings = async (req, res) => {
+    try {
+        const settings = await GlobalSetting.find();
+        return handleResponse(res, 200, "Settings fetched", settings);
     } catch (err) {
         return handleResponse(res, 500, "Server error");
     }

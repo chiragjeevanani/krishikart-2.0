@@ -7,6 +7,12 @@ const CartContext = createContext();
 export function CartProvider({ children }) {
     const [cartItems, setCartItems] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [deliveryConstraints, setDeliveryConstraints] = useState({
+        baseFee: 40,
+        freeMov: 500,
+        tax: 5,
+        platformFee: 2
+    });
 
     // Fetch cart on mount if token exists
     const fetchCart = async () => {
@@ -40,8 +46,26 @@ export function CartProvider({ children }) {
         }
     };
 
+    const fetchSettings = async () => {
+        try {
+            const response = await api.get('/catalog/settings');
+            const settingsArray = response.data.results || response.data.result || [];
+
+            if (Array.isArray(settingsArray)) {
+                const deliverySetting = settingsArray.find(s => s.key === 'delivery_constraints');
+                if (deliverySetting && deliverySetting.value) {
+                    console.log("Successfully fetched delivery constraints:", deliverySetting.value);
+                    setDeliveryConstraints(deliverySetting.value);
+                }
+            }
+        } catch (error) {
+            console.error("Fetch settings error:", error);
+        }
+    };
+
     useEffect(() => {
         fetchCart();
+        fetchSettings();
     }, []);
 
     const getPriceForQuantity = (product, quantity) => {
@@ -141,7 +165,8 @@ export function CartProvider({ children }) {
                 cartTotal,
                 getActivePrice,
                 fetchCart,
-                isLoading
+                isLoading,
+                deliveryConstraints
             }}
         >
             {children}

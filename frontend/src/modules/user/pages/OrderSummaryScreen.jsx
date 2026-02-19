@@ -152,7 +152,7 @@ export default function OrderSummaryScreen() {
                         <div className="space-y-3 pb-6 border-b border-slate-50 border-dashed">
                             <div className="flex justify-between text-xs font-bold text-slate-400">
                                 <span className="uppercase tracking-widest">Item Total</span>
-                                <span className="text-slate-800 font-black">₹{(order.itemTotal || 0).toLocaleString()}</span>
+                                <span className="text-slate-800 font-black">₹{(order.subtotal || 0).toLocaleString()}</span>
                             </div>
                             <div className="flex justify-between text-xs font-bold text-slate-500">
                                 <span className="uppercase tracking-widest">Delivery Charge</span>
@@ -160,9 +160,15 @@ export default function OrderSummaryScreen() {
                                     {order.deliveryFee === 0 ? "Free" : `₹${order.deliveryFee}`}
                                 </span>
                             </div>
+                            {order.platformFee > 0 && (
+                                <div className="flex justify-between text-xs font-bold text-slate-500">
+                                    <span className="uppercase tracking-widest">Platform Fee</span>
+                                    <span className="text-slate-800 font-black">₹{order.platformFee}</span>
+                                </div>
+                            )}
                             <div className="flex justify-between text-xs font-bold text-slate-500">
                                 <span className="uppercase tracking-widest">GST & Taxes</span>
-                                <span className="text-slate-800 font-black">₹{(order.taxAmount || 0).toLocaleString()}</span>
+                                <span className="text-slate-800 font-black">₹{(order.tax || 0).toLocaleString()}</span>
                             </div>
                         </div>
 

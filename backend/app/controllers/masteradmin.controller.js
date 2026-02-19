@@ -3,6 +3,9 @@ import Franchise from "../models/franchise.js";
 import User from "../models/user.js";
 import Product from "../models/product.js";
 import Inventory from "../models/inventory.js";
+import FranchiseCommission from "../models/franchiseCommission.js";
+import Category from "../models/category.js";
+import GlobalSetting from "../models/globalSetting.js";
 import handleResponse from "../utils/helper.js";
 
 /* ================= VENDOR MANAGEMENT ================= */
@@ -312,6 +315,13 @@ export const getFranchiseInventoryDetails = async (req, res) => {
             return handleResponse(res, 404, "Inventory not found for this franchise");
         }
 
+        // Fetch commissions for this franchise
+        const commissions = await FranchiseCommission.find({ franchiseId: id });
+        const commissionMap = commissions.reduce((acc, c) => {
+            acc[c.categoryId.toString()] = c.commissionPercentage;
+            return acc;
+        }, {});
+
         const formattedItems = inventory.items.map(item => ({
             productId: item.productId?._id,
             productName: item.productId?.name,
@@ -323,15 +333,77 @@ export const getFranchiseInventoryDetails = async (req, res) => {
             categoryName: item.productId?.category?.name || 'Uncategorized',
             subcategoryId: item.productId?.subcategory?._id,
             subcategoryName: item.productId?.subcategory?.name || 'General',
-            alertStatus: item.currentStock < item.mbq ? (item.currentStock === 0 ? 'critical' : 'low') : 'ok'
+            alertStatus: item.currentStock < item.mbq ? (item.currentStock === 0 ? 'critical' : 'low') : 'ok',
+            commissionPercentage: (item.productId?.category?._id && commissionMap[item.productId.category._id.toString()]) || 0
         }));
 
         return handleResponse(res, 200, "Franchise inventory details fetched", {
             franchise: inventory.franchiseId,
-            items: formattedItems
+            items: formattedItems,
+            commissions: commissionMap // Also send raw map if needed
         });
     } catch (err) {
         console.error("Franchise Inventory Details Error:", err);
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
+/* ================= COMMISSION MANAGEMENT ================= */
+
+export const updateFranchiseCommission = async (req, res) => {
+    try {
+        const { franchiseId, categoryId, commissionPercentage } = req.body;
+
+        if (!franchiseId || !categoryId || commissionPercentage === undefined) {
+            return handleResponse(res, 400, "Missing required fields");
+        }
+
+        const commission = await FranchiseCommission.findOneAndUpdate(
+            { franchiseId, categoryId },
+            { commissionPercentage },
+            { new: true, upsert: true }
+        );
+
+        return handleResponse(res, 200, "Commission updated successfully", commission);
+    } catch (err) {
+        console.error("Update Commission Error:", err);
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
+export const getFranchiseCommissions = async (req, res) => {
+    try {
+        const { id } = req.params; // franchiseId
+        const commissions = await FranchiseCommission.find({ franchiseId: id }).populate('categoryId', 'name');
+
+        return handleResponse(res, 200, "Franchise commissions fetched successfully", commissions);
+    } catch (err) {
+        console.error("Get Commissions Error:", err);
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
+/* ================= SYSTEM SETTINGS ================= */
+
+export const getGlobalSettings = async (req, res) => {
+    try {
+        const settings = await GlobalSetting.find();
+        return handleResponse(res, 200, "Settings fetched", settings);
+    } catch (err) {
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
+export const updateGlobalSetting = async (req, res) => {
+    try {
+        const { key, value } = req.body;
+        const setting = await GlobalSetting.findOneAndUpdate(
+            { key },
+            { value },
+            { new: true, upsert: true }
+        );
+        return handleResponse(res, 200, "Setting updated", setting);
+    } catch (err) {
         return handleResponse(res, 500, "Server error");
     }
 };

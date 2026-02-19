@@ -26,7 +26,7 @@ import { toast } from 'sonner'
 
 export default function CheckoutScreen() {
     const navigate = useNavigate()
-    const { cartItems, cartTotal, clearCart } = useCart()
+    const { cartItems, cartTotal, clearCart, deliveryConstraints } = useCart()
     const { placeOrder } = useOrders()
     const { balance, payWithWallet, creditLimit, creditUsed } = useWallet()
 
@@ -54,9 +54,14 @@ export default function CheckoutScreen() {
         }
     }
 
-    const deliveryFee = 50
-    const tax = Math.round(cartTotal * 0.05)
-    const total = cartTotal + deliveryFee + tax
+    const deliveryFee = cartTotal >= parseFloat(deliveryConstraints.freeMov) ? 0 : parseFloat(deliveryConstraints.baseFee)
+
+    // Dynamic Tax calculation matching backend logic (Entire Order)
+    const taxRateString = deliveryConstraints.tax || '0'
+    const taxRate = parseFloat(taxRateString) / 100
+    const tax = parseFloat(((cartTotal + deliveryFee) * taxRate).toFixed(2))
+
+    const total = parseFloat((cartTotal + deliveryFee + tax).toFixed(2))
 
     const handleRazorpayPayment = async (orderData) => {
         try {
@@ -382,11 +387,13 @@ export default function CheckoutScreen() {
                                     </div>
                                     <div className="flex justify-between items-center text-sm font-medium text-slate-500">
                                         <span>Delivery Fee</span>
-                                        <span className="text-green-600 font-bold">₹{deliveryFee}</span>
+                                        <span className={deliveryFee === 0 ? "text-green-600 font-bold" : ""}>
+                                            {deliveryFee === 0 ? 'FREE' : `₹${deliveryFee}`}
+                                        </span>
                                     </div>
                                     <div className="flex justify-between items-center text-sm font-medium text-slate-500">
-                                        <span>GST (5%)</span>
-                                        <span>₹{tax}</span>
+                                        <span>Taxes & Charges ({taxRateString}%)</span>
+                                        <span title={`GST applied to total order amount`}>₹{tax}</span>
                                     </div>
                                 </div>
 

@@ -22,7 +22,11 @@ import {
   updateCustomerCredit,
   assignProductsToVendor,
   getGlobalInventoryMonitoring,
-  getFranchiseInventoryDetails
+  getFranchiseInventoryDetails,
+  updateFranchiseCommission,
+  getFranchiseCommissions,
+  getGlobalSettings,
+  updateGlobalSetting
 } from "../controllers/masteradmin.controller.js";
 
 import { protectMasterAdmin } from "../middlewares/masteradmin.auth.js";
@@ -58,5 +62,14 @@ router.put("/customers/:id/credit", protectMasterAdmin, updateCustomerCredit);
 /* 📊 Inventory Monitoring */
 router.get("/inventory/monitoring", protectMasterAdmin, getGlobalInventoryMonitoring);
 router.get("/inventory/franchise/:id", protectMasterAdmin, getFranchiseInventoryDetails);
+
+/* 💰 Commission Management */
+router.get("/franchise/:id/commissions", protectMasterAdmin, getFranchiseCommissions);
+router.post("/commissions/update", protectMasterAdmin, updateFranchiseCommission);
+
+/* ⚙️ System Settings */
+router.get("/settings", protectMasterAdmin, getGlobalSettings);
+router.post("/settings/update", protectMasterAdmin, updateGlobalSetting);
+router.get("/public-settings", getGlobalSettings); // Public route for user app
 
 export default router;

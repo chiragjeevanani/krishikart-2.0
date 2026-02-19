@@ -8,6 +8,7 @@ import {
     getSubcategories,
     updateSubcategory,
     deleteSubcategory,
+    getPublicSettings
 } from "../controllers/catalog.controller.js";
 import { protectMasterAdmin } from "../middlewares/masteradmin.auth.js";
 import upload from "../middlewares/upload.js";
@@ -25,5 +26,8 @@ router.post("/subcategories", protectMasterAdmin, upload.single("image"), create
 router.get("/subcategories", getSubcategories); // Publicly accessible
 router.put("/subcategories/:id", protectMasterAdmin, upload.single("image"), updateSubcategory);
 router.delete("/subcategories/:id", protectMasterAdmin, deleteSubcategory);
+
+/* ================= SETTINGS ROUTES ================= */
+router.get("/settings", getPublicSettings);
 
 export default router;
