@@ -298,7 +298,14 @@ export const getFranchiseInventoryDetails = async (req, res) => {
     try {
         const { id } = req.params;
         const inventory = await Inventory.findOne({ franchiseId: id })
-            .populate('items.productId', 'name primaryImage unit unitValue category')
+            .populate({
+                path: 'items.productId',
+                select: 'name primaryImage unit unitValue category subcategory',
+                populate: [
+                    { path: 'category', select: 'name' },
+                    { path: 'subcategory', select: 'name' }
+                ]
+            })
             .populate('franchiseId', 'franchiseName ownerName city');
 
         if (!inventory) {
@@ -312,7 +319,10 @@ export const getFranchiseInventoryDetails = async (req, res) => {
             currentStock: item.currentStock,
             mbq: item.mbq,
             unit: item.productId?.unit,
-            category: item.productId?.category,
+            categoryId: item.productId?.category?._id,
+            categoryName: item.productId?.category?.name || 'Uncategorized',
+            subcategoryId: item.productId?.subcategory?._id,
+            subcategoryName: item.productId?.subcategory?.name || 'General',
             alertStatus: item.currentStock < item.mbq ? (item.currentStock === 0 ? 'critical' : 'low') : 'ok'
         }));
 

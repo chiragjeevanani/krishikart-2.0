@@ -33,6 +33,7 @@ import { toast } from 'sonner';
 import MetricRow from '../components/cards/MetricRow';
 import DataGrid from '../components/tables/DataGrid';
 import FilterBar from '../components/tables/FilterBar';
+import OrderHistoryModal from '../components/modals/OrderHistoryModal';
 
 export default function OrdersScreen() {
     const navigate = useNavigate();
@@ -52,6 +53,7 @@ export default function OrdersScreen() {
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
     const [selectedOrderForDispatch, setSelectedOrderForDispatch] = useState(null);
     const [isAssigning, setIsAssigning] = useState(false);
+    const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
     const handleAcceptOrder = async (orderId) => {
         setProcessingOrderId(orderId);
@@ -249,7 +251,10 @@ export default function OrdersScreen() {
                         <button className="p-1.5 text-slate-400 hover:text-slate-900 transition-colors border border-slate-200 rounded-sm bg-white">
                             <Settings2 size={14} />
                         </button>
-                        <button className="bg-slate-900 text-white px-3 py-1.5 rounded-sm text-[11px] font-bold flex items-center gap-2 hover:bg-slate-800 transition-colors shadow-sm uppercase tracking-widest">
+                        <button
+                            onClick={() => setIsHistoryModalOpen(true)}
+                            className="bg-slate-900 text-white px-3 py-1.5 rounded-sm text-[11px] font-bold flex items-center gap-2 hover:bg-slate-800 transition-colors shadow-sm uppercase tracking-widest"
+                        >
                             <History size={14} />
                             Order History
                         </button>
@@ -439,6 +444,11 @@ export default function OrdersScreen() {
                     </div>
                 )}
             </AnimatePresence>
+            {/* Order History Modal */}
+            <OrderHistoryModal
+                isOpen={isHistoryModalOpen}
+                onClose={() => setIsHistoryModalOpen(false)}
+            />
         </div >
     );
 }

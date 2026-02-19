@@ -131,7 +131,27 @@ export function FranchiseOrdersProvider({ children }) {
             stats,
             loading,
             refreshOrders: fetchOrders,
-            refreshPartners: fetchDeliveryPartners
+            refreshPartners: fetchDeliveryPartners,
+            fetchOrdersByDate: async (date) => {
+                try {
+                    const response = await api.get(`/orders/franchise/all?date=${date}`);
+                    if (response.data.success) {
+                        return response.data.results.map(o => ({
+                            id: o._id,
+                            hotelName: o.userId?.fullName || 'Guest User',
+                            status: o.orderStatus?.toLowerCase() || 'new',
+                            total: o.totalAmount,
+                            items: o.items,
+                            date: o.date,
+                            time: o.time
+                        }));
+                    }
+                    return [];
+                } catch (error) {
+                    console.error('Fetch history error:', error);
+                    return [];
+                }
+            }
         }}>
             {children}
         </FranchiseOrdersContext.Provider>

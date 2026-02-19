@@ -26,8 +26,7 @@ export default function SettingsScreen() {
     const [formData, setFormData] = useState({
         fullName: '',
         email: '',
-        mobile: '',
-        operationalZone: ''
+        mobile: ''
     });
     const [passwordData, setPasswordData] = useState({
         oldPassword: '',
@@ -43,8 +42,7 @@ export default function SettingsScreen() {
                 setFormData({
                     fullName: data.result.fullName || '',
                     email: data.result.email || '',
-                    mobile: data.result.mobile || '',
-                    operationalZone: data.result.operationalZone || ''
+                    mobile: data.result.mobile || ''
                 });
             } catch (error) {
                 console.error("Failed to fetch profile", error);
@@ -122,9 +120,9 @@ export default function SettingsScreen() {
     }
 
     return (
-        <div className="bg-slate-50 min-h-screen">
+        <div className="bg-slate-50 w-full">
             {/* Enterprise Header */}
-            <div className="bg-white border-b border-slate-200 sticky top-0 z-30">
+            <div className="bg-white border-b border-slate-200 sticky top-0 z-30 px-6">
                 <div className="px-4 py-2 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-r border-slate-200 pr-4">
@@ -148,7 +146,7 @@ export default function SettingsScreen() {
 
             <div className="flex flex-col lg:flex-row min-h-[calc(100vh-42px)]">
                 {/* Secondary Navigation (Sidebar) */}
-                <div className="w-full lg:w-64 bg-white border-r border-slate-200 p-4 space-y-1">
+                <div className="w-full lg:w-64 bg-white border-r border-slate-200 p-6 space-y-1">
                     <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 ml-2">Administrative Scope</h3>
                     {sections.map((section) => (
                         <button
@@ -181,7 +179,7 @@ export default function SettingsScreen() {
                 </div>
 
                 {/* Main Configuration Interface */}
-                <div className="flex-1 p-8">
+                <div className="flex-1 p-6 lg:p-12">
                     <motion.div
                         key={activeSection}
                         initial={{ opacity: 0, y: 5 }}
@@ -235,26 +233,6 @@ export default function SettingsScreen() {
                                                     value={formData.mobile}
                                                     onChange={handleProfileChange}
                                                 />
-                                                <div className="space-y-2">
-                                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block ml-1">Operational Zone</label>
-                                                    <div className="relative group">
-                                                        <select
-                                                            name="operationalZone"
-                                                            value={formData.operationalZone}
-                                                            onChange={handleProfileChange}
-                                                            className="w-full bg-slate-50 border border-slate-100 rounded-sm py-3 px-4 outline-none text-xs font-bold text-slate-900 focus:border-slate-300 transition-all appearance-none cursor-pointer"
-                                                        >
-                                                            <option value="ASIA-SOUTH-IND-01">ASIA-SOUTH-IND-01</option>
-                                                            <option value="ASIA-SOUTH-IND-02">ASIA-SOUTH-IND-02</option>
-                                                            <option value="EU-WEST-01">EU-WEST-01</option>
-                                                            <option value="US-EAST-01">US-EAST-01</option>
-                                                            <option value="INDIA">INDIA</option>
-                                                        </select>
-                                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                                                            <ChevronDown size={14} className="text-slate-400" />
-                                                        </div>
-                                                    </div>
-                                                </div>
                                             </div>
                                         </motion.div>
                                     )}

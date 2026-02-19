@@ -25,6 +25,14 @@ const franchiseSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    area: {
+      type: String,
+      default: null
+    },
+    state: {
+      type: String,
+      default: null
+    },
 
     email: {
       type: String,
