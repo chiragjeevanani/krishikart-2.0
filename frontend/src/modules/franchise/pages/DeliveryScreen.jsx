@@ -29,7 +29,8 @@ import DataGrid from '../components/tables/DataGrid';
 import FilterBar from '../components/tables/FilterBar';
 
 export default function DeliveryScreen() {
-    const { orders, updateOrderStatus } = useFranchiseOrders();
+    const { orders, updateOrderStatus, deliveryPartners, assignDeliveryPartner } = useFranchiseOrders();
+    const [activeTab, setActiveTab] = useState('active'); // 'active' or 'history'
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
 
@@ -38,20 +39,20 @@ export default function DeliveryScreen() {
         return () => clearTimeout(timer);
     }, []);
 
-    const dispatchOrders = orders.filter(o =>
-        (o.status === 'ready' || o.status === 'out_for_delivery') &&
-        (o.hotelName.toLowerCase().includes(searchQuery.toLowerCase()) || o.id.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+    const filteredOrders = orders.filter(o => {
+        const matchesSearch = (o.hotelName?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+            (o.id?.toLowerCase() || '').includes(searchQuery.toLowerCase());
 
-    const readyCount = orders.filter(o => o.status === 'ready').length;
-    const outCount = orders.filter(o => o.status === 'out_for_delivery').length;
+        if (activeTab === 'active') {
+            return matchesSearch && ['packed', 'dispatched'].includes(o.status);
+        } else {
+            return matchesSearch && ['delivered', 'received'].includes(o.status);
+        }
+    });
 
-    const deliveryPartners = [
-        { id: 'DP001', name: 'Amit Kumar', phone: '+91 98765 43210', avatar: 'AK' },
-        { id: 'DP002', name: 'Suresh Singh', phone: '+91 98765 43211', avatar: 'SS' },
-        { id: 'DP003', name: 'Vikram Phogat', phone: '+91 98765 43212', avatar: 'VP' },
-        { id: 'DP004', name: 'Rahul Dev', phone: '+91 98765 43213', avatar: 'RD' }
-    ];
+    const readyCount = orders.filter(o => o.status === 'packed').length;
+    const outCount = orders.filter(o => o.status === 'dispatched').length;
+    const completedCount = orders.filter(o => ['delivered', 'received'].includes(o.status)).length;
 
     if (isLoading) {
         return (
@@ -88,7 +89,7 @@ export default function DeliveryScreen() {
             </div>
 
             {/* Performance Strip */}
-            <div className="bg-white border-b border-slate-200 grid grid-cols-1 md:grid-cols-4">
+            <div className="bg-white border-b border-slate-200 grid grid-cols-1 md:grid-cols-5">
                 <MetricRow
                     label="Active Dispatch"
                     value={outCount}
@@ -97,11 +98,18 @@ export default function DeliveryScreen() {
                     sub="Couriers on Road"
                 />
                 <MetricRow
-                    label="Staged for Delivery"
+                    label="Staged"
                     value={readyCount}
                     trend="Stable"
                     icon={Package}
-                    sub="Queue Integrity: High"
+                    sub="Ready to Assign"
+                />
+                <MetricRow
+                    label="Completed"
+                    value={completedCount}
+                    trend="up"
+                    icon={CheckCircle2}
+                    sub="Total Delivered"
                 />
                 <MetricRow
                     label="Fleet Utilization"
@@ -121,11 +129,31 @@ export default function DeliveryScreen() {
                 <FilterBar
                     actions={
                         <div className="flex items-center gap-2">
+                            <div className="flex items-center bg-slate-100 p-0.5 rounded-sm mr-4">
+                                <button
+                                    onClick={() => setActiveTab('active')}
+                                    className={cn(
+                                        "px-4 py-1.5 text-[9px] font-black uppercase tracking-widest transition-all",
+                                        activeTab === 'active' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"
+                                    )}
+                                >
+                                    Live Dispatch
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('history')}
+                                    className={cn(
+                                        "px-4 py-1.5 text-[9px] font-black uppercase tracking-widest transition-all",
+                                        activeTab === 'history' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"
+                                    )}
+                                >
+                                    History
+                                </button>
+                            </div>
                             <div className="relative group w-full max-w-xs">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" size={14} />
                                 <input
                                     type="text"
-                                    placeholder="Matrix Transit Search..."
+                                    placeholder="Search by Order ID or Hotel..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className="bg-white border border-slate-200 rounded-sm py-1.5 pl-9 pr-4 outline-none text-[11px] font-black text-slate-900 placeholder:text-slate-400 focus:border-slate-400 transition-all font-sans min-w-[240px]"
@@ -140,8 +168,8 @@ export default function DeliveryScreen() {
 
                 <div className="p-4 space-y-4">
                     <AnimatePresence mode="popLayout">
-                        {dispatchOrders.length > 0 ? (
-                            dispatchOrders.map((order) => (
+                        {filteredOrders.length > 0 ? (
+                            filteredOrders.map((order) => (
                                 <motion.div
                                     key={order.id}
                                     layout
@@ -169,65 +197,124 @@ export default function DeliveryScreen() {
                                                 <p className="leading-snug">{order.address}</p>
                                             </div>
                                         </div>
+                                        {/* Items Section */}
+                                        <div className="pt-2">
+                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Package Contents</p>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {order.items?.map((item, idx) => (
+                                                    <span key={idx} className="bg-slate-50 px-2 py-0.5 rounded-sm border border-slate-100 text-[9px] font-bold text-slate-600 uppercase">
+                                                        {item.qty} {item.unit} {item.name}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <div className="col-span-12 lg:col-span-5">
-                                        {order.status === 'ready' ? (
-                                            <div className="space-y-3">
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Protocol: Assign Fleet Operational Partner</p>
-                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                                    {deliveryPartners.map((dp) => (
-                                                        <button
-                                                            key={dp.id}
-                                                            onClick={() => updateOrderStatus(order.id, 'out_for_delivery')}
-                                                            className="flex flex-col items-center gap-2 p-3 bg-white border border-slate-200 rounded-sm hover:border-slate-900 hover:bg-slate-50 transition-all group/dp"
-                                                        >
-                                                            <div className="w-8 h-8 rounded-sm bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400 group-hover/dp:bg-slate-900 group-hover/dp:text-white transition-all">
-                                                                {dp.avatar}
-                                                            </div>
-                                                            <span className="text-[9px] font-black text-slate-900 uppercase tracking-widest">{dp.name.split(' ')[0]}</span>
-                                                        </button>
-                                                    ))}
+                                        {activeTab === 'active' ? (
+                                            order.status === 'packed' ? (
+                                                <div className="space-y-3">
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Protocol: Assign Fleet Operational Partner</p>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                        {deliveryPartners.length > 0 ? deliveryPartners.map((dp) => (
+                                                            <button
+                                                                key={dp._id}
+                                                                onClick={() => assignDeliveryPartner(order.id, dp._id)}
+                                                                className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-sm hover:border-slate-900 hover:bg-slate-50 transition-all group/dp text-left"
+                                                            >
+                                                                <div className="w-10 h-10 rounded-sm bg-slate-100 flex items-center justify-center text-[11px] font-black text-slate-400 group-hover/dp:bg-slate-900 group-hover/dp:text-white transition-all uppercase shrink-0">
+                                                                    {dp.fullName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                                                                </div>
+                                                                <div className="min-w-0 flex-1">
+                                                                    <p className="text-[10px] font-black text-slate-900 uppercase tracking-tight truncate">{dp.fullName}</p>
+                                                                    <p className="text-[8px] font-bold text-slate-400 tabular-nums uppercase tracking-wider">{dp.mobile || dp.phone || 'No Contact'}</p>
+                                                                </div>
+                                                            </button>
+                                                        )) : (
+                                                            <p className="col-span-2 text-[9px] font-bold text-slate-400 uppercase p-4 text-center border border-dashed border-slate-200 rounded-sm">No active partners found in zone</p>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-center gap-6 p-4 bg-emerald-50/50 border border-emerald-100 rounded-sm">
-                                                <div className="w-12 h-12 rounded-sm bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-200">
-                                                    <User size={20} />
+                                            ) : (
+                                                <div className="flex items-center gap-6 p-4 bg-emerald-50/50 border border-emerald-100 rounded-sm">
+                                                    <div className="w-12 h-12 rounded-sm bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-200">
+                                                        <User size={20} />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-2">Transit Operations: Active</p>
+                                                        <h4 className="text-[13px] font-black text-slate-900 uppercase tracking-tight">
+                                                            {order.deliveryPartner?.fullName || 'Assigned Partner'}
+                                                        </h4>
+                                                        <p className="text-[10px] font-bold text-slate-400 tabular-nums">
+                                                            {order.deliveryPartner?.mobile || 'Contact pending'}
+                                                        </p>
+                                                    </div>
+                                                    <div className="w-px h-10 bg-emerald-200" />
+                                                    <div className="flex flex-col items-end">
+                                                        <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Est. Completion</span>
+                                                        <span className="text-[11px] font-black text-slate-900 tabular-nums">30 MINS</span>
+                                                    </div>
                                                 </div>
-                                                <div className="flex-1">
-                                                    <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-2">Transit Operations: Active</p>
-                                                    <h4 className="text-[13px] font-black text-slate-900 uppercase tracking-tight">Amit Kumar</h4>
-                                                    <p className="text-[10px] font-bold text-slate-400 tabular-nums">+91 98765 43210</p>
+                                            )
+                                        ) : (() => {
+                                            const deliveryLog = order.statusHistory?.find(h => h.status?.toLowerCase() === 'delivered');
+                                            const isFranchiseDelivered = deliveryLog?.updatedBy === 'franchise';
+                                            const delivererName = isFranchiseDelivered ? 'Franchise Self-Delivery' : (order.deliveryPartner?.fullName || 'Hub Management');
+
+                                            return (
+                                                <div className="flex items-center gap-6 p-4 bg-slate-50 border border-slate-100 rounded-sm">
+                                                    <div className={cn(
+                                                        "w-12 h-12 rounded-sm flex items-center justify-center border",
+                                                        isFranchiseDelivered ? "bg-amber-500 text-white border-amber-600" : "bg-slate-900 text-white border-slate-800"
+                                                    )}>
+                                                        {isFranchiseDelivered ? <Settings2 size={20} /> : <User size={20} />}
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-2">Manifest Completed</p>
+                                                        <h4 className="text-[13px] font-black text-slate-900 uppercase tracking-tight">
+                                                            {delivererName}
+                                                        </h4>
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <span className="text-[9px] font-black text-emerald-600 uppercase tracking-[0.1em]">Verification:</span>
+                                                            <span className="text-[10px] font-bold text-slate-500 uppercase">
+                                                                {isFranchiseDelivered ? 'Confirmed by Node' : 'Partner Authenticated'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="w-px h-10 bg-slate-200" />
+                                                    <div className="text-right shrink-0">
+                                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">Order Finalized</p>
+                                                        <div className="flex items-center gap-1 text-emerald-600">
+                                                            <CheckCircle2 size={12} />
+                                                            <span className="text-[11px] font-black uppercase tracking-tight">Delivered</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div className="w-px h-10 bg-emerald-200" />
-                                                <div className="flex flex-col items-end">
-                                                    <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Est. Completion</span>
-                                                    <span className="text-[11px] font-black text-slate-900 tabular-nums">14:20 HR</span>
-                                                </div>
-                                            </div>
-                                        )}
+                                            );
+                                        })()}
                                     </div>
 
                                     <div className="col-span-12 lg:col-span-3 flex lg:flex-col items-center lg:items-end justify-between lg:justify-start gap-4 h-full">
                                         <div className={cn(
                                             "px-2 py-0.5 rounded-sm text-[9px] font-black uppercase tracking-widest border",
-                                            order.status === 'ready' ? "bg-amber-50 text-amber-600 border-amber-100" : "bg-indigo-50 text-indigo-600 border-indigo-100"
+                                            order.status === 'packed' ? "bg-amber-50 text-amber-600 border-amber-100" :
+                                                order.status === 'dispatched' ? "bg-indigo-50 text-indigo-600 border-indigo-100" :
+                                                    "bg-emerald-50 text-emerald-600 border-emerald-100"
                                         )}>
-                                            {order.status === 'ready' ? 'Staged' : 'In-Transit'}
+                                            {order.status === 'packed' ? 'Staged' : order.status === 'dispatched' ? 'In-Transit' : 'Delivered'}
                                         </div>
 
                                         <div className="flex-1 lg:flex-none" />
 
-                                        {order.status === 'out_for_delivery' && (
+                                        {order.status === 'dispatched' && activeTab === 'active' && (
                                             <button
-                                                onClick={() => updateOrderStatus(order.id, 'delivered')}
+                                                onClick={() => updateOrderStatus(order.id, 'Delivered')}
                                                 className="w-full h-11 bg-slate-900 text-white rounded-sm font-black uppercase text-[10px] tracking-[0.2em] shadow-lg hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
                                             >
                                                 Confirm Delivery <ArrowRight size={14} />
                                             </button>
                                         )}
-                                        {order.status === 'ready' && (
+                                        {(order.status === 'packed' || activeTab === 'history') && (
                                             <div className="text-right">
                                                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Manifest Value</p>
                                                 <p className="text-[14px] font-black text-slate-900 tabular-nums">₹{order.total.toLocaleString()}</p>

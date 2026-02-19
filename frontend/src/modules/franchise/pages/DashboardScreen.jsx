@@ -78,11 +78,11 @@ export default function DashboardScreen() {
             render: (val) => (
                 <div className={cn(
                     "px-2 py-0.5 rounded-sm text-[9px] font-black uppercase tracking-widest border w-fit",
-                    val === 'Delivered' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
-                        val === 'Cancelled' ? "bg-rose-50 text-rose-600 border-rose-100" :
+                    (val === 'delivered' || val === 'received') ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
+                        val === 'cancelled' ? "bg-rose-50 text-rose-600 border-rose-100" :
                             "bg-amber-50 text-amber-600 border-amber-100"
                 )}>
-                    {val}
+                    {val === 'received' ? 'Received' : val === 'delivered' ? 'Delivered' : val}
                 </div>
             )
         },
@@ -160,7 +160,7 @@ export default function DashboardScreen() {
             </div>
 
             {/* Performance Performance Strip */}
-            <div className="bg-white border-b border-slate-200 grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6">
+            <div className="bg-white border-b border-slate-200 grid grid-cols-1 md:grid-cols-4 lg:grid-cols-7">
                 <MetricRow
                     label="Queued Orders"
                     value={stats.newOrders}
@@ -172,6 +172,12 @@ export default function DashboardScreen() {
                     value={stats.outForDelivery}
                     trend="Stable"
                     icon={Truck}
+                />
+                <MetricRow
+                    label="Completed"
+                    value={stats.completedCount}
+                    trend="Stable"
+                    icon={CheckCircle2}
                 />
                 <MetricRow
                     label="Stock Health"

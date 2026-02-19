@@ -71,7 +71,7 @@ export const createProduct = async (req, res) => {
             description,
             shortDescription,
             dietaryType: dietaryType || 'none',
-            status: status || 'draft',
+            status: status || 'active',
             primaryImage: primaryImageUrl,
             images: galleryImages,
             bulkPricing: parsedBulk,
@@ -94,8 +94,10 @@ export const getProducts = async (req, res) => {
         if (category) filter.category = category;
         if (subcategory) filter.subcategory = subcategory;
         if (status) filter.status = status;
-        if (showOnPOS !== undefined) filter.showOnPOS = showOnPOS === 'true';
-        if (showOnStorefront !== undefined) filter.showOnStorefront = showOnStorefront === 'true';
+        if (showOnPOS === 'true') filter.showOnPOS = { $ne: false };
+        if (showOnPOS === 'false') filter.showOnPOS = false;
+        if (showOnStorefront === 'true') filter.showOnStorefront = { $ne: false };
+        if (showOnStorefront === 'false') filter.showOnStorefront = false;
         if (search) {
             filter.$or = [
                 { name: { $regex: search, $options: 'i' } },

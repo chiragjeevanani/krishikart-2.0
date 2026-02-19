@@ -38,9 +38,10 @@ const DeliveryCard = ({ request, onAccept, onReject }) => {
                         <div className="w-4 h-4 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center mt-1">
                             <div className="w-1.5 h-1.5 rounded-full bg-primary" />
                         </div>
-                        <div>
+                        <div className="min-w-0 flex-1">
                             <p className="text-[10px] font-bold text-muted-foreground uppercase leading-none mb-1">Pickup From</p>
-                            <p className="text-sm font-bold text-foreground truncate">{request.franchise}</p>
+                            <p className="text-sm font-bold text-slate-900 truncate">{request.franchise}</p>
+                            <p className="text-[10px] text-slate-400 font-medium line-clamp-1 mt-0.5">{request.franchiseAddress}</p>
                         </div>
                     </div>
 
@@ -49,9 +50,10 @@ const DeliveryCard = ({ request, onAccept, onReject }) => {
                         <div className="w-4 h-4 rounded-full bg-amber-100 border-2 border-amber-500 flex items-center justify-center mt-1">
                             <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                         </div>
-                        <div>
+                        <div className="min-w-0 flex-1">
                             <p className="text-[10px] font-bold text-muted-foreground uppercase leading-none mb-1">Deliver To</p>
-                            <p className="text-sm font-bold text-foreground truncate">{request.customerAddress}</p>
+                            <p className="text-sm font-bold text-slate-900 truncate">{request.customerName}</p>
+                            <p className="text-[10px] text-slate-400 font-medium line-clamp-1 mt-0.5">{request.customerAddress}</p>
                         </div>
                     </div>
                 </div>
@@ -61,10 +63,7 @@ const DeliveryCard = ({ request, onAccept, onReject }) => {
                         <Package className="w-3 h-3" />
                         <span>{request.itemsCount} items</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        <span>{request.timeWindow}</span>
-                    </div>
+
                 </div>
             </div>
 

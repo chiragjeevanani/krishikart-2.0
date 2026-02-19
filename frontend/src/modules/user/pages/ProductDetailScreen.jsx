@@ -54,12 +54,7 @@ export default function ProductDetailScreen() {
         setLoading(true)
         const response = await api.get(`/products/${id}`)
         if (response.data.success) {
-          const prod = response.data.result;
-          if (prod.showOnStorefront === false) {
-            setProduct(null);
-          } else {
-            setProduct(prod);
-          }
+          setProduct(response.data.result)
         }
       } catch (error) {
         console.error('Fetch Product Detail Error:', error)
@@ -244,11 +239,28 @@ export default function ProductDetailScreen() {
               )}
 
               {/* Product Details */}
-              <div className="space-y-4 mb-10">
+              <div className="space-y-4 mb-4">
                 <h3 className="text-lg font-black text-slate-900 tracking-tight md:font-bold">About this product</h3>
                 <p className="text-sm text-slate-500 leading-relaxed font-medium">
                   {product.description}
                 </p>
+              </div>
+
+              {/* Franchise Info */}
+              <div className="mb-10 p-4 bg-slate-50 rounded-2xl flex items-center justify-between border border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center">
+                    <Store className="text-white w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Sold By</p>
+                    <p className="text-sm font-bold text-slate-900 uppercase">Appzeto Krishi Node</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-xl border border-slate-200">
+                  <Star size={12} className="text-amber-500 fill-amber-500" />
+                  <span className="text-[11px] font-bold">4.9</span>
+                </div>
               </div>
 
               {/* Desktop Add to Cart */}

@@ -87,6 +87,10 @@ const orderSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    shippingLocation: {
+        lat: Number,
+        lng: Number
+    },
     estimatedDelivery: {
         type: Date
     },

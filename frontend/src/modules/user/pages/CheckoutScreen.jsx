@@ -242,19 +242,6 @@ export default function CheckoutScreen() {
                         <Check size={48} strokeWidth={3} />
                     </motion.div>
                     <h1 className="text-3xl font-black text-slate-900 tracking-tight md:font-bold">Order placed successfully!</h1>
-                    <p className="mt-4 text-slate-500 font-medium max-w-md">Your fresh harvest will be delivered to your doorstep within <span className="text-primary font-bold">25 - 30 mins</span>.</p>
-
-                    <div className="mt-12 bg-slate-50 rounded-[32px] md:rounded-xl p-6 w-full max-w-md border border-slate-100 flex items-center justify-between mx-auto">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-white rounded-xl md:rounded-lg flex items-center justify-center text-primary shadow-sm border border-slate-50">
-                                <Clock size={24} />
-                            </div>
-                            <div className="text-left">
-                                <p className="text-[10px] text-slate-400 font-black uppercase md:normal-case md:font-medium">Estimated arrival</p>
-                                <p className="text-sm font-black text-slate-900 md:font-bold">{formattedTime} Today</p>
-                            </div>
-                        </div>
-                    </div>
 
                     <Button
                         onClick={() => navigate(`/track-order/${lastOrder?._id}`)}

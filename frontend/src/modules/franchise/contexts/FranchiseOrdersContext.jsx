@@ -45,7 +45,7 @@ export function FranchiseOrdersProvider({ children }) {
             id: o._id,
             hotelName: o.userId?.fullName || 'Guest User',
             hotelImage: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&q=80",
-            status: o.orderStatus?.toLowerCase() || 'new',
+            status: o.orderStatus?.toLowerCase() || 'placed',
             total: o.totalAmount,
             items: o.items.map(i => ({
                 id: i.productId,
@@ -55,15 +55,17 @@ export function FranchiseOrdersProvider({ children }) {
                 qty: i.quantity,
                 unit: i.unit || 'units'
             })),
+            address: o.userId?.address || o.shippingAddress || 'Address not provided',
             deliveryTime: "30 mins",
-            deliverySlot: "Standard",
+            deliverySlot: o.deliverySlot || "Standard",
             paymentMode: o.paymentMethod || "Prepaid",
             timeline: [{ status: 'Order Placed', time: o.createdAt, completed: true }],
             date: o.date,
             time: o.time,
             franchiseId: o.franchiseId,
             deliveryPartnerId: o.deliveryPartnerId?._id || o.deliveryPartnerId,
-            deliveryPartner: o.deliveryPartnerId // Will contain populated object if fetched with populate
+            deliveryPartner: o.deliveryPartnerId, // Will contain populated object if fetched with populate
+            statusHistory: o.statusHistory || []
         }));
     }, [liveOrders]);
 
@@ -113,9 +115,10 @@ export function FranchiseOrdersProvider({ children }) {
         todayOrders: orders.length,
         newOrders: orders.filter(o => o.status === 'placed' && !o.franchiseId).length,
         packing: orders.filter(o => o.status === 'placed' && o.franchiseId).length,
+        outForDelivery: orders.filter(o => o.status === 'dispatched').length,
         dispatch: orders.filter(o => ['packed', 'dispatched'].includes(o.status)).length,
-        completed: orders.filter(o => ['delivered', 'received'].includes(o.status)).length,
-        revenue: orders.filter(o => o.status === 'received').reduce((acc, curr) => acc + (curr.total || 0), 0)
+        completedCount: orders.filter(o => ['delivered', 'received'].includes(o.status)).length,
+        revenue: orders.filter(o => ['delivered', 'received'].includes(o.status)).reduce((acc, curr) => acc + (curr.total || 0), 0)
     }), [orders]);
 
     return (

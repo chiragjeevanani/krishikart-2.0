@@ -156,7 +156,8 @@ export const createOrder = async (req, res) => {
             paymentMethod,
             paymentStatus: (paymentMethod === 'Wallet' || paymentMethod === 'Credit') ? 'Completed' : 'Pending',
             orderStatus: 'Placed',
-            shippingAddress
+            shippingAddress,
+            shippingLocation: userCoords
         });
 
         await order.save();
@@ -252,8 +253,15 @@ export const updateOrderStatus = async (req, res) => {
             if (['Packed', 'Dispatched'].includes(status) && !isFranchise) {
                 return handleResponse(res, 403, "Only franchise can update to Packed/Dispatched");
             }
-            if (status === 'Delivered' && !isDelivery && !isFranchise) { // Added isFranchise as fallback for testing
+            if (status === 'Delivered' && !isDelivery && !isFranchise) {
                 return handleResponse(res, 403, "Only delivery partner can update to Delivered");
+            }
+            // Delivery Specific: Check if this order is assigned to this partner
+            if (isDelivery && status === 'Delivered') {
+                const partnerId = req.delivery?._id || req.user?.id;
+                if (!partnerId || !order.deliveryPartnerId || order.deliveryPartnerId.toString() !== partnerId.toString()) {
+                    return handleResponse(res, 403, "This order is not assigned to you");
+                }
             }
             if (status === 'Received' && !isUser) {
                 return handleResponse(res, 403, "Only user can update to Received");
@@ -282,8 +290,8 @@ export const updateOrderStatus = async (req, res) => {
         await order.save();
         return handleResponse(res, 200, `Order status updated to ${status}`, order);
     } catch (error) {
-        console.error("Update order status error:", error);
-        return handleResponse(res, 500, "Server error");
+        console.error("Update order status error details:", error);
+        return handleResponse(res, 500, "Server error: " + error.message);
     }
 };
 
@@ -328,15 +336,19 @@ export const getFranchiseOrders = async (req, res) => {
         console.log('Franchise ID:', franchiseId);
         console.log('Franchise Name:', req.franchise.shopName);
 
-        // Assigned Model: Only show orders specifically assigned to this franchise
+        // Broadcast Model: Show orders explicitly assigned to this franchise
+        // OR orders not yet assigned to any franchise (franchiseId = null)
         const orders = await Order.find({
-            franchiseId: franchiseId
+            $or: [
+                { franchiseId: franchiseId },
+                { franchiseId: null }
+            ]
         })
             .populate('userId', 'fullName mobile')
             .populate('deliveryPartnerId', 'fullName mobile vehicleNumber vehicleType')
             .sort({ createdAt: -1 });
 
-        console.log(`Found ${orders.length} orders assigned to this franchise`);
+        console.log(`Found ${orders.length} orders (Assigned: ${orders.filter(o => o.franchiseId).length}, Broadcast: ${orders.filter(o => !o.franchiseId).length})`);
 
         const formattedOrders = orders.map((order) => {
             const dateObj = new Date(order.createdAt);
@@ -468,27 +480,46 @@ export const assignDeliveryPartner = async (req, res) => {
 // Get dispatched orders for delivery partner
 export const getDispatchedOrders = async (req, res) => {
     try {
+        const partnerId = req.delivery?._id;
         const orders = await Order.find({
-            orderStatus: 'Dispatched'
+            orderStatus: 'Dispatched',
+            deliveryPartnerId: partnerId
         })
             .populate('userId', 'fullName mobile address')
             .populate('franchiseId', 'shopName address location')
             .sort({ updatedAt: -1 });
 
         // Map to format delivery app expects
-        const formatted = orders.map(order => ({
-            id: order._id,
-            franchise: order.franchiseId?.shopName || 'KrishiKart Store',
-            franchiseAddress: order.franchiseId?.address || 'N/A',
-            customerName: order.userId?.fullName || 'Customer',
-            customerAddress: order.shippingAddress,
-            distance: '3.2 km', // Mock distance for now or calculate if coords available
-            itemsCount: order.items.reduce((acc, item) => acc + item.quantity, 0),
-            timeWindow: '20-30 mins',
-            priority: 'medium',
-            amount: 50, // Delivery earnings per order
-            status: order.orderStatus
-        }));
+        const formatted = orders.map(order => {
+            let distance = 'N/A';
+
+            // Calculate real distance if coords available
+            if (order.franchiseId?.location?.lat && order.shippingLocation?.lat) {
+                const d = getDistance(
+                    order.franchiseId.location.lat, order.franchiseId.location.lng,
+                    order.shippingLocation.lat, order.shippingLocation.lng
+                );
+                distance = d < 1 ? `${(d * 1000).toFixed(0)}m` : `${d.toFixed(1)}km`;
+            }
+
+            return {
+                id: order._id,
+                franchise: order.franchiseId?.shopName || 'KrishiKart Store',
+                franchiseAddress: order.franchiseId?.address || 'N/A',
+                customerName: order.userId?.fullName || 'Customer',
+                customerAddress: order.shippingAddress,
+                distance: distance,
+                itemsCount: order.items.reduce((acc, item) => acc + item.quantity, 0),
+                items: order.items,
+                timeWindow: '20-30 mins',
+                priority: 'medium',
+                amount: 50, // Delivery earnings per order
+                status: order.orderStatus,
+                franchiseId: order.franchiseId,
+                userId: order.userId,
+                shippingAddress: order.shippingAddress
+            };
+        });
 
         return handleResponse(res, 200, "Dispatched orders fetched", formatted);
     } catch (error) {
@@ -500,11 +531,14 @@ export const getDispatchedOrders = async (req, res) => {
 // Get completed orders for delivery partner (History)
 export const getDeliveryOrderHistory = async (req, res) => {
     try {
-        // Find orders that are delivered or received
+        const partnerId = req.delivery?._id;
+        // Find orders that are delivered or received and assigned to this partner
         const orders = await Order.find({
-            orderStatus: { $in: ['Delivered', 'Received'] }
+            orderStatus: { $in: ['Delivered', 'Received'] },
+            deliveryPartnerId: partnerId
         })
             .populate('userId', 'fullName')
+            .populate('franchiseId', 'shopName address')
             .sort({ updatedAt: -1 });
 
         const formatted = orders.map(order => {
@@ -512,6 +546,9 @@ export const getDeliveryOrderHistory = async (req, res) => {
             return {
                 id: order._id,
                 customer: order.userId?.fullName || 'Customer',
+                franchiseName: order.franchiseId?.shopName || 'KrishiKart Store',
+                franchiseAddress: order.franchiseId?.address || 'N/A',
+                items: order.items,
                 amount: 50, // Earnings
                 status: 'delivered',
                 date: dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),

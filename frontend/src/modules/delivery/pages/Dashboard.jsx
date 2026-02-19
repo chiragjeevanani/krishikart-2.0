@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     Bell,
     Power,
-    TrendingUp,
     Package,
     CheckCircle2,
-    Star,
+    X,
+    Store,
+    ShoppingBag
 } from 'lucide-react';
 import MetricCard from '../components/cards/MetricCard';
 import { useDeliveryAuth } from '../contexts/DeliveryAuthContext';
@@ -20,6 +21,7 @@ const Dashboard = () => {
     const [isOnline, setIsOnline] = useState(true);
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [selectedOrder, setSelectedOrder] = useState(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -46,8 +48,8 @@ const Dashboard = () => {
         fetchData();
     }, []);
 
-    const totalEarnings = history.reduce((acc, curr) => acc + (curr.amount || 0), 0);
-    const completedCount = history.length;
+    const today = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    const completedCount = history.filter(item => item.date === today).length;
 
     if (loading) {
         return (
@@ -121,19 +123,6 @@ const Dashboard = () => {
                         icon={CheckCircle2}
                         color="bg-primary shadow-emerald-200"
                     />
-                    <MetricCard
-                        title="Earnings"
-                        value={totalEarnings}
-                        icon={TrendingUp}
-                        color="bg-amber-500 shadow-amber-200"
-                        suffix=" ₹"
-                    />
-                    <MetricCard
-                        title="Rating"
-                        value="4.8"
-                        icon={Star}
-                        color="bg-purple-600 shadow-purple-200"
-                    />
                 </div>
 
                 {/* Task Feed Link */}
@@ -156,7 +145,129 @@ const Dashboard = () => {
                         <Package size={120} />
                     </div>
                 </motion.div>
+
+                {/* Today's Deliveries Detail */}
+                <div className="mt-8 mb-10">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                            Today's Deliveries <span className="bg-primary/20 text-primary px-2 py-0.5 rounded-full text-[10px]">{completedCount}</span>
+                        </h3>
+                    </div>
+
+                    {history.filter(item => item.date === today).length > 0 ? (
+                        <div className="space-y-3">
+                            {history.filter(item => item.date === today).map((task) => (
+                                <motion.div
+                                    key={task.id}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => setSelectedOrder(task)}
+                                    className="bg-white p-4 rounded-[24px] border border-slate-100 flex items-center justify-between shadow-sm cursor-pointer hover:border-primary/30 transition-all"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center border border-emerald-100">
+                                            <CheckCircle2 size={18} className="text-emerald-500" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold text-slate-900">{task.customer}</p>
+                                            <p className="text-[10px] font-bold text-slate-400">{task.time}</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-sm uppercase tracking-tighter">Done</span>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="py-6 text-center bg-slate-50 rounded-3xl border border-dashed border-slate-200">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No deliveries yet today</p>
+                        </div>
+                    )}
+                </div>
             </div>
+
+            {/* Order Detail Modal */}
+            <AnimatePresence>
+                {selectedOrder && (
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center p-6">
+                        {/* Backdrop */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setSelectedOrder(null)}
+                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+                        />
+
+                        {/* Modal Content */}
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            transition={{ type: "spring", damping: 25, stiffness: 400 }}
+                            className="relative w-full max-w-md bg-white rounded-[32px] shadow-2xl overflow-hidden"
+                        >
+                            <div className="px-8 pt-10 pb-12">
+                                <div className="flex justify-between items-start mb-8">
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Order Summary</p>
+                                        <h2 className="text-2xl font-black text-slate-900">{selectedOrder.customer}</h2>
+                                        <p className="text-xs font-bold text-slate-400 mt-0.5">{selectedOrder.date} • {selectedOrder.time}</p>
+                                    </div>
+                                    <button
+                                        onClick={() => setSelectedOrder(null)}
+                                        className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                </div>
+
+                                <div className="space-y-6">
+                                    {/* Franchise Info */}
+                                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center border border-slate-100 text-slate-900">
+                                            <Store size={22} />
+                                        </div>
+                                        <div>
+                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Picked Up From</p>
+                                            <h4 className="text-sm font-bold text-slate-900 uppercase">{selectedOrder.franchiseName}</h4>
+                                            <p className="text-[10px] font-medium text-slate-500 line-clamp-1">{selectedOrder.franchiseAddress}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Items List */}
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <ShoppingBag size={14} className="text-slate-400" />
+                                            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Delivered Items</h4>
+                                        </div>
+                                        <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden divide-y divide-slate-50">
+                                            {selectedOrder.items?.map((item, idx) => (
+                                                <div key={idx} className="p-4 flex justify-between items-center border-b border-slate-100 last:border-0">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                                                        <span className="text-sm font-bold text-slate-900 uppercase">{item.name}</span>
+                                                    </div>
+                                                    <span className="text-[11px] font-black text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">
+                                                        x{item.quantity}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={() => setSelectedOrder(null)}
+                                    className="w-full mt-10 bg-slate-900 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-slate-200"
+                                >
+                                    Dismiss
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

@@ -258,7 +258,7 @@ export default function OrdersScreen() {
             </div>
 
             {/* Performance Strip */}
-            <div className="bg-white border-b border-slate-200 grid grid-cols-1 md:grid-cols-4">
+            <div className="bg-white border-b border-slate-200 grid grid-cols-1 md:grid-cols-5">
                 <MetricRow
                     label="New Orders"
                     value={stats.newOrders}
@@ -278,6 +278,12 @@ export default function OrdersScreen() {
                     change={0}
                     trend="up"
                     icon={Clock}
+                />
+                <MetricRow
+                    label="Completed Tasks"
+                    value={stats.completedCount}
+                    trend="Stable"
+                    icon={History}
                 />
                 <MetricRow
                     label="Total Revenue"

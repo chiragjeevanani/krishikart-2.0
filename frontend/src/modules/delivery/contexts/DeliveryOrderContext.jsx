@@ -27,7 +27,7 @@ export function DeliveryOrderProvider({ children }) {
             const response = await api.put(`/orders/delivery/${orderId}/status`, { status: newStatus });
             if (response.data.success) {
                 toast.success(`Status updated to ${newStatus}`);
-                setDispatchedOrders(prev => prev.filter(o => o._id !== orderId));
+                setDispatchedOrders(prev => prev.filter(o => o.id !== orderId));
                 fetchDispatchedOrders();
             }
         } catch (error) {

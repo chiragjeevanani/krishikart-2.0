@@ -23,7 +23,7 @@ const ActiveDelivery = () => {
     useEffect(() => {
         const activeOrderId = localStorage.getItem('activeDeliveryId');
         if (activeOrderId) {
-            const found = dispatchedOrders.find(o => o._id === activeOrderId);
+            const found = dispatchedOrders.find(o => o.id === activeOrderId);
             if (found) setOrder(found);
         }
     }, [dispatchedOrders]);
@@ -34,7 +34,7 @@ const ActiveDelivery = () => {
     const handleMarkDelivered = async () => {
         if (!order || isUpdating) return;
         setIsUpdating(true);
-        await updateStatus(order._id, 'Delivered');
+        await updateStatus(order.id, 'Delivered');
         setIsUpdating(false);
         localStorage.removeItem('activeDeliveryId');
         navigate(ROUTES.DASHBOARD);
@@ -145,7 +145,7 @@ const ActiveDelivery = () => {
                 {/* Order Items */}
                 <div className="bg-white rounded-2xl border border-border overflow-hidden">
                     <div className="px-4 py-3 border-b border-border bg-muted/20 flex justify-between items-center">
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Order Items</h4>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Items from {order?.franchiseId?.shopName || 'Store'}</h4>
                         <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
                             {order?.items?.length || 0} Items
                         </span>
@@ -157,7 +157,7 @@ const ActiveDelivery = () => {
                                     <div className="w-2 h-2 rounded-full bg-primary" />
                                     <span className="text-sm font-medium">{item.name || item.productId?.name}</span>
                                 </div>
-                                <span className="text-sm font-bold text-muted-foreground">×{item.quantity}</span>
+                                <span className="text-sm font-bold text-muted-foreground">{item.quantity}</span>
                             </div>
                         ))}
                     </div>
