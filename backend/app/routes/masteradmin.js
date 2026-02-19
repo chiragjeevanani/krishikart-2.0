@@ -20,7 +20,9 @@ import {
   getAllCustomers,
   getCustomerDetails,
   updateCustomerCredit,
-  assignProductsToVendor
+  assignProductsToVendor,
+  getGlobalInventoryMonitoring,
+  getFranchiseInventoryDetails
 } from "../controllers/masteradmin.controller.js";
 
 import { protectMasterAdmin } from "../middlewares/masteradmin.auth.js";
@@ -52,5 +54,9 @@ router.put("/franchises/:id/kyc-review", protectMasterAdmin, reviewFranchiseKYC)
 router.get("/customers", protectMasterAdmin, getAllCustomers);
 router.get("/customers/:id", protectMasterAdmin, getCustomerDetails);
 router.put("/customers/:id/credit", protectMasterAdmin, updateCustomerCredit);
+
+/* 📊 Inventory Monitoring */
+router.get("/inventory/monitoring", protectMasterAdmin, getGlobalInventoryMonitoring);
+router.get("/inventory/franchise/:id", protectMasterAdmin, getFranchiseInventoryDetails);
 
 export default router;

@@ -39,6 +39,11 @@ const orderSchema = new mongoose.Schema({
         ref: 'Franchise',
         default: null
     },
+    deliveryPartnerId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Delivery',
+        default: null
+    },
     items: [orderItemSchema],
     totalAmount: {
         type: Number,

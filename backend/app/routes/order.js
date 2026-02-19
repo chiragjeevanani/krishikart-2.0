@@ -8,6 +8,7 @@ import {
     getFranchiseOrders,
     getFranchiseOrderById,
     acceptFranchiseOrder,
+    assignDeliveryPartner,
     getDispatchedOrders,
     getDeliveryOrderHistory
 } from "../controllers/order.controller.js";
@@ -32,6 +33,7 @@ router.put("/admin/:id/status", protectMasterAdmin, updateOrderStatus);
 router.get("/franchise/all", protectFranchise, getFranchiseOrders);
 router.get("/franchise/:id", protectFranchise, getFranchiseOrderById);
 router.put("/franchise/:id/accept", protectFranchise, acceptFranchiseOrder);
+router.put("/franchise/:id/assign-delivery", protectFranchise, assignDeliveryPartner);
 router.put("/franchise/:id/status", protectFranchise, updateOrderStatus);
 
 // Delivery Routes

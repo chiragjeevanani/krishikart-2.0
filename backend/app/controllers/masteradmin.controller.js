@@ -2,6 +2,7 @@ import Vendor from "../models/vendor.js";
 import Franchise from "../models/franchise.js";
 import User from "../models/user.js";
 import Product from "../models/product.js";
+import Inventory from "../models/inventory.js";
 import handleResponse from "../utils/helper.js";
 
 /* ================= VENDOR MANAGEMENT ================= */
@@ -256,6 +257,71 @@ export const updateCustomerCredit = async (req, res) => {
         return handleResponse(res, 200, "Customer credit limit updated successfully", customer);
     } catch (err) {
         console.error(err);
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
+/* ================= INVENTORY MONITORING ================= */
+
+export const getGlobalInventoryMonitoring = async (req, res) => {
+    try {
+        const franchises = await Franchise.find({ status: 'active' }).select('franchiseName ownerName city');
+        const inventories = await Inventory.find().populate('items.productId', 'name primaryImage unit');
+
+        const monitoringData = franchises.map(f => {
+            const inv = inventories.find(i => i.franchiseId.toString() === f._id.toString());
+            const items = inv ? inv.items : [];
+
+            return {
+                franchiseId: f._id,
+                franchiseName: f.franchiseName,
+                location: f.city || 'N/A',
+                stock: items.map(item => ({
+                    productId: item.productId?._id,
+                    productName: item.productId?.name || 'Unknown',
+                    currentStock: item.currentStock,
+                    mbq: item.mbq,
+                    unit: item.productId?.unit || 'units',
+                    alertStatus: item.currentStock < item.mbq ? (item.currentStock === 0 ? 'critical' : 'low') : 'ok'
+                }))
+            };
+        });
+
+        return handleResponse(res, 200, "Global inventory data fetched", monitoringData);
+    } catch (err) {
+        console.error("Global Inventory Monitoring Error:", err);
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
+export const getFranchiseInventoryDetails = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const inventory = await Inventory.findOne({ franchiseId: id })
+            .populate('items.productId', 'name primaryImage unit unitValue category')
+            .populate('franchiseId', 'franchiseName ownerName city');
+
+        if (!inventory) {
+            return handleResponse(res, 404, "Inventory not found for this franchise");
+        }
+
+        const formattedItems = inventory.items.map(item => ({
+            productId: item.productId?._id,
+            productName: item.productId?.name,
+            image: item.productId?.primaryImage,
+            currentStock: item.currentStock,
+            mbq: item.mbq,
+            unit: item.productId?.unit,
+            category: item.productId?.category,
+            alertStatus: item.currentStock < item.mbq ? (item.currentStock === 0 ? 'critical' : 'low') : 'ok'
+        }));
+
+        return handleResponse(res, 200, "Franchise inventory details fetched", {
+            franchise: inventory.franchiseId,
+            items: formattedItems
+        });
+    } catch (err) {
+        console.error("Franchise Inventory Details Error:", err);
         return handleResponse(res, 500, "Server error");
     }
 };

@@ -6,6 +6,7 @@ const FranchiseOrdersContext = createContext();
 
 export function FranchiseOrdersProvider({ children }) {
     const [liveOrders, setLiveOrders] = useState([]);
+    const [deliveryPartners, setDeliveryPartners] = useState([]);
     const [loading, setLoading] = useState(false);
 
     const fetchOrders = async () => {
@@ -22,8 +23,20 @@ export function FranchiseOrdersProvider({ children }) {
         }
     };
 
+    const fetchDeliveryPartners = async () => {
+        try {
+            const response = await api.get('/delivery/partners');
+            if (response.data.success) {
+                setDeliveryPartners(response.data.results || []);
+            }
+        } catch (error) {
+            console.error('Fetch delivery partners error:', error);
+        }
+    };
+
     useEffect(() => {
         fetchOrders();
+        fetchDeliveryPartners();
     }, []);
 
     // Computed combined orders with mapping
@@ -47,7 +60,10 @@ export function FranchiseOrdersProvider({ children }) {
             paymentMode: o.paymentMethod || "Prepaid",
             timeline: [{ status: 'Order Placed', time: o.createdAt, completed: true }],
             date: o.date,
-            time: o.time
+            time: o.time,
+            franchiseId: o.franchiseId,
+            deliveryPartnerId: o.deliveryPartnerId?._id || o.deliveryPartnerId,
+            deliveryPartner: o.deliveryPartnerId // Will contain populated object if fetched with populate
         }));
     }, [liveOrders]);
 
@@ -78,17 +94,42 @@ export function FranchiseOrdersProvider({ children }) {
         }
     };
 
+    const assignDeliveryPartner = async (orderId, deliveryPartnerId) => {
+        try {
+            const response = await api.put(`/orders/franchise/${orderId}/assign-delivery`, { deliveryPartnerId });
+            if (response.data.success) {
+                toast.success('Order dispatched successfully');
+                fetchOrders();
+                return true;
+            }
+        } catch (error) {
+            console.error('Assign delivery error:', error);
+            toast.error(error.response?.data?.message || 'Failed to assign delivery');
+            return false;
+        }
+    };
+
     const stats = useMemo(() => ({
         todayOrders: orders.length,
         newOrders: orders.filter(o => o.status === 'placed' && !o.franchiseId).length,
         packing: orders.filter(o => o.status === 'placed' && o.franchiseId).length,
-        dispatch: orders.filter(o => o.status === 'packed').length,
-        completed: orders.filter(o => ['dispatched', 'delivered', 'received'].includes(o.status)).length,
+        dispatch: orders.filter(o => ['packed', 'dispatched'].includes(o.status)).length,
+        completed: orders.filter(o => ['delivered', 'received'].includes(o.status)).length,
         revenue: orders.filter(o => o.status === 'received').reduce((acc, curr) => acc + (curr.total || 0), 0)
     }), [orders]);
 
     return (
-        <FranchiseOrdersContext.Provider value={{ orders, updateOrderStatus, acceptOrder, stats, loading, refreshOrders: fetchOrders }}>
+        <FranchiseOrdersContext.Provider value={{
+            orders,
+            updateOrderStatus,
+            acceptOrder,
+            assignDeliveryPartner,
+            deliveryPartners,
+            stats,
+            loading,
+            refreshOrders: fetchOrders,
+            refreshPartners: fetchDeliveryPartners
+        }}>
             {children}
         </FranchiseOrdersContext.Provider>
     );
