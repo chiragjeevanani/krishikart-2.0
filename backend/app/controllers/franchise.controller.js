@@ -138,7 +138,7 @@ export const updateStoreQRCode = async (req, res) => {
 export const getActiveFranchises = async (req, res) => {
     try {
         const franchises = await Franchise.find({ status: "active" })
-            .select("franchiseName ownerName city profilePicture location");
+            .select("franchiseName ownerName city area state profilePicture location");
 
         return handleResponse(res, 200, "Active stores fetched", franchises);
     } catch (err) {

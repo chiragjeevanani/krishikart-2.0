@@ -324,14 +324,23 @@ export const getAllOrders = async (req, res) => {
 export const getFranchiseOrders = async (req, res) => {
     try {
         const franchiseId = req.franchise._id;
-        console.log('=== Fetching Broadcast Orders ===');
-        console.log('Franchise ID:', franchiseId);
-        console.log('Franchise Name:', req.franchise.shopName);
+        const { date } = req.query;
+
+        let query = { franchiseId: franchiseId };
+
+        if (date) {
+            const startOfDay = new Date(date);
+            startOfDay.setHours(0, 0, 0, 0);
+            const endOfDay = new Date(date);
+            endOfDay.setHours(23, 59, 59, 999);
+            query.createdAt = { $gte: startOfDay, $lte: endOfDay };
+        }
+
+        console.log('=== Fetching Franchise Orders ===');
+        console.log('Query:', query);
 
         // Assigned Model: Only show orders specifically assigned to this franchise
-        const orders = await Order.find({
-            franchiseId: franchiseId
-        })
+        const orders = await Order.find(query)
             .populate('userId', 'fullName mobile')
             .populate('deliveryPartnerId', 'fullName mobile vehicleNumber vehicleType')
             .sort({ createdAt: -1 });

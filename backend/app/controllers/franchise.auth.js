@@ -13,7 +13,7 @@ const generateToken = (id) =>
 /* ================= REGISTER ================= */
 export const registerFranchise = async (req, res) => {
     try {
-        const { franchiseName, ownerName, mobile, city } = req.body;
+        const { franchiseName, ownerName, mobile, city, area, state } = req.body;
 
         let franchise = await Franchise.findOne({ mobile });
 
@@ -29,6 +29,8 @@ export const registerFranchise = async (req, res) => {
                 ownerName,
                 mobile,
                 city,
+                area,
+                state,
                 location: coords || { lat: null, lng: null }
             });
         }
@@ -170,7 +172,7 @@ export const getFranchiseMe = async (req, res) => {
 /* ================= UPDATE PROFILE ================= */
 export const updateFranchiseProfile = async (req, res) => {
     try {
-        const { franchiseName, ownerName, mobile, city, location } = req.body;
+        const { franchiseName, ownerName, mobile, city, area, state, location } = req.body;
         const franchiseId = req.franchise._id;
 
         const franchise = await Franchise.findById(franchiseId);
@@ -184,6 +186,8 @@ export const updateFranchiseProfile = async (req, res) => {
 
         if (franchiseName) franchise.franchiseName = franchiseName;
         if (ownerName) franchise.ownerName = ownerName;
+        if (area) franchise.area = area;
+        if (state) franchise.state = state;
 
         // Handle direct location update (e.g. from GPS)
         if (location && location.lat && location.lng) {

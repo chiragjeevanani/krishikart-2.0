@@ -152,8 +152,8 @@ export default function ProfileScreen() {
                             <p className="text-xs font-black text-white uppercase tabular-nums">Oct 2023</p>
                         </div>
                         <div className="text-center md:text-left border-l border-slate-800 pl-8">
-                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Location</p>
-                            <p className="text-xs font-black text-white uppercase">{franchise?.city || 'Indore'}</p>
+                            <h1 className="text-xl font-black text-white tracking-tight leading-none uppercase">{franchise?.franchiseName}</h1>
+                            <p className="text-xs font-black text-white uppercase">{franchise?.city}, {franchise?.state}</p>
                         </div>
                     </div>
                 </div>
@@ -245,7 +245,9 @@ const EditProfileModal = ({ isOpen, onClose, franchiseData, onUpdate }) => {
         ownerName: franchiseData?.ownerName || '',
         email: franchiseData?.email || '',
         mobile: franchiseData?.mobile || '',
+        area: franchiseData?.area || '',
         city: franchiseData?.city || '',
+        state: franchiseData?.state || '',
         location: franchiseData?.location || null
     });
     const [isSaving, setIsSaving] = useState(false);
@@ -286,16 +288,16 @@ const EditProfileModal = ({ isOpen, onClose, franchiseData, onUpdate }) => {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white w-full max-w-lg rounded-[32px] p-8 shadow-2xl"
+                className="bg-white w-full max-w-lg rounded-[32px] shadow-2xl max-h-[90vh] flex flex-col overflow-hidden"
             >
-                <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center justify-between p-8 pb-4 bg-white shrink-0">
                     <h2 className="text-xl font-black text-slate-900 tracking-tight">Edit Profile</h2>
                     <button onClick={onClose} className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center hover:bg-slate-200 transition-colors">
                         <X size={20} />
                     </button>
                 </div>
 
-                <div className="space-y-6">
+                <div className="flex-1 overflow-y-auto p-8 pt-0 space-y-6">
                     <div className="space-y-1.5">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Shop Name</label>
                         <input
@@ -313,8 +315,6 @@ const EditProfileModal = ({ isOpen, onClose, franchiseData, onUpdate }) => {
                         />
                     </div>
 
-
-
                     <div className="space-y-1.5">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mobile Number</label>
                         <input
@@ -323,12 +323,34 @@ const EditProfileModal = ({ isOpen, onClose, franchiseData, onUpdate }) => {
                             className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
                         />
                     </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Area</label>
+                            <input
+                                value={formData.area}
+                                onChange={(e) => setFormData({ ...formData, area: e.target.value })}
+                                className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
+                                placeholder="e.g. Vijay Nagar"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">City</label>
+                            <input
+                                value={formData.city}
+                                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                                className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
+                                placeholder="e.g. Indore"
+                            />
+                        </div>
+                    </div>
+
                     <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">City / Area</label>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">State</label>
                         <input
-                            value={formData.city}
-                            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                            value={formData.state}
+                            onChange={(e) => setFormData({ ...formData, state: e.target.value })}
                             className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
+                            placeholder="e.g. Madhya Pradesh"
                         />
                     </div>
 
@@ -357,11 +379,13 @@ const EditProfileModal = ({ isOpen, onClose, franchiseData, onUpdate }) => {
                             Pins your exact coordinates for accurate distance calculation
                         </p>
                     </div>
+                </div>
 
+                <div className="p-8 pt-4 bg-white border-t border-slate-50 shrink-0">
                     <button
                         onClick={handleSubmit}
                         disabled={isSaving}
-                        className="w-full h-14 bg-slate-900 text-white rounded-xl font-black text-xs uppercase tracking-[0.2em] mt-8 hover:bg-emerald-600 transition-all flex items-center justify-center gap-3 disabled:bg-slate-200"
+                        className="w-full h-14 bg-slate-900 text-white rounded-xl font-black text-xs uppercase tracking-[0.2em] hover:bg-emerald-600 transition-all flex items-center justify-center gap-3 disabled:bg-slate-200"
                     >
                         {isSaving ? <Loader2 size={18} className="animate-spin" /> : 'Update Profile'}
                     </button>
