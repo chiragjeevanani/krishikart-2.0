@@ -45,7 +45,7 @@ export default function MasterAdminLayout() {
                         <div className={`flex-1 flex flex-col h-screen min-w-0 transition-all duration-300 ${!isLoginPage ? (isCollapsed ? 'lg:ml-20' : 'lg:ml-64') : ''}`}>
                             <TopBar />
 
-                            <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 relative">
+                            <main className="flex-1 overflow-y-auto overflow-x-hidden relative">
                                 <AnimatePresence mode="wait" initial={false}>
                                     <motion.div
                                         key={location.pathname}
