@@ -18,10 +18,16 @@ import {
     MoreHorizontal,
     IndianRupee
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useFranchiseOrders } from '../contexts/FranchiseOrdersContext';
 import { cn } from '@/lib/utils';
 import { useInventory } from '../contexts/InventoryContext';
-import { useNavigate } from 'react-router-dom';
+import {
+    X,
+    UserCircle2,
+    Check
+} from 'lucide-react';
+import { toast } from 'sonner';
 
 // Enterprise Components
 import MetricRow from '../components/cards/MetricRow';
@@ -30,11 +36,28 @@ import FilterBar from '../components/tables/FilterBar';
 
 export default function OrdersScreen() {
     const navigate = useNavigate();
-    const { orders: allOrders, updateOrderStatus, acceptOrder, stats } = useFranchiseOrders();
+    const {
+        orders: allOrders,
+        updateOrderStatus,
+        acceptOrder,
+        assignDeliveryPartner,
+        deliveryPartners,
+        stats
+    } = useFranchiseOrders();
     const { inventory, deductStock } = useInventory();
     const [activeTab, setActiveTab] = useState('new');
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+    const [processingOrderId, setProcessingOrderId] = useState(null);
+    const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+    const [selectedOrderForDispatch, setSelectedOrderForDispatch] = useState(null);
+    const [isAssigning, setIsAssigning] = useState(false);
+
+    const handleAcceptOrder = async (orderId) => {
+        setProcessingOrderId(orderId);
+        await acceptOrder(orderId);
+        setProcessingOrderId(null);
+    };
 
     useEffect(() => {
         const timer = setTimeout(() => setIsLoading(false), 600);
@@ -42,7 +65,7 @@ export default function OrdersScreen() {
     }, [activeTab]);
 
     const handleAction = (orderId, newStatus) => {
-        const order = allOrders.find(o => o._id === orderId);
+        const order = allOrders.find(o => o.id === orderId);
         if (!order) return;
 
         // Stock Validation Logic (Simplified for UI display)
@@ -75,6 +98,17 @@ export default function OrdersScreen() {
         updateOrderStatus(orderId, newStatus);
     };
 
+    const handleAssignDelivery = async (partnerId) => {
+        if (!selectedOrderForDispatch || !partnerId) return;
+        setIsAssigning(true);
+        const success = await assignDeliveryPartner(selectedOrderForDispatch, partnerId);
+        if (success) {
+            setIsAssignModalOpen(false);
+            setSelectedOrderForDispatch(null);
+        }
+        setIsAssigning(false);
+    };
+
     const tabs = [
         { id: 'new', label: 'New', icon: ShoppingBag },
         { id: 'packing', label: 'Packing', icon: Zap },
@@ -87,8 +121,8 @@ export default function OrdersScreen() {
         const status = (order.orderStatus || order.status || '').toLowerCase();
         if (activeTab === 'new') matchesTab = status === 'placed' && !order.franchiseId;
         else if (activeTab === 'packing') matchesTab = status === 'placed' && !!order.franchiseId;
-        else if (activeTab === 'dispatch') matchesTab = status === 'packed';
-        else if (activeTab === 'completed') matchesTab = ['dispatched', 'delivered', 'received'].includes(status);
+        else if (activeTab === 'dispatch') matchesTab = ['packed', 'dispatched'].includes(status);
+        else if (activeTab === 'completed') matchesTab = ['delivered', 'received'].includes(status);
 
         const hotelName = order.hotelName || order.userId?.fullName || 'Unknown';
         const orderId = (order._id || order.id || '').toString();
@@ -140,12 +174,19 @@ export default function OrdersScreen() {
             align: 'right',
             render: (_, row) => (
                 <div className="flex items-center justify-end gap-2">
+                    {activeTab === 'dispatch' && row.status === 'dispatched' && row.deliveryPartner && (
+                        <div className="flex items-center gap-2 mr-4 bg-emerald-50 px-2 py-1 rounded-sm border border-emerald-100">
+                            <UserCircle2 size={12} className="text-emerald-600" />
+                            <span className="text-[9px] font-black text-emerald-700 uppercase">{row.deliveryPartner?.fullName}</span>
+                        </div>
+                    )}
                     {activeTab === 'new' && (
                         <button
-                            onClick={() => acceptOrder(row.id)}
-                            className="p-1 px-3 text-[9px] font-black uppercase text-emerald-600 border border-emerald-600 rounded-sm hover:bg-emerald-600 hover:text-white transition-all"
+                            onClick={() => handleAcceptOrder(row.id)}
+                            disabled={processingOrderId === row.id}
+                            className="p-1 px-3 text-[9px] font-black uppercase text-emerald-600 border border-emerald-600 rounded-sm hover:bg-emerald-600 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Accept
+                            {processingOrderId === row.id ? '...' : 'Accept'}
                         </button>
                     )}
                     {activeTab === 'packing' && (
@@ -156,12 +197,15 @@ export default function OrdersScreen() {
                             Mark Packed
                         </button>
                     )}
-                    {activeTab === 'dispatch' && (
+                    {activeTab === 'dispatch' && row.status === 'packed' && (
                         <button
-                            onClick={() => handleAction(row.id, 'Dispatched')}
-                            className="p-1 px-3 text-[9px] font-black uppercase text-orange-600 border border-orange-600 rounded-sm hover:bg-orange-600 hover:text-white transition-all"
+                            onClick={() => {
+                                setSelectedOrderForDispatch(row.id);
+                                setIsAssignModalOpen(true);
+                            }}
+                            className="p-1 px-3 text-[9px] font-black uppercase text-orange-600 border border-orange-600 rounded-sm hover:bg-orange-600 hover:text-white transition-all flex items-center gap-1.5"
                         >
-                            Dispatch
+                            <Truck size={10} /> Assign & Dispatch
                         </button>
                     )}
                     <button
@@ -314,6 +358,81 @@ export default function OrdersScreen() {
                     </AnimatePresence>
                 </div>
             </div>
+
+            {/* Delivery Assignment Modal */}
+            <AnimatePresence>
+                {isAssignModalOpen && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsAssignModalOpen(false)}
+                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                            className="relative w-full max-w-md bg-white rounded-sm shadow-2xl overflow-hidden"
+                        >
+                            <div className="bg-slate-900 p-6 text-white flex justify-between items-center">
+                                <div>
+                                    <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                                        <Truck size={16} className="text-emerald-400" />
+                                        Assign Delivery Partner
+                                    </h3>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Order #{selectedOrderForDispatch?.slice(-6)}</p>
+                                </div>
+                                <button onClick={() => setIsAssignModalOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="p-6">
+                                <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
+                                    {deliveryPartners.length === 0 ? (
+                                        <div className="text-center py-8">
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No active partners found</p>
+                                        </div>
+                                    ) : (
+                                        deliveryPartners.map((partner) => (
+                                            <button
+                                                key={partner._id}
+                                                onClick={() => handleAssignDelivery(partner._id)}
+                                                disabled={isAssigning}
+                                                className="w-full flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-sm hover:border-slate-900 hover:bg-white transition-all group"
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 bg-slate-200 rounded-sm flex items-center justify-center text-slate-500 font-black text-xs uppercase">
+                                                        {partner.fullName.slice(0, 2)}
+                                                    </div>
+                                                    <div className="text-left">
+                                                        <p className="text-[11px] font-black text-slate-900 uppercase tracking-tight">{partner.fullName}</p>
+                                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{partner.vehicleNumber} • {partner.vehicleType}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-all">
+                                                    <ChevronRight size={14} />
+                                                </div>
+                                            </button>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+                                <button
+                                    onClick={() => setIsAssignModalOpen(false)}
+                                    className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div >
     );
 }

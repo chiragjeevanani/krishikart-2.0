@@ -129,9 +129,9 @@ export default function OrderDetailScreen() {
     const timeline = [
         { status: 'Order Placed', time: order.createdAt ? new Date(order.createdAt).toLocaleTimeString() : '--', desc: 'Order received by system', active: true },
         { status: 'Accepted', time: '--', desc: 'Franchise accepted the order', active: order.status !== 'new' },
-        { status: 'Processing', time: '--', desc: 'Order is being prepared', active: ['preparing', 'ready', 'out_for_delivery', 'delivered'].includes(order.status) },
-        { status: 'Dispatch', time: '--', desc: 'Out for delivery', active: ['out_for_delivery', 'delivered'].includes(order.status) },
-        { status: 'Delivered', time: '--', desc: 'Order delivered successfully', active: order.status === 'delivered' }
+        { status: 'Processing', time: '--', desc: 'Order is being prepared', active: ['packed', 'dispatched', 'delivered', 'received'].includes(order.status) },
+        { status: 'Dispatch', time: '--', desc: 'Out for delivery', active: ['dispatched', 'delivered', 'received'].includes(order.status) },
+        { status: 'Delivered', time: '--', desc: 'Order delivered successfully', active: ['delivered', 'received'].includes(order.status) }
     ];
 
     return (
@@ -368,6 +368,24 @@ export default function OrderDetailScreen() {
                                     </p>
                                 </div>
                             )}
+                            {order.status === 'dispatched' && order.deliveryPartnerId && (
+                                <div className="p-4 bg-blue-50 border border-blue-200 rounded-sm space-y-3">
+                                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
+                                        <Truck size={14} /> Delivery Assigned
+                                    </p>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-blue-100 rounded-sm flex items-center justify-center text-blue-600 font-black text-xs">
+                                            {order.deliveryPartner?.fullName?.slice(0, 2).toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <p className="text-[11px] font-black text-slate-900 uppercase">{order.deliveryPartner?.fullName}</p>
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{order.deliveryPartner?.mobile}</p>
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{order.deliveryPartner?.vehicleNumber}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             <button className="w-full h-10 border border-slate-200 text-slate-400 rounded-sm font-black uppercase text-[9px] tracking-widest hover:bg-slate-50 hover:text-slate-900 transition-all">
                                 Report Issue
                             </button>

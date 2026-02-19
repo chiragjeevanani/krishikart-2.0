@@ -141,7 +141,8 @@ export const getOrderById = async (req, res) => {
         const order = await Order.findById(req.params.id)
             .populate('items.productId')
             .populate('userId', 'fullName mobile address')
-            .populate('franchiseId', 'storeName shopName ownerName mobile');
+            .populate('franchiseId', 'storeName shopName ownerName mobile')
+            .populate('deliveryPartnerId', 'fullName mobile vehicleNumber vehicleType');
         if (!order) return handleResponse(res, 404, "Order not found");
 
         // Authorization logic
@@ -181,8 +182,8 @@ export const updateOrderStatus = async (req, res) => {
         // Role-based validation
         const isMasterAdmin = !!req.masteradmin;
         const isFranchise = !!req.franchise;
-        const isUser = !!req.user && !isMasterAdmin; // req.user might be present for franchise too depending on auth middleware
-        const isDelivery = req.user?.role === 'delivery'; // Guessing role field, need to verify or use another check
+        const isDelivery = !!req.delivery || req.user?.role === 'delivery';
+        const isUser = !!req.user && !isMasterAdmin && !isDelivery;
 
         // Transitions logic
         const statusFlow = {
@@ -243,6 +244,7 @@ export const getAllOrders = async (req, res) => {
         const orders = await Order.find()
             .populate('userId', 'fullName mobile')
             .populate('franchiseId', 'shopName ownerName mobile cityArea')
+            .populate('deliveryPartnerId', 'fullName mobile')
             .sort({ createdAt: -1 });
 
         const formattedOrders = orders.map((order) => {
@@ -287,6 +289,7 @@ export const getFranchiseOrders = async (req, res) => {
             ]
         })
             .populate('userId', 'fullName mobile')
+            .populate('deliveryPartnerId', 'fullName mobile vehicleNumber vehicleType')
             .sort({ createdAt: -1 });
 
         console.log(`Found ${orders.length} orders (broadcast + accepted)`);
@@ -327,7 +330,9 @@ export const getFranchiseOrderById = async (req, res) => {
         const { id } = req.params;
         const franchiseId = req.franchise._id;
 
-        const order = await Order.findById(id).populate('userId', 'fullName mobile address');
+        const order = await Order.findById(id)
+            .populate('userId', 'fullName mobile address')
+            .populate('deliveryPartnerId', 'fullName mobile vehicleNumber vehicleType');
 
         if (!order) {
             return handleResponse(res, 404, "Order not found");
@@ -364,7 +369,6 @@ export const acceptFranchiseOrder = async (req, res) => {
 
         // Assign franchise and keep status as Placed
         order.franchiseId = franchiseId;
-        // order.orderStatus = 'Processing'; // Removed Processing status
         order.statusHistory.push({
             status: order.orderStatus,
             updatedAt: new Date(),
@@ -377,6 +381,47 @@ export const acceptFranchiseOrder = async (req, res) => {
         return handleResponse(res, 200, "Order accepted successfully", order);
     } catch (error) {
         console.error('Accept order error:', error);
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
+// Assign delivery partner to order
+export const assignDeliveryPartner = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { deliveryPartnerId } = req.body;
+        const franchiseId = req.franchise._id;
+
+        const order = await Order.findById(id);
+
+        if (!order) {
+            return handleResponse(res, 404, "Order not found");
+        }
+
+        // Authorization check
+        if (order.franchiseId.toString() !== franchiseId.toString()) {
+            return handleResponse(res, 403, "Not authorized to manage this order");
+        }
+
+        if (!deliveryPartnerId) {
+            return handleResponse(res, 400, "Delivery partner ID is required");
+        }
+
+        order.deliveryPartnerId = deliveryPartnerId;
+        order.orderStatus = 'Dispatched';
+        order.statusHistory.push({
+            status: 'Dispatched',
+            updatedAt: new Date(),
+            updatedBy: 'franchise'
+        });
+
+        await order.save();
+
+        console.log(`🚚 Order ${id} dispatched by franchise ${franchiseId} via partner ${deliveryPartnerId}`);
+
+        return handleResponse(res, 200, "Order dispatched successfully", order);
+    } catch (error) {
+        console.error('Assign delivery partner error:', error);
         return handleResponse(res, 500, "Server error");
     }
 };
@@ -394,4 +439,3 @@ export const getDispatchedOrders = async (req, res) => {
         return handleResponse(res, 500, "Server error");
     }
 };
-

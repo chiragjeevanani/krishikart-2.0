@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search,
@@ -19,87 +19,97 @@ import {
     ChevronRight,
     Target
 } from 'lucide-react';
+import api from '@/lib/axios';
 import StockAlertBadge from '../components/badges/StockAlertBadge';
 import MetricRow from '../components/cards/MetricRow';
-import mockStock from '../data/mockFranchiseStock.json';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function FranchiseStockMonitoringScreen() {
     const [viewMode, setViewMode] = useState('network'); // 'network' or 'detail'
     const [isLoading, setIsLoading] = useState(true);
     const [selectedFranchiseId, setSelectedFranchiseId] = useState(null);
-    const [liveFranchiseInventory, setLiveFranchiseInventory] = useState([]);
+    const [networkData, setNetworkData] = useState([]);
+    const [franchiseDetail, setFranchiseDetail] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
 
-    useEffect(() => {
-        const loadLiveInventory = () => {
-            const saved = localStorage.getItem('franchise_inventory');
-            if (saved) {
-                setLiveFranchiseInventory(JSON.parse(saved));
-            }
-        };
-
-        loadLiveInventory();
-        window.addEventListener('storage', loadLiveInventory);
-
-        const timer = setTimeout(() => setIsLoading(false), 800);
-        return () => {
-            window.removeEventListener('storage', loadLiveInventory);
-            clearTimeout(timer);
-        };
-    }, [selectedFranchiseId, viewMode]);
-
-    const handleFranchiseClick = (id) => {
+    const fetchNetworkOverview = async () => {
         setIsLoading(true);
-        setSelectedFranchiseId(id);
-        setViewMode('detail');
+        try {
+            const response = await api.get('/masteradmin/inventory/monitoring');
+            if (response.data.success) {
+                setNetworkData(response.data.results || []);
+            }
+        } catch (error) {
+            console.error('Fetch network overview error:', error);
+            toast.error('Failed to fetch network stock levels');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const franchises = mockStock.franchises.map(f => {
-        if (f.franchiseId === 'F-003' && liveFranchiseInventory.length > 0) {
-            return {
-                ...f,
-                stock: f.stock.map(s => {
-                    const liveItem = liveFranchiseInventory.find(li => li.id === s.productId || li.productId === s.productId);
-                    if (liveItem) {
-                        return {
-                            ...s,
-                            currentStock: liveItem.currentStock,
-                            alertStatus: liveItem.currentStock < s.mbq ? (liveItem.currentStock === 0 ? 'critical' : 'low') : 'ok'
-                        };
-                    }
-                    return s;
-                })
-            };
+    const fetchFranchiseDetails = async (id) => {
+        setIsLoading(true);
+        try {
+            const response = await api.get(`/masteradmin/inventory/franchise/${id}`);
+            if (response.data.success) {
+                setFranchiseDetail(response.data.result);
+            }
+        } catch (error) {
+            console.error('Fetch franchise details error:', error);
+            toast.error('Failed to fetch franchise stock details');
+        } finally {
+            setIsLoading(false);
         }
-        return f;
-    });
+    };
 
-    const activeFranchise = selectedFranchiseId
-        ? franchises.find(f => f.franchiseId === selectedFranchiseId)
-        : null;
+    useEffect(() => {
+        if (viewMode === 'network') {
+            fetchNetworkOverview();
+        }
+    }, [viewMode]);
 
-    const filteredStock = activeFranchise?.stock.filter(item =>
-        item.productName.toLowerCase().includes(searchTerm.toLowerCase())
-    ) || [];
+    const handleFranchiseClick = (id) => {
+        setSelectedFranchiseId(id);
+        setViewMode('detail');
+        fetchFranchiseDetails(id);
+    };
 
-    const globalStats = {
+    const franchises = useMemo(() => networkData.map(f => ({
+        ...f,
+        id: f.franchiseId, // Backend returns franchiseId
+        name: f.franchiseName,
+        location: f.location,
+        stock: f.stock || []
+    })), [networkData]);
+
+    const filteredStock = useMemo(() => {
+        if (!franchiseDetail) return [];
+        return franchiseDetail.items.filter(item =>
+            item.productName.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [franchiseDetail, searchTerm]);
+
+    const globalStats = useMemo(() => ({
         totalFranchises: franchises.length,
         criticalAlerts: franchises.reduce((acc, f) =>
             acc + f.stock.filter(s => s.alertStatus === 'critical').length, 0),
         lowStockAlerts: franchises.reduce((acc, f) =>
-            acc + f.stock.filter(s => s.alertStatus === 'low').length, 0),
+            acc + f.stock.filter(s => ['low', 'critical'].includes(s.alertStatus)).length, 0),
         healthyFranchises: franchises.filter(f =>
-            f.stock.every(s => s.alertStatus === 'ok')).length
-    };
+            f.stock.length > 0 && f.stock.every(s => s.alertStatus === 'ok')).length
+    }), [franchises]);
 
-    const activeFranchiseMetrics = activeFranchise ? {
-        totalItems: activeFranchise.stock.length,
-        lowStockItems: activeFranchise.stock.filter(s => s.alertStatus !== 'ok').length,
-        criticalItems: activeFranchise.stock.filter(s => s.alertStatus === 'critical').length
-    } : null;
+    const activeFranchiseMetrics = useMemo(() => {
+        if (!franchiseDetail) return null;
+        return {
+            totalItems: franchiseDetail.items.length,
+            lowStockItems: franchiseDetail.items.filter(s => s.alertStatus !== 'ok').length,
+            criticalItems: franchiseDetail.items.filter(s => s.alertStatus === 'critical').length
+        };
+    }, [franchiseDetail]);
 
-    if (isLoading) {
+    if (isLoading && viewMode === 'network' && networkData.length === 0) {
         return (
             <div className="p-4 space-y-4 animate-pulse">
                 <div className="h-4 w-48 bg-slate-100 rounded" />
@@ -127,7 +137,7 @@ export default function FranchiseStockMonitoringScreen() {
                             <span className="text-slate-900 uppercase tracking-widest">Global Monitoring</span>
                         </div>
                         <h1 className="text-sm font-bold text-slate-900">
-                            {viewMode === 'network' ? 'Network Intelligence Desk' : `${activeFranchise?.franchiseName} Hub`}
+                            {viewMode === 'network' ? 'Network Intelligence Desk' : `${franchiseDetail?.franchise?.franchiseName} Hub`}
                         </h1>
                     </div>
 
@@ -141,8 +151,11 @@ export default function FranchiseStockMonitoringScreen() {
                                 Network View
                             </button>
                         )}
-                        <button className="p-1.5 border border-slate-200 rounded-sm hover:bg-slate-50 text-slate-400 transition-colors">
-                            <Download size={14} />
+                        <button
+                            onClick={() => viewMode === 'network' ? fetchNetworkOverview() : fetchFranchiseDetails(selectedFranchiseId)}
+                            className="p-1.5 border border-slate-200 rounded-sm hover:bg-slate-50 text-slate-400 transition-colors"
+                        >
+                            <Activity size={14} />
                         </button>
                     </div>
                 </div>
@@ -153,22 +166,24 @@ export default function FranchiseStockMonitoringScreen() {
                 {viewMode === 'network' ? (
                     <>
                         <MetricRow label="Active Hubs" value={globalStats.totalFranchises.toString()} icon={Store} change={0} trend="up" />
-                        <MetricRow label="Critical Alerts" value={globalStats.criticalAlerts.toString()} icon={AlertTriangle} change={12.4} trend="up" />
-                        <MetricRow label="Low Stock Desk" value={globalStats.lowStockAlerts.toString()} icon={Activity} change={-2.5} trend="down" />
-                        <MetricRow label="Operational Health" value={`${Math.round((globalStats.healthyFranchises / globalStats.totalFranchises) * 100)}%`} icon={Target} change={4.2} trend="up" />
+                        <MetricRow label="Critical Alerts" value={globalStats.criticalAlerts.toString()} icon={AlertTriangle} change={0} trend="up" />
+                        <MetricRow label="Low Stock Desk" value={globalStats.lowStockAlerts.toString()} icon={Activity} change={0} trend="down" />
+                        <MetricRow label="Operational Health" value={globalStats.totalFranchises > 0 ? `${Math.round((globalStats.healthyFranchises / globalStats.totalFranchises) * 100)}%` : '0%'} icon={Target} change={0} trend="up" />
                     </>
                 ) : (
-                    <>
-                        <MetricRow label="Monitored SKUs" value={activeFranchiseMetrics.totalItems.toString()} icon={Package} change={0} trend="up" />
-                        <MetricRow label="Alert Thresholds" value={activeFranchiseMetrics.lowStockItems.toString()} icon={AlertTriangle} change={5.2} trend="up" />
-                        <MetricRow label="Risk Probability" value={activeFranchiseMetrics.criticalItems.toString()} icon={Activity} change={-1.5} trend="down" />
-                        <div className="px-6 py-4 flex items-center justify-center bg-slate-50/50">
-                            <button className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-sm text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-sm">
-                                <ShoppingCart size={14} />
-                                Auto-Generate POs
-                            </button>
-                        </div>
-                    </>
+                    activeFranchiseMetrics && (
+                        <>
+                            <MetricRow label="Monitored SKUs" value={activeFranchiseMetrics.totalItems.toString()} icon={Package} change={0} trend="up" />
+                            <MetricRow label="Alert Thresholds" value={activeFranchiseMetrics.lowStockItems.toString()} icon={AlertTriangle} change={0} trend="up" />
+                            <MetricRow label="Risk Probability" value={activeFranchiseMetrics.criticalItems.toString()} icon={Activity} change={0} trend="down" />
+                            <div className="px-6 py-4 flex items-center justify-center bg-slate-50/50">
+                                <button className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-sm text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-sm">
+                                    <ShoppingCart size={14} />
+                                    Auto-Generate POs
+                                </button>
+                            </div>
+                        </>
+                    )
                 )}
             </div>
 
@@ -184,7 +199,7 @@ export default function FranchiseStockMonitoringScreen() {
                             {franchises.map((franchise) => {
                                 const criticalCount = franchise.stock.filter(s => s.alertStatus === 'critical').length;
                                 const healthyCount = franchise.stock.filter(s => s.alertStatus === 'ok').length;
-                                const healthScore = Math.round((healthyCount / franchise.stock.length) * 100);
+                                const healthScore = franchise.stock.length > 0 ? Math.round((healthyCount / franchise.stock.length) * 100) : 0;
 
                                 return (
                                     <motion.div
@@ -204,7 +219,7 @@ export default function FranchiseStockMonitoringScreen() {
                                             </div>
                                         </div>
 
-                                        <h3 className="text-sm font-bold text-slate-900 tracking-tight mb-1">{franchise.franchiseName}</h3>
+                                        <h3 className="text-sm font-bold text-slate-900 tracking-tight mb-1">{franchise.name}</h3>
                                         <div className="flex items-center gap-3 text-slate-400 mb-6">
                                             <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest">
                                                 <MapPin size={12} />
@@ -290,7 +305,7 @@ export default function FranchiseStockMonitoringScreen() {
                                                 <td className="px-6 py-4">
                                                     <div className="flex flex-col">
                                                         <span className="font-bold text-slate-900 text-sm">{item.productName}</span>
-                                                        <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">CODE: {item.productId}</span>
+                                                        <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">CODE: {item.productId?.slice(-8)}</span>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
