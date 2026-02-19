@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShieldCheck, Mail, Lock, Loader2, ArrowRight } from 'lucide-react';
@@ -8,10 +8,16 @@ import { useMasterAdminAuth } from '../contexts/MasterAdminAuthContext';
 
 export default function LoginScreen() {
     const navigate = useNavigate();
-    const { loginSuccess } = useMasterAdminAuth();
+    const { loginSuccess, isAuthenticated } = useMasterAdminAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            navigate('/masteradmin/dashboard');
+        }
+    }, [isAuthenticated, navigate]);
 
     const handleLogin = async (e) => {
         e.preventDefault();

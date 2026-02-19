@@ -1,5 +1,6 @@
 import Franchise from "../models/franchise.js";
 import Inventory from "../models/inventory.js";
+import Product from "../models/product.js";
 import handleResponse from "../utils/helper.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 
@@ -64,30 +65,106 @@ export const getKYCStatus = async (req, res) => {
 };
 
 /**
- * @desc Get Franchise Inventory
+ * @desc Get Franchise Inventory (All products with stock)
  * @route GET /franchise/inventory
  * @access Private (Franchise)
  */
 export const getInventory = async (req, res) => {
     try {
         const franchiseId = req.franchise._id;
-        const inventory = await Inventory.findOne({ franchiseId })
-            .populate({
-                path: 'items.productId',
-                select: 'name primaryImage price unit category subcategory',
-                populate: [
-                    { path: 'category', select: 'name' },
-                    { path: 'subcategory', select: 'name' }
-                ]
-            });
 
-        if (!inventory) {
-            return handleResponse(res, 200, "Inventory empty", { items: [] });
-        }
+        // Fetch all products
+        const allProducts = await Product.find({})
+            .populate('category', 'name')
+            .populate('subcategory', 'name');
 
-        return handleResponse(res, 200, "Inventory fetched", inventory);
+        // Fetch franchise inventory record
+        const inventoryRecord = await Inventory.findOne({ franchiseId });
+
+        // Map all products to include stock info from inventoryRecord
+        const items = allProducts.map(product => {
+            const stockItem = inventoryRecord?.items.find(
+                i => i.productId.toString() === product._id.toString()
+            );
+
+            return {
+                productId: product,
+                currentStock: stockItem ? stockItem.currentStock : 0,
+                mbq: stockItem ? stockItem.mbq : 5,
+                lastUpdated: stockItem ? stockItem.lastUpdated : null
+            };
+        });
+
+        return handleResponse(res, 200, "Inventory fetched", items);
     } catch (err) {
         console.error("Get Inventory Error:", err);
+        return handleResponse(res, 500, "Internal server error");
+    }
+};
+
+/**
+ * @desc Update Store QR Code
+ * @route PUT /franchise/qr-code
+ * @access Private (Franchise)
+ */
+export const updateStoreQRCode = async (req, res) => {
+    try {
+        const franchiseId = req.franchise._id;
+
+        if (!req.file) {
+            return handleResponse(res, 400, "Please upload a QR code image");
+        }
+
+        const qrCodeUrl = await uploadToCloudinary(req.file.buffer, "franchise/qr-codes");
+
+        const franchise = await Franchise.findByIdAndUpdate(
+            franchiseId,
+            { storeQRCode: qrCodeUrl },
+            { new: true }
+        );
+
+        return handleResponse(res, 200, "QR Code updated successfully", { qrCode: qrCodeUrl });
+    } catch (err) {
+        console.error("Update QR Code Error:", err);
+        return handleResponse(res, 500, "Internal server error");
+    }
+};
+
+/**
+ * @desc Reset All Inventory Stock to 100 (Dev/Test Helper)
+ * @route POST /franchise/inventory/reset
+ * @access Private (Franchise)
+ */
+export const resetInventoryStock = async (req, res) => {
+    try {
+        const franchiseId = req.franchise._id;
+
+        // Fetch all products to ensure everything is included
+        const allProducts = await Product.find({});
+
+        let inventory = await Inventory.findOne({ franchiseId });
+
+        const newItems = allProducts.map(product => ({
+            productId: product._id,
+            currentStock: 100,
+            mbq: 5,
+            lastUpdated: new Date()
+        }));
+
+        if (!inventory) {
+            inventory = new Inventory({
+                franchiseId,
+                items: newItems
+            });
+        } else {
+            inventory.items = newItems;
+        }
+
+        await inventory.save();
+
+        return handleResponse(res, 200, "All inventory items reset to 100 stock successfully");
+    } catch (err) {
+        console.error("Reset Stock Error:", err);
         return handleResponse(res, 500, "Internal server error");
     }
 };

@@ -11,8 +11,14 @@ import {
 import {
   submitKYC,
   getKYCStatus,
-  getInventory
+  getInventory,
+  updateStoreQRCode,
+  resetInventoryStock
 } from "../controllers/franchise.controller.js";
+import {
+  createPOSSale,
+  getPOSHistory
+} from "../controllers/franchise.pos.controller.js";
 import { protectFranchise } from "../middlewares/franchise.auth.js";
 import upload from "../middlewares/upload.js";
 
@@ -34,5 +40,11 @@ router.post(
 );
 router.get("/kyc/status", protectFranchise, getKYCStatus);
 router.get("/inventory", protectFranchise, getInventory);
+
+/* 🛒 POS Terminal */
+router.post("/pos/sale", protectFranchise, createPOSSale);
+router.get("/pos/history", protectFranchise, getPOSHistory);
+router.put("/qr-code", protectFranchise, upload.single('qrCode'), updateStoreQRCode);
+router.post("/inventory/reset", protectFranchise, resetInventoryStock);
 
 export default router;

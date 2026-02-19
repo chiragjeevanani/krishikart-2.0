@@ -29,10 +29,23 @@ import FilterBar from '../components/tables/FilterBar';
 
 export default function InventoryScreen() {
     const navigate = useNavigate();
-    const { inventory, categories, getStockStats } = useInventory();
+    const { inventory, categories, getStockStats, resetAllStockItems } = useInventory();
     const [searchQuery, setSearchQuery] = useState('');
     const [activeCategory, setActiveCategory] = useState('All');
     const [isLoading, setIsLoading] = useState(true);
+    const [isResetting, setIsResetting] = useState(false);
+
+    const handleReset = async () => {
+        if (!window.confirm("Are you sure you want to reset all stock levels to 100?")) return;
+        setIsResetting(true);
+        const success = await resetAllStockItems();
+        setIsResetting(false);
+        if (success) {
+            alert("Stock reset successfully!");
+        } else {
+            alert("Failed to reset stock.");
+        }
+    };
 
     const stats = getStockStats();
 
@@ -153,6 +166,14 @@ export default function InventoryScreen() {
                     <div className="flex items-center gap-2">
                         <button className="w-8 h-8 rounded-sm bg-slate-900 text-white flex items-center justify-center shadow-lg active:scale-95 transition-all">
                             <QrCode size={18} />
+                        </button>
+                        <button
+                            onClick={handleReset}
+                            disabled={isResetting}
+                            className="bg-white border border-slate-200 text-slate-600 px-3 py-1.5 rounded-sm text-[11px] font-bold flex items-center gap-2 hover:bg-slate-50 transition-colors shadow-sm uppercase tracking-widest disabled:opacity-50"
+                        >
+                            <RefreshCw size={14} className={cn(isResetting && "animate-spin")} />
+                            Reset All
                         </button>
                         <button
                             onClick={() => navigate('/franchise/procurement')}

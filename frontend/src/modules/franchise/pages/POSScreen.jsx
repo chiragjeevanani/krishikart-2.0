@@ -26,23 +26,37 @@ import {
 } from 'lucide-react';
 import { useInventory } from '../contexts/InventoryContext';
 import { useFranchiseOrders } from '../contexts/FranchiseOrdersContext';
+import { useFranchiseAuth } from '../contexts/FranchiseAuthContext';
 import { cn } from '@/lib/utils';
+import api from '@/lib/axios';
+import { toast } from 'sonner';
 
 export default function POSScreen() {
-    const { inventory } = useInventory();
-    const { addOrder } = useFranchiseOrders();
+    const { inventory, refreshInventory } = useInventory();
+    const { franchise } = useFranchiseAuth();
     const [searchQuery, setSearchQuery] = useState('');
-    const [cart, setCart] = useState([]);
+    const [cart, setCart] = useState(() => {
+        const savedCart = localStorage.getItem('pos_cart');
+        return savedCart ? JSON.parse(savedCart) : [];
+    });
+    const [lastSale, setLastSale] = useState(null);
     const [showCheckout, setShowCheckout] = useState(false);
+    const [showQRCodeModal, setShowQRCodeModal] = useState(false);
     const [isReceiptShown, setIsReceiptShown] = useState(false);
     const [weight, setWeight] = useState(0);
     const [selectedItemForScale, setSelectedItemForScale] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         const timer = setTimeout(() => setIsLoading(false), 500);
         return () => clearTimeout(timer);
     }, []);
+
+    // Persist cart
+    useEffect(() => {
+        localStorage.setItem('pos_cart', JSON.stringify(cart));
+    }, [cart]);
 
     const filteredItems = inventory.filter(item =>
         item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -75,20 +89,50 @@ export default function POSScreen() {
 
     const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
 
-    const handleCheckout = (paymentMode) => {
-        const orderId = `POS-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
-        addOrder({
-            id: orderId,
-            hotelName: 'POS Counter Sale',
-            items: cart,
-            total,
-            status: 'delivered',
-            paymentMode,
-            type: 'counter',
-            date: new Date().toISOString()
-        });
-        setShowCheckout(false);
-        setIsReceiptShown(true);
+    const handleCheckout = async (paymentMode) => {
+        setIsSubmitting(true);
+        try {
+            const saleData = {
+                items: cart.map(item => ({
+                    productId: item.productId,
+                    name: item.name,
+                    quantity: item.qty,
+                    price: item.price,
+                    subtotal: item.price * item.qty,
+                    unit: item.unit
+                })),
+                totalAmount: total,
+                paymentMethod: paymentMode
+            };
+
+            const response = await api.post('/franchise/pos/sale', saleData);
+
+            if (response.data.success) {
+                // Store for receipt before clearing
+                setLastSale({
+                    items: [...cart],
+                    total: total,
+                    saleId: response.data.result.saleId,
+                    date: new Date().toLocaleString(),
+                    paymentMethod: paymentMode
+                });
+
+                // Clear cart immediately on success
+                localStorage.removeItem('pos_cart');
+                setCart([]);
+
+                refreshInventory();
+                setShowCheckout(false);
+                setIsReceiptShown(true);
+                toast.success('Sale recorded successfully');
+            }
+        } catch (error) {
+            console.error("Sale recording failed:", error);
+            const errorMsg = error.response?.data?.message || 'Sale recording failed';
+            toast.error(errorMsg);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handleScaleComplete = () => {
@@ -97,6 +141,38 @@ export default function POSScreen() {
             setSelectedItemForScale(null);
             setWeight(0);
         }
+    };
+
+    const handlePrint = () => {
+        const printContent = document.getElementById('printable-receipt');
+        const originalContent = document.body.innerHTML;
+        const receiptHtml = printContent.innerHTML;
+
+        // Custom print style
+        const style = `
+            <style>
+                @page { size: 80mm auto; margin: 0; }
+                body { font-family: 'Courier New', Courier, monospace; width: 80mm; padding: 10px; }
+                .receipt-header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 10px; }
+                .receipt-item { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; }
+                .receipt-total { border-top: 1px dashed #000; margin-top: 10px; pt: 5px; font-weight: bold; }
+                .receipt-footer { text-align: center; margin-top: 20px; font-size: 10px; }
+                @media print {
+                    .no-print { display: none !important; }
+                }
+            </style>
+        `;
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write('<html><head><title>Print Receipt</title>' + style + '</head><body>');
+        printWindow.document.write(receiptHtml);
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+        }, 250);
     };
 
     return (
@@ -136,36 +212,97 @@ export default function POSScreen() {
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-px bg-slate-200 no-scrollbar content-start">
+                <div className="flex-1 overflow-y-auto grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-px bg-slate-200 no-scrollbar content-start">
                     {filteredItems.map((item) => (
                         <div
                             key={item.id}
                             onClick={() => (item.unit === 'Kg' || item.unit === 'kg') ? setSelectedItemForScale(item) : addToCart(item)}
-                            className="bg-white p-2.5 border border-transparent hover:border-slate-900 transition-all cursor-pointer flex flex-col group relative overflow-hidden"
+                            className="bg-white p-4 pb-6 border border-transparent hover:border-slate-900 transition-all cursor-pointer flex flex-col group relative overflow-hidden h-full min-h-[360px]"
                         >
-                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                <Plus size={12} className="text-slate-900" />
+                            <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                <Plus size={20} className="text-slate-900 bg-white rounded-full shadow-lg p-1" />
                             </div>
-                            <div className="w-full aspect-square bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-300 mb-2 rounded-sm transition-colors group-hover:bg-slate-100 overflow-hidden relative">
-                                {item.image ? (
-                                    <img
-                                        src={item.image}
-                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                        alt={item.name}
-                                        onError={(e) => {
-                                            e.target.onerror = null;
-                                            e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400';
-                                        }}
-                                    />
-                                ) : (
-                                    <Package size={24} strokeWidth={1.5} />
-                                )}
+
+                            {/* Category Badge */}
+                            <div className="absolute top-3 left-3 z-10">
+                                <span className="bg-slate-900/5 backdrop-blur-md text-slate-600 text-[10px] font-black px-2 py-0.5 rounded-sm uppercase tracking-tighter">
+                                    {item.category}
+                                </span>
                             </div>
-                            <div className="flex flex-col gap-0.5">
-                                <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-tight truncate leading-tight h-7 line-clamp-2">{item.name}</h4>
-                                <div className="flex items-baseline gap-1">
-                                    <span className="text-[11px] font-black text-slate-900 tabular-nums">₹{(item.price || 0).toLocaleString()}</span>
-                                    <span className="text-[8px] font-bold text-slate-400 uppercase">/{item.unit}</span>
+
+                            <div className="w-full pt-[100%] bg-slate-50 mb-4 rounded-sm relative overflow-hidden">
+                                <div className="absolute inset-0 flex items-center justify-center p-4 text-slate-300 transition-colors group-hover:bg-slate-100/50">
+                                    {item.image ? (
+                                        <img
+                                            src={item.image}
+                                            className="w-full h-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-110"
+                                            alt={item.name}
+                                            loading="lazy"
+                                            onError={(e) => {
+                                                console.log("Image load error for:", item.name);
+                                                e.target.onerror = null;
+                                                e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600';
+                                            }}
+                                        />
+                                    ) : (
+                                        <div className="flex flex-col items-center gap-2">
+                                            <Package size={40} strokeWidth={1} />
+                                            <span className="text-[10px] uppercase tracking-widest font-black">No Preview</span>
+                                        </div>
+                                    )}
+
+                                    {/* Promo Badges (Unit moved to price section) */}
+                                    <div className="absolute top-3 right-3 flex flex-col items-end gap-1.5 z-10">
+                                        {item.bestPrice > 0 && (
+                                            <div className="bg-emerald-600 text-white text-[9px] font-black px-2 py-0.5 rounded-sm shadow-sm uppercase tracking-tighter">
+                                                Best Rate
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Dietary Type Indicator */}
+                                    {item.dietaryType && item.dietaryType !== 'none' && (
+                                        <div className="absolute bottom-3 left-3">
+                                            <div className={cn(
+                                                "w-5 h-5 border-[1.5px] flex items-center justify-center rounded-[2px] bg-white shadow-sm",
+                                                item.dietaryType === 'veg' ? "border-emerald-600" : "border-red-600"
+                                            )}>
+                                                <div className={cn(
+                                                    "w-[7px] h-[7px] rounded-full",
+                                                    item.dietaryType === 'veg' ? "bg-emerald-600" : "bg-red-600"
+                                                )} />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-1 flex-1">
+                                <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight line-clamp-2 leading-tight mb-2">{item.name}</h4>
+
+                                <div className="mt-auto flex flex-col gap-1">
+                                    <div className="flex items-baseline gap-1.5">
+                                        <span className="text-lg font-black text-slate-900 tabular-nums">₹{(item.price || 0).toLocaleString()}</span>
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">
+                                            / {item.unitValue} {item.unit}
+                                        </span>
+                                        {item.comparePrice > item.price && (
+                                            <span className="text-xs text-slate-400 line-through font-bold ml-1">₹{item.comparePrice}</span>
+                                        )}
+                                    </div>
+
+                                    <div className={cn(
+                                        "text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 mb-1",
+                                        item.currentStock <= 0 ? "text-rose-500" :
+                                            item.currentStock <= 5 ? "text-amber-500" : "text-emerald-600/70"
+                                    )}>
+                                        <div className={cn(
+                                            "w-1.5 h-1.5 rounded-full animate-pulse",
+                                            item.currentStock <= 0 ? "bg-rose-500" :
+                                                item.currentStock <= 5 ? "bg-amber-500" : "bg-emerald-500"
+                                        )} />
+                                        Stock: {item.currentStock} {item.unit}
+                                    </div>
                                 </div>
                             </div>
                             {(item.unit === 'Kg' || item.unit === 'kg') && (
@@ -385,21 +522,86 @@ export default function POSScreen() {
                             <div className="grid grid-cols-2 gap-4 mb-12">
                                 <button
                                     onClick={() => handleCheckout('Cash')}
-                                    className="p-8 border border-slate-200 rounded-sm flex flex-col items-center gap-4 hover:border-slate-900 hover:bg-slate-50 transition-all group"
+                                    disabled={isSubmitting}
+                                    className="p-8 border border-slate-200 rounded-sm flex flex-col items-center gap-4 hover:border-slate-900 hover:bg-slate-50 transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    <Banknote size={40} className="text-slate-300 group-hover:text-slate-900 transition-colors" />
-                                    <span className="font-black uppercase text-[10px] tracking-widest text-slate-400 group-hover:text-slate-900">Cash</span>
+                                    {isSubmitting ? (
+                                        <RefreshCw size={40} className="text-slate-900 animate-spin" />
+                                    ) : (
+                                        <>
+                                            <Banknote size={40} className="text-slate-300 group-hover:text-slate-900 transition-colors" />
+                                            <span className="font-black uppercase text-[10px] tracking-widest text-slate-400 group-hover:text-slate-900">Cash</span>
+                                        </>
+                                    )}
                                 </button>
                                 <button
-                                    onClick={() => handleCheckout('QR Scan')}
-                                    className="p-8 border border-slate-200 rounded-sm flex flex-col items-center gap-4 hover:border-slate-900 hover:bg-slate-50 transition-all group"
+                                    onClick={() => setShowQRCodeModal(true)}
+                                    disabled={isSubmitting}
+                                    className="p-8 border border-slate-200 rounded-sm flex flex-col items-center gap-4 hover:border-slate-900 hover:bg-slate-50 transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    <QrCode size={40} className="text-slate-300 group-hover:text-slate-900 transition-colors" />
-                                    <span className="font-black uppercase text-[10px] tracking-widest text-slate-400 group-hover:text-slate-900">Online Payment</span>
+                                    {isSubmitting ? (
+                                        <RefreshCw size={40} className="text-slate-900 animate-spin" />
+                                    ) : (
+                                        <>
+                                            <QrCode size={40} className="text-slate-300 group-hover:text-slate-900 transition-colors" />
+                                            <span className="font-black uppercase text-[10px] tracking-widest text-slate-400 group-hover:text-slate-900">Online Payment</span>
+                                        </>
+                                    )}
                                 </button>
                             </div>
 
                             <button onClick={() => setShowCheckout(false)} className="w-full text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors">Cancel</button>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* QR Code Scan Modal */}
+            <AnimatePresence>
+                {showQRCodeModal && (
+                    <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white w-full max-w-sm rounded-sm p-8 shadow-2xl flex flex-col items-center"
+                        >
+                            <h3 className="text-xs font-black text-slate-900 tracking-[0.3em] uppercase mb-8">Scan to Pay</h3>
+
+                            <div className="w-full aspect-square border-2 border-slate-100 rounded-sm mb-8 flex items-center justify-center bg-slate-50 relative overflow-hidden p-4">
+                                {franchise?.storeQRCode ? (
+                                    <img src={franchise.storeQRCode} className="w-full h-full object-contain" alt="Payment QR" />
+                                ) : (
+                                    <div className="flex flex-col items-center gap-3 text-slate-300">
+                                        <QrCode size={64} strokeWidth={1} />
+                                        <span className="text-[10px] font-black uppercase tracking-widest">No QR Set</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="text-center mb-10">
+                                <p className="text-[11px] font-black text-slate-900 uppercase tracking-tight mb-1">Total Amount</p>
+                                <p className="text-2xl font-black text-slate-900 tabular-nums">₹{(total || 0).toLocaleString()}</p>
+                            </div>
+
+                            <div className="w-full flex flex-col gap-3">
+                                <button
+                                    onClick={() => {
+                                        handleCheckout('QR Scan');
+                                        setShowQRCodeModal(false);
+                                    }}
+                                    disabled={isSubmitting || !franchise?.storeQRCode}
+                                    className="w-full h-12 bg-slate-900 text-white rounded-sm font-black uppercase text-[10px] tracking-[0.2em] shadow-lg hover:bg-slate-800 transition-all disabled:bg-slate-200"
+                                >
+                                    {isSubmitting ? <RefreshCw size={16} className="animate-spin mx-auto" /> : 'Confirm Payment'}
+                                </button>
+                                <button
+                                    onClick={() => setShowQRCodeModal(false)}
+                                    className="w-full h-12 text-slate-400 font-black uppercase text-[10px] tracking-[0.2em] hover:text-slate-900 transition-colors"
+                                >
+                                    Go Back
+                                </button>
+                            </div>
                         </motion.div>
                     </div>
                 )}
@@ -414,18 +616,47 @@ export default function POSScreen() {
                             initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
                             className="bg-white w-[380px] rounded-sm p-0 shadow-2xl relative z-10 overflow-hidden"
                         >
+                            {/* Hidden printable receipt structure */}
+                            <div id="printable-receipt" className="hidden">
+                                <div className="receipt-header">
+                                    <h2 style={{ margin: '0', fontSize: '18px' }}>KRISHIKART</h2>
+                                    <p style={{ margin: '5px 0', fontSize: '10px' }}>Franchise POS Terminal</p>
+                                    <p style={{ margin: '0', fontSize: '10px' }}>Date: {lastSale?.date}</p>
+                                    <p style={{ margin: '0', fontSize: '10px' }}>Receipt #: {lastSale?.saleId}</p>
+                                </div>
+                                <div style={{ margin: '15px 0' }}>
+                                    {lastSale?.items.map((item, idx) => (
+                                        <div key={idx} className="receipt-item">
+                                            <span>{item.name} x {item.qty} {item.unit}</span>
+                                            <span>₹{((item.price || 0) * item.qty).toLocaleString()}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="receipt-total">
+                                    <div className="receipt-item" style={{ fontSize: '14px' }}>
+                                        <span>TOTAL</span>
+                                        <span>₹{(lastSale?.total || 0).toLocaleString()}</span>
+                                    </div>
+                                    <p style={{ fontSize: '10px', marginTop: '5px' }}>Payment Mode: {lastSale?.paymentMethod}</p>
+                                </div>
+                                <div className="receipt-footer">
+                                    <p>Thank you for shopping!</p>
+                                    <p>Visit again</p>
+                                </div>
+                            </div>
+
                             <div className="p-8 flex flex-col items-center border-b border-dashed border-slate-200">
                                 <div className="w-14 h-14 bg-slate-900 rounded-sm flex items-center justify-center text-white mb-6">
                                     <CheckCircle2 size={28} />
                                 </div>
                                 <h2 className="text-xs font-black text-slate-900 uppercase tracking-[0.3em] mb-1">Payment Successful</h2>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Receipt #POS-9281</p>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Receipt Prepared</p>
                             </div>
 
                             <div className="p-8 space-y-4">
                                 <div className="flex justify-between text-[11px] font-black uppercase text-slate-900 tracking-widest">
                                     <span>Total Received</span>
-                                    <span className="tabular-nums">₹{(total || 0).toLocaleString()}</span>
+                                    <span className="tabular-nums">₹{(lastSale?.total || 0).toLocaleString()}</span>
                                 </div>
                                 <div className="h-px bg-slate-100" />
                                 <div className="flex justify-between text-[9px] font-bold uppercase text-slate-400 tracking-widest">
@@ -440,16 +671,20 @@ export default function POSScreen() {
 
                             <div className="p-8 pt-0 space-y-3">
                                 <button
-                                    onClick={() => { setIsReceiptShown(false); setCart([]); }}
+                                    onClick={handlePrint}
                                     className="w-full h-12 bg-slate-900 text-white rounded-sm font-black uppercase text-[10px] tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-slate-800 transition-all shadow-lg shadow-slate-200"
                                 >
-                                    <Printer size={16} /> Print & Done
+                                    <Printer size={16} /> Print Receipt
                                 </button>
                                 <button
-                                    onClick={() => { setIsReceiptShown(false); setCart([]); }}
-                                    className="w-full py-2 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors"
+                                    onClick={() => {
+                                        localStorage.removeItem('pos_cart');
+                                        setCart([]);
+                                        setIsReceiptShown(false);
+                                    }}
+                                    className="w-full h-12 border border-slate-200 text-slate-600 rounded-sm font-black uppercase text-[10px] tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-slate-50 transition-all"
                                 >
-                                    Close
+                                    Done & New Sale
                                 </button>
                             </div>
                         </motion.div>

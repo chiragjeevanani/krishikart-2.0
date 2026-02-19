@@ -15,14 +15,16 @@ import DispatchHistoryScreen from '../pages/DispatchHistoryScreen';
 import ProfileScreen from '../pages/ProfileScreen';
 import PaymentsScreen from '../pages/PaymentsScreen';
 import SignupScreen from '../pages/SignupScreen';
-import * as Placeholders from '../pages/Placeholders';
+import { VendorInventoryProvider } from '../contexts/VendorInventoryContext';
 
 // For now using placeholders, will replace with real components as built
 export const vendorRoutes = (
     <Route path="/vendor" element={
-        <OrderProvider>
-            <VendorLayout />
-        </OrderProvider>
+        <VendorInventoryProvider>
+            <OrderProvider>
+                <VendorLayout />
+            </OrderProvider>
+        </VendorInventoryProvider>
     }>
         <Route index element={<DashboardScreen />} />
         <Route path="login" element={<LoginScreen />} />

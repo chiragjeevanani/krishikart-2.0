@@ -31,6 +31,16 @@ import LoyaltyControlScreen from '../pages/LoyaltyControlScreen';
 import VendorQuotationScreen from '../pages/VendorQuotationScreen';
 import { useMasterAdminAuth } from '../contexts/MasterAdminAuthContext';
 
+const AdminRootRedirect = () => {
+    const { isAuthenticated, loading } = useMasterAdminAuth();
+    if (loading) return (
+        <div className="h-screen w-full flex items-center justify-center bg-slate-50">
+            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+    );
+    return isAuthenticated ? <Navigate to="dashboard" replace /> : <Navigate to="login" replace />;
+};
+
 const ProtectedAdminRoute = () => {
     const { isAuthenticated, loading } = useMasterAdminAuth();
 
@@ -52,6 +62,7 @@ const ProtectedAdminRoute = () => {
 export const masterAdminRoutes = (
     <Route path="/masteradmin">
         {/* Public Admin Routes */}
+        <Route index element={<AdminRootRedirect />} />
         <Route path="login" element={<LoginScreen />} />
         <Route path="forgot-password" element={<ForgotPasswordScreen />} />
 

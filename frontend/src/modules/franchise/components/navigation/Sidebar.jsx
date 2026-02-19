@@ -14,7 +14,8 @@ import {
     Monitor,
     ChevronDown,
     Home,
-    Settings
+    Settings,
+    CreditCard
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -42,12 +43,12 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
         {
             group: 'Assets & Ledger', items: [
                 { icon: Package, label: 'Inventory Stock', path: '/franchise/inventory' },
-                { icon: Wallet, label: 'Cash & Reconcile', path: '/franchise/cash' },
             ]
         },
         {
             group: 'Configuration', items: [
                 { icon: User, label: 'Node Profile', path: '/franchise/profile' },
+                { icon: CreditCard, label: 'Payment Settings', path: '/franchise/payment-settings' },
                 { icon: Settings, label: 'Documentation', path: '/franchise/documentation' },
             ]
         }

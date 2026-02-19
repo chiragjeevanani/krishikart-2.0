@@ -12,26 +12,30 @@ export const InventoryProvider = ({ children }) => {
         setLoading(true);
         try {
             const response = await api.get('/franchise/inventory');
-            if (response.data.success && response.data.results?.items) {
-                const mappedInventory = response.data.results.items.map(item => ({
+            if (response.data.success && Array.isArray(response.data.results)) {
+                const mappedInventory = response.data.results.map(item => ({
                     id: item.productId?._id || item._id,
                     productId: item.productId?._id,
                     name: item.productId?.name || 'Unknown Product',
                     currentStock: item.currentStock,
                     mbq: item.mbq,
                     price: item.productId?.price || 0,
-                    image: item.productId?.primaryImage || '',
+                    bestPrice: item.productId?.bestPrice || 0,
+                    comparePrice: item.productId?.comparePrice || 0,
+                    image: item.productId?.primaryImage || (item.productId?.images?.[0]) || '',
                     unit: item.productId?.unit || 'kg',
+                    unitValue: item.productId?.unitValue || 1,
+                    dietaryType: item.productId?.dietaryType || 'none',
                     category: item.productId?.category?.name || 'General',
                     lastUpdated: item.lastUpdated
                 }));
                 setInventory(mappedInventory);
             } else {
-                setInventory(mockInventory);
+                setInventory([]);
             }
         } catch (error) {
             console.error("Failed to fetch inventory from server:", error);
-            setInventory(mockInventory);
+            setInventory([]);
         } finally {
             setLoading(false);
         }
@@ -111,6 +115,20 @@ export const InventoryProvider = ({ children }) => {
 
     const categories = Array.from(new Set(inventory.map(item => item.category)));
 
+    const resetAllStockItems = async () => {
+        try {
+            const response = await api.post('/franchise/inventory/reset');
+            if (response.data.success) {
+                await fetchInventory();
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error("Reset inventory error:", error);
+            return false;
+        }
+    };
+
     return (
         <InventoryContext.Provider value={{
             inventory,
@@ -121,6 +139,7 @@ export const InventoryProvider = ({ children }) => {
             deductStock,
             getLowStockItems,
             getStockStats,
+            resetAllStockItems,
             refreshInventory: fetchInventory
         }}>
             {children}

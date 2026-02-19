@@ -12,36 +12,31 @@ import {
     LayoutGrid,
     List as ListIcon
 } from 'lucide-react';
-import mockProduce from '../data/mockProduce.json';
+import { useVendorInventory } from '../contexts/VendorInventoryContext';
 import { cn } from '@/lib/utils';
 import FilterBar from '../components/tables/FilterBar';
 import DataGrid from '../components/tables/DataGrid';
 
 export default function InventoryScreen() {
-    const [isLoading, setIsLoading] = useState(true);
+    const { inventory, loading, updateStock, toggleAvailability } = useVendorInventory();
     const [searchTerm, setSearchTerm] = useState('');
     const [activeCategory, setActiveCategory] = useState('All');
-    const [inventory, setInventory] = useState(mockProduce);
     const [activeMenuId, setActiveMenuId] = useState(null);
     const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
 
-    useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 600);
-        return () => clearTimeout(timer);
-    }, []);
-
-    const categories = ['All', 'Vegetables', 'Fruits', 'Seasonal'];
+    const categories = ['All', ...new Set(inventory.map(item => item.category))];
 
     const filteredInventory = inventory.filter(item => {
-        const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = item.name?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesCategory = activeCategory === 'All' || item.category === activeCategory;
         return matchesSearch && matchesCategory;
     });
 
-    const toggleAvailability = (id) => {
-        setInventory(prev => prev.map(item =>
-            item.id === id ? { ...item, available: !item.available } : item
-        ));
+    const handleUpdateStock = (productId, currentVal) => {
+        const newVal = prompt(`Update stock (Current: ${currentVal}):`, currentVal);
+        if (newVal !== null && !isNaN(newVal)) {
+            updateStock(productId, Number(newVal));
+        }
     };
 
     const columns = [
@@ -80,13 +75,16 @@ export default function InventoryScreen() {
             header: 'Stock Level',
             key: 'quantity',
             render: (val, row) => (
-                <div className={cn(
-                    "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest inline-flex",
-                    val > 20 ? "bg-emerald-50 text-emerald-600" :
-                        val > 0 ? "bg-amber-50 text-amber-600" : "bg-red-50 text-red-600"
-                )}>
+                <button
+                    onClick={() => handleUpdateStock(row.id, val)}
+                    className={cn(
+                        "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest inline-flex hover:ring-2 hover:ring-slate-200 transition-all",
+                        val > 20 ? "bg-emerald-50 text-emerald-600" :
+                            val > 0 ? "bg-amber-50 text-amber-600" : "bg-red-50 text-red-600"
+                    )}
+                >
                     {val} {row.unit} Available
-                </div>
+                </button>
             )
         },
         {
@@ -108,7 +106,7 @@ export default function InventoryScreen() {
         }
     ];
 
-    if (isLoading) {
+    if (loading) {
         return (
             <div className="space-y-6 animate-pulse">
                 <div className="h-10 w-48 bg-slate-100 rounded-xl" />
@@ -245,13 +243,16 @@ export default function InventoryScreen() {
                                     </div>
 
                                     <div className="flex items-center justify-between mt-4">
-                                        <div className={cn(
-                                            "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest",
-                                            item.quantity > 20 ? "bg-emerald-50 text-emerald-600" :
-                                                item.quantity > 0 ? "bg-amber-50 text-amber-600" : "bg-red-50 text-red-600"
-                                        )}>
+                                        <button
+                                            onClick={() => handleUpdateStock(item.id, item.quantity)}
+                                            className={cn(
+                                                "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest hover:ring-2 hover:ring-slate-200 transition-all",
+                                                item.quantity > 20 ? "bg-emerald-50 text-emerald-600" :
+                                                    item.quantity > 0 ? "bg-amber-50 text-amber-600" : "bg-red-50 text-red-600"
+                                            )}
+                                        >
                                             {item.quantity} {item.unit} Available
-                                        </div>
+                                        </button>
 
                                         <button
                                             onClick={() => toggleAvailability(item.id)}
