@@ -13,6 +13,7 @@ import {
 import { protect } from "../middlewares/authmiddleware.js";
 import { protectMasterAdmin } from "../middlewares/masteradmin.auth.js";
 import { protectFranchise } from "../middlewares/franchise.auth.js";
+import { protectDelivery } from "../middlewares/delivery.auth.js";
 
 const router = express.Router();
 
@@ -33,7 +34,7 @@ router.put("/franchise/:id/accept", protectFranchise, acceptFranchiseOrder);
 router.put("/franchise/:id/status", protectFranchise, updateOrderStatus);
 
 // Delivery Routes
-router.get("/delivery/dispatched", protect, getDispatchedOrders);
-router.put("/delivery/:id/status", protect, updateOrderStatus);
+router.get("/delivery/dispatched", protectDelivery, getDispatchedOrders);
+router.put("/delivery/:id/status", protectDelivery, updateOrderStatus);
 
 export default router;

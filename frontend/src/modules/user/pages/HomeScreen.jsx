@@ -33,22 +33,36 @@ import PageTransition from '../components/layout/PageTransition'
 import ProductCard from '../components/common/ProductCard'
 import api from '@/lib/axios'
 import { Button } from '@/components/ui/button'
+import { MapPin, Navigation } from 'lucide-react'
+import { getDistance, getCurrentLocation } from '@/lib/geo'
 
 export default function HomeScreen() {
     const [categories, setCategories] = useState([])
     const [products, setProducts] = useState([])
+    const [franchises, setFranchises] = useState([])
+    const [userLocation, setUserLocation] = useState(null)
     const [loading, setLoading] = useState(true)
     const navigate = useNavigate()
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [catRes, prodRes] = await Promise.all([
+                const [catRes, prodRes, franRes] = await Promise.all([
                     api.get('/catalog/categories'),
-                    api.get('/products')
+                    api.get('/products'),
+                    api.get('/franchise/active-stores')
                 ])
                 if (catRes.data.success) setCategories(catRes.data.results)
                 if (prodRes.data.success) setProducts(prodRes.data.results)
+                if (franRes.data.success) setFranchises(franRes.data.results)
+
+                // Attempt to get user location
+                try {
+                    const loc = await getCurrentLocation();
+                    setUserLocation(loc);
+                } catch (locErr) {
+                    console.warn('Geolocation not available:', locErr.message);
+                }
             } catch (error) {
                 console.error('Error fetching home data:', error)
             } finally {
@@ -233,6 +247,64 @@ export default function HomeScreen() {
                                     <ProductCard product={product} layout="list" index={idx} />
                                 </div>
                             ))}
+                        </div>
+                    </div>
+
+                    {/* Section 6: Nearby Stores */}
+                    <div className="mt-12 px-6 md:px-0">
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-2">
+                                <div className="p-1.5 bg-emerald-100 rounded-lg md:rounded-md">
+                                    <MapPin size={16} className="text-emerald-500 md:w-5 md:h-5" />
+                                </div>
+                                <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight md:font-bold">Nearby Stores</h2>
+                            </div>
+                        </div>
+
+                        <div className="overflow-x-auto no-scrollbar pb-4 -mx-6 px-6 md:mx-0 md:px-0">
+                            <div className="flex gap-4 w-max min-w-full">
+                                {franchises.map((shop) => {
+                                    const distance = userLocation && shop.location?.lat && shop.location?.lng
+                                        ? getDistance(userLocation.lat, userLocation.lng, shop.location.lat, shop.location.lng)
+                                        : null;
+
+                                    return (
+                                        <div
+                                            key={shop._id}
+                                            className="w-[280px] bg-white rounded-3xl border border-slate-100 p-4 shadow-sm hover:shadow-md transition-all group cursor-pointer"
+                                        >
+                                            <div className="flex gap-4">
+                                                <div className="w-16 h-16 rounded-2xl bg-slate-50 overflow-hidden shrink-0 border border-slate-100">
+                                                    <img
+                                                        src={shop.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(shop.franchiseName)}&background=random`}
+                                                        className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                                                        alt={shop.franchiseName}
+                                                    />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <h3 className="font-bold text-slate-900 truncate">{shop.franchiseName}</h3>
+                                                    <p className="text-xs text-slate-500 truncate">{shop.city}</p>
+                                                    <div className="flex items-center gap-2 mt-2">
+                                                        {distance !== null ? (
+                                                            <div className="flex items-center gap-1 bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-full border border-emerald-100">
+                                                                <Navigation className="w-3 h-3 fill-emerald-600" />
+                                                                <span className="text-[10px] font-black uppercase tracking-tight">
+                                                                    {distance < 1 ? `${(distance * 1000).toFixed(0)}m` : `${distance.toFixed(1)}km`} away
+                                                                </span>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-[10px] text-slate-400 font-bold uppercase">Location unknown</div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                {franchises.length === 0 && (
+                                    <p className="text-slate-400 text-sm font-medium">No stores found near your location.</p>
+                                )}
+                            </div>
                         </div>
                     </div>
 

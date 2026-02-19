@@ -181,8 +181,8 @@ export const updateOrderStatus = async (req, res) => {
         // Role-based validation
         const isMasterAdmin = !!req.masteradmin;
         const isFranchise = !!req.franchise;
-        const isUser = !!req.user && !isMasterAdmin; // req.user might be present for franchise too depending on auth middleware
-        const isDelivery = req.user?.role === 'delivery'; // Guessing role field, need to verify or use another check
+        const isDelivery = !!req.delivery;
+        const isUser = !!req.user && !isMasterAdmin && !isDelivery;
 
         // Transitions logic
         const statusFlow = {

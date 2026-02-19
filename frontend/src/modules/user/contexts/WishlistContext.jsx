@@ -8,7 +8,15 @@ export function WishlistProvider({ children }) {
 
     const fetchWishlist = async () => {
         const token = localStorage.getItem('userToken') || localStorage.getItem('token');
-        if (!token) {
+        const path = window.location.pathname;
+
+        if (!token ||
+            ['/', '/login', '/verification'].includes(path) ||
+            path.includes('/masteradmin') ||
+            path.includes('/franchise') ||
+            path.includes('/vendor') ||
+            path.includes('/delivery')
+        ) {
             const saved = localStorage.getItem('kk_wishlist');
             setWishlistItems(saved ? JSON.parse(saved) : []);
             return;

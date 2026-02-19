@@ -8,7 +8,8 @@ import {
     CheckCircle2,
     ChevronRight,
     Navigation,
-    Star
+    Star,
+    Truck
 } from 'lucide-react';
 import { dashboardMetrics, deliveryPartner, activeDelivery } from '../utils/mockData';
 import MetricCard from '../components/cards/MetricCard';
@@ -39,7 +40,7 @@ const Dashboard = () => {
     }
 
     return (
-        <div className="flex flex-col min-h-full pb-6">
+        <div className="flex flex-col min-h-full pb-24">
             {/* Header */}
             <div className="px-6 pt-8 pb-4 flex justify-between items-center bg-white sticky top-0 z-10">
                 <div>
@@ -145,17 +146,14 @@ const Dashboard = () => {
                         to="/delivery/assignment"
                         className="block bg-white border border-slate-200 rounded-2xl p-5 shadow-sm active:scale-98 transition-all relative overflow-hidden group"
                     >
-                        <div className="absolute top-0 right-0 p-3 text-slate-100 group-hover:text-primary/10 transition-colors">
-                            <Truck size={60} />
-                        </div>
                         <div className="relative z-10 flex flex-col gap-3">
                             <div className="flex items-center gap-2">
                                 <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                                     <Package className="w-4 h-4 text-primary" />
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-bold leading-none">Vendor → Franchise</h3>
-                                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-tight mt-1">Leg: Azadpur → Okhla</p>
+                                    <h3 className="text-sm font-bold leading-none">Order Delivery</h3>
+                                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-tight mt-1">Leg: Franchise → Customer</p>
                                 </div>
                             </div>
                             <div className="flex items-center justify-between mt-1">

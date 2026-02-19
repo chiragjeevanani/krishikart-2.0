@@ -1,13 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
 
 const StatusProgress = ({ currentStatus }) => {
     const steps = [
-        { id: 'assigned', label: 'Assigned' },
-        { id: 'picked_up', label: 'Picked Up' },
-        { id: 'on_the_way', label: 'On Way' },
-        { id: 'delivered', label: 'Delivered' },
+        { id: 'Dispatched', label: 'Accepted' },
+        { id: 'Delivered', label: 'Delivered' },
     ];
 
     const currentIndex = steps.findIndex(s => s.id === currentStatus);
@@ -71,5 +70,4 @@ const StatusProgress = ({ currentStatus }) => {
     );
 };
 
-import { AnimatePresence } from 'framer-motion';
 export default StatusProgress;

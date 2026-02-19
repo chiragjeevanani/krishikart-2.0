@@ -328,24 +328,6 @@ export default function CheckoutScreen() {
                                 </div>
                             </section>
 
-                            {/* Delivery Time */}
-                            <section>
-                                <div className="flex items-center justify-between mb-4">
-                                    <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest md:normal-case md:tracking-normal md:text-slate-900 md:text-base">Delivery Schedule</h2>
-                                </div>
-                                <div className="bg-white rounded-[32px] md:rounded-xl p-6 border border-slate-100 shadow-sm flex items-center justify-between group cursor-pointer hover:bg-slate-50 transition-colors">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-2xl md:rounded-lg bg-primary/5 flex items-center justify-center text-primary shrink-0">
-                                            <Clock size={24} />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-base font-black text-slate-900 md:font-bold">Instant Delivery</h3>
-                                            <p className="text-xs text-primary font-bold mt-1">Delivery in 30 mins</p>
-                                        </div>
-                                    </div>
-                                    <ChevronRight className="text-slate-300 group-hover:text-primary transition-all group-hover:translate-x-1" />
-                                </div>
-                            </section>
 
                             {/* Payment Method */}
                             <section>

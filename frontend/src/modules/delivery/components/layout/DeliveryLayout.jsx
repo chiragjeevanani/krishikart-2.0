@@ -5,8 +5,8 @@ import PageTransition from './PageTransition';
 
 const DeliveryLayout = () => {
     return (
-        <div className="min-h-screen bg-slate-50 pb-20">
-            <main className="max-w-md mx-auto min-h-screen bg-white shadow-sm overflow-hidden relative">
+        <div className="min-h-screen bg-slate-50">
+            <main className="max-w-md mx-auto min-h-screen bg-white shadow-sm relative pb-16">
                 <PageTransition>
                     <Outlet />
                 </PageTransition>

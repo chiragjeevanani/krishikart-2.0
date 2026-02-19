@@ -1,60 +1,43 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
     Truck,
     MapPin,
     Package,
-    ChevronRight,
     ShieldCheck,
     Clock,
     AlertCircle,
     ArrowLeft,
-    Phone,
-    CheckCircle2
+    Phone
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { b2bAssignments } from '../utils/mockData';
+import StatusProgress from '../components/ui/StatusProgress';
 
 const B2BAssignment = () => {
     const navigate = useNavigate();
-    const assignment = b2bAssignments[0]; // For demo, use the first assignment
-    const [status, setStatus] = useState(assignment.status); // pending_pickup, picked_up, in_transit, arriving, delivered
+    const assignment = b2bAssignments[0];
+    const [isDelivered, setIsDelivered] = useState(false);
 
-    const statusSteps = [
-        { id: 'pending_pickup', label: 'Accepted' },
-        { id: 'picked_up', label: 'Picked Up' },
-        { id: 'in_transit', label: 'In Transit' },
-        { id: 'arriving', label: 'Arrived' },
-        { id: 'delivered', label: 'Verified' }
-    ];
-
-    const handleUpdateStatus = () => {
-        if (status === 'pending_pickup') setStatus('picked_up');
-        else if (status === 'picked_up') setStatus('in_transit');
-        else if (status === 'in_transit') setStatus('arriving');
-        else if (status === 'arriving') setStatus('delivered');
-        else if (status === 'delivered') navigate('/delivery/dashboard');
+    const handleMarkDelivered = () => {
+        if (isDelivered) {
+            navigate('/delivery/dashboard');
+        } else {
+            setIsDelivered(true);
+        }
     };
 
-    const getActionText = () => {
-        if (status === 'pending_pickup') return 'Confirm Pickup from Vendor';
-        if (status === 'picked_up') return 'Start Transition to Franchise';
-        if (status === 'in_transit') return 'Update: Near Franchise';
-        if (status === 'arriving') return 'Confirm Delivery at Franchise';
-        return 'Back to Dashboard';
-    };
-
-    const getStatusIndex = () => statusSteps.findIndex(s => s.id === status);
+    const currentStatus = isDelivered ? 'Delivered' : 'Dispatched';
 
     return (
-        <div className="flex flex-col min-h-screen bg-slate-50">
+        <div className="flex flex-col min-h-full bg-slate-50 pb-32">
             {/* App Bar */}
             <div className="bg-white px-6 py-4 flex items-center justify-between border-b border-slate-200 sticky top-0 z-20">
                 <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-slate-100 rounded-full transition-colors">
                     <ArrowLeft className="w-5 h-5" />
                 </button>
                 <div className="flex flex-col items-center">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Assignment Node</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Order Delivery Node</span>
                     <span className="text-xs font-bold">{assignment.id}</span>
                 </div>
                 <button className="p-2 -mr-2 text-primary">
@@ -63,38 +46,19 @@ const B2BAssignment = () => {
             </div>
 
             {/* Status Stepper */}
-            <div className="bg-white px-6 py-6 border-b border-slate-200">
-                <div className="flex justify-between relative">
-                    <div className="absolute top-4 left-0 right-0 h-0.5 bg-slate-100 -z-0" />
-                    <motion.div
-                        className="absolute top-4 left-0 h-0.5 bg-primary -z-0"
-                        initial={{ width: '0%' }}
-                        animate={{ width: `${(getStatusIndex() / (statusSteps.length - 1)) * 100}%` }}
-                    />
-                    {statusSteps.map((step, idx) => (
-                        <div key={step.id} className="flex flex-col items-center gap-2 relative z-10 transition-all duration-500">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-500 ${idx <= getStatusIndex() ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' : 'bg-white border-slate-200 text-slate-400'
-                                }`}>
-                                {idx < getStatusIndex() ? <CheckCircle2 className="w-5 h-5" /> : <span className="text-xs font-bold">{idx + 1}</span>}
-                            </div>
-                            <span className={`text-[9px] font-bold uppercase tracking-wider ${idx <= getStatusIndex() ? 'text-primary' : 'text-slate-400'}`}>{step.label}</span>
-                        </div>
-                    ))}
-                </div>
+            <div className="bg-white px-6 border-b border-slate-200">
+                <StatusProgress currentStatus={currentStatus} />
             </div>
 
             <div className="p-6 space-y-6 pb-32">
                 {/* Visual Header */}
                 <div className="bg-slate-900 rounded-2xl p-6 text-white relative overflow-hidden shadow-xl">
-                    <div className="absolute top-0 right-0 p-4 opacity-10">
-                        <Truck size={120} />
-                    </div>
                     <div className="relative z-10">
                         <div className="flex items-center gap-2 mb-4">
                             <ShieldCheck className="text-emerald-400" size={18} />
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">B2B Verified Logistics</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Verified Logistics</span>
                         </div>
-                        <h2 className="text-2xl font-black tracking-tight mb-2 uppercase">Heavy Payload</h2>
+                        <h2 className="text-2xl font-black tracking-tight mb-2 uppercase">Order Payload</h2>
                         <div className="flex items-center gap-4 text-slate-400">
                             <div className="flex items-center gap-1.5 font-bold text-xs uppercase tracking-widest">
                                 <Package size={14} /> {assignment.payloadWeight}
@@ -117,9 +81,9 @@ const B2BAssignment = () => {
                             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                         </div>
                         <div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pick From Vendor</p>
-                            <h3 className="font-black text-slate-900 text-sm mb-1">{assignment.vendorName}</h3>
-                            <p className="text-xs text-slate-500 font-medium">{assignment.vendorAddress}</p>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pick From Franchise</p>
+                            <h3 className="font-black text-slate-900 text-sm mb-1">{assignment.franchiseName}</h3>
+                            <p className="text-xs text-slate-500 font-medium">{assignment.franchiseAddress}</p>
                         </div>
                     </div>
 
@@ -129,9 +93,9 @@ const B2BAssignment = () => {
                             <MapPin className="text-primary w-4 h-4" />
                         </div>
                         <div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Deliver to Franchise</p>
-                            <h3 className="font-black text-slate-900 text-sm mb-1">{assignment.franchiseName}</h3>
-                            <p className="text-xs text-slate-500 font-medium">{assignment.franchiseAddress}</p>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Deliver to Customer</p>
+                            <h3 className="font-black text-slate-900 text-sm mb-1">Premium Customer</h3>
+                            <p className="text-xs text-slate-500 font-medium">Standard Delivery Address</p>
                         </div>
                     </div>
                 </div>
@@ -139,7 +103,7 @@ const B2BAssignment = () => {
                 {/* Items Manifest */}
                 <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
                     <div className="px-5 py-4 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
-                        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Payload Manifest</h4>
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Order Manifest</h4>
                         <span className="text-[10px] font-black bg-slate-900 text-white px-2 py-0.5 rounded-sm">{assignment.items.length} Units</span>
                     </div>
                     <div className="divide-y divide-slate-50">
@@ -159,22 +123,21 @@ const B2BAssignment = () => {
                 <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex gap-4">
                     <AlertCircle className="text-amber-500 shrink-0" size={20} />
                     <p className="text-xs font-bold text-amber-700 leading-relaxed uppercase tracking-wide">
-                        Verify manifest quantity at pickup. Report any discrepancies to master admin before leaving vendor site.
+                        Verify manifest quantity at pickup. Report any discrepancies to support before leaving franchise site.
                     </p>
                 </div>
             </div>
 
             {/* Status Trigger */}
-            <div className="fixed bottom-0 left-0 right-0 p-6 bg-white border-t border-slate-200 z-30">
+            <div className="fixed bottom-16 left-0 right-0 p-6 bg-white border-t border-slate-200 z-30">
                 <div className="max-w-md mx-auto">
                     <motion.button
                         whileTap={{ scale: 0.98 }}
-                        onClick={handleUpdateStatus}
-                        className={`w-full py-4 rounded-xl font-black shadow-xl flex items-center justify-center gap-3 text-lg uppercase tracking-widest transition-all ${status === 'delivered' ? 'bg-emerald-500 text-white shadow-emerald-500/20' : 'bg-slate-900 text-white shadow-slate-900/20'
+                        onClick={handleMarkDelivered}
+                        className={`w-full py-4 rounded-xl font-black shadow-xl flex items-center justify-center text-center text-lg uppercase tracking-widest transition-all ${isDelivered ? 'bg-emerald-500 text-white shadow-emerald-500/20' : 'bg-slate-900 text-white shadow-slate-900/20'
                             }`}
                     >
-                        {status === 'delivered' ? <CheckCircle2 className="w-6 h-6" /> : <Truck className="w-6 h-6" />}
-                        {getActionText()}
+                        {isDelivered ? 'Back to Dashboard' : 'Mark as Delivered'}
                     </motion.button>
                 </div>
             </div>

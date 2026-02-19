@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
     Phone,
     MessageSquare,
-    ChevronRight,
     Navigation,
-    Package,
     MapPin,
     Clock,
     MoreVertical,
-    CheckCircle2
+    Loader2
 } from 'lucide-react';
 import StatusProgress from '../components/ui/StatusProgress';
 import { useNavigate } from 'react-router-dom';
@@ -18,40 +16,58 @@ import { useDeliveryOrders } from '../contexts/DeliveryOrderContext';
 
 const ActiveDelivery = () => {
     const navigate = useNavigate();
-    const { dispatchedOrders, loading, fetchDispatchedOrders } = useDeliveryOrders();
+    const { dispatchedOrders, loading, updateStatus } = useDeliveryOrders();
     const [order, setOrder] = useState(null);
-    const [status, setStatus] = useState('assigned'); // local UI status for sub-steps
+    const [isUpdating, setIsUpdating] = useState(false);
 
     useEffect(() => {
         const activeOrderId = localStorage.getItem('activeDeliveryId');
         if (activeOrderId) {
             const found = dispatchedOrders.find(o => o._id === activeOrderId);
-            if (found) {
-                setOrder(found);
-            } else {
-                // If not in dispatched (maybe just picked up), we'd usually fetch by ID
-                // For simplicity, we'll assume it's in the list or we need to navigate back
-            }
+            if (found) setOrder(found);
         }
     }, [dispatchedOrders]);
 
-    const handleUpdateStatus = () => {
-        if (status === 'assigned') setStatus('picked_up');
-        else if (status === 'picked_up') setStatus('on_the_way');
-        else if (status === 'on_the_way') {
-            navigate(ROUTES.COMPLETION);
-        }
+    // Current order status from backend: 'Dispatched' or 'Delivered'
+    const currentStatus = order?.orderStatus || 'Dispatched';
+
+    const handleMarkDelivered = async () => {
+        if (!order || isUpdating) return;
+        setIsUpdating(true);
+        await updateStatus(order._id, 'Delivered');
+        setIsUpdating(false);
+        localStorage.removeItem('activeDeliveryId');
+        navigate(ROUTES.DASHBOARD);
     };
 
-    const getButtonText = () => {
-        if (status === 'assigned') return 'Confirm Arrival at Franchise';
-        if (status === 'picked_up') return 'Start Out for Delivery';
-        if (status === 'on_the_way') return 'Arrived at Customer';
-        return 'Complete Delivery';
-    };
+    if (loading && !order) {
+        return (
+            <div className="h-full flex items-center justify-center min-h-screen">
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            </div>
+        );
+    }
+
+    if (!order) {
+        return (
+            <div className="h-full flex flex-col items-center justify-center min-h-screen p-6 text-center gap-4">
+                <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center">
+                    <MapPin className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <h2 className="text-lg font-bold">No Active Delivery</h2>
+                <p className="text-sm text-muted-foreground">Accept an order from the Requests tab to get started.</p>
+                <button
+                    onClick={() => navigate(ROUTES.REQUESTS)}
+                    className="mt-2 px-6 py-3 bg-primary text-white rounded-2xl font-bold text-sm"
+                >
+                    View Requests
+                </button>
+            </div>
+        );
+    }
 
     return (
-        <div className="flex flex-col min-h-full">
+        <div className="flex flex-col min-h-full pb-24">
             {/* Header */}
             <div className="px-6 pt-8 pb-2 bg-white sticky top-0 z-10 border-b border-border/30">
                 <div className="flex justify-between items-center mb-4">
@@ -60,39 +76,39 @@ const ActiveDelivery = () => {
                         <MoreVertical className="w-5 h-5 text-muted-foreground" />
                     </button>
                 </div>
-                <StatusProgress currentStatus={status} />
+                <StatusProgress currentStatus={currentStatus} />
             </div>
 
             <div className="p-6 space-y-6">
                 {/* Status Alert */}
                 <motion.div
                     animate={{ x: [0, -2, 2, -2, 2, 0] }}
-                    transition={{ repeat: Infinity, duration: 4, repeatDelay: 1 }}
+                    transition={{ repeat: Infinity, duration: 4, repeatDelay: 3 }}
                     className="bg-primary/10 border border-primary/20 p-4 rounded-2xl flex items-center gap-4"
                 >
                     <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shrink-0">
                         <Clock className="text-white w-5 h-5" />
                     </div>
                     <div>
-                        <p className="text-sm font-bold text-primary">Next Action Required</p>
-                        <p className="text-xs text-muted-foreground">Deliver items by 10:45 AM today</p>
+                        <p className="text-sm font-bold text-primary">On Your Way</p>
+                        <p className="text-xs text-muted-foreground">Deliver to customer and tap the button below when done.</p>
                     </div>
                 </motion.div>
 
                 {/* Location Cards */}
                 <div className="space-y-4">
-                    <div className="bg-white rounded-2xl border border-border p-4 shadow-sm relative">
+                    {/* Pickup */}
+                    <div className="bg-white rounded-2xl border border-border p-4 shadow-sm">
                         <div className="flex gap-4">
                             <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center border border-green-200 shrink-0">
                                 <MapPin className="text-primary w-5 h-5" />
                             </div>
                             <div className="flex-1">
-                                <p className="text-[10px] font-bold text-muted-foreground uppercase mb-0.5">Pickup Location</p>
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase mb-0.5">Pickup — Franchise</p>
                                 <h3 className="text-sm font-bold">{order?.franchiseId?.shopName || 'Franchise'}</h3>
-                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{order?.franchiseId?.address || 'Pickup from Franchise'}</p>
+                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{order?.franchiseId?.address || '—'}</p>
                             </div>
                         </div>
-
                         <div className="mt-4 flex gap-2">
                             <button className="flex-1 bg-muted/50 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
                                 <Phone className="w-3.5 h-3.5" /> Call Franchise
@@ -103,18 +119,18 @@ const ActiveDelivery = () => {
                         </div>
                     </div>
 
+                    {/* Dropoff */}
                     <div className="bg-white rounded-2xl border border-border p-4 shadow-sm border-l-4 border-l-amber-500">
                         <div className="flex gap-4">
                             <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center border border-amber-200 shrink-0">
                                 <MapPin className="text-amber-500 w-5 h-5" />
                             </div>
                             <div className="flex-1">
-                                <p className="text-[10px] font-bold text-muted-foreground uppercase mb-0.5">Dropoff Location</p>
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase mb-0.5">Deliver To — Customer</p>
                                 <h3 className="text-sm font-bold">{order?.userId?.fullName || 'Customer'}</h3>
-                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{order?.shippingAddress || 'Delivery Address'}</p>
+                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{order?.shippingAddress || '—'}</p>
                             </div>
                         </div>
-
                         <div className="mt-4 flex gap-2">
                             <button className="flex-1 bg-muted/50 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
                                 <Phone className="w-3.5 h-3.5" /> Call Customer
@@ -126,36 +142,42 @@ const ActiveDelivery = () => {
                     </div>
                 </div>
 
-                {/* Order Details */}
+                {/* Order Items */}
                 <div className="bg-white rounded-2xl border border-border overflow-hidden">
                     <div className="px-4 py-3 border-b border-border bg-muted/20 flex justify-between items-center">
                         <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Order Items</h4>
-                        <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">{activeDelivery.items.length} Items</span>
+                        <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                            {order?.items?.length || 0} Items
+                        </span>
                     </div>
-                    <div className="p-0">
+                    <div>
                         {order?.items?.map((item, i) => (
                             <div key={i} className="px-4 py-3 flex justify-between items-center border-b border-border last:border-0">
                                 <div className="flex items-center gap-3">
                                     <div className="w-2 h-2 rounded-full bg-primary" />
-                                    <span className="text-sm font-medium">{item.name}</span>
+                                    <span className="text-sm font-medium">{item.name || item.productId?.name}</span>
                                 </div>
-                                <span className="text-sm font-bold text-muted-foreground">{item.quantity}</span>
+                                <span className="text-sm font-bold text-muted-foreground">×{item.quantity}</span>
                             </div>
                         ))}
                     </div>
                 </div>
             </div>
 
-            {/* Floating Action Button / Bottom Bar */}
+            {/* Bottom Action */}
             <div className="fixed bottom-16 left-0 right-0 p-6 bg-gradient-to-t from-white via-white to-transparent pointer-events-none">
                 <div className="max-w-md mx-auto pointer-events-auto">
                     <motion.button
                         whileTap={{ scale: 0.95 }}
-                        onClick={handleUpdateStatus}
-                        className="w-full bg-primary text-white py-4 rounded-2xl font-bold shadow-xl shadow-primary/30 flex items-center justify-center gap-3 text-lg"
+                        disabled={isUpdating}
+                        onClick={handleMarkDelivered}
+                        className="w-full bg-primary text-white py-4 rounded-2xl font-bold shadow-xl shadow-primary/30 flex items-center justify-center text-center text-lg disabled:opacity-60"
                     >
-                        {status === 'on_the_way' ? <Navigation className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
-                        {getButtonText()}
+                        {isUpdating ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                            'Mark as Delivered'
+                        )}
                     </motion.button>
                 </div>
             </div>

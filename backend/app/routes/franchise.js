@@ -13,7 +13,8 @@ import {
   getKYCStatus,
   getInventory,
   updateStoreQRCode,
-  resetInventoryStock
+  resetInventoryStock,
+  getActiveFranchises
 } from "../controllers/franchise.controller.js";
 import {
   createPOSSale,
@@ -40,6 +41,7 @@ router.post(
 );
 router.get("/kyc/status", protectFranchise, getKYCStatus);
 router.get("/inventory", protectFranchise, getInventory);
+router.get("/active-stores", getActiveFranchises);
 
 /* 🛒 POS Terminal */
 router.post("/pos/sale", protectFranchise, createPOSSale);
