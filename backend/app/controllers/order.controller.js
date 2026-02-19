@@ -26,6 +26,22 @@ const calculateItemPrice = (product, quantity) => {
     return { price, isBulkRate };
 };
 
+/**
+ * Helper to calculate distance between two points using Haversine formula
+ */
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    if (!lat1 || !lon1 || !lat2 || !lon2) return Infinity;
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+};
+
 export const createOrder = async (req, res) => {
     try {
         const userId = req.user.id;
@@ -90,11 +106,38 @@ export const createOrder = async (req, res) => {
             user.usedCredit += totalAmount;
         }
 
-        // 3.5 Broadcast Order Model - No specific franchise assignment
-        // Orders are visible to ALL franchises, first to accept will get it
-        console.log('=== Broadcast Order Model ===');
-        const franchiseId = null; // No assignment - visible to all
-        console.log('Order will be broadcast to ALL active franchises');
+        // 3.5 Find Nearest Franchise
+        console.log('=== Nearest Franchise Assignment Logic ===');
+        let franchiseId = null;
+
+        // Extract coordinates from shipping address if available
+        const userLat = shippingAddress.lat;
+        const userLng = shippingAddress.lng;
+
+        if (userLat && userLng) {
+            const activeFranchises = await Franchise.find({ status: 'active' });
+            let minDistance = Infinity;
+            let nearestFranchise = null;
+
+            activeFranchises.forEach(f => {
+                if (f.location && f.location.lat && f.location.lng) {
+                    const distance = calculateDistance(userLat, userLng, f.location.lat, f.location.lng);
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        nearestFranchise = f;
+                    }
+                }
+            });
+
+            if (nearestFranchise) {
+                franchiseId = nearestFranchise._id;
+                console.log(`📍 Order assigned to nearest franchise: ${nearestFranchise.franchiseName} (${minDistance.toFixed(2)} km away)`);
+            } else {
+                console.log('⚠️ No active franchises with location data found. Falling back to broadcast.');
+            }
+        } else {
+            console.log('⚠️ User location (lat/lng) not provided. Falling back to broadcast model.');
+        }
 
         // 4. Create Order
         const order = new Order({
@@ -182,11 +225,7 @@ export const updateOrderStatus = async (req, res) => {
         // Role-based validation
         const isMasterAdmin = !!req.masteradmin;
         const isFranchise = !!req.franchise;
-<<<<<<< HEAD
         const isDelivery = !!req.delivery || req.user?.role === 'delivery';
-=======
-        const isDelivery = !!req.delivery;
->>>>>>> 11324ce55dd8cacac6c01f297775c98886600264
         const isUser = !!req.user && !isMasterAdmin && !isDelivery;
 
         // Transitions logic
