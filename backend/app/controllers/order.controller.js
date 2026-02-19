@@ -1,9 +1,10 @@
-import Order from "../models/order.js";
+import Order from '../models/order.js';
+import { handleResponse } from '../utils/helper.js';
+import { emitToAdmin, emitToOrderRoom } from '../lib/socket.js';
 import Product from "../models/product.js";
 import Cart from "../models/cart.js";
 import User from "../models/user.js";
 import Franchise from "../models/franchise.js";
-import handleResponse from "../utils/helper.js";
 import { geocodeAddress, getDistance } from "../utils/geo.js";
 
 /**
@@ -224,8 +225,10 @@ export const updateOrderStatus = async (req, res) => {
         const currentStatus = order.orderStatus;
         const allowedStatuses = ['Placed', 'Packed', 'Dispatched', 'Delivered', 'Received', 'Cancelled'];
 
+        console.log(`[DEBUG] MasterAdmin: ${!!req.masteradmin}, Order: ${id}, Status: ${status}`);
+
         if (!allowedStatuses.includes(status)) {
-            return handleResponse(res, 400, "Invalid status");
+            return handleResponse(res, 400, `Invalid status value: ${status}`);
         }
 
         // Role-based validation
@@ -234,7 +237,7 @@ export const updateOrderStatus = async (req, res) => {
         const isDelivery = !!req.delivery || req.user?.role === 'delivery';
         const isUser = !!req.user && !isMasterAdmin && !isDelivery;
 
-        // Transitions logic
+        // Transitions logic (Master Admin can bypass)
         const statusFlow = {
             'Placed': ['Packed', 'Cancelled'],
             'Packed': ['Dispatched', 'Cancelled'],
@@ -244,8 +247,8 @@ export const updateOrderStatus = async (req, res) => {
             'Cancelled': []
         };
 
-        if (status !== 'Cancelled' && !statusFlow[currentStatus].includes(status)) {
-            return handleResponse(res, 400, `Cannot transition from ${currentStatus} to ${status}`);
+        if (!isMasterAdmin && status !== 'Cancelled' && (!statusFlow[currentStatus] || !statusFlow[currentStatus].includes(status))) {
+            return handleResponse(res, 400, `Transition Error: Cannot move from ${currentStatus} to ${status}`);
         }
 
         // Authorization checks
@@ -288,6 +291,20 @@ export const updateOrderStatus = async (req, res) => {
         }
 
         await order.save();
+
+        // Socket Broadcasts
+        const populatedOrder = await Order.findById(order._id)
+            .populate('userId', 'fullName mobile')
+            .populate('deliveryPartnerId', 'fullName mobile vehicleNumber vehicleType')
+            .populate('franchiseId', 'franchiseName ownerName city');
+
+        emitToAdmin('order_status_updated', populatedOrder);
+        emitToOrderRoom(order._id, 'order_status_changed', {
+            orderId: order._id,
+            status: status,
+            updatedAt: new Date()
+        });
+
         return handleResponse(res, 200, `Order status updated to ${status}`, order);
     } catch (error) {
         console.error("Update order status error details:", error);

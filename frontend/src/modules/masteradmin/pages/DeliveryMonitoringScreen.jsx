@@ -16,8 +16,10 @@ import {
     Download,
     RefreshCw,
 } from 'lucide-react';
-import mockOrders from '../data/mockAdminOrders.json';
 import { cn } from '@/lib/utils';
+import api from '@/lib/axios';
+import { toast } from 'sonner';
+import { initSocket, joinAdminDeliveryTracking } from '@/lib/socket.js';
 
 // Enterprise Components
 import MetricRow from '../components/cards/MetricRow';
@@ -31,33 +33,82 @@ import { exportToCSV } from '@/lib/exportToCSV';
 export default function DeliveryMonitoringScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('active');
+    const [orders, setOrders] = useState([]);
 
-    const inTransitOrders = mockOrders.filter(o => o.status === 'in_transit');
-    const deliveredOrders = mockOrders.filter(o => o.status === 'delivered');
+    const fetchOrders = async () => {
+        try {
+            const response = await api.get('/orders/admin/all');
+            if (response.data.success) {
+                setOrders(response.data.results || []);
+            }
+        } catch (error) {
+            console.error('Fetch orders error:', error);
+            toast.error('Failed to load live deliveries');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchOrders();
+
+        // Initializing Real-time tracking
+        const socket = initSocket();
+        joinAdminDeliveryTracking();
+
+        socket.on('order_status_updated', (updatedOrder) => {
+            setOrders(prev => {
+                const index = prev.findIndex(o => o._id === updatedOrder._id);
+                if (index !== -1) {
+                    const newOrders = [...prev];
+                    newOrders[index] = updatedOrder;
+                    return newOrders;
+                }
+                return [updatedOrder, ...prev];
+            });
+            toast.info(`Order #${updatedOrder._id.slice(-6)} updated to ${updatedOrder.orderStatus}`);
+        });
+
+        return () => {
+            socket.off('order_status_updated');
+        };
+    }, []);
+
+    const handleStatusUpdate = async (orderId, newStatus) => {
+        try {
+            const response = await api.put(`/orders/admin/${orderId}/status`, { status: newStatus });
+            if (response.data.success) {
+                toast.success('Status updated successfully');
+                // Socket will handle the state update for us as well, but we can update locally for snappiness
+                setOrders(prev => prev.map(o => o._id === orderId ? { ...o, orderStatus: newStatus } : o));
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to update status');
+        }
+    };
+
+    const inTransitOrders = orders.filter(o => ['packed', 'dispatched'].includes(o.orderStatus?.toLowerCase()));
+    const deliveredOrders = orders.filter(o => ['delivered', 'received'].includes(o.orderStatus?.toLowerCase()));
 
     const handleExport = () => {
         const columns = [
-            { header: 'Order ID', key: 'id' },
-            { header: 'Customer', key: 'customer' },
-            { header: 'Shop', key: 'franchise' },
-            { header: 'Rider', key: 'vendor' },
-            { header: 'Status', key: 'status' },
-            { header: 'Amount', key: 'total' }
+            { header: 'Order ID', key: '_id' },
+            { header: 'Customer', key: 'userId' },
+            { header: 'Shop', key: 'franchiseId' },
+            { header: 'Rider', key: 'deliveryPartnerId' },
+            { header: 'Status', key: 'orderStatus' },
+            { header: 'Amount', key: 'totalAmount' }
         ];
 
         const data = (activeTab === 'active' ? inTransitOrders : deliveredOrders).map(o => ({
             ...o,
-            franchise: o.franchise || 'Main Shop',
-            vendor: o.vendor || 'Not Assigned'
+            userId: o.userId?.fullName || 'Guest',
+            franchiseId: o.franchiseId?.franchiseName || 'N/A',
+            deliveryPartnerId: o.deliveryPartnerId?.fullName || 'Not Assigned'
         }));
 
         exportToCSV(`Delivery_Report_${activeTab}`, columns, data);
     };
-
-    useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 700);
-        return () => clearTimeout(timer);
-    }, []);
 
     const slotPerformance = [
         { slot: '6AM-9AM', success: 98, volume: 145 },
@@ -70,26 +121,26 @@ export default function DeliveryMonitoringScreen() {
     const unitColumns = [
         {
             header: 'Order ID',
-            key: 'id',
-            render: (val) => <span className="font-bold text-slate-900 tracking-wider">#{val}</span>
+            key: '_id',
+            render: (val) => <span className="font-bold text-slate-900 tracking-wider">#{val?.slice(-6).toUpperCase()}</span>
         },
         {
             header: 'Customer',
-            key: 'customer',
-            render: (val) => <span className="font-medium text-slate-600">{val}</span>
+            key: 'userId',
+            render: (val) => <span className="font-medium text-slate-600">{val?.fullName || 'Guest'}</span>
         },
         {
             header: 'Shop Name',
-            key: 'franchise',
-            render: (val) => <span className="font-medium text-slate-600">{val || 'Main Shop'}</span>
+            key: 'franchiseId',
+            render: (val) => <span className="font-medium text-slate-600">{val?.franchiseName || 'Staging Zone'}</span>
         },
         {
             header: 'Rider',
-            key: 'vendor',
+            key: 'deliveryPartnerId',
             render: (val) => (
                 <div className="flex items-center gap-1.5 py-0.5 px-2 bg-blue-50 rounded-sm w-fit border border-blue-100">
                     <Truck size={10} className="text-blue-500" />
-                    <span className="text-[10px] font-bold text-blue-700 uppercase">{val || 'Not Assigned'}</span>
+                    <span className="text-[10px] font-bold text-blue-700 uppercase">{val?.fullName || 'Self/Not Assigned'}</span>
                 </div>
             )
         },
@@ -99,8 +150,30 @@ export default function DeliveryMonitoringScreen() {
             render: (val) => (
                 <div className="flex items-center gap-1.5 py-0.5 px-2 bg-slate-100 rounded-sm w-fit border border-slate-200">
                     <Clock size={10} className="text-slate-400" />
-                    <span className="text-[10px] font-bold text-slate-600 uppercase">{val}</span>
+                    <span className="text-[10px] font-bold text-slate-600 uppercase">{val || 'Standard'}</span>
                 </div>
+            )
+        },
+        {
+            header: 'Status',
+            key: 'orderStatus',
+            render: (val, row) => (
+                <select
+                    value={val}
+                    onChange={(e) => handleStatusUpdate(row._id, e.target.value)}
+                    className={cn(
+                        "text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-sm border outline-none bg-white",
+                        val === 'Placed' && "text-slate-500 border-slate-200",
+                        val === 'Packed' && "text-amber-600 border-amber-200 bg-amber-50",
+                        val === 'Dispatched' && "text-blue-600 border-blue-200 bg-blue-50",
+                        val === 'Delivered' && "text-emerald-600 border-emerald-200 bg-emerald-50",
+                        val === 'Cancelled' && "text-red-600 border-red-200 bg-red-50"
+                    )}
+                >
+                    {['Placed', 'Packed', 'Dispatched', 'Delivered', 'Received', 'Cancelled'].map(s => (
+                        <option key={s} value={s}>{s}</option>
+                    ))}
+                </select>
             )
         },
         {
@@ -109,17 +182,17 @@ export default function DeliveryMonitoringScreen() {
             render: (val) => (
                 <span className={cn(
                     "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-sm border",
-                    val === 'Prepaid' ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-amber-50 text-amber-600 border-amber-100"
+                    val === 'Prepaid' || val === 'Wallet' ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-amber-50 text-amber-600 border-amber-100"
                 )}>
-                    {val}
+                    {val || 'COD'}
                 </span>
             )
         },
         {
             header: 'Amount',
-            key: 'total',
+            key: 'totalAmount',
             align: 'right',
-            render: (val) => <span className="font-bold text-slate-900 leading-none">₹{val.toLocaleString()}</span>
+            render: (val) => <span className="font-bold text-slate-900 leading-none">₹{val?.toLocaleString() || 0}</span>
         }
     ];
 

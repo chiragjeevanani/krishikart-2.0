@@ -4,6 +4,8 @@ import dotenv from "dotenv"
 import connectDB from "./app/dbConfig/dbConfig.js"
 import setupRoutes from "./app/routes/index.js";
 import cors from "cors"
+import { createServer } from "http";
+import { initSocket } from "./app/lib/socket.js";
 
 dotenv.config();
 const app = express();
@@ -23,6 +25,9 @@ setupRoutes(app);
 
 
 
-app.listen(PORT, HOST, () => {
+const httpServer = createServer(app);
+initSocket(httpServer);
+
+httpServer.listen(PORT, HOST, () => {
   console.log(`server is running on http://${HOST}:${PORT}`)
 })
