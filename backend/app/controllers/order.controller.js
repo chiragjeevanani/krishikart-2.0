@@ -182,7 +182,11 @@ export const updateOrderStatus = async (req, res) => {
         // Role-based validation
         const isMasterAdmin = !!req.masteradmin;
         const isFranchise = !!req.franchise;
+<<<<<<< HEAD
         const isDelivery = !!req.delivery || req.user?.role === 'delivery';
+=======
+        const isDelivery = !!req.delivery;
+>>>>>>> 11324ce55dd8cacac6c01f297775c98886600264
         const isUser = !!req.user && !isMasterAdmin && !isDelivery;
 
         // Transitions logic

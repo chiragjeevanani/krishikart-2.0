@@ -98,7 +98,7 @@ const DeliveryCompletion = () => {
     }
 
     return (
-        <div className="flex flex-col min-h-full">
+        <div className="flex flex-col min-h-full pb-24">
             {/* Header */}
             <div className="px-6 pt-8 pb-4 bg-white sticky top-0 z-10 border-b border-border/50">
                 <div className="flex items-center gap-4 mb-2">
@@ -177,11 +177,11 @@ const DeliveryCompletion = () => {
             </div>
 
             {/* Action Button */}
-            <div className="p-6 mt-auto">
+            <div className="p-6 mt-auto pb-10">
                 <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={handleComplete}
-                    className="w-full bg-primary text-white py-4 rounded-2xl font-bold shadow-xl shadow-primary/30 flex items-center justify-center gap-3 text-lg"
+                    className="w-full bg-primary text-white py-4 rounded-2xl font-bold shadow-xl shadow-primary/30 flex items-center justify-center text-center text-lg"
                 >
                     Finish Delivery
                 </motion.button>

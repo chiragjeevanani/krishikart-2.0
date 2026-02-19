@@ -22,28 +22,34 @@ export function WalletProvider({ children }) {
     }, []);
 
     const fetchWalletData = async () => {
-        // Skip user profile fetch if we are in Master Admin module
-        if (window.location.pathname.startsWith('/masteradmin')) {
+        const token = localStorage.getItem('userToken');
+        const path = window.location.pathname;
+
+        // Skip if on auth pages or in other modules
+        if (!token ||
+            ['/', '/login', '/verification'].includes(path) ||
+            path.includes('/masteradmin') ||
+            path.includes('/franchise') ||
+            path.includes('/vendor') ||
+            path.includes('/delivery')
+        ) {
             return;
         }
 
         setIsLoading(true);
         try {
-            const token = localStorage.getItem('userToken');
-            if (token) {
-                const response = await api.get('/user/me');
-                if (response.data && response.data.result) {
-                    const user = response.data.result;
-                    setBalance(user.walletBalance || 0);
-                    setCreditLimit(user.creditLimit || 0);
-                    setCreditUsed(user.usedCredit || 0);
-                    setLoyaltyPoints(user.loyaltyPoints || 0);
+            const response = await api.get('/user/me');
+            if (response.data && response.data.result) {
+                const user = response.data.result;
+                setBalance(user.walletBalance || 0);
+                setCreditLimit(user.creditLimit || 0);
+                setCreditUsed(user.usedCredit || 0);
+                setLoyaltyPoints(user.loyaltyPoints || 0);
 
-                    // Note: Transactions are currently mock as they aren't in User model
-                    setTransactions([
-                        { id: 'TXN-INIT', type: 'Added', amount: user.walletBalance || 0, date: 'Current Session', status: 'Success' }
-                    ]);
-                }
+                // Note: Transactions are currently mock as they aren't in User model
+                setTransactions([
+                    { id: 'TXN-INIT', type: 'Added', amount: user.walletBalance || 0, date: 'Current Session', status: 'Success' }
+                ]);
             }
         } catch (error) {
             console.error('Failed to fetch wallet data:', error);

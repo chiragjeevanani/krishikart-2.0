@@ -4,6 +4,7 @@ import { Navigation, ShieldCheck, ArrowRight, Phone, MessageSquare, RefreshCw } 
 import { ROUTES } from '../utils/constants';
 import { useNavigate } from 'react-router-dom';
 import api from '../../../lib/axios';
+import { useDeliveryAuth } from '../contexts/DeliveryAuthContext';
 
 const DeliveryPartnerLogin = () => {
     const [step, setStep] = useState('phone'); // 'phone' or 'otp'
@@ -11,6 +12,13 @@ const DeliveryPartnerLogin = () => {
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const { loginSuccess, isAuthenticated } = useDeliveryAuth();
+
+    React.useEffect(() => {
+        if (isAuthenticated) {
+            navigate(ROUTES.DASHBOARD);
+        }
+    }, [isAuthenticated, navigate]);
 
     const handleSendOtp = async (e) => {
         e.preventDefault();
@@ -36,8 +44,7 @@ const DeliveryPartnerLogin = () => {
             const response = await api.post('/delivery/verify-otp', { mobile: phone, otp: otpCode });
 
             // Store token and user data
-            localStorage.setItem('deliveryToken', response.data.token);
-            localStorage.setItem('deliveryData', JSON.stringify(response.data));
+            loginSuccess(response.data.result, response.data.result.token);
 
             navigate(ROUTES.DASHBOARD);
         } catch (error) {

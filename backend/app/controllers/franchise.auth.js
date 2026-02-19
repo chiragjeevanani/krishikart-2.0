@@ -1,5 +1,6 @@
 import Franchise from "../models/franchise.js";
 import handleResponse from "../utils/helper.js";
+import { geocodeAddress } from "../utils/geo.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 
@@ -20,11 +21,15 @@ export const registerFranchise = async (req, res) => {
             return handleResponse(res, 409, "Franchise already registered");
 
         if (!franchise) {
+            // Geocode the city to get lat/lng
+            const coords = await geocodeAddress(city);
+
             franchise = await Franchise.create({
                 franchiseName,
                 ownerName,
                 mobile,
                 city,
+                location: coords || { lat: null, lng: null }
             });
         }
 
@@ -165,7 +170,7 @@ export const getFranchiseMe = async (req, res) => {
 /* ================= UPDATE PROFILE ================= */
 export const updateFranchiseProfile = async (req, res) => {
     try {
-        const { franchiseName, ownerName, mobile, city } = req.body;
+        const { franchiseName, ownerName, mobile, city, location } = req.body;
         const franchiseId = req.franchise._id;
 
         const franchise = await Franchise.findById(franchiseId);
@@ -179,7 +184,23 @@ export const updateFranchiseProfile = async (req, res) => {
 
         if (franchiseName) franchise.franchiseName = franchiseName;
         if (ownerName) franchise.ownerName = ownerName;
-        if (city) franchise.city = city;
+
+        // Handle direct location update (e.g. from GPS)
+        if (location && location.lat && location.lng) {
+            franchise.location = {
+                lat: Number(location.lat),
+                lng: Number(location.lng)
+            };
+        }
+
+        if (city && city !== franchise.city) {
+            franchise.city = city;
+            // Re-geocode if city changed and no direct location was provided
+            if (!location) {
+                const coords = await geocodeAddress(city);
+                if (coords) franchise.location = coords;
+            }
+        }
 
         await franchise.save();
 

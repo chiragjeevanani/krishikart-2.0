@@ -19,11 +19,13 @@ import {
     Settings2,
     Lock,
     X,
-    Loader2
+    Loader2,
+    Navigation
 } from 'lucide-react';
 import { useFranchiseAuth } from '../contexts/FranchiseAuthContext';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { getCurrentLocation } from '@/lib/geo';
 
 export default function ProfileScreen() {
     const { franchise, logout, updateProfile, loading: contextLoading } = useFranchiseAuth();
@@ -244,8 +246,24 @@ const EditProfileModal = ({ isOpen, onClose, franchiseData, onUpdate }) => {
         email: franchiseData?.email || '',
         mobile: franchiseData?.mobile || '',
         city: franchiseData?.city || '',
+        location: franchiseData?.location || null
     });
     const [isSaving, setIsSaving] = useState(false);
+    const [isPinning, setIsPinning] = useState(false);
+
+    const handlePinLocation = async () => {
+        setIsPinning(true);
+        try {
+            const loc = await getCurrentLocation();
+            setFormData(prev => ({ ...prev, location: loc }));
+            alert("Current location pinned! Remember to click Update Profile to save changes.");
+        } catch (error) {
+            console.error('Failed to get location', error);
+            alert("Could not detect location. Please check your browser permissions.");
+        } finally {
+            setIsPinning(false);
+        }
+    };
 
     const handleSubmit = async () => {
         setIsSaving(true);
@@ -312,6 +330,32 @@ const EditProfileModal = ({ isOpen, onClose, franchiseData, onUpdate }) => {
                             onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                             className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
                         />
+                    </div>
+
+                    <div className="pt-2">
+                        <button
+                            type="button"
+                            onClick={handlePinLocation}
+                            disabled={isPinning}
+                            className={cn(
+                                "w-full h-12 rounded-xl flex items-center justify-center gap-2 font-black text-[10px] uppercase tracking-widest transition-all border",
+                                formData.location?.lat
+                                    ? "bg-emerald-50 text-emerald-600 border-emerald-200"
+                                    : "bg-slate-50 text-slate-600 border-slate-100 hover:bg-slate-100"
+                            )}
+                        >
+                            {isPinning ? (
+                                <Loader2 size={16} className="animate-spin" />
+                            ) : (
+                                <Navigation size={16} className={formData.location?.lat ? "fill-emerald-600" : ""} />
+                            )}
+                            {formData.location?.lat
+                                ? `Location Pinned (${formData.location.lat.toFixed(4)}, ${formData.location.lng.toFixed(4)})`
+                                : "Pin Current GPS Location"}
+                        </button>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tight mt-1.5 px-1 text-center">
+                            Pins your exact coordinates for accurate distance calculation
+                        </p>
                     </div>
 
                     <button

@@ -11,7 +11,16 @@ export function CartProvider({ children }) {
     // Fetch cart on mount if token exists
     const fetchCart = async () => {
         const token = localStorage.getItem('userToken') || localStorage.getItem('token');
-        if (!token) return;
+        const path = window.location.pathname;
+
+        // Skip if no token or if on auth/separate module pages
+        if (!token ||
+            ['/', '/login', '/verification'].includes(path) ||
+            path.includes('/masteradmin') ||
+            path.includes('/franchise') ||
+            path.includes('/vendor') ||
+            path.includes('/delivery')
+        ) return;
 
         try {
             const response = await api.get('/user/cart');

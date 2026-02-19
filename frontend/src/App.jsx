@@ -59,6 +59,7 @@ import { deliveryRoutes } from './modules/delivery/routes/deliveryRoutes';
 import { CartProvider } from './modules/user/contexts/CartContext'
 import { OrderProvider } from '@/modules/user/contexts/OrderContext'
 import { WalletProvider } from './modules/user/contexts/WalletContext'
+import { DeliveryAuthProvider } from './modules/delivery/contexts/DeliveryAuthContext'
 import { DeliveryOrderProvider } from './modules/delivery/contexts/DeliveryOrderContext'
 import { Toaster } from 'sonner'
 
@@ -90,10 +91,12 @@ const FranchiseProviders = ({ children }) => (
   </FranchiseAuthProvider>
 );
 
-const DeliveryProviders = ({ children }) => (
-  <DeliveryOrderProvider>
-    {children}
-  </DeliveryOrderProvider>
+const DeliveryProviders = () => (
+  <DeliveryAuthProvider>
+    <DeliveryOrderProvider>
+      <Outlet />
+    </DeliveryOrderProvider>
+  </DeliveryAuthProvider>
 );
 
 const MasterAdminProviders = () => (
@@ -165,10 +168,8 @@ function App() {
             {masterAdminRoutes}
           </Route>
           {vendorRoutes}
-          <Route path="/delivery/*">
-            <Route element={<DeliveryProviders />}>
-              {deliveryRoutes}
-            </Route>
+          <Route element={<DeliveryProviders />}>
+            {deliveryRoutes}
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

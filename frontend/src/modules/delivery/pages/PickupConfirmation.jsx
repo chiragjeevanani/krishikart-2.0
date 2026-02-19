@@ -65,7 +65,7 @@ const PickupConfirmation = () => {
     }
 
     return (
-        <div className="flex flex-col min-h-full">
+        <div className="flex flex-col min-h-full pb-24">
             {/* Header */}
             <div className="px-6 pt-8 pb-4 bg-white sticky top-0 z-10 border-b border-border/50">
                 <div className="flex items-center gap-4 mb-2">
@@ -124,14 +124,13 @@ const PickupConfirmation = () => {
             </div>
 
             {/* Action Button */}
-            <div className="p-6 mt-auto">
+            <div className="p-6 mt-auto pb-10">
                 <motion.button
                     whileTap={allChecked ? { scale: 0.95 } : {}}
                     disabled={!allChecked}
                     onClick={handleConfirm}
-                    className={`w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-3 text-lg transition-all ${allChecked ? 'bg-primary text-white shadow-xl shadow-primary/30' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}
+                    className={`w-full py-4 rounded-2xl font-bold flex items-center justify-center text-center text-lg transition-all ${allChecked ? 'bg-primary text-white shadow-xl shadow-primary/30' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}
                 >
-                    <HandMetal className="w-5 h-5" />
                     Confirm & Start Delivery
                 </motion.button>
             </div>

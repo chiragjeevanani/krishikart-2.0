@@ -80,6 +80,16 @@ const franchiseSchema = new mongoose.Schema(
       type: String,
       default: null, // URL to the franchise's UPI/Payment QR code
     },
+    location: {
+      lat: {
+        type: Number,
+        default: null
+      },
+      lng: {
+        type: Number,
+        default: null
+      }
+    }
   },
   { timestamps: true }
 );

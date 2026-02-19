@@ -131,6 +131,23 @@ export const updateStoreQRCode = async (req, res) => {
 };
 
 /**
+ * @desc Get all active franchises
+ * @route GET /franchise/active-stores
+ * @access Public
+ */
+export const getActiveFranchises = async (req, res) => {
+    try {
+        const franchises = await Franchise.find({ status: "active" })
+            .select("franchiseName ownerName city profilePicture location");
+
+        return handleResponse(res, 200, "Active stores fetched", franchises);
+    } catch (err) {
+        console.error("Fetch Active Franchises Error:", err);
+        return handleResponse(res, 500, "Internal server error");
+    }
+};
+
+/**
  * @desc Reset All Inventory Stock to 100 (Dev/Test Helper)
  * @route POST /franchise/inventory/reset
  * @access Private (Franchise)

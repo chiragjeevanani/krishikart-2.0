@@ -37,7 +37,10 @@ export function DeliveryOrderProvider({ children }) {
     };
 
     useEffect(() => {
-        fetchDispatchedOrders();
+        const token = localStorage.getItem('deliveryToken');
+        if (token) {
+            fetchDispatchedOrders();
+        }
     }, []);
 
     return (

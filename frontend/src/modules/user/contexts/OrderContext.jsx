@@ -12,8 +12,11 @@ export function OrderProvider({ children }) {
         const token = localStorage.getItem('userToken');
         const path = window.location.pathname;
 
-        // Skip fetching if no user token or if we are in a different module
+        // Skip fetching if no user token or if we are on auth pages / different modules
         if (!token ||
+            path === '/' ||
+            path === '/login' ||
+            path === '/verification' ||
             path.includes('/masteradmin') ||
             path.includes('/vendor') ||
             path.includes('/franchise') ||
