@@ -49,10 +49,39 @@ export function getCurrentLocation() {
                 },
                 {
                     enableHighAccuracy: true,
-                    timeout: 5000,
+                    timeout: 10000,
                     maximumAge: 0
                 }
             );
         }
     });
+}
+
+/**
+ * Reverse geocodes coordinates to a human-readable address
+ * @param {number} lat
+ * @param {number} lng
+ * @returns {Promise<string|null>}
+ */
+export async function reverseGeocode(lat, lng) {
+    try {
+        const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
+            {
+                headers: {
+                    'User-Agent': 'KrishiKart-App/1.0'
+                }
+            }
+        );
+        const data = await response.json();
+        if (data && data.address) {
+            const city = data.address.city || data.address.town || data.address.village || data.address.suburb;
+            const state = data.address.state;
+            return city ? `${city}${state ? `, ${state}` : ''}` : null;
+        }
+        return null;
+    } catch (error) {
+        console.error('Reverse geocoding error:', error);
+        return null;
+    }
 }

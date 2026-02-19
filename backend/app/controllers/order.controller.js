@@ -4,6 +4,7 @@ import Cart from "../models/cart.js";
 import User from "../models/user.js";
 import Franchise from "../models/franchise.js";
 import handleResponse from "../utils/helper.js";
+import { geocodeAddress, getDistance } from "../utils/geo.js";
 
 /**
  * Helper to calculate price based on quantity and bulk pricing rules
@@ -106,43 +107,47 @@ export const createOrder = async (req, res) => {
             user.usedCredit += totalAmount;
         }
 
-        // 3.5 Find Nearest Franchise
-        console.log('=== Nearest Franchise Assignment Logic ===');
-        let franchiseId = null;
+        // 3.5 Auto Franchise Assignment
+        let assignedFranchiseId = null;
+        try {
+            const userCoords = await geocodeAddress(shippingAddress);
+            if (userCoords) {
+                const activeFranchises = await Franchise.find({
+                    status: 'active',
+                    'location.lat': { $ne: null },
+                    'location.lng': { $ne: null }
+                });
 
-        // Extract coordinates from shipping address if available
-        const userLat = shippingAddress.lat;
-        const userLng = shippingAddress.lng;
+                let minDistance = Infinity;
 
-        if (userLat && userLng) {
-            const activeFranchises = await Franchise.find({ status: 'active' });
-            let minDistance = Infinity;
-            let nearestFranchise = null;
+                for (const franchise of activeFranchises) {
+                    const dist = getDistance(
+                        userCoords.lat, userCoords.lng,
+                        franchise.location.lat, franchise.location.lng
+                    );
 
-            activeFranchises.forEach(f => {
-                if (f.location && f.location.lat && f.location.lng) {
-                    const distance = calculateDistance(userLat, userLng, f.location.lat, f.location.lng);
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        nearestFranchise = f;
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                        assignedFranchiseId = franchise._id;
                     }
                 }
-            });
 
-            if (nearestFranchise) {
-                franchiseId = nearestFranchise._id;
-                console.log(`📍 Order assigned to nearest franchise: ${nearestFranchise.franchiseName} (${minDistance.toFixed(2)} km away)`);
+                if (assignedFranchiseId) {
+                    console.log(`✅ Order auto-assigned to closest franchise: ${assignedFranchiseId} (${minDistance.toFixed(2)}km)`);
+                } else {
+                    console.log('⚠️ No active franchises with locations found for auto-assignment');
+                }
             } else {
-                console.log('⚠️ No active franchises with location data found. Falling back to broadcast.');
+                console.warn('⚠️ Could not geocode shipping address for auto-assignment');
             }
-        } else {
-            console.log('⚠️ User location (lat/lng) not provided. Falling back to broadcast model.');
+        } catch (geoErr) {
+            console.error("Auto-assignment error:", geoErr);
         }
 
         // 4. Create Order
         const order = new Order({
             userId,
-            franchiseId,
+            franchiseId: assignedFranchiseId,
             items: orderItems,
             subtotal,
             deliveryFee,
@@ -323,24 +328,15 @@ export const getFranchiseOrders = async (req, res) => {
         console.log('Franchise ID:', franchiseId);
         console.log('Franchise Name:', req.franchise.shopName);
 
-        // Broadcast Model: Show all unassigned orders (franchiseId = null)
-        // OR orders already accepted by this franchise
+        // Assigned Model: Only show orders specifically assigned to this franchise
         const orders = await Order.find({
-            $or: [
-                { franchiseId: null },           // Unassigned/broadcast orders
-                { franchiseId: franchiseId }     // Orders accepted by this franchise
-            ]
+            franchiseId: franchiseId
         })
             .populate('userId', 'fullName mobile')
             .populate('deliveryPartnerId', 'fullName mobile vehicleNumber vehicleType')
             .sort({ createdAt: -1 });
 
-        console.log(`Found ${orders.length} orders (broadcast + accepted)`);
-        if (orders.length > 0) {
-            const unassigned = orders.filter(o => !o.franchiseId).length;
-            const accepted = orders.filter(o => o.franchiseId?.toString() === franchiseId.toString()).length;
-            console.log(`Unassigned: ${unassigned}, Accepted by this franchise: ${accepted}`);
-        }
+        console.log(`Found ${orders.length} orders assigned to this franchise`);
 
         const formattedOrders = orders.map((order) => {
             const dateObj = new Date(order.createdAt);
@@ -472,13 +468,60 @@ export const assignDeliveryPartner = async (req, res) => {
 // Get dispatched orders for delivery partner
 export const getDispatchedOrders = async (req, res) => {
     try {
-        const orders = await Order.find({ orderStatus: 'Dispatched' })
+        const orders = await Order.find({
+            orderStatus: 'Dispatched'
+        })
             .populate('userId', 'fullName mobile address')
+            .populate('franchiseId', 'shopName address location')
             .sort({ updatedAt: -1 });
 
-        return handleResponse(res, 200, "Dispatched orders fetched", orders);
+        // Map to format delivery app expects
+        const formatted = orders.map(order => ({
+            id: order._id,
+            franchise: order.franchiseId?.shopName || 'KrishiKart Store',
+            franchiseAddress: order.franchiseId?.address || 'N/A',
+            customerName: order.userId?.fullName || 'Customer',
+            customerAddress: order.shippingAddress,
+            distance: '3.2 km', // Mock distance for now or calculate if coords available
+            itemsCount: order.items.reduce((acc, item) => acc + item.quantity, 0),
+            timeWindow: '20-30 mins',
+            priority: 'medium',
+            amount: 50, // Delivery earnings per order
+            status: order.orderStatus
+        }));
+
+        return handleResponse(res, 200, "Dispatched orders fetched", formatted);
     } catch (error) {
         console.error('Get dispatched orders error:', error);
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
+// Get completed orders for delivery partner (History)
+export const getDeliveryOrderHistory = async (req, res) => {
+    try {
+        // Find orders that are delivered or received
+        const orders = await Order.find({
+            orderStatus: { $in: ['Delivered', 'Received'] }
+        })
+            .populate('userId', 'fullName')
+            .sort({ updatedAt: -1 });
+
+        const formatted = orders.map(order => {
+            const dateObj = new Date(order.updatedAt);
+            return {
+                id: order._id,
+                customer: order.userId?.fullName || 'Customer',
+                amount: 50, // Earnings
+                status: 'delivered',
+                date: dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+                time: dateObj.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+            };
+        });
+
+        return handleResponse(res, 200, "Delivery history fetched", formatted);
+    } catch (error) {
+        console.error('Get delivery history error:', error);
         return handleResponse(res, 500, "Server error");
     }
 };

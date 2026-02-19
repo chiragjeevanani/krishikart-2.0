@@ -6,6 +6,7 @@ import {
   getDeliveryMe,
   forgotDeliveryPassword,
   resetDeliveryPassword,
+  updateDeliveryProfile,
 } from "../controllers/delivery.auth.js";
 
 
@@ -24,6 +25,7 @@ router.get("/me", protectDelivery, getDeliveryMe);
 
 router.post("/forgot-password", forgotDeliveryPassword);
 router.post("/reset-password", resetDeliveryPassword);
+router.put("/profile", protectDelivery, updateDeliveryProfile);
 
 // Public/Franchise access to partners list
 router.get("/partners", protectFranchise, getAllDeliveryPartners);

@@ -13,6 +13,10 @@ const MapTracking = lazy(() => import('../pages/MapTracking'));
 const PickupConfirmation = lazy(() => import('../pages/PickupConfirmation'));
 const DeliveryCompletion = lazy(() => import('../pages/DeliveryCompletion'));
 const B2BAssignment = lazy(() => import('../pages/B2BAssignment'));
+const VehicleInfo = lazy(() => import('../pages/VehicleInfoScreen'));
+const HelpSupport = lazy(() => import('../pages/HelpSupportScreen'));
+const NotificationSettings = lazy(() => import('../pages/NotificationSettingsScreen'));
+const PrivacySecurity = lazy(() => import('../pages/PrivacySecurityScreen'));
 
 import { useDeliveryAuth } from '../contexts/DeliveryAuthContext';
 
@@ -61,6 +65,10 @@ export const deliveryRoutes = (
                 <Route path="pickup" element={withSuspense(PickupConfirmation)} />
                 <Route path="completion" element={withSuspense(DeliveryCompletion)} />
                 <Route path="assignment" element={withSuspense(B2BAssignment)} />
+                <Route path="vehicle" element={withSuspense(VehicleInfo)} />
+                <Route path="help" element={withSuspense(HelpSupport)} />
+                <Route path="notifications" element={withSuspense(NotificationSettings)} />
+                <Route path="privacy" element={withSuspense(PrivacySecurity)} />
             </Route>
         </Route>
     </Route>

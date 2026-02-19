@@ -25,6 +25,7 @@ import AboutScreen from './modules/user/pages/AboutScreen'
 import WishlistScreen from './modules/user/pages/WishlistScreen'
 import BusinessRegistrationScreen from './modules/user/pages/BusinessRegistrationScreen'
 import { WishlistProvider } from './modules/user/contexts/WishlistContext'
+import { LocationProvider } from './modules/user/contexts/LocationContext'
 
 import { FranchiseAuthProvider } from './modules/franchise/contexts/FranchiseAuthContext'
 import { FranchiseOrdersProvider } from './modules/franchise/contexts/FranchiseOrdersContext'
@@ -64,15 +65,17 @@ import { DeliveryOrderProvider } from './modules/delivery/contexts/DeliveryOrder
 import { Toaster } from 'sonner'
 
 const UserProviders = ({ children }) => (
-  <OrderProvider>
-    <CartProvider>
-      <WishlistProvider>
-        <WalletProvider>
-          {children}
-        </WalletProvider>
-      </WishlistProvider>
-    </CartProvider>
-  </OrderProvider>
+  <LocationProvider>
+    <OrderProvider>
+      <CartProvider>
+        <WishlistProvider>
+          <WalletProvider>
+            {children}
+          </WalletProvider>
+        </WishlistProvider>
+      </CartProvider>
+    </OrderProvider>
+  </LocationProvider>
 );
 
 const FranchiseProviders = ({ children }) => (
