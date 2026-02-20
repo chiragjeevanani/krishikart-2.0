@@ -60,7 +60,21 @@ export const sendFranchiseOTP = async (req, res) => {
 
         const franchise = await Franchise.findOne({ mobile });
 
-        if (!franchise) return handleResponse(res, 404, "Franchise not found");
+        if (!franchise) {
+            // ✅ Allow Auto-Register for DEV MODE Number
+            if (mobile === process.env.FRANCHISE_DEFAULT_PHONE) {
+                franchise = await Franchise.create({
+                    mobile,
+                    franchiseName: "Dev Franchise",
+                    ownerName: "Dev Owner",
+                    city: "Dev City",
+                    isVerified: true,
+                    status: "active",
+                });
+            } else {
+                return handleResponse(res, 404, "Franchise not found");
+            }
+        }
 
         if (franchise.status === "blocked")
             return handleResponse(res, 403, "Account blocked");
@@ -101,6 +115,9 @@ export const verifyFranchiseOTP = async (req, res) => {
             if (!franchise) {
                 franchise = await Franchise.create({
                     mobile,
+                    franchiseName: "Dev Franchise",
+                    ownerName: "Dev Owner",
+                    city: "Dev City",
                     isVerified: true,
                     status: "active",
                 });
@@ -172,6 +189,9 @@ export const getFranchiseMe = async (req, res) => {
 /* ================= UPDATE PROFILE ================= */
 export const updateFranchiseProfile = async (req, res) => {
     try {
+        console.log("Updating franchise profile for:", req.franchise._id);
+        console.log("Request body:", req.body);
+
         const { franchiseName, ownerName, mobile, city, area, state, location } = req.body;
         const franchiseId = req.franchise._id;
 
@@ -190,28 +210,37 @@ export const updateFranchiseProfile = async (req, res) => {
         if (state) franchise.state = state;
 
         // Handle direct location update (e.g. from GPS)
-        if (location && location.lat && location.lng) {
-            franchise.location = {
-                lat: Number(location.lat),
-                lng: Number(location.lng)
-            };
+        // Ensure values are valid numbers before assigning
+        if (location && typeof location === 'object') {
+            const lat = Number(location.lat);
+            const lng = Number(location.lng);
+
+            if (!isNaN(lat) && !isNaN(lng)) {
+                franchise.location = { lat, lng };
+            }
         }
 
         if (city && city !== franchise.city) {
             franchise.city = city;
-            // Re-geocode if city changed and no direct location was provided
+            // Re-geocode if city changed and no direct location was provided in this update
             if (!location) {
-                const coords = await geocodeAddress(city);
-                if (coords) franchise.location = coords;
+                try {
+                    const coords = await geocodeAddress(city);
+                    if (coords) franchise.location = coords;
+                } catch (geoErr) {
+                    console.warn("Geocoding failed:", geoErr);
+                }
             }
         }
 
         await franchise.save();
 
+        console.log("Franchise updated successfully");
         return handleResponse(res, 200, "Profile updated successfully", franchise);
     } catch (err) {
-        console.error(err);
-        return handleResponse(res, 500, "Server error");
+        console.error("Update Profile Critical Error:", err);
+        // Respond with the actual error message for debugging
+        return handleResponse(res, 500, `Update Failed: ${err.message}`);
     }
 };
 

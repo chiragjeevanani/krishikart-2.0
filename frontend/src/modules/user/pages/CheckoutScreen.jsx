@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
     ArrowLeft,
     MapPin,
-    CreditCard,
     ChevronRight,
     Clock,
     Sparkles,
@@ -182,7 +181,7 @@ export default function CheckoutScreen() {
         }
 
         // Online Payment Flow (Razorpay)
-        if (selectedMethod === 'upi' || selectedMethod === 'card') {
+        if (selectedMethod === 'upi') {
             await handleRazorpayPayment(orderData)
             return
         }
@@ -340,7 +339,6 @@ export default function CheckoutScreen() {
                                                     : `Balance: ₹${balance.toLocaleString()}`
                                             },
                                             { id: 'upi', name: 'Google Pay / UPI', icon: Sparkles, color: 'text-blue-500 bg-blue-50' },
-                                            { id: 'card', name: 'Credit / Debit Card', icon: CreditCard, color: 'text-purple-500 bg-purple-50' },
                                             { id: 'cod', name: 'Cash on Delivery', icon: ShieldCheck, color: 'text-emerald-500 bg-emerald-50' }
                                         ];
 

@@ -77,6 +77,7 @@ export const verifyOTP = async (req, res) => {
       if (!user) {
         user = await User.create({
           mobile,
+          fullName: "Dev User",
           isVerified: true,
         });
       }
@@ -92,6 +93,7 @@ export const verifyOTP = async (req, res) => {
         user: {
           id: user._id,
           mobile: user.mobile,
+          fullName: user.fullName || "Dev User",
           role: "user",
         },
       });
@@ -136,6 +138,10 @@ export const verifyOTP = async (req, res) => {
       user: {
         id: user._id,
         mobile: user.mobile,
+        fullName: user.fullName,
+        legalEntityName: user.legalEntityName,
+        email: user.email,
+        profileImage: user.profileImage,
         role: "user",
       },
     });

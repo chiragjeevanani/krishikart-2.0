@@ -21,7 +21,8 @@ import {
     Briefcase,
     History,
     ShieldCheck,
-    Monitor
+    Monitor,
+    CheckCircle2
 } from 'lucide-react';
 import { useFranchiseOrders } from '../contexts/FranchiseOrdersContext';
 import { useInventory } from '../contexts/InventoryContext';

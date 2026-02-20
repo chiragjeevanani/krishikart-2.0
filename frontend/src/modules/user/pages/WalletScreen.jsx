@@ -94,9 +94,18 @@ export default function WalletScreen() {
                                     </div>
                                     <div className="space-y-1">
                                         <h2 className="text-5xl font-bold text-[#1e40af] tracking-tight tabular-nums">
-                                            ₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                            ₹{(creditLimit > 0 ? (creditLimit - creditUsed) : balance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                         </h2>
-                                        <p className="text-[11px] font-black text-[#60a5fa] uppercase tracking-[0.15em] ml-1">Your Credit Balance</p>
+                                        <div className="flex flex-col">
+                                            <p className="text-[11px] font-black text-[#60a5fa] uppercase tracking-[0.15em] ml-1">
+                                                {creditLimit > 0 ? 'Remaining Credit Limit' : 'Your Wallet Balance'}
+                                            </p>
+                                            {creditLimit > 0 && (
+                                                <p className="text-[10px] font-bold text-slate-400 ml-1 mt-1">
+                                                    Total Assigned Limit: <span className="text-slate-600">₹{creditLimit.toLocaleString('en-IN')}</span>
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
 

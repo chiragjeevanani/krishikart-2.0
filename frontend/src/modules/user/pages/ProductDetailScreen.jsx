@@ -13,7 +13,8 @@ import {
   RotateCcw,
   ChevronRight,
   TrendingDown,
-  Info
+  Info,
+  Store
 } from 'lucide-react'
 import PageTransition from '../components/layout/PageTransition'
 import { Button } from '@/components/ui/button'

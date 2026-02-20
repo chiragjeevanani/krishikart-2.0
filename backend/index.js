@@ -1,6 +1,6 @@
 import express from "express"
 import dotenv from "dotenv"
-// Trigger restart
+// Trigger restart v2
 import connectDB from "./app/dbConfig/dbConfig.js"
 import setupRoutes from "./app/routes/index.js";
 import cors from "cors"

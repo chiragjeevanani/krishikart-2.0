@@ -58,13 +58,9 @@ export default function HomeScreen() {
                 if (prodRes.data.success) setProducts(prodRes.data.results)
                 if (franRes.data.success) setFranchises(franRes.data.results)
 
-                // Attempt to get user location
-                try {
-                    const loc = await getCurrentLocation();
-                    setUserLocation(loc);
-                } catch (locErr) {
-                    console.warn('Geolocation not available:', locErr.message);
-                }
+                if (catRes.data.success) setCategories(catRes.data.results)
+                if (prodRes.data.success) setProducts(prodRes.data.results)
+                if (franRes.data.success) setFranchises(franRes.data.results)
             } catch (error) {
                 console.error('Error in home data initialization:', error)
             } finally {

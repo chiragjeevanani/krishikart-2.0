@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import api from '@/lib/axios'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     User,
@@ -92,6 +93,39 @@ export default function MobileProfileDrawer() {
     const { balance } = useWallet()
     const [vegMode, setVegMode] = useState(false)
     const [isOpen, setIsOpen] = useState(false)
+    const [user, setUser] = useState(null)
+
+    useEffect(() => {
+        const loadUser = async () => {
+            const storedUser = localStorage.getItem('userData');
+            if (storedUser) {
+                try {
+                    setUser(JSON.parse(storedUser));
+                } catch (e) {
+                    console.error("Failed to parse user data", e);
+                }
+            }
+
+            // Always fetch fresh data in background
+            const token = localStorage.getItem('userToken');
+            if (token) {
+                try {
+                    const response = await api.get('/user/me');
+                    if (response.data?.result) {
+                        const freshUser = response.data.result;
+                        setUser(freshUser);
+                        localStorage.setItem('userData', JSON.stringify(freshUser));
+                    }
+                } catch (error) {
+                    console.error("Failed to refresh user profile:", error);
+                }
+            }
+        };
+
+        loadUser();
+        window.addEventListener('userDataUpdated', loadUser);
+        return () => window.removeEventListener('userDataUpdated', loadUser);
+    }, [])
 
     return (
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -118,12 +152,18 @@ export default function MobileProfileDrawer() {
                                 <div className="bg-white p-6 pt-12 pb-6 border-b border-slate-100 relative">
                                     <div className="flex items-center gap-4">
                                         <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 overflow-hidden shrink-0">
-                                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=chirag" alt="avatar" className="w-full h-full object-cover" />
+                                            <img
+                                                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.fullName || 'User'}`}
+                                                alt="avatar"
+                                                className="w-full h-full object-cover"
+                                            />
                                         </div>
                                         <div className="min-w-0">
-                                            <SheetTitle className="text-2xl font-bold text-slate-900 tracking-tight leading-none mb-1 text-left">chirag</SheetTitle>
+                                            <SheetTitle className="text-2xl font-bold text-slate-900 tracking-tight leading-none mb-1 text-left">
+                                                {user?.fullName || 'Guest User'}
+                                            </SheetTitle>
                                             <SheetDescription className="text-sm font-medium text-slate-500 text-left">
-                                                Guest Account
+                                                {user?.mobile || 'Guest Account'}
                                             </SheetDescription>
                                         </div>
                                     </div>

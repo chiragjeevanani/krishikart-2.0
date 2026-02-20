@@ -101,6 +101,8 @@ export default function EditProfileScreen() {
                 address: editData.address
             })
             setUser(response.data.result)
+            localStorage.setItem('userData', JSON.stringify(response.data.result))
+            window.dispatchEvent(new Event('userDataUpdated'));
             setIsEditDrawerOpen(false)
             alert('Profile updated successfully')
         } catch (error) {

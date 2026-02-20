@@ -10,10 +10,14 @@ import handleResponse from "../utils/helper.js";
 export const getVendorAssignments = async (req, res) => {
     try {
         const vendorId = req.vendor._id.toString();
+        console.log(`Fetching assignments for Vendor: ${vendorId}`);
+
         let assignments = await ProcurementRequest.find({ assignedVendorId: vendorId })
             .populate("franchiseId", "shopName ownerName mobile cityArea address")
             .sort({ createdAt: -1 })
             .lean(); // Use lean to modify the object
+
+        console.log(`Found ${assignments.length} assignments for vendor ${vendorId}`);
 
         // Manually populate images for items
         for (let assignment of assignments) {
@@ -166,6 +170,8 @@ export const adminUpdateProcurementRequest = async (req, res) => {
         const { requestId } = req.params;
         const { status, vendorId, adminId } = req.body;
 
+        console.log(`Admin updating request ${requestId}. Status: ${status}, Vendor: ${vendorId}`);
+
         const request = await ProcurementRequest.findById(requestId);
         if (!request) {
             return handleResponse(res, 404, "Procurement request not found");
@@ -176,6 +182,7 @@ export const adminUpdateProcurementRequest = async (req, res) => {
         if (adminId) request.adminId = adminId;
 
         await request.save();
+        console.log(`Request ${requestId} saved. Assigned Vendor: ${request.assignedVendorId}`);
 
         return handleResponse(res, 200, "Procurement request updated successfully", request);
     } catch (error) {

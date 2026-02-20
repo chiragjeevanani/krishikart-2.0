@@ -168,10 +168,10 @@ export default function ProfileScreen() {
                         <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] px-1">{group.group}</h3>
                         <div className="bg-white border-y border-slate-200 md:border-x md:rounded-sm overflow-hidden">
                             {group.items.map((item, idx) => (
-                                <button
+                                <div
                                     key={item.id}
                                     className={cn(
-                                        "w-full flex items-center justify-between p-5 hover:bg-slate-50 transition-colors group",
+                                        "w-full flex items-center justify-between p-5 hover:bg-slate-50 transition-colors group cursor-pointer",
                                         idx !== group.items.length - 1 && "border-b border-slate-100"
                                     )}
                                     onClick={item.onClick}
@@ -204,7 +204,7 @@ export default function ProfileScreen() {
                                     ) : (
                                         <ChevronRight size={16} className="text-slate-200 group-hover:text-slate-900 group-hover:translate-x-1 transition-all" />
                                     )}
-                                </button>
+                                </div>
                             ))}
                         </div>
                     </div>

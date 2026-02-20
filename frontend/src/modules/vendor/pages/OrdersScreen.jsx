@@ -77,7 +77,7 @@ export default function OrdersScreen() {
         date: req.createdAt,
         isProcurement: true,
         priority: 'high',
-        deadline: new Date(new Date(req.createdAt).getTime() + 7200000).toISOString()
+        deadline: new Date((req.createdAt ? new Date(req.createdAt).getTime() : Date.now()) + 7200000).toISOString()
     }));
 
     // const allOrders = [...mappedProcurementRequests, ...liveVendorOrders, ...mockOrders.filter(m => !liveVendorOrders.find(l => l.id === m.id))];

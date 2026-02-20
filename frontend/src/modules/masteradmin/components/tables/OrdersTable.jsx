@@ -100,18 +100,7 @@ export default function OrdersTable({ orders, onAction, onOrderClick }) {
                             </td>
                             <td className="px-4 py-4 text-right">
                                 <div className="flex items-center justify-end gap-1">
-                                    {(order.orderStatus === 'Placed' || order.orderStatus === 'Pending') && (
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                onAction?.(order._id, 'Confirmed');
-                                            }}
-                                            className="px-3 py-1 bg-slate-900 text-white text-[9px] font-black rounded-sm hover:bg-slate-800 transition-all flex items-center gap-1.5 uppercase tracking-widest"
-                                        >
-                                            <ShoppingBag size={10} />
-                                            Confirm
-                                        </button>
-                                    )}
+
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();

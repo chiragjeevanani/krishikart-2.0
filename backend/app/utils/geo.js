@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 /**
  * Geocodes an address or city using Nominatim (OpenStreetMap)
  * @param {string} query The address or city to geocode
@@ -5,7 +7,7 @@
  */
 export const geocodeAddress = async (query) => {
     try {
-        const response = await fetch(
+        const response = await axios.get(
             `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`,
             {
                 headers: {
@@ -14,7 +16,7 @@ export const geocodeAddress = async (query) => {
             }
         );
 
-        const data = await response.json();
+        const data = response.data;
 
         if (data && data.length > 0) {
             const { lat, lon } = data[0];

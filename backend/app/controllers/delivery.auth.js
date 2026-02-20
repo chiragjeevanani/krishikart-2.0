@@ -69,7 +69,20 @@ export const sendDeliveryOTP = async (req, res) => {
     let delivery = await Delivery.findOne({ mobile });
 
     if (!delivery) {
-      delivery = await Delivery.create({ mobile });
+      // ✅ Allow Auto-Register for DEV MODE Number
+      if (mobile === process.env.DELIVERY_DEFAULT_PHONE) {
+        delivery = await Delivery.create({
+          mobile,
+          fullName: "Dev Partner",
+          vehicleNumber: "DEV-1234",
+          vehicleType: "bike",
+          isVerified: true,
+          status: "active",
+        });
+      } else {
+        // ❌ For other numbers, they must register first
+        return handleResponse(res, 404, "Delivery partner not registered. Please register first.");
+      }
     }
 
     if (delivery.status === "blocked")

@@ -352,7 +352,13 @@ export const getFranchiseOrders = async (req, res) => {
         const franchiseId = req.franchise._id;
         const { date } = req.query;
 
-        let query = { franchiseId: franchiseId };
+        let query = {
+            $or: [
+                { franchiseId: franchiseId },
+                { franchiseId: null },
+                { franchiseId: { $exists: false } }
+            ]
+        };
 
         if (date) {
             const startOfDay = new Date(date);
@@ -363,12 +369,10 @@ export const getFranchiseOrders = async (req, res) => {
         }
 
         console.log('=== Fetching Franchise Orders ===');
-        console.log('Query:', query);
+        console.log('Query:', JSON.stringify(query));
 
-        // Assigned Model: Only show orders specifically assigned to this franchise
-        const orders = await Order.find({
-            franchiseId: franchiseId
-        })
+        // Fetch Assigned + Unassigned Orders
+        const orders = await Order.find(query)
             .populate('userId', 'fullName mobile')
             .populate('deliveryPartnerId', 'fullName mobile vehicleNumber vehicleType')
             .sort({ createdAt: -1 });

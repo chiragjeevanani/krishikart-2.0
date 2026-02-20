@@ -41,6 +41,7 @@ export default function LoginScreen() {
 
                     localStorage.setItem('userToken', response.data.result.token);
                     localStorage.setItem('userData', JSON.stringify(response.data.result.user));
+                    window.dispatchEvent(new Event('userDataUpdated'));
 
                     // Sync cart and wishlist immediately
                     fetchCart();
