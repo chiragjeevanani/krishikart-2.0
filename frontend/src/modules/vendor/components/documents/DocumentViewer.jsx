@@ -160,7 +160,7 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC', aut
                                                 <tr key={idx} className="text-sm font-bold text-slate-700 hover:bg-slate-50/50">
                                                     <td className="px-6 py-4">{item.name}</td>
                                                     <td className="px-6 py-4 text-center font-black text-slate-900">
-                                                        {item.quantity || item.qty} {item.unit}
+                                                        {item.quantity || item.qty} * {item.unit}
                                                     </td>
                                                     <td className="px-6 py-4 text-right text-slate-400 tabular-nums">
                                                         ₹{item.quotedPrice || item.price || '0.00'}

@@ -22,7 +22,7 @@ import {
     ShoppingCart
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import products from '../../user/data/products.json';
+import api from '@/lib/axios';
 import { cn } from '@/lib/utils';
 import { useProcurement } from '../contexts/ProcurementContext';
 
@@ -31,36 +31,55 @@ export default function ProcurementScreen() {
     const { addRequest, cart, setCart, clearCart, procurementRequests } = useProcurement();
     const [searchTerm, setSearchTerm] = useState('');
     const [activeTab, setActiveTab] = useState('catalog');
+    const [products, setProducts] = useState([]);
+    const [categories, setCategories] = useState(['All']);
     const [selectedCategory, setSelectedCategory] = useState('All');
 
-    // ... rest of the existing state ...
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [orderSuccess, setOrderSuccess] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [isQtyModalOpen, setIsQtyModalOpen] = useState(false);
     const [modalProduct, setModalProduct] = useState(null);
     const [modalQty, setModalQty] = useState(1);
-    const [modalUnit, setModalUnit] = useState('Kilogram (kg)');
+    const [modalUnit, setModalUnit] = useState('kg');
 
     const units = [
-        'Kilogram (kg)',
-        'Gram (gm)',
-        'Piece (pcs)',
-        'Liter (lit)',
-        'Milliliter (ml)',
-        'Dozen (dz)'
+        'kg',
+        'gm',
+        'pcs',
+        'ltr',
+        'ml',
+        'box',
+        'dz'
     ];
 
     useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 600);
-        return () => clearTimeout(timer);
-    }, []);
+        const fetchData = async () => {
+            try {
+                const [prodRes, catRes] = await Promise.all([
+                    api.get('/products'),
+                    api.get('/catalog/categories')
+                ]);
 
-    const categories = ['All', ...new Set(products.map(p => p.category))];
+                if (prodRes.data.success) {
+                    setProducts(prodRes.data.results);
+                }
+                if (catRes.data.success) {
+                    setCategories(['All', ...catRes.data.results.map(c => c.name)]);
+                }
+            } catch (error) {
+                console.error("Failed to fetch procurement data", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
 
     const filteredProducts = products.filter(p => {
         const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
+        const categoryName = p.category?.name || (typeof p.category === 'string' ? p.category : '');
+        const matchesCategory = selectedCategory === 'All' || categoryName === selectedCategory;
         return matchesSearch && matchesCategory;
     });
 
@@ -81,7 +100,7 @@ export default function ProcurementScreen() {
     const handleOpenModal = (product) => {
         setModalProduct(product);
         setModalQty(1);
-        setModalUnit(product.unit || 'KG');
+        setModalUnit(product.unit || 'kg');
         setIsQtyModalOpen(true);
     };
 
@@ -89,8 +108,8 @@ export default function ProcurementScreen() {
         if (modalProduct && modalQty > 0) {
             setCart(prev => ({
                 ...prev,
-                [modalProduct.id]: {
-                    qty: (prev[modalProduct.id]?.qty || 0) + modalQty,
+                [modalProduct._id]: {
+                    qty: (prev[modalProduct._id]?.qty || 0) + modalQty,
                     unit: modalUnit // Store selected unit
                 }
             }));
@@ -115,8 +134,8 @@ export default function ProcurementScreen() {
     };
 
     const cartItems = Object.entries(cart).map(([id, item]) => {
-        const product = products.find(p => p.id === id);
-        if (!product) return { id, name: 'Unknown Product', price: 0, qty: item.qty, unit: item.unit, image: '' };
+        const product = products.find(p => p._id === id);
+        if (!product) return { _id: id, name: 'Unknown Product', price: 0, qty: item.qty, unit: item.unit, primaryImage: '' };
         return { ...product, qty: item.qty, unit: item.unit };
     });
 
@@ -128,7 +147,7 @@ export default function ProcurementScreen() {
 
         const requestData = {
             items: cartItems.map(item => ({
-                productId: item.id,
+                productId: item._id,
                 name: item.name,
                 quantity: item.qty,
                 unit: item.unit,
@@ -265,7 +284,7 @@ export default function ProcurementScreen() {
                             <AnimatePresence>
                                 {filteredProducts.map((p, idx) => (
                                     <motion.div
-                                        key={p.id}
+                                        key={p._id}
                                         layout
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
@@ -273,7 +292,7 @@ export default function ProcurementScreen() {
                                     >
                                         <div className="aspect-[4/3] bg-slate-50 border border-slate-100 rounded-sm overflow-hidden mb-3 relative shrink-0">
                                             <img
-                                                src={p.image}
+                                                src={p.primaryImage}
                                                 className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110"
                                                 alt={p.name}
                                                 onError={(e) => {
@@ -282,7 +301,7 @@ export default function ProcurementScreen() {
                                                 }}
                                             />
                                             <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-sm shadow-sm">
-                                                <p className="text-[7px] font-black text-slate-500 uppercase tracking-wider">{p.category}</p>
+                                                <p className="text-[7px] font-black text-slate-500 uppercase tracking-wider">{p.category?.name}</p>
                                             </div>
                                             <div className="absolute inset-0 bg-gradient-to-t from-slate-900/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                         </div>
@@ -294,13 +313,13 @@ export default function ProcurementScreen() {
                                                     <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Per {p.unit}</span>
                                                 </div>
 
-                                                {cart[p.id] ? (
+                                                {cart[p._id] ? (
                                                     <div className="flex items-center bg-slate-900 text-white rounded-sm p-0.5 shadow-lg shadow-slate-200">
-                                                        <button onClick={() => updateQty(p.id, -1)} className="w-6 h-6 flex items-center justify-center hover:bg-white/10 transition-colors">
+                                                        <button onClick={() => updateQty(p._id, -1)} className="w-6 h-6 flex items-center justify-center hover:bg-white/10 transition-colors">
                                                             <Minus size={10} />
                                                         </button>
-                                                        <span className="w-7 text-center font-black text-[9px] tabular-nums">{cart[p.id]?.qty}</span>
-                                                        <button onClick={() => updateQty(p.id, 1)} className="w-6 h-6 flex items-center justify-center hover:bg-white/10 transition-colors">
+                                                        <span className="w-7 text-center font-black text-[9px] tabular-nums">{cart[p._id]?.qty}</span>
+                                                        <button onClick={() => updateQty(p._id, 1)} className="w-6 h-6 flex items-center justify-center hover:bg-white/10 transition-colors">
                                                             <Plus size={10} />
                                                         </button>
                                                     </div>
@@ -391,10 +410,10 @@ export default function ProcurementScreen() {
                     {cartItems.length > 0 ? (
                         <div className="divide-y divide-slate-100">
                             {cartItems.map(item => (
-                                <div key={item.id} className="p-4 flex gap-4 group hover:bg-slate-50 transition-colors">
+                                <div key={item._id} className="p-4 flex gap-4 group hover:bg-slate-50 transition-colors">
                                     <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-sm bg-slate-50 border border-slate-100 overflow-hidden shrink-0 relative">
                                         <img
-                                            src={item.image}
+                                            src={item.primaryImage}
                                             className="w-full h-full object-cover transition-all"
                                             onError={(e) => {
                                                 e.target.onerror = null;
@@ -411,16 +430,16 @@ export default function ProcurementScreen() {
 
                                         <div className="flex items-center justify-end mt-2">
                                             <div className="flex items-center border border-slate-200 rounded-sm p-0.5 bg-white shadow-sm">
-                                                <button onClick={() => updateQty(item.id, -1)} className="w-5 h-5 xl:w-6 xl:h-6 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-colors">
+                                                <button onClick={() => updateQty(item._id, -1)} className="w-5 h-5 xl:w-6 xl:h-6 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-colors">
                                                     <Minus size={10} strokeWidth={3} />
                                                 </button>
                                                 <input
                                                     type="number"
                                                     className="bg-transparent border-none w-8 xl:w-10 text-center font-black text-[10px] text-slate-900 outline-none tabular-nums"
                                                     value={item.qty}
-                                                    onChange={(e) => setManualQty(item.id, e.target.value)}
+                                                    onChange={(e) => setManualQty(item._id, e.target.value)}
                                                 />
-                                                <button onClick={() => updateQty(item.id, 1)} className="w-5 h-5 xl:w-6 xl:h-6 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-colors">
+                                                <button onClick={() => updateQty(item._id, 1)} className="w-5 h-5 xl:w-6 xl:h-6 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-colors">
                                                     <Plus size={10} strokeWidth={3} />
                                                 </button>
                                             </div>

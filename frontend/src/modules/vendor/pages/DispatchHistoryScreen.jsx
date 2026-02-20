@@ -124,11 +124,15 @@ export default function DispatchHistoryScreen() {
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                                {new Date(dispatch.updatedAt).toLocaleDateString()}
+                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">
+                                                {dispatch.invoice?.invoiceDate ? 'Inv Date' : 'Updated'}
                                             </p>
-                                            <p className="text-[9px] font-bold text-slate-300 uppercase mt-0.5">
-                                                {new Date(dispatch.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            <p className="text-xs font-black text-slate-900 tracking-tight">
+                                                {new Date(dispatch.invoice?.invoiceDate || dispatch.updatedAt).toLocaleDateString(undefined, {
+                                                    day: '2-digit',
+                                                    month: 'short',
+                                                    year: '2-digit'
+                                                })}
                                             </p>
                                         </div>
                                     </div>
@@ -150,15 +154,23 @@ export default function DispatchHistoryScreen() {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-between pt-2 border-t border-slate-50">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 rounded-lg">
-                                                <Package size={10} className="text-slate-400" />
-                                                <span className="text-[9px] font-black text-slate-600">{dispatch.items?.length || 0} SKU(s)</span>
-                                            </div>
+                                    <div className="flex items-end justify-between pt-4 border-t border-slate-50 mt-2">
+                                        <div className="flex flex-col gap-2 overflow-hidden mr-4">
+                                            {dispatch.items?.slice(0, 3).map((item, i) => (
+                                                <div key={i} className="flex items-center gap-2">
+                                                    <div className="w-5 h-5 rounded bg-slate-50 flex items-center justify-center shrink-0 border border-slate-100">
+                                                        <Package size={10} className="text-slate-400" />
+                                                    </div>
+                                                    <span className="text-[10px] font-black text-slate-700 truncate">{item.name}</span>
+                                                    <span className="text-[9px] font-bold text-slate-400 shrink-0 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">{item.quantity} * {item.unit}</span>
+                                                </div>
+                                            ))}
+                                            {dispatch.items?.length > 3 && (
+                                                <span className="text-[9px] font-bold text-slate-400 pl-7">+{dispatch.items.length - 3} more items</span>
+                                            )}
                                         </div>
-                                        <button className="text-[9px] font-black text-primary uppercase tracking-[0.2em] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                                            Digital Manifest <ChevronRight size={14} />
+                                        <button className="shrink-0 text-[9px] font-black text-primary uppercase tracking-[0.2em] flex items-center gap-1 group-hover:translate-x-1 transition-transform mb-1">
+                                            Manifest <ChevronRight size={14} />
                                         </button>
                                     </div>
                                 </motion.div>

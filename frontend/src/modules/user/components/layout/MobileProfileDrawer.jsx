@@ -157,28 +157,17 @@ export default function MobileProfileDrawer() {
                                     <div className="flex items-center gap-4">
                                         <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 overflow-hidden shrink-0">
                                             <img
-<<<<<<< HEAD
-                                                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.fullName || 'User'}`}
-=======
-                                                src={JSON.parse(localStorage.getItem('userData') || '{}').profileImage || "https://api.dicebear.com/7.x/avataaars/svg?seed=Guest"}
->>>>>>> b17147d33c34120121c34a48aab14827beb8c636
+                                                src={user?.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.fullName || 'User'}`}
                                                 alt="avatar"
                                                 className="w-full h-full object-cover"
                                             />
                                         </div>
                                         <div className="min-w-0">
                                             <SheetTitle className="text-2xl font-bold text-slate-900 tracking-tight leading-none mb-1 text-left">
-<<<<<<< HEAD
                                                 {user?.fullName || 'Guest User'}
                                             </SheetTitle>
                                             <SheetDescription className="text-sm font-medium text-slate-500 text-left">
-                                                {user?.mobile || 'Guest Account'}
-=======
-                                                {JSON.parse(localStorage.getItem('userData') || '{}').fullName || 'Guest User'}
-                                            </SheetTitle>
-                                            <SheetDescription className="text-sm font-medium text-slate-500 text-left">
-                                                {JSON.parse(localStorage.getItem('userData') || '{}').legalEntityName || 'Guest Account'}
->>>>>>> b17147d33c34120121c34a48aab14827beb8c636
+                                                {user?.legalEntityName || user?.mobile || 'Guest Account'}
                                             </SheetDescription>
                                         </div>
                                     </div>

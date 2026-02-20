@@ -150,29 +150,26 @@ export default function VendorReportsScreen() {
                                 <td className="px-6 py-5">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center shrink-0">
-                                            <Building size={14} />
+                                            <User size={14} />
                                         </div>
                                         <div className="flex flex-col leading-tight">
-                                            <span className="text-xs font-black text-slate-900 uppercase tracking-tight">{report.franchiseId?.shopName}</span>
-                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{report.franchiseId?.cityArea}</span>
+                                            <span className="text-xs font-black text-slate-900 uppercase tracking-tight">{report.franchiseId?.ownerName || 'N/A'}</span>
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{report.franchiseId?.shopName}</span>
                                         </div>
                                     </div>
                                 </td>
                                 <td className="px-6 py-5">
-                                    <div className="flex -space-x-2">
+                                    <div className="flex flex-col gap-1 max-w-[180px]">
                                         {report.items.slice(0, 3).map((item, idx) => (
-                                            <div key={idx} className="w-8 h-8 rounded-lg bg-white border border-slate-100 overflow-hidden shadow-sm flex items-center justify-center relative">
-                                                {item.image ? (
-                                                    <img src={item.image} className="w-full h-full object-cover" alt="" />
-                                                ) : (
-                                                    <Package size={14} className="text-slate-300" />
-                                                )}
+                                            <div key={idx} className="flex items-center justify-between text-[10px] font-bold text-slate-900 border-b border-dashed border-slate-100 pb-0.5 last:border-0 last:pb-0">
+                                                <span className="truncate mr-2">{item.name}</span>
+                                                <span className="text-slate-400 shrink-0 whitespace-nowrap">{item.quantity} {item.unit}</span>
                                             </div>
                                         ))}
                                         {report.items.length > 3 && (
-                                            <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center text-[10px] font-black border border-white z-10 shrink-0">
-                                                +{report.items.length - 3}
-                                            </div>
+                                            <span className="text-[9px] font-black text-primary uppercase tracking-widest">
+                                                +{report.items.length - 3} More Items
+                                            </span>
                                         )}
                                     </div>
                                 </td>

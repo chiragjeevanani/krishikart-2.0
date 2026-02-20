@@ -348,14 +348,17 @@ export const franchiseConfirmReceipt = async (req, res) => {
                 const prodId = reqItem.productId;
                 if (!mongoose.Types.ObjectId.isValid(prodId)) continue;
 
+                // Ensure quantity is a number
+                const quantityToAdd = Number(reqItem.quantity) || 0;
+
                 const existingItem = inventory.items.find(i => i.productId.toString() === prodId.toString());
                 if (existingItem) {
-                    existingItem.currentStock += reqItem.quantity;
+                    existingItem.currentStock += quantityToAdd;
                     existingItem.lastUpdated = new Date();
                 } else {
                     inventory.items.push({
                         productId: prodId,
-                        currentStock: reqItem.quantity,
+                        currentStock: quantityToAdd,
                         lastUpdated: new Date()
                     });
                 }

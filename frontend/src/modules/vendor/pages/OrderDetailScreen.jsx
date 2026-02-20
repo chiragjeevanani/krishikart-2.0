@@ -52,7 +52,7 @@ export default function OrderDetailScreen() {
             let foundOrder = location.state?.order;
 
             if (foundOrder) {
-                // UI Fix: If status is 'assigned', treat it as 'requested' (new inquiry)
+                // UI Fix: If status is 'assigned', treat it as 'requested' (requires quotation)
                 let currentStatus = foundOrder.status?.toLowerCase();
                 if (currentStatus === 'assigned') {
                     currentStatus = 'requested';
@@ -177,47 +177,7 @@ export default function OrderDetailScreen() {
                 </div>
             </header>
 
-            {/* Progress Stepper */}
-            <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm relative overflow-hidden">
-                <div className="flex justify-between relative z-10">
-                    {steps.map((step, idx) => {
-                        const isCompleted = idx < currentStepIndex;
-                        const isCurrent = idx === currentStepIndex;
-                        return (
-                            <div key={idx} className="flex flex-col items-center gap-3 flex-1 relative">
-                                <div className={cn(
-                                    "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 relative z-10",
-                                    isCompleted ? "bg-emerald-600 text-white shadow-lg shadow-emerald-100" :
-                                        isCurrent ? "bg-slate-900 text-white shadow-xl shadow-slate-200" : "bg-slate-50 text-slate-300 border border-slate-100"
-                                )}>
-                                    {isCompleted ? <CheckCircle2 size={20} /> : <step.icon size={20} />}
-                                </div>
-                                <div className="text-center px-2">
-                                    <p className={cn(
-                                        "text-[9px] font-black uppercase tracking-widest leading-none mb-1",
-                                        isCurrent ? "text-slate-900" : isCompleted ? "text-emerald-600" : "text-slate-400"
-                                    )}>
-                                        {step.label}
-                                    </p>
-                                    <p className="text-[7px] font-bold text-slate-300 uppercase tracking-tighter leading-none whitespace-nowrap hidden sm:block">
-                                        {step.description}
-                                    </p>
-                                </div>
 
-                                {idx < steps.length - 1 && (
-                                    <div className="absolute top-6 left-[60%] w-[80%] h-[2px] bg-slate-100 -z-0">
-                                        <motion.div
-                                            initial={{ width: 0 }}
-                                            animate={{ width: idx < currentStepIndex ? '100% ' : '0%' }}
-                                            className="h-full bg-emerald-600"
-                                        />
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
 
             {/* Price Bidding UI */}
             <AnimatePresence>

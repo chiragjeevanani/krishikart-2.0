@@ -139,8 +139,8 @@ export default function OrdersScreen() {
             key: 'hotelName',
             render: (val, row) => (
                 <div className="flex flex-col">
-                    <span className="font-black text-slate-900 text-[11px] tracking-tight">{val}</span>
-                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-[0.1em] mt-0.5">Order #{row.id}</span>
+                    <span className="font-bold text-slate-900 text-sm tracking-tight">{val}</span>
+                    <span className="text-xs text-slate-400 font-bold uppercase tracking-[0.05em] mt-0.5">Order #{row.id}</span>
                 </div>
             )
         },
@@ -159,8 +159,8 @@ export default function OrdersScreen() {
 
                 return (
                     <div className="flex flex-col">
-                        <span className="font-bold text-slate-900 text-[10px] tracking-tight">{displayDate}</span>
-                        <span className="text-[9px] text-slate-400 font-bold uppercase tracking-[0.1em] mt-0.5">{displayTime}</span>
+                        <span className="font-bold text-slate-900 text-sm tracking-tight">{displayDate}</span>
+                        <span className="text-xs text-slate-400 font-bold uppercase tracking-[0.05em] mt-0.5">{displayTime}</span>
                     </div>
                 );
             }
@@ -168,18 +168,18 @@ export default function OrdersScreen() {
         {
             header: 'Delivery Slot',
             key: 'deliverySlot',
-            render: (val) => <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{val}</span>
+            render: (val) => <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{val}</span>
         },
         {
             header: 'Amount',
             key: 'total',
             align: 'right',
-            render: (val) => <span className="text-[11px] font-black text-slate-900 tabular-nums">₹{(val || 0).toLocaleString()}</span>
+            render: (val) => <span className="text-sm font-bold text-slate-900 tabular-nums">₹{(val || 0).toLocaleString()}</span>
         },
         {
             header: 'Total Items',
             key: 'items',
-            render: (items) => <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{items.length} units</span>
+            render: (items) => <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{items.length} units</span>
         },
         {
             header: 'Action',
@@ -190,14 +190,14 @@ export default function OrdersScreen() {
                     {activeTab === 'dispatch' && row.status === 'dispatched' && row.deliveryPartner && (
                         <div className="flex items-center gap-2 mr-4 bg-emerald-50 px-2 py-1 rounded-sm border border-emerald-100">
                             <UserCircle2 size={12} className="text-emerald-600" />
-                            <span className="text-[9px] font-black text-emerald-700 uppercase">{row.deliveryPartner?.fullName}</span>
+                            <span className="text-[10px] font-bold text-emerald-700 uppercase">{row.deliveryPartner?.fullName}</span>
                         </div>
                     )}
                     {activeTab === 'new' && (
                         <button
                             onClick={() => handleAcceptOrder(row.id)}
                             disabled={processingOrderId === row.id}
-                            className="p-1 px-3 text-[9px] font-black uppercase text-emerald-600 border border-emerald-600 rounded-sm hover:bg-emerald-600 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="p-1.5 px-3 text-xs font-bold uppercase text-emerald-600 border border-emerald-600 rounded-sm hover:bg-emerald-600 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {processingOrderId === row.id ? '...' : 'Accept'}
                         </button>
@@ -205,7 +205,7 @@ export default function OrdersScreen() {
                     {activeTab === 'packing' && (
                         <button
                             onClick={() => handleAction(row.id, 'Packed')}
-                            className="p-1 px-3 text-[9px] font-black uppercase text-blue-600 border border-blue-600 rounded-sm hover:bg-blue-600 hover:text-white transition-all"
+                            className="p-1.5 px-3 text-xs font-bold uppercase text-blue-600 border border-blue-600 rounded-sm hover:bg-blue-600 hover:text-white transition-all"
                         >
                             Mark Packed
                         </button>
@@ -216,14 +216,14 @@ export default function OrdersScreen() {
                                 setSelectedOrderForDispatch(row.id);
                                 setIsAssignModalOpen(true);
                             }}
-                            className="p-1 px-3 text-[9px] font-black uppercase text-orange-600 border border-orange-600 rounded-sm hover:bg-orange-600 hover:text-white transition-all flex items-center gap-1.5"
+                            className="p-1.5 px-3 text-xs font-bold uppercase text-orange-600 border border-orange-600 rounded-sm hover:bg-orange-600 hover:text-white transition-all flex items-center gap-1.5"
                         >
-                            <Truck size={10} /> Assign & Dispatch
+                            <Truck size={12} /> Assign & Dispatch
                         </button>
                     )}
                     <button
                         onClick={() => navigate(`/franchise/orders/${row.id}`)}
-                        className="p-1 px-2 text-[9px] font-black uppercase text-slate-900 border border-slate-900 rounded-sm hover:bg-slate-900 hover:text-white transition-all"
+                        className="p-1.5 px-3 text-xs font-bold uppercase text-slate-900 border border-slate-900 rounded-sm hover:bg-slate-900 hover:text-white transition-all"
                     >
                         View
                     </button>
@@ -246,25 +246,25 @@ export default function OrdersScreen() {
         <div className="bg-slate-50 min-h-screen">
             {/* Enterprise Header */}
             <div className="bg-white border-b border-slate-200 sticky top-0 z-30">
-                <div className="px-4 py-2 flex items-center justify-between">
+                <div className="px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-r border-slate-200 pr-4">
-                            <Home size={12} />
-                            <ChevronRight size={10} />
+                        <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider border-r border-slate-200 pr-4">
+                            <Home size={14} />
+                            <ChevronRight size={12} />
                             <span>Franchise</span>
-                            <ChevronRight size={10} />
+                            <ChevronRight size={12} />
                             <span className="text-slate-900 uppercase tracking-widest">Orders</span>
                         </div>
-                        <h1 className="text-sm font-bold text-slate-900">Order Management</h1>
+                        <h1 className="text-xl font-bold text-slate-900">Order Management</h1>
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <button className="p-1.5 text-slate-400 hover:text-slate-900 transition-colors border border-slate-200 rounded-sm bg-white">
-                            <Settings2 size={14} />
+                        <button className="p-2 text-slate-400 hover:text-slate-900 transition-colors border border-slate-200 rounded-sm bg-white">
+                            <Settings2 size={16} />
                         </button>
                         <button
                             onClick={() => setIsHistoryModalOpen(true)}
-                            className="bg-slate-900 text-white px-3 py-1.5 rounded-sm text-[11px] font-bold flex items-center gap-2 hover:bg-slate-800 transition-colors shadow-sm uppercase tracking-widest"
+                            className="bg-slate-900 text-white px-4 py-2 rounded-sm text-xs font-bold flex items-center gap-2 hover:bg-slate-800 transition-colors shadow-sm uppercase tracking-widest"
                         >
                             <History size={14} />
                             Order History
