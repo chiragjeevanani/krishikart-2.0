@@ -116,34 +116,13 @@ export default function PurchaseManagerScreen() {
 
             {/* Operational Workspace */}
             <div className="p-4 space-y-4">
-                {/* Unified Filter Bar */}
-                <div className="flex flex-col md:flex-row items-center gap-4 bg-white border border-slate-200 rounded-sm p-2">
-                    <div className="relative flex-1 group w-full">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" size={14} />
-                        <input
-                            type="text"
-                            placeholder="Search by ID or Vendor..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full border-none outline-none text-[11px] font-bold py-2 pl-9 pr-4 placeholder:text-slate-400"
-                        />
-                    </div>
-                    <div className="h-4 w-px bg-slate-200 hidden md:block" />
-                    <div className="flex items-center gap-1">
-                        {['all', 'pending_approval', 'approved', 'draft'].map((filter) => (
-                            <button
-                                key={filter}
-                                onClick={() => setActiveFilter(filter)}
-                                className={cn(
-                                    "px-3 py-1.5 rounded-sm text-[9px] font-black uppercase tracking-widest transition-all",
-                                    activeFilter === filter ? "bg-slate-900 text-white shadow-sm" : "text-slate-500 hover:bg-slate-50"
-                                )}
-                            >
-                                {filter.replace('_', ' ')}
-                            </button>
-                        ))}
-                    </div>
-                </div>
+                <FilterBar
+                    onSearch={setSearchTerm}
+                    filters={['all', 'pending_approval', 'approved', 'draft']}
+                    activeFilter={activeFilter}
+                    onFilterChange={setActiveFilter}
+                />
+
 
                 {/* PO Operational List */}
                 <div className="space-y-1">

@@ -30,7 +30,7 @@ import FilterBar from '../components/tables/FilterBar';
 export default function FranchiseManagementScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [expandedRow, setExpandedRow] = useState(null);
-    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('All');
     const [franchises, setFranchises] = useState([]);
 
     useEffect(() => {
@@ -49,11 +49,17 @@ export default function FranchiseManagementScreen() {
         fetchFranchises();
     }, []);
 
-    const filteredFranchises = franchises.filter(f =>
-        f.franchiseName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        f.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        f.ownerName.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredFranchises = franchises.filter(f => {
+        const matchesSearch = (f.franchiseName?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+            (f.city?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+            (f.ownerName?.toLowerCase() || "").includes(searchTerm.toLowerCase());
+
+        const matchesStatus = statusFilter === 'All' ||
+            (statusFilter === 'Verified' && f.status === 'active') ||
+            (statusFilter === 'Pending' && f.status === 'pending');
+
+        return matchesSearch && matchesStatus;
+    });
 
     if (isLoading) {
         return (
@@ -133,21 +139,14 @@ export default function FranchiseManagementScreen() {
             {/* Node Management Ledger */}
             <div className="flex flex-col gap-0 p-px">
                 <FilterBar
-                    actions={null}
+                    onSearch={setSearchTerm}
+                    activeFilter={statusFilter}
+                    onFilterChange={setStatusFilter}
+                    onRefresh={() => location.reload()}
                 />
 
                 <div className="bg-white border-t border-slate-200 overflow-hidden">
                     <div className="px-4 py-3 bg-slate-50/50 border-b border-slate-200 flex items-center justify-between">
-                        <div className="relative group w-full max-w-sm">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors" size={14} />
-                            <input
-                                type="text"
-                                placeholder="Filter by franchise name, region or node ID..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full bg-white border border-slate-200 rounded-sm py-1.5 pl-9 pr-4 outline-none text-[11px] font-medium placeholder:text-slate-400 focus:border-slate-400 transition-all font-sans"
-                            />
-                        </div>
                         <div className="flex items-center gap-4">
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest tabular-nums font-sans">Registered Nodes: {filteredFranchises.length}</span>
                         </div>

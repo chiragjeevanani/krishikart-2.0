@@ -4,7 +4,6 @@ import {
     Truck,
     User,
     Phone,
-    Navigation,
     CheckCircle2,
     Search,
     MapPin,
@@ -15,10 +14,8 @@ import {
     Home,
     ChevronRight,
     RefreshCw,
-    ShieldCheck,
     Settings2,
-    ArrowRight,
-    Zap
+    ArrowRight
 } from 'lucide-react';
 import { useFranchiseOrders } from '../contexts/FranchiseOrdersContext';
 import { cn } from '@/lib/utils';
@@ -80,16 +77,12 @@ export default function DeliveryScreen() {
                         <h1 className="text-sm font-bold text-slate-900">Last-Mile Fulfillment Desk</h1>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button className="bg-slate-900 text-white px-3 py-1.5 rounded-sm text-[11px] font-black flex items-center gap-2 hover:bg-slate-800 transition-colors shadow-sm uppercase tracking-widest leading-none">
-                            <Navigation size={14} />
-                            Fleet Matrix
-                        </button>
                     </div>
                 </div>
             </div>
 
             {/* Performance Strip */}
-            <div className="bg-white border-b border-slate-200 grid grid-cols-1 md:grid-cols-5">
+            <div className="bg-white border-b border-slate-200 grid grid-cols-1 md:grid-cols-3">
                 <MetricRow
                     label="Active Dispatch"
                     value={outCount}
@@ -110,18 +103,6 @@ export default function DeliveryScreen() {
                     trend="up"
                     icon={CheckCircle2}
                     sub="Total Delivered"
-                />
-                <MetricRow
-                    label="Fleet Utilization"
-                    value="84%"
-                    trend="up"
-                    icon={Zap}
-                />
-                <MetricRow
-                    label="Transit Security"
-                    value="Encrypted"
-                    trend="Stable"
-                    icon={ShieldCheck}
                 />
             </div>
 

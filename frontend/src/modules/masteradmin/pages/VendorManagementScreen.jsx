@@ -35,6 +35,7 @@ import FilterBar from '../components/tables/FilterBar';
 
 export default function VendorManagementScreen() {
     const { vendors, fetchVendors, isLoading: adminLoading, updateVendorStatus } = useAdmin();
+    const [statusFilter, setStatusFilter] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
     const [isOnboardOpen, setIsOnboardOpen] = useState(false);
     const [selectedVendor, setSelectedVendor] = useState(null);
@@ -44,10 +45,16 @@ export default function VendorManagementScreen() {
         fetchVendors(); // Fetch all vendors
     }, []);
 
-    const filteredVendors = (vendors || []).filter(v =>
-        v.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        v.email?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredVendors = (vendors || []).filter(v => {
+        const matchesSearch = v.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            v.email?.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesStatus = statusFilter === 'All' ||
+            (statusFilter === 'Verified' && v.status === 'active') ||
+            (statusFilter === 'Pending' && v.status === 'pending');
+
+        return matchesSearch && matchesStatus;
+    });
 
     const vendorColumns = [
         {
@@ -194,6 +201,10 @@ export default function VendorManagementScreen() {
             {/* Operational Management */}
             <div className="flex flex-col gap-0 p-px">
                 <FilterBar
+                    onSearch={setSearchTerm}
+                    activeFilter={statusFilter}
+                    onFilterChange={setStatusFilter}
+                    onRefresh={() => fetchVendors()}
                     actions={
                         <div className="flex items-center gap-2">
                             <button className="p-1.5 border border-slate-200 rounded-sm hover:bg-slate-100 transition-colors text-slate-400">
@@ -205,18 +216,8 @@ export default function VendorManagementScreen() {
 
                 <div className="bg-white border-t border-slate-200">
                     <div className="px-4 py-3 bg-slate-50/50 border-b border-slate-200 flex items-center justify-between">
-                        <div className="relative group w-full max-w-sm">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors" size={14} />
-                            <input
-                                type="text"
-                                placeholder="Search vendors by name, category or ID..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full bg-white border border-slate-200 rounded-sm py-1.5 pl-9 pr-4 outline-none text-[11px] font-medium placeholder:text-slate-400 focus:border-slate-400 transition-all font-sans"
-                            />
-                        </div>
                         <div className="flex items-center gap-4">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest tabular-nums">Total Vendors: {filteredVendors.length}</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest tabular-nums font-sans">Total Vendors: {filteredVendors.length}</span>
                         </div>
                     </div>
 

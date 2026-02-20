@@ -53,6 +53,7 @@ import ProfessionalTooltip from '../components/common/ProfessionalTooltip';
 export default function DashboardScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [showMetrics, setShowMetrics] = useState(true);
+    const [settlementSearch, setSettlementSearch] = useState('');
     const { kpis, orderFlow, revenueFlow, recentSettlements } = mockDashboard;
 
     useEffect(() => {
@@ -268,11 +269,20 @@ export default function DashboardScreen() {
 
                 {/* Ledger Management */}
                 <div className="bg-white">
-                    <FilterBar />
+                    <FilterBar
+                        onSearch={setSettlementSearch}
+                        onRefresh={() => {
+                            setIsLoading(true);
+                            setTimeout(() => setIsLoading(false), 800);
+                        }}
+                    />
                     <DataGrid
                         title="Recent Settlements"
                         columns={settlementColumns}
-                        data={recentSettlements}
+                        data={recentSettlements.filter(s =>
+                            s.vendor.toLowerCase().includes(settlementSearch.toLowerCase()) ||
+                            s.id.toLowerCase().includes(settlementSearch.toLowerCase())
+                        )}
                         density="compact"
                     />
 

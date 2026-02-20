@@ -298,6 +298,11 @@ export default function LedgerSystemScreen() {
 
             <div className="p-px bg-slate-200">
                 <FilterBar
+                    onSearch={setSearchTerm}
+                    onRefresh={() => {
+                        setIsLoading(true);
+                        setTimeout(() => setIsLoading(false), 800);
+                    }}
                     actions={
                         <div className="flex items-center gap-2">
                             <div className="flex items-center bg-slate-100 p-0.5 rounded-sm mr-4">
@@ -328,17 +333,7 @@ export default function LedgerSystemScreen() {
                 />
 
                 <div className="bg-white border-t border-slate-200">
-                    <div className="px-4 py-3 bg-slate-50/50 border-b border-slate-200 flex items-center justify-between">
-                        <div className="relative group w-full max-w-md">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" size={14} />
-                            <input
-                                type="text"
-                                placeholder="Search by ID, Name or Source..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full bg-white border border-slate-200 rounded-sm py-2 pl-10 pr-4 outline-none text-[11px] font-bold text-slate-900 placeholder:text-slate-400 focus:border-slate-400 transition-all font-sans"
-                            />
-                        </div>
+                    <div className="px-4 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] tabular-nums">Status: Live // {currentTransactions.length} Records</span>
                         </div>

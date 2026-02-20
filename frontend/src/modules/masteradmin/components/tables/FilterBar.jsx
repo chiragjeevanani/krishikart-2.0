@@ -5,8 +5,9 @@ import { cn } from '@/lib/utils';
 export default function FilterBar({
     onSearch,
     onRefresh,
-    activeFilters = [],
+    activeFilter,
     onFilterChange,
+    filters = ['All', 'Pending', 'Verified'],
     actions
 }) {
     return (
@@ -25,9 +26,20 @@ export default function FilterBar({
 
                 {/* Primary Filters (Quick Tabs) */}
                 <div className="flex items-center bg-slate-200/50 p-0.5 rounded-sm">
-                    <button className="px-3 py-1 text-[10px] font-bold bg-white text-slate-900 shadow-sm rounded-sm">All</button>
-                    <button className="px-3 py-1 text-[10px] font-bold text-slate-500 hover:text-slate-900 transition-colors">Pending</button>
-                    <button className="px-3 py-1 text-[10px] font-bold text-slate-500 hover:text-slate-900 transition-colors">Verified</button>
+                    {filters.map(filter => (
+                        <button
+                            key={filter}
+                            onClick={() => onFilterChange?.(filter)}
+                            className={cn(
+                                "px-3 py-1 text-[10px] font-bold transition-all rounded-sm",
+                                (activeFilter?.toLowerCase() === filter?.toLowerCase())
+                                    ? "bg-white text-slate-900 shadow-sm"
+                                    : "text-slate-500 hover:text-slate-900"
+                            )}
+                        >
+                            {filter}
+                        </button>
+                    ))}
                 </div>
 
             </div>

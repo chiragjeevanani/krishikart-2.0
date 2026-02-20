@@ -33,6 +33,7 @@ import { exportToCSV } from '@/lib/exportToCSV';
 export default function DeliveryMonitoringScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('active');
+    const [searchTerm, setSearchTerm] = useState('');
     const [orders, setOrders] = useState([]);
 
     const fetchOrders = async () => {
@@ -87,8 +88,20 @@ export default function DeliveryMonitoringScreen() {
         }
     };
 
-    const inTransitOrders = orders.filter(o => ['packed', 'dispatched'].includes(o.orderStatus?.toLowerCase()));
-    const deliveredOrders = orders.filter(o => ['delivered', 'received'].includes(o.orderStatus?.toLowerCase()));
+    const matchesSearch = (o) => {
+        const query = searchTerm.toLowerCase();
+        return o._id.toLowerCase().includes(query) ||
+            (o.userId?.fullName || '').toLowerCase().includes(query) ||
+            (o.franchiseId?.franchiseName || '').toLowerCase().includes(query) ||
+            (o.deliveryPartnerId?.fullName || '').toLowerCase().includes(query);
+    };
+
+    const inTransitOrders = orders.filter(o =>
+        ['packed', 'dispatched'].includes(o.orderStatus?.toLowerCase()) && matchesSearch(o)
+    );
+    const deliveredOrders = orders.filter(o =>
+        ['delivered', 'received'].includes(o.orderStatus?.toLowerCase()) && matchesSearch(o)
+    );
 
     const handleExport = () => {
         const columns = [
@@ -287,9 +300,11 @@ export default function DeliveryMonitoringScreen() {
             {/* Main Operational Ledger */}
             <div className="flex flex-col gap-px">
                 <FilterBar
+                    onSearch={setSearchTerm}
+                    onRefresh={fetchOrders}
                     actions={
                         <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-sm border border-emerald-100">REAL-TIME</span>
+                            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-sm border border-emerald-100">REAL-TIME FEED ACTIVE</span>
                         </div>
                     }
                 />

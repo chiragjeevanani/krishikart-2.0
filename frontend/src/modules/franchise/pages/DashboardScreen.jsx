@@ -231,13 +231,13 @@ export default function DashboardScreen() {
                         />
                     </div>
 
-                    <div className="space-y-px bg-slate-200">
+                    <div className="bg-white h-full">
                         {/* Stock Health Panel */}
                         <ChartPanel
                             title="Stock distribution"
                             subtitle="Current inventory split"
                             height={220}
-                            className="bg-white"
+                            className="bg-white border-b border-slate-100"
                         >
                             <div className="space-y-6 pt-2">
                                 <div className="space-y-2">
@@ -268,24 +268,6 @@ export default function DashboardScreen() {
                                 </button>
                             </div>
                         </ChartPanel>
-
-                        {/* Operational Notice */}
-                        <div className="p-8 bg-slate-900 text-white flex flex-col justify-center gap-4">
-                            <div className="flex items-center gap-3 text-emerald-400">
-                                <Zap size={18} fill="currentColor" strokeWidth={0} />
-                                <span className="text-[10px] font-black uppercase tracking-[0.3em]">Quick Status</span>
-                            </div>
-                            <h3 className="text-lg font-black tracking-tight leading-tight">Incoming shipments arriving now.</h3>
-                            <p className="text-slate-400 text-[11px] font-medium leading-relaxed">
-                                {purchaseOrders.length} shipments are being tracked. Make sure the receiving area is ready for unloading.
-                            </p>
-                            <button
-                                onClick={() => navigate('/franchise/receiving')}
-                                className="mt-4 bg-white text-slate-900 py-3 rounded-sm text-[10px] font-black uppercase tracking-[0.2em] hover:bg-slate-100 transition-all active:scale-95"
-                            >
-                                Receive Stock
-                            </button>
-                        </div>
                     </div>
                 </div>
             </div>

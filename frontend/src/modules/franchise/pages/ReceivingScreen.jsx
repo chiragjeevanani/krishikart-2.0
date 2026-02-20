@@ -47,7 +47,7 @@ const ReceivingScreen = () => {
     const fetchOrders = async () => {
         setIsLoading(true);
         try {
-            const response = await api.get('/procurement/franchise/orders');
+            const response = await api.get('/procurement/franchise/my-requests');
             // Filter only orders ready for pickup/receiving
             const inbound = response.data.results.filter(o =>
                 ['ready_for_pickup', 'dispatched', 'in_transit'].includes(o.status)

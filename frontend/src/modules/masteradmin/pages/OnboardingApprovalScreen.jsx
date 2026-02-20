@@ -31,15 +31,16 @@ export default function OnboardingApprovalScreen() {
     const [searchParams, setSearchParams] = useSearchParams();
     const activeTab = searchParams.get('type') || 'vendor';
     const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('Pending');
     const [selectedItem, setSelectedItem] = useState(null);
 
     useEffect(() => {
         if (activeTab === 'vendor') {
-            fetchVendors('pending');
+            fetchVendors(statusFilter.toLowerCase());
         } else if (activeTab === 'franchise') {
             fetchPendingFranchises();
         }
-    }, [activeTab]);
+    }, [activeTab, statusFilter]);
 
     const tabs = [
         { id: 'vendor', label: 'Vendor KYC', icon: Users, count: vendors?.length || 0 },
@@ -170,23 +171,22 @@ export default function OnboardingApprovalScreen() {
                 </div>
             </div>
 
+            <FilterBar
+                onSearch={setSearchTerm}
+                activeFilter={statusFilter}
+                onFilterChange={setStatusFilter}
+                filters={['All', 'Pending', 'Verified']}
+                onRefresh={() => {
+                    if (activeTab === 'vendor') fetchVendors(statusFilter.toLowerCase());
+                    else fetchPendingFranchises();
+                }}
+            />
+
             {/* Verification Deck */}
             <div className="p-4 space-y-4">
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="relative group">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" size={14} />
-                            <input
-                                type="text"
-                                placeholder="Search by name..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="bg-white border border-slate-200 rounded-sm py-2 pl-9 pr-4 outline-none text-[11px] font-bold placeholder:text-slate-400 focus:ring-2 focus:ring-slate-900/5 focus:border-slate-400 transition-all w-64"
-                            />
-                        </div>
-                        <button className="p-2 border border-slate-200 bg-white rounded-sm text-slate-400 hover:text-slate-900 transition-colors">
-                            <Filter size={14} />
-                        </button>
+                    <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest tabular-nums leading-none">
+                        Status: Live // {currentItems.length} Records In Queue
                     </div>
                     <div className="flex items-center gap-1 p-1 bg-slate-200/50 rounded-sm">
                         <button className="p-1.5 bg-white shadow-sm rounded-sm text-slate-900"><LayoutGrid size={14} /></button>
