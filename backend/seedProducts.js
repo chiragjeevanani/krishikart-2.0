@@ -107,6 +107,7 @@ const seedProducts = async (categoryMap) => {
             bulkPricing: product.bulkPricing || [],
             comparePrice: product.comparePrice || null,
             bestPrice: product.bestPrice || null,
+            dietaryType: 'veg',
             status: 'active', // Set all imported products as active
             isVisible: true,
         }));

@@ -7,7 +7,6 @@ import {
   Plus,
   ChevronRight,
   ShoppingBag,
-  Tag,
   ShieldCheck,
   Info,
   Truck,
@@ -118,19 +117,6 @@ export default function CartScreen() {
                 ))}
               </AnimatePresence>
 
-              {/* Offers & Coupons */}
-              <div className="mt-8 bg-white rounded-[32px] md:rounded-xl p-6 border border-dashed border-slate-200 flex items-center justify-between group cursor-pointer hover:border-primary/40 hover:bg-slate-50/30 transition-all">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl md:rounded-lg bg-orange-50 flex items-center justify-center text-orange-500">
-                    <Tag size={24} />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-black text-slate-900 uppercase md:normal-case md:font-bold">Apply Coupon</h3>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest md:normal-case md:font-medium">Save up to ₹500 on this order</p>
-                  </div>
-                </div>
-                <ChevronRight className="text-slate-300 group-hover:text-primary transition-colors group-hover:translate-x-1" />
-              </div>
             </div>
 
             {/* Order Summary - Sticky on Desktop */}

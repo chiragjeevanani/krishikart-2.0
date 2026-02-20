@@ -27,8 +27,6 @@ import {
     TrendingDown,
     Star,
     Heart,
-    Navigation,
-    Store
 } from 'lucide-react'
 import StickySearchBar from '../components/layout/StickySearchBar'
 import PageTransition from '../components/layout/PageTransition'
@@ -41,7 +39,6 @@ import { useLocation } from '../contexts/LocationContext'
 export default function HomeScreen() {
     const [categories, setCategories] = useState([])
     const [products, setProducts] = useState([])
-    const [franchises, setFranchises] = useState([])
     const { location: userLocation, updateLocation, address } = useLocation()
     const [loading, setLoading] = useState(true)
     const navigate = useNavigate()
@@ -49,14 +46,12 @@ export default function HomeScreen() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [catRes, prodRes, franRes] = await Promise.all([
+                const [catRes, prodRes] = await Promise.all([
                     api.get('/catalog/categories'),
-                    api.get('/products'),
-                    api.get('/franchise/active-stores')
+                    api.get('/products')
                 ])
                 if (catRes.data.success) setCategories(catRes.data.results)
                 if (prodRes.data.success) setProducts(prodRes.data.results)
-                if (franRes.data.success) setFranchises(franRes.data.results)
 
                 if (catRes.data.success) setCategories(catRes.data.results)
                 if (prodRes.data.success) setProducts(prodRes.data.results)
@@ -142,49 +137,6 @@ export default function HomeScreen() {
                                 <Sprout size={180} className="md:w-[320px] md:h-[320px]" />
                             </div>
                         </motion.div>
-                    </div>
-
-                    {/* Section: Nearby Stores */}
-                    <div className="mt-12 mb-10">
-                        <div className="flex items-center justify-between mb-6">
-                            <div className="flex items-center gap-2">
-                                <div className="p-1.5 bg-indigo-100 rounded-lg">
-                                    <Store size={16} className="text-indigo-600" />
-                                </div>
-                                <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight md:font-bold">Nearby Stores</h2>
-                            </div>
-                        </div>
-                        <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4 -mx-1 px-1">
-                            {franchises.length > 0 ? franchises.map((store, idx) => (
-                                <motion.div
-                                    key={store._id}
-                                    initial={{ opacity: 0, x: 20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: idx * 0.1 }}
-                                    className="min-w-[280px] bg-white border border-slate-100 rounded-[24px] p-5 shadow-sm hover:shadow-md transition-all group"
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-16 h-16 rounded-2xl bg-slate-900 flex items-center justify-center shadow-lg shadow-slate-100 group-hover:scale-105 transition-transform text-white font-black text-xl">
-                                            {store.franchiseName?.substring(0, 2).toUpperCase()}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <h4 className="text-lg font-black text-slate-900 leading-tight truncate">{store.franchiseName || store.shopName}</h4>
-                                            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-0.5">{store.city}</p>
-                                            <div className="mt-2 flex items-center gap-1.5">
-                                                <div className="bg-emerald-50 text-emerald-600 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 border border-emerald-100">
-                                                    <Navigation size={10} className="fill-emerald-600" />
-                                                    AVAILABLE
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            )) : (
-                                <div className="py-10 text-center w-full bg-slate-50 rounded-3xl border border-dashed border-slate-200">
-                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Searching for active nodes...</p>
-                                </div>
-                            )}
-                        </div>
                     </div>
 
                     {/* Section 1: Flash Deals */}

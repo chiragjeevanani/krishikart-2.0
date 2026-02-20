@@ -27,11 +27,9 @@ export default function ProfileScreen() {
 
   const sections = [
     {
-      title: "Orders & statements",
+      title: "Orders",
       items: [
         { icon: Package, label: "Your orders", path: "/orders" },
-        { icon: Download, label: "Download statement", path: "#" },
-        { icon: Mail, label: "Email statement", path: "#" },
       ]
     },
     {
@@ -63,7 +61,6 @@ export default function ProfileScreen() {
         },
         { icon: Bell, label: "Notifications", path: "/notifications" },
         { icon: Heart, label: "My list", path: "/wishlist" },
-        { icon: Gift, label: "Claim coupon", path: "#" },
         { icon: ShoppingBag, label: "Request new product", path: "#" },
         { icon: Info, label: "Contact us", path: "/help-support" },
       ]
@@ -104,40 +101,49 @@ export default function ProfileScreen() {
               <div className="flex flex-col">
                 {section.items.map((item, iIdx) => (
                   <div key={iIdx}>
-                    <button
-                      onClick={() => {
-                        if (item.type !== "toggle" && item.path !== "#") {
-                          navigate(item.path)
-                        }
-                      }}
-                      className="w-full flex items-center justify-between px-4 py-3 active:bg-slate-50 transition-colors group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-5 h-5 flex items-center justify-center text-slate-400">
-                          {item.isVeg ? (
-                            <div className="w-4 h-4 border-[1.5px] border-emerald-600 flex items-center justify-center rounded-[2px] p-[2px]">
-                              <div className="w-full h-full bg-emerald-600 rounded-full" />
-                            </div>
-                          ) : item.icon && (
-                            <item.icon size={17} strokeWidth={2.5} />
+                    {(() => {
+                      const isToggle = item.type === "toggle";
+                      const Tag = isToggle ? 'div' : 'button';
+                      return (
+                        <Tag
+                          onClick={() => {
+                            if (!isToggle && item.path !== "#") {
+                              navigate(item.path)
+                            }
+                          }}
+                          className={cn(
+                            "w-full flex items-center justify-between px-4 py-3 transition-colors group",
+                            !isToggle && "active:bg-slate-50 cursor-pointer"
                           )}
-                        </div>
-                        <span className="text-[13.5px] font-bold text-slate-700 tracking-tight">{item.label}</span>
-                      </div>
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-5 h-5 flex items-center justify-center text-slate-400">
+                              {item.isVeg ? (
+                                <div className="w-4 h-4 border-[1.5px] border-emerald-600 flex items-center justify-center rounded-[2px] p-[2px]">
+                                  <div className="w-full h-full bg-emerald-600 rounded-full" />
+                                </div>
+                              ) : item.icon && (
+                                <item.icon size={17} strokeWidth={2.5} />
+                              )}
+                            </div>
+                            <span className="text-[13.5px] font-bold text-slate-700 tracking-tight">{item.label}</span>
+                          </div>
 
-                      <div className="flex items-center gap-2">
-                        {item.badge}
-                        {item.type === "toggle" ? (
-                          <Switch
-                            checked={isVegMode}
-                            onCheckedChange={setIsVegMode}
-                            className="scale-[0.85] origin-right data-[state=checked]:bg-emerald-600"
-                          />
-                        ) : (
-                          <ChevronRight size={15} className="text-slate-200" />
-                        )}
-                      </div>
-                    </button>
+                          <div className="flex items-center gap-2">
+                            {item.badge}
+                            {isToggle ? (
+                              <Switch
+                                checked={isVegMode}
+                                onCheckedChange={setIsVegMode}
+                                className="scale-[0.85] origin-right data-[state=checked]:bg-emerald-600"
+                              />
+                            ) : (
+                              <ChevronRight size={15} className="text-slate-200" />
+                            )}
+                          </div>
+                        </Tag>
+                      );
+                    })()}
                     {iIdx < section.items.length - 1 && (
                       <div className="mx-4 border-b border-slate-50/80" />
                     )}

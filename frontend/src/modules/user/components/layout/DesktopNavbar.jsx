@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useLocation, Link } from 'react-router-dom'
-import { Search, Heart, ShoppingCart, Truck, MapPin } from 'lucide-react'
+import { useNavigate, useLocation as useRouteLocation, Link } from 'react-router-dom'
+import { Search, Heart, ShoppingCart, MapPin } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useWishlist } from '../../contexts/WishlistContext'
 import { useCart } from '../../contexts/CartContext'
+import { useWishlist } from '../../contexts/WishlistContext'
+import { useLocation } from '../../contexts/LocationContext'
 import { cn } from '@/lib/utils'
 import MobileProfileDrawer from './MobileProfileDrawer'
+import { toast } from 'sonner'
 
 const PLACEHOLDERS = [
     "Search 'Spring Caps'",
@@ -17,8 +19,9 @@ const PLACEHOLDERS = [
 
 export default function DesktopNavbar() {
     const navigate = useNavigate()
-    const { wishlistCount } = useWishlist()
     const { cartCount } = useCart()
+    const { wishlistCount } = useWishlist()
+    const { address, updateLocation, loading } = useLocation()
 
     const [index, setIndex] = useState(0)
     const [searchValue, setSearchValue] = useState("")
@@ -40,6 +43,16 @@ export default function DesktopNavbar() {
         }
     }, [])
 
+    const handleLocationClick = async () => {
+        toast.info("Fetching real-time location...")
+        try {
+            await updateLocation(true)
+            toast.success("Location updated successfully!")
+        } catch (error) {
+            toast.error("Failed to fetch location. Please enable location access.")
+        }
+    }
+
     return (
         <nav className={cn(
             "w-full bg-white transition-all duration-300 border-b border-slate-100 z-50 sticky top-0",
@@ -60,13 +73,21 @@ export default function DesktopNavbar() {
                     </div>
 
                     {/* Delivery Info */}
-                    <div className="hidden lg:flex items-center gap-2.5 cursor-pointer group">
-                        <div className="w-9 h-9 rounded-full bg-slate-50 flex items-center justify-center text-teal-600 transition-colors group-hover:bg-teal-50">
-                            <Truck size={18} strokeWidth={2.5} />
+                    <div
+                        onClick={handleLocationClick}
+                        className="hidden lg:flex items-center gap-2.5 cursor-pointer group hover:bg-slate-50 px-3 py-1.5 rounded-xl transition-all"
+                    >
+                        <div className={cn(
+                            "w-9 h-9 rounded-full bg-slate-50 flex items-center justify-center text-teal-600 transition-colors group-hover:bg-teal-100",
+                            loading && "animate-pulse"
+                        )}>
+                            <MapPin size={18} strokeWidth={2.5} />
                         </div>
-                        <div className="flex flex-col">
-                            <span className="text-[14px] font-bold text-slate-900 leading-tight">Delivery tomorrow</span>
-                            <span className="text-[12px] font-medium text-slate-400 leading-tight">chirag: pipliyahahna</span>
+                        <div className="flex flex-col max-w-[150px]">
+                            <span className="text-[14px] font-bold text-slate-900 leading-tight">Deliver to</span>
+                            <span className="text-[12px] font-medium text-slate-400 leading-tight truncate">
+                                {loading ? "Fetching..." : (address || "Set Location")}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -111,6 +132,19 @@ export default function DesktopNavbar() {
 
                 {/* Actions */}
                 <div className="flex items-center gap-3 shrink-0">
+                    {/* Wishlist */}
+                    <button
+                        onClick={() => navigate('/wishlist')}
+                        className="w-11 h-11 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-rose-500 transition-all group relative active:scale-95"
+                    >
+                        <Heart size={20} className={cn(wishlistCount > 0 && "fill-rose-500 text-rose-500")} strokeWidth={2.5} />
+                        {wishlistCount > 0 && (
+                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white">
+                                {wishlistCount}
+                            </span>
+                        )}
+                    </button>
+
                     {/* Cart */}
                     <button
                         onClick={() => navigate('/cart')}
@@ -120,19 +154,6 @@ export default function DesktopNavbar() {
                         {cartCount > 0 && (
                             <span className="absolute -top-0.5 -right-0.5 w-[19px] h-[19px] bg-black text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white">
                                 {cartCount}
-                            </span>
-                        )}
-                    </button>
-
-                    {/* Wishlist */}
-                    <button
-                        onClick={() => navigate('/wishlist')}
-                        className="relative w-11 h-11 flex items-center justify-center rounded-full bg-white border border-slate-100 text-slate-700 hover:bg-slate-50 hover:border-slate-200 transition-all active:scale-95 shadow-sm group"
-                    >
-                        <Heart size={20} className={cn("transition-colors", wishlistCount > 0 && "text-red-500 fill-red-500")} />
-                        {wishlistCount > 0 && (
-                            <span className="absolute -top-0.5 -right-0.5 w-[19px] h-[19px] bg-red-600 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white">
-                                {wishlistCount}
                             </span>
                         )}
                     </button>

@@ -18,6 +18,7 @@ export function LocationProvider({ children }) {
     }, []);
 
     const updateLocation = useCallback(async (manual = false) => {
+        if (loading) return; // Prevent concurrent calls
         setLoading(true);
         setError(null);
         try {
@@ -30,6 +31,10 @@ export function LocationProvider({ children }) {
             if (addr) {
                 setAddress(addr);
                 localStorage.setItem('kk_user_address', addr);
+            } else {
+                // Fallback if reverseGeocode returns null
+                const fallbackAddr = `${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`;
+                setAddress(fallbackAddr);
             }
         } catch (err) {
             console.error('Location error:', err);
@@ -38,7 +43,7 @@ export function LocationProvider({ children }) {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [loading]);
 
     const value = useMemo(() => ({
         location,

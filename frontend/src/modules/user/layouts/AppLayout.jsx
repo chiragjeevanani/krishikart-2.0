@@ -41,7 +41,7 @@ export default function AppLayout() {
                 <DesktopNavbar />
             </div>
 
-            <main className="max-w-md mx-auto min-h-screen bg-white shadow-xl md:shadow-none md:max-w-none md:mx-0 relative md:pt-32">
+            <main className="w-full max-w-md mx-auto min-h-screen bg-white md:shadow-none md:max-w-none md:mx-0 relative md:pt-32">
                 {/* Breadcrumbs for Desktop - Hidden on Home */}
                 {!isHomeScreen && (
                     <div className="max-w-7xl mx-auto px-8 hidden md:block">

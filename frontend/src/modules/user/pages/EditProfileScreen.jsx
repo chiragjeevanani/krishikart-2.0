@@ -71,6 +71,7 @@ export default function EditProfileScreen() {
                 legalEntityName: userData.legalEntityName || '',
                 address: userData.address || ''
             })
+            localStorage.setItem('userData', JSON.stringify(userData))
             setEditData({
                 fullName: userData.fullName || '',
                 email: userData.email || '',
@@ -100,9 +101,15 @@ export default function EditProfileScreen() {
                 legalEntityName: editData.legalEntityName,
                 address: editData.address
             })
+<<<<<<< HEAD
             setUser(response.data.result)
             localStorage.setItem('userData', JSON.stringify(response.data.result))
             window.dispatchEvent(new Event('userDataUpdated'));
+=======
+            const updatedUser = response.data.result
+            setUser(updatedUser)
+            localStorage.setItem('userData', JSON.stringify(updatedUser))
+>>>>>>> b17147d33c34120121c34a48aab14827beb8c636
             setIsEditDrawerOpen(false)
             alert('Profile updated successfully')
         } catch (error) {

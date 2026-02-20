@@ -1,10 +1,10 @@
-import { Search, MapPin, Heart, ShoppingCart } from 'lucide-react'
+import { Search, MapPin, ShoppingCart } from 'lucide-react'
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useWishlist } from '../../contexts/WishlistContext'
 import { useCart } from '../../contexts/CartContext'
 import { useLocation } from '../../contexts/LocationContext'
+import { toast } from 'sonner'
 import MobileProfileDrawer from './MobileProfileDrawer'
 
 const PLACEHOLDERS = [
@@ -19,7 +19,6 @@ const PLACEHOLDERS = [
 export default function StickySearchBar() {
     const navigate = useNavigate()
     const { address, updateLocation, loading } = useLocation()
-    const { wishlistCount } = useWishlist()
     const { cartCount } = useCart()
     const { scrollY } = useScroll()
     const opacity = useTransform(scrollY, [0, 50], [1, 0.95])
@@ -43,7 +42,15 @@ export default function StickySearchBar() {
         >
             <div className="flex items-center justify-between">
                 <div
-                    onClick={() => updateLocation(true)}
+                    onClick={async () => {
+                        toast.info("Fetching real-time location...")
+                        try {
+                            await updateLocation(true)
+                            toast.success("Location updated!")
+                        } catch (err) {
+                            toast.error("Failed to fetch location")
+                        }
+                    }}
                     className={`flex items-center gap-1.5 text-primary max-w-[70%] cursor-pointer active:scale-95 transition-all ${loading ? 'opacity-50' : ''}`}
                 >
                     <MapPin size={16} strokeWidth={2.5} className={`shrink-0 ${loading ? 'animate-pulse' : ''}`} />
@@ -52,18 +59,6 @@ export default function StickySearchBar() {
                     </span>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => navigate('/wishlist')}
-                        className="relative w-10 h-10 flex items-center justify-center rounded-[18px] bg-white border border-slate-100 shadow-sm text-slate-400 active:scale-95 transition-all"
-                    >
-                        <Heart size={18} fill={wishlistCount > 0 ? "currentColor" : "none"} className={wishlistCount > 0 ? "text-red-500" : ""} />
-                        {wishlistCount > 0 && (
-                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm">
-                                {wishlistCount}
-                            </span>
-                        )}
-                    </button>
-
                     <button
                         onClick={() => navigate('/cart')}
                         className="relative w-10 h-10 flex items-center justify-center rounded-[18px] bg-white border border-slate-100 shadow-sm text-slate-400 active:scale-95 transition-all"
