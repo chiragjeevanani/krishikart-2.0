@@ -28,6 +28,6 @@ setupRoutes(app);
 const httpServer = createServer(app);
 initSocket(httpServer);
 
-httpServer.listen(PORT, HOST, () => {
-  console.log(`server is running on http://${HOST}:${PORT}`)
+httpServer.listen(PORT, "0.0.0.0", () => {
+  console.log(`server is running on port ${PORT}`)
 })
