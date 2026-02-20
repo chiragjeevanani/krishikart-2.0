@@ -18,12 +18,12 @@ import {
     FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import api from '@/lib/api';
+import api from '@/lib/axios';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import DataGrid from '@/components/Grid/DataGrid';
-import FilterBar from '@/components/Grid/FilterBar';
-import DocumentViewer from '@/components/DocumentViewer';
+import DataGrid from '../components/tables/DataGrid';
+import FilterBar from '../components/tables/FilterBar';
+import DocumentViewer from '../../vendor/components/documents/DocumentViewer';
 import { useInventory } from '../contexts/InventoryContext';
 
 const ReceivingScreen = () => {
