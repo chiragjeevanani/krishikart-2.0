@@ -128,6 +128,23 @@
 :root {
     font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
     -webkit-tap-highlight-color: transparent;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden !important;
+}
+
+html,
+body {
+    width: 100%;
+    overflow-x: hidden !important;
+    position: relative;
+    scroll-behavior: smooth;
+    margin: 0;
+    padding: 0;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
 }
 
 body {
@@ -212,8 +229,8 @@ body {
         letter-spacing: normal !important;
     }
 
-    .user-app-theme .tracking-[0.2em],
-    .user-app-theme .tracking-[0.4em] {
+    .user-app-theme .tracking-\[0\.2em\],
+    .user-app-theme .tracking-\[0\.4em\] {
         letter-spacing: normal !important;
     }
 
@@ -227,13 +244,11 @@ body {
     .user-app-theme .rounded-\[40px\],
     .user-app-theme .rounded-\[48px\] {
         border-radius: 1rem !important;
-        /* 16px */
     }
 
     .user-app-theme .rounded-\[32px\],
     .user-app-theme .rounded-\[28px\] {
         border-radius: 0.75rem !important;
-        /* 12px */
     }
 
     /* Subtle borders instead of heavy shadows on desktop */

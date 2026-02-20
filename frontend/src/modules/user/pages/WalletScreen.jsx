@@ -157,30 +157,6 @@ export default function WalletScreen() {
                                 </div>
                             )}
 
-                            {/* Statement Banner */}
-                            <motion.div
-                                whileHover={{ scale: 1.005 }}
-                                className="bg-[#3b82f6] rounded-2xl p-6 text-white flex items-center justify-between shadow-lg shadow-blue-500/10 cursor-pointer relative overflow-hidden group"
-                            >
-                                <div className="flex items-center gap-4 relative z-10">
-                                    <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-md">
-                                        <FileText size={24} />
-                                    </div>
-                                    <div className="space-y-0.5">
-                                        <h3 className="text-xl font-bold tracking-tight">Get your wallet account statement</h3>
-                                        <p className="text-xs text-blue-100 font-medium opacity-80">for a specific time period</p>
-                                    </div>
-                                </div>
-                                <div className="relative z-10 hidden sm:block">
-                                    <div className="bg-white/10 p-4 rounded-xl backdrop-blur-md border border-white/20 rotate-12 group-hover:rotate-0 transition-all duration-500">
-                                        <div className="w-10 h-10 bg-white rounded-lg flex flex-col items-center justify-center gap-1 shadow-sm">
-                                            <div className="w-6 h-0.5 bg-blue-100 rounded" />
-                                            <div className="w-4 h-0.5 bg-blue-100 rounded" />
-                                            <div className="w-5 h-0.5 bg-blue-50 rounded" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </motion.div>
 
                             {/* Credit History Section */}
                             <div className="space-y-6">

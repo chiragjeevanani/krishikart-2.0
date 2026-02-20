@@ -26,7 +26,6 @@ export default function ProductListScreen() {
     const [searchParams] = useSearchParams()
     const navigate = useNavigate()
     const { cartCount } = useCart()
-    const { wishlistCount } = useWishlist()
     const queryFromUrl = searchParams.get('search') || ''
     const [searchQuery, setSearchQuery] = useState(queryFromUrl)
     const [categories, setCategories] = useState([])
@@ -38,8 +37,8 @@ export default function ProductListScreen() {
     const [activeFilters, setActiveFilters] = useState({
         rating: false,
         veg: false,
-        brand: null,
-        type: null
+        inStock: false,
+        sort: 'none' // 'price-low', 'price-high'
     })
 
     // Update searchQuery when URL search param changes
@@ -134,12 +133,21 @@ export default function ProductListScreen() {
     }, [categories])
 
     const filteredProducts = useMemo(() => {
-        return (products || []).filter(p => {
+        let result = (products || []).filter(p => {
             const matchesSearch = p.name?.toLowerCase().includes(searchQuery.toLowerCase())
-            const matchesRating = !activeFilters.rating || (p.rating >= 4.0)
-            const matchesVeg = !activeFilters.veg || p.isVeg
-            return matchesSearch && matchesRating && matchesVeg
+            const matchesRating = !activeFilters.rating || (p.rating >= 4.0 || p.comparePrice > p.price) // Simplified rating logic or deal logic
+            const matchesVeg = !activeFilters.veg || p.dietaryType !== 'non-veg'
+            const matchesInStock = !activeFilters.inStock || (p.stock > 0)
+            return matchesSearch && matchesRating && matchesVeg && matchesInStock
         })
+
+        if (activeFilters.sort === 'price-low') {
+            return [...result].sort((a, b) => a.price - b.price)
+        } else if (activeFilters.sort === 'price-high') {
+            return [...result].sort((a, b) => b.price - a.price)
+        }
+
+        return result
     }, [products, searchQuery, activeFilters])
 
     return (
@@ -195,17 +203,6 @@ export default function ProductListScreen() {
                         <div className="flex items-center gap-2">
                             <button className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 border border-slate-100">
                                 <Search size={20} strokeWidth={2.5} />
-                            </button>
-                            <button
-                                onClick={() => navigate('/wishlist')}
-                                className="relative w-10 h-10 flex items-center justify-center rounded-full bg-white text-slate-400 border border-slate-100"
-                            >
-                                <Heart size={18} className={cn(wishlistCount > 0 && "text-red-500 fill-red-500")} strokeWidth={2.5} />
-                                {wishlistCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white">
-                                        {wishlistCount}
-                                    </span>
-                                )}
                             </button>
                             <button
                                 onClick={() => navigate('/cart')}
@@ -273,25 +270,53 @@ export default function ProductListScreen() {
                     <main className="flex-1 h-[calc(100vh-120px)] overflow-y-auto no-scrollbar bg-white">
                         {/* Horizontal Filters & Subcategories Row */}
                         <div className="flex flex-col gap-3 px-4 py-4 border-b border-slate-50/50 sticky top-0 bg-white/95 backdrop-blur-sm z-30 md:hidden">
-                            <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar">
+                            <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar py-1">
                                 <div
                                     onClick={() => setActiveFilters(prev => ({ ...prev, rating: !prev.rating }))}
                                     className={cn(
-                                        "flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm transition-all",
+                                        "flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm transition-all shrink-0",
                                         activeFilters.rating ? "bg-orange-50 border-orange-200 text-orange-600 font-bold" : "bg-white border-slate-100 text-slate-700"
                                     )}
                                 >
-                                    <Star size={14} className="text-orange-400 fill-orange-400" />
-                                    <span className="text-[12px]">4.0+</span>
+                                    <Star size={14} className={cn("text-orange-400", activeFilters.rating && "fill-orange-400")} />
+                                    <span className="text-[12px]">Top Deals</span>
                                 </div>
                                 <div
                                     onClick={() => setActiveFilters(prev => ({ ...prev, veg: !prev.veg }))}
                                     className={cn(
-                                        "px-4 py-1.5 rounded-full border shadow-sm transition-all",
+                                        "flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm transition-all shrink-0",
                                         activeFilters.veg ? "bg-green-50 border-green-200 text-green-600 font-bold" : "bg-white border-slate-100 text-slate-700"
                                     )}
                                 >
+                                    <div className={cn("w-3 h-3 border flex items-center justify-center rounded-[2px]", activeFilters.veg ? "border-green-600" : "border-slate-300")}>
+                                        <div className={cn("w-1.5 h-1.5 rounded-full", activeFilters.veg ? "bg-green-600" : "bg-transparent")} />
+                                    </div>
                                     <span className="text-[12px]">Veg Only</span>
+                                </div>
+                                <div
+                                    onClick={() => setActiveFilters(prev => ({ ...prev, inStock: !prev.inStock }))}
+                                    className={cn(
+                                        "flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm transition-all shrink-0",
+                                        activeFilters.inStock ? "bg-emerald-50 border-emerald-200 text-emerald-600 font-bold" : "bg-white border-slate-100 text-slate-700"
+                                    )}
+                                >
+                                    <div className={cn("w-3 h-3 rounded-full", activeFilters.inStock ? "bg-emerald-500" : "bg-slate-200")} />
+                                    <span className="text-[12px]">In Stock</span>
+                                </div>
+                                <div
+                                    onClick={() => setActiveFilters(prev => ({
+                                        ...prev,
+                                        sort: prev.sort === 'price-low' ? 'price-high' : prev.sort === 'price-high' ? 'none' : 'price-low'
+                                    }))}
+                                    className={cn(
+                                        "flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm transition-all shrink-0",
+                                        activeFilters.sort !== 'none' ? "bg-blue-50 border-blue-200 text-blue-600 font-bold" : "bg-white border-slate-100 text-slate-700"
+                                    )}
+                                >
+                                    <SlidersHorizontal size={14} />
+                                    <span className="text-[12px]">
+                                        {activeFilters.sort === 'price-low' ? 'Price: Low' : activeFilters.sort === 'price-high' ? 'Price: High' : 'Sort'}
+                                    </span>
                                 </div>
                             </div>
 
@@ -374,7 +399,61 @@ export default function ProductListScreen() {
                                 </aside>
                                 <div className="flex-1">
                                     <div className="flex flex-col gap-6 mb-8">
-                                        <h2 className="text-3xl font-black text-slate-900 tracking-tight">{currentCategoryData.name}</h2>
+                                        <div className="flex items-center justify-between">
+                                            <h2 className="text-3xl font-black text-slate-900 tracking-tight">{currentCategoryData.name}</h2>
+
+                                            {/* Filters Row for Desktop */}
+                                            <div className="flex items-center gap-3">
+                                                <div
+                                                    onClick={() => setActiveFilters(prev => ({ ...prev, rating: !prev.rating }))}
+                                                    className={cn(
+                                                        "flex items-center gap-2 px-4 py-2 rounded-xl border cursor-pointer transition-all",
+                                                        activeFilters.rating ? "bg-orange-50 border-orange-200 text-orange-600 font-bold" : "bg-white border-slate-100 text-slate-500 hover:border-slate-200"
+                                                    )}
+                                                >
+                                                    <Star size={16} className={cn("text-orange-400", activeFilters.rating && "fill-orange-400")} />
+                                                    <span className="text-sm">Top Deals</span>
+                                                </div>
+                                                <div
+                                                    onClick={() => setActiveFilters(prev => ({ ...prev, veg: !prev.veg }))}
+                                                    className={cn(
+                                                        "flex items-center gap-2 px-4 py-2 rounded-xl border cursor-pointer transition-all",
+                                                        activeFilters.veg ? "bg-green-50 border-green-200 text-green-600 font-bold" : "bg-white border-slate-100 text-slate-500 hover:border-slate-200"
+                                                    )}
+                                                >
+                                                    <div className={cn("w-3.5 h-3.5 border flex items-center justify-center rounded-[3px]", activeFilters.veg ? "border-green-600" : "border-slate-300")}>
+                                                        <div className={cn("w-2 h-2 rounded-full", activeFilters.veg ? "bg-green-600" : "bg-transparent")} />
+                                                    </div>
+                                                    <span className="text-sm">Veg Only</span>
+                                                </div>
+                                                <div
+                                                    onClick={() => setActiveFilters(prev => ({ ...prev, inStock: !prev.inStock }))}
+                                                    className={cn(
+                                                        "flex items-center gap-2 px-4 py-2 rounded-xl border cursor-pointer transition-all",
+                                                        activeFilters.inStock ? "bg-emerald-50 border-emerald-200 text-emerald-600 font-bold" : "bg-white border-slate-100 text-slate-500 hover:border-slate-200"
+                                                    )}
+                                                >
+                                                    <div className={cn("w-3.5 h-3.5 rounded-full", activeFilters.inStock ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" : "bg-slate-200")} />
+                                                    <span className="text-sm">In Stock</span>
+                                                </div>
+                                                <div
+                                                    onClick={() => setActiveFilters(prev => ({
+                                                        ...prev,
+                                                        sort: prev.sort === 'price-low' ? 'price-high' : prev.sort === 'price-high' ? 'none' : 'price-low'
+                                                    }))}
+                                                    className={cn(
+                                                        "flex items-center gap-2 px-4 py-2 rounded-xl border cursor-pointer transition-all min-w-[140px] justify-center",
+                                                        activeFilters.sort !== 'none' ? "bg-blue-50 border-blue-200 text-blue-600 font-bold" : "bg-white border-slate-100 text-slate-500 hover:border-slate-200"
+                                                    )}
+                                                >
+                                                    <SlidersHorizontal size={16} />
+                                                    <span className="text-sm">
+                                                        {activeFilters.sort === 'price-low' ? 'Price: Low to High' : activeFilters.sort === 'price-high' ? 'Price: High to Low' : 'Sort by Price'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         {subcategories.length > 0 && selectedCategory !== 'all' && (
                                             <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-2">
                                                 <button

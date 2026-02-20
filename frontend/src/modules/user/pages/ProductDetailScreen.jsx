@@ -13,7 +13,8 @@ import {
   RotateCcw,
   ChevronRight,
   TrendingDown,
-  Info
+  Info,
+  Store
 } from 'lucide-react'
 import PageTransition from '../components/layout/PageTransition'
 import { Button } from '@/components/ui/button'
@@ -150,14 +151,14 @@ export default function ProductDetailScreen() {
                     In Stock
                   </span>
                 )}
-                {product.dietaryType && product.dietaryType !== 'none' && (
+                {product.dietaryType && (
                   <div className={cn(
                     "w-4 h-4 border-[1.2px] flex items-center justify-center rounded-[2px] bg-white",
-                    product.dietaryType === 'veg' ? "border-emerald-600" : "border-red-600"
+                    (product.dietaryType === 'veg' || product.dietaryType === 'none') ? "border-emerald-600" : "border-red-600"
                   )}>
                     <div className={cn(
                       "w-[5px] h-[5px] rounded-full",
-                      product.dietaryType === 'veg' ? "bg-emerald-600" : "bg-red-600"
+                      (product.dietaryType === 'veg' || product.dietaryType === 'none') ? "bg-emerald-600" : "bg-red-600"
                     )} />
                   </div>
                 )}

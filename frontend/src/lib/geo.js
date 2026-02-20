@@ -1,3 +1,5 @@
+import api from './axios';
+
 /**
  * Calculates the straight-line distance between two points on Earth using the Haversine formula.
  * @param {number} lat1 Latitude of point 1
@@ -58,30 +60,27 @@ export function getCurrentLocation() {
 }
 
 /**
- * Reverse geocodes coordinates to a human-readable address
+ * Reverse geocodes coordinates to a human-readable address via backend proxy
  * @param {number} lat
  * @param {number} lng
  * @returns {Promise<string|null>}
  */
 export async function reverseGeocode(lat, lng) {
     try {
-        const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
-            {
-                headers: {
-                    'User-Agent': 'KrishiKart-App/1.0'
-                }
+        const response = await api.get(`/geo/reverse-geocode?lat=${lat}&lng=${lng}`);
+
+        if (response.data.success) {
+            const data = response.data.results;
+            if (data && data.address) {
+                const city = data.address.city || data.address.town || data.address.village || data.address.suburb || data.address.district;
+                const state = data.address.state;
+                return city ? `${city}${state ? `, ${state}` : ''}` : null;
             }
-        );
-        const data = await response.json();
-        if (data && data.address) {
-            const city = data.address.city || data.address.town || data.address.village || data.address.suburb;
-            const state = data.address.state;
-            return city ? `${city}${state ? `, ${state}` : ''}` : null;
         }
         return null;
     } catch (error) {
         console.error('Reverse geocoding error:', error);
-        return null;
+        // Fallback: return short coordinates if address fails
+        return `${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)}`;
     }
 }
