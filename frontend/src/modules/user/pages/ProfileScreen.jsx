@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
-  User, Package, Download, Mail, Wallet,
-  ChevronRight, Briefcase, Bell, Heart, Gift,
-  ShoppingBag, Info, Power, Settings
+  User, Package, Wallet,
+  ChevronRight, Bell, Heart,
+  Info, Power
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import PageTransition from '../components/layout/PageTransition'
@@ -48,12 +48,6 @@ export default function ProfileScreen() {
       items: [
         { icon: User, label: "Profile settings", path: "/edit-profile" },
         {
-          icon: Briefcase,
-          label: "Register as business",
-          path: "/business-registration",
-          badge: <span className="bg-emerald-100 text-emerald-600 text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-tighter">NEW</span>
-        },
-        {
           icon: null,
           label: "Veg mode",
           type: "toggle",
@@ -61,7 +55,6 @@ export default function ProfileScreen() {
         },
         { icon: Bell, label: "Notifications", path: "/notifications" },
         { icon: Heart, label: "My list", path: "/wishlist" },
-        { icon: ShoppingBag, label: "Request new product", path: "#" },
         { icon: Info, label: "Contact us", path: "/help-support" },
       ]
     }

@@ -4,20 +4,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
     User,
     Package,
-    MapPin,
     Wallet,
     Bell,
     Heart,
-    HelpCircle,
     Power,
     ChevronRight,
-    FileText,
     MessageCircle,
-    Briefcase,
-    Settings,
     CircleDot,
-    Ticket,
-    Box,
     Info
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
@@ -196,7 +189,6 @@ export default function MobileProfileDrawer() {
                                         <SectionHeader title="Others" />
                                         <div className="bg-white rounded-[24px] overflow-hidden border border-slate-100 shadow-sm">
                                             <MenuItem icon={User} label="Profile settings" path="/edit-profile" isFirst />
-                                            <MenuItem icon={Briefcase} label="Register as business" path="/business-registration" isNew />
                                             <MenuItem
                                                 icon={CircleDot}
                                                 label="Veg mode"
@@ -206,7 +198,6 @@ export default function MobileProfileDrawer() {
                                             />
                                             <MenuItem icon={Bell} label="Notifications" path="/notifications" />
                                             <MenuItem icon={Heart} label="My list" path="/wishlist" />
-                                            <MenuItem icon={Box} label="Request new product" path="/help-support" />
                                             <MenuItem icon={Info} label="Contact us" path="/help-support" isLast />
                                         </div>
                                     </div>
