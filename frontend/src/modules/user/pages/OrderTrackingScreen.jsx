@@ -122,7 +122,7 @@ export default function OrderTrackingScreen() {
 
 
                     {/* Final Verification Flow */}
-                    {order?.orderStatus === 'delivered' && (
+                    {order?.orderStatus === 'Delivered' && (
                         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <div className="p-8 rounded-[40px] bg-emerald-50 border border-emerald-100">
                                 <div className="flex items-center gap-4 mb-6">

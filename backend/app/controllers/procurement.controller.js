@@ -327,11 +327,24 @@ export const franchiseConfirmReceipt = async (req, res) => {
             return handleResponse(res, 403, "Not authorized to update this request");
         }
 
-        if (request.status !== 'ready_for_pickup') {
-            return handleResponse(res, 400, "Order is not ready for receiving. Current status: " + request.status);
-        }
+        const { items: auditData } = req.body; // Expecting [{ productId: string, receivedQuantity: number, damagedQuantity: number }]
 
         request.status = 'completed';
+
+        // Update Request with Audit Data
+        if (auditData && Array.isArray(auditData)) {
+            for (const auditItem of auditData) {
+                const itemInRequest = request.items.find(i =>
+                    (i._id?.toString() === auditItem.productId) ||
+                    (i.productId === auditItem.productId)
+                );
+                if (itemInRequest) {
+                    itemInRequest.receivedQuantity = Number(auditItem.receivedQuantity) || 0;
+                    itemInRequest.damagedQuantity = Number(auditItem.damagedQuantity) || 0;
+                }
+            }
+        }
+
         await request.save();
 
         // Update Franchise Inventory
@@ -348,8 +361,11 @@ export const franchiseConfirmReceipt = async (req, res) => {
                 const prodId = reqItem.productId;
                 if (!mongoose.Types.ObjectId.isValid(prodId)) continue;
 
-                // Ensure quantity is a number
-                const quantityToAdd = Number(reqItem.quantity) || 0;
+                // Use the reported received quantity for inventory update
+                // If not reported (fallback), use the original requested quantity
+                const quantityToAdd = reqItem.receivedQuantity !== undefined ?
+                    Number(reqItem.receivedQuantity) :
+                    Number(reqItem.quantity);
 
                 const existingItem = inventory.items.find(i => i.productId.toString() === prodId.toString());
                 if (existingItem) {
@@ -365,11 +381,9 @@ export const franchiseConfirmReceipt = async (req, res) => {
             }
 
             await inventory.save();
-            console.log(`Inventory updated for franchise: ${franchiseId}`);
+            console.log(`Inventory updated for franchise: ${franchiseId} based on audit results`);
         } catch (invErr) {
             console.error("Critical: Stock sync failed during receipt confirmation:", invErr);
-            // We don't necessarily want to fail the whole request if inventory update fails, 
-            // but in a production app you'd want a transaction or a retry.
         }
 
         return handleResponse(res, 200, "Goods received and stock updated successfully", request);

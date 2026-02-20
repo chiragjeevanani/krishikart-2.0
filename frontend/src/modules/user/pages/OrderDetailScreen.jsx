@@ -105,9 +105,9 @@ export default function OrderDetailScreen() {
                                 <div className="relative z-10 flex flex-col md:flex-row md:items-center md:text-left gap-8">
                                     <div className={cn(
                                         "w-24 h-24 rounded-[32px] flex items-center justify-center mx-auto md:mx-0 border-4 border-white shadow-lg rotate-3 shrink-0",
-                                        order.orderStatus === 'delivered' ? "bg-emerald-50 text-emerald-500" : "bg-primary/10 text-primary"
+                                        ['delivered', 'received'].includes(order.orderStatus?.toLowerCase()) ? "bg-emerald-50 text-emerald-500" : "bg-primary/10 text-primary"
                                     )}>
-                                        {order.orderStatus === 'delivered' ? <CheckCircle2 size={48} strokeWidth={2.5} /> : <Activity size={48} strokeWidth={2.5} />}
+                                        {['delivered', 'received'].includes(order.orderStatus?.toLowerCase()) ? <CheckCircle2 size={48} strokeWidth={2.5} /> : <Activity size={48} strokeWidth={2.5} />}
                                     </div>
                                     <div className="flex-1">
                                         <h2 className="text-2xl md:text-3xl font-black text-slate-900 leading-tight uppercase tracking-tight italic">
@@ -125,7 +125,7 @@ export default function OrderDetailScreen() {
                                         >
                                             <RotateCcw size={14} /> Reorder
                                         </Button>
-                                        {order.orderStatus === 'delivered' && (
+                                        {['delivered', 'received'].includes(order.orderStatus?.toLowerCase()) && (
                                             <Button className="w-full sm:w-auto h-12 px-8 rounded-2xl bg-slate-900 font-black text-[11px] uppercase tracking-widest gap-2 shadow-lg shadow-slate-200 text-white">
                                                 <Star size={14} className="text-yellow-400 fill-yellow-400" /> Review
                                             </Button>

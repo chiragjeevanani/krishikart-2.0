@@ -20,7 +20,15 @@ const procurementRequestSchema = new mongoose.Schema({
                 type: Number, // Vendor's quoted price per item
                 default: 0
             },
-            image: String
+            image: String,
+            receivedQuantity: {
+                type: Number,
+                default: 0
+            },
+            damagedQuantity: {
+                type: Number,
+                default: 0
+            }
         },
     ],
     totalEstimatedAmount: Number,
