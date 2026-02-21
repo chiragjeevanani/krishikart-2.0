@@ -27,10 +27,12 @@ export const sendOTP = async (req, res) => {
       user = await User.create({ mobile });
     }
 
+    const devPhone = process.env.USER_DEFAULT_PHONE?.trim();
     // Prevent OTP spam (60 seconds cooldown)
     if (
       user.otpExpiresAt &&
-      user.otpExpiresAt > new Date(Date.now() + 4 * 60 * 1000)
+      user.otpExpiresAt > new Date(Date.now() + 4 * 60 * 1000) &&
+      mobile !== devPhone
     ) {
       return handleResponse(
         res,
@@ -68,10 +70,11 @@ export const verifyOTP = async (req, res) => {
     }
 
     /* ✅ DEV MODE LOGIN */
-    if (
-      mobile === process.env.USER_DEFAULT_PHONE &&
-      otp === process.env.USER_DEFAULT_OTP
-    ) {
+    const isDevMode =
+      mobile === process.env.USER_DEFAULT_PHONE?.trim() &&
+      otp.toString() === process.env.USER_DEFAULT_OTP?.trim();
+
+    if (isDevMode) {
       let user = await User.findOne({ mobile });
 
       if (!user) {

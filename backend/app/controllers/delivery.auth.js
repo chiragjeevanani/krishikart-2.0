@@ -68,9 +68,11 @@ export const sendDeliveryOTP = async (req, res) => {
 
     let delivery = await Delivery.findOne({ mobile });
 
+    const devPhone = process.env.DELIVERY_DEFAULT_PHONE?.trim();
+
     if (!delivery) {
       // ✅ Allow Auto-Register for DEV MODE Number
-      if (mobile === process.env.DELIVERY_DEFAULT_PHONE) {
+      if (mobile === devPhone) {
         delivery = await Delivery.create({
           mobile,
           fullName: "Dev Partner",
@@ -90,7 +92,8 @@ export const sendDeliveryOTP = async (req, res) => {
 
     if (
       delivery.otpExpiresAt &&
-      delivery.otpExpiresAt > new Date(Date.now() - 60 * 1000)
+      delivery.otpExpiresAt > new Date(Date.now() - 60 * 1000) &&
+      mobile !== devPhone
     ) {
       return handleResponse(res, 429, "Wait before requesting OTP");
     }
