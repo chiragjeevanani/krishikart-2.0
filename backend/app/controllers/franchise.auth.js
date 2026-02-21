@@ -106,10 +106,11 @@ export const verifyFranchiseOTP = async (req, res) => {
         }
 
         /* ✅ DEV MODE DEFAULT LOGIN */
-        if (
-            mobile === process.env.FRANCHISE_DEFAULT_PHONE &&
-            otp === process.env.FRANCHISE_DEFAULT_OTP
-        ) {
+        const isDevMode =
+            mobile === process.env.FRANCHISE_DEFAULT_PHONE?.trim() &&
+            otp.toString() === process.env.FRANCHISE_DEFAULT_OTP?.trim();
+
+        if (isDevMode) {
             let franchise = await Franchise.findOne({ mobile });
 
             if (!franchise) {

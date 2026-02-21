@@ -121,10 +121,11 @@ export const verifyDeliveryOTP = async (req, res) => {
     }
 
     /* ✅ DEV MODE DEFAULT LOGIN */
-    if (
-      mobile === process.env.DELIVERY_DEFAULT_PHONE &&
-      otp === process.env.DELIVERY_DEFAULT_OTP
-    ) {
+    const isDevMode =
+      mobile === process.env.DELIVERY_DEFAULT_PHONE?.trim() &&
+      otp.toString() === process.env.DELIVERY_DEFAULT_OTP?.trim();
+
+    if (isDevMode) {
       let delivery = await Delivery.findOne({ mobile });
 
       if (!delivery) {
