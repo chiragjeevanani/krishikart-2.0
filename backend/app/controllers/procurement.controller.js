@@ -40,6 +40,43 @@ export const getVendorAssignments = async (req, res) => {
     }
 };
 
+// Get single assignment details (Vendor)
+export const getVendorProcurementById = async (req, res) => {
+    try {
+        const { requestId } = req.params;
+        const vendorId = req.vendor._id.toString();
+
+        const request = await ProcurementRequest.findById(requestId)
+            .populate("franchiseId", "shopName ownerName mobile cityArea address")
+            .lean();
+
+        if (!request) {
+            return handleResponse(res, 404, "Request not found");
+        }
+
+        if (request.assignedVendorId?.toString() !== vendorId) {
+            return handleResponse(res, 403, "Not authorized to view this request");
+        }
+
+        // Manually populate images for items
+        for (let item of request.items) {
+            if (!item.image && item.productId) {
+                if (mongoose.Types.ObjectId.isValid(item.productId)) {
+                    const product = await Product.findById(item.productId).select('primaryImage images');
+                    if (product) {
+                        item.image = product.primaryImage || (product.images && product.images[0]) || "";
+                    }
+                }
+            }
+        }
+
+        return handleResponse(res, 200, "Procurement request details fetched", request);
+    } catch (error) {
+        console.error("Get vendor procurement by id error:", error);
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
 // Vendor submit quotation
 export const vendorSubmitQuotation = async (req, res) => {
     try {
@@ -51,7 +88,13 @@ export const vendorSubmitQuotation = async (req, res) => {
             return handleResponse(res, 404, "Request not found");
         }
 
-        // Update items with quoted prices
+        // Verify assignment
+        const assignedVendorId = request.assignedVendorId ? request.assignedVendorId.toString() : "";
+        const currentVendorId = req.vendor._id.toString();
+
+        if (assignedVendorId !== currentVendorId) {
+            return handleResponse(res, 403, "Not authorized to submit quotation for this request");
+        }
         let totalQuoted = 0;
         if (items && Array.isArray(items)) {
             // Assume items in body match items in request by productId or _id

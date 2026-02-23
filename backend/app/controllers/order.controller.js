@@ -352,13 +352,7 @@ export const getFranchiseOrders = async (req, res) => {
         const franchiseId = req.franchise._id;
         const { date } = req.query;
 
-        let query = {
-            $or: [
-                { franchiseId: franchiseId },
-                { franchiseId: null },
-                { franchiseId: { $exists: false } }
-            ]
-        };
+        let query = { franchiseId: franchiseId };
 
         if (date) {
             const startOfDay = new Date(date);
@@ -418,8 +412,8 @@ export const getFranchiseOrderById = async (req, res) => {
             return handleResponse(res, 404, "Order not found");
         }
 
-        // Allow if order is unassigned (broadcast) OR assigned to this franchise
-        if (order.franchiseId && order.franchiseId.toString() !== franchiseId.toString()) {
+        // Allow only if assigned to this franchise
+        if (!order.franchiseId || order.franchiseId.toString() !== franchiseId.toString()) {
             return handleResponse(res, 403, "Not authorized to view this order");
         }
 
@@ -442,8 +436,8 @@ export const acceptFranchiseOrder = async (req, res) => {
             return handleResponse(res, 404, "Order not found");
         }
 
-        // Only allow accepting unassigned orders
-        if (order.franchiseId) {
+        // Only allow accepting if unassigned OR already assigned to this franchise (acknowledgment)
+        if (order.franchiseId && order.franchiseId.toString() !== franchiseId.toString()) {
             return handleResponse(res, 400, "Order already accepted by another franchise");
         }
 

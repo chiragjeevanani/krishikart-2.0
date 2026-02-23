@@ -48,30 +48,53 @@ export default function OrderDetailScreen() {
     const [quotedItems, setQuotedItems] = useState([]);
 
     useEffect(() => {
-        const timer = setTimeout(() => {
-            let foundOrder = location.state?.order;
-
-            if (foundOrder) {
-                // UI Fix: If status is 'assigned', treat it as 'requested' (requires quotation)
-                let currentStatus = foundOrder.status?.toLowerCase();
-                if (currentStatus === 'assigned') {
-                    currentStatus = 'requested';
+        const fetchOrder = async () => {
+            try {
+                const response = await api.get(`/procurement/vendor/${id}`);
+                if (response.data.success) {
+                    const foundOrder = response.data.results;
+                    let currentStatus = foundOrder.status?.toLowerCase();
+                    if (currentStatus === 'assigned') {
+                        currentStatus = 'requested';
+                    }
+                    setStatus(currentStatus);
+                    setOrder(foundOrder);
+                    setBidPrice(foundOrder.totalEstimatedAmount?.toString() || foundOrder.total?.toString() || '');
+                    if (foundOrder.items) {
+                        setQuotedItems(foundOrder.items.map(item => ({
+                            ...item,
+                            quotedPrice: item.quotedPrice || 0,
+                            image: item.image
+                        })));
+                    }
                 }
+            } catch (error) {
+                console.error("Failed to fetch order details", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
 
-                setStatus(currentStatus);
-                setOrder(foundOrder);
-                setBidPrice(foundOrder.totalEstimatedAmount?.toString() || foundOrder.total?.toString() || '');
-                if (foundOrder.items) {
-                    setQuotedItems(foundOrder.items.map(item => ({
-                        ...item,
-                        quotedPrice: item.quotedPrice || 0,
-                        image: item.image
-                    })));
-                }
+        if (location.state?.order) {
+            const foundOrder = location.state.order;
+            let currentStatus = foundOrder.status?.toLowerCase();
+            if (currentStatus === 'assigned') {
+                currentStatus = 'requested';
+            }
+            setStatus(currentStatus);
+            setOrder(foundOrder);
+            setBidPrice(foundOrder.totalEstimatedAmount?.toString() || foundOrder.total?.toString() || '');
+            if (foundOrder.items) {
+                setQuotedItems(foundOrder.items.map(item => ({
+                    ...item,
+                    quotedPrice: item.quotedPrice || 0,
+                    image: item.image
+                })));
             }
             setIsLoading(false);
-        }, 500);
-        return () => clearTimeout(timer);
+        } else {
+            fetchOrder();
+        }
     }, [id, location.state]);
 
     const handleAction = async (newStatus, callback) => {

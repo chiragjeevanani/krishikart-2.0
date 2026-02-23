@@ -5,6 +5,7 @@ import {
     getAllProcurementRequests,
     adminUpdateProcurementRequest,
     getVendorAssignments,
+    getVendorProcurementById,
     vendorSubmitQuotation,
     getVendorActiveDispatch,
     vendorUpdateStatus,
@@ -24,6 +25,7 @@ router.put("/franchise/:requestId/receive", protectFranchise, franchiseConfirmRe
 
 // Vendor Routes (View Assignment)
 router.get("/vendor/my-assignments", protectVendor, getVendorAssignments);
+router.get("/vendor/:requestId", protectVendor, getVendorProcurementById);
 router.get("/vendor/active-dispatch", protectVendor, getVendorActiveDispatch);
 router.post("/vendor/:requestId/quote", protectVendor, vendorSubmitQuotation);
 router.put("/vendor/:requestId/status", protectVendor, vendorUpdateStatus);

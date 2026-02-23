@@ -113,17 +113,15 @@ export default function OrdersScreen() {
 
     const tabs = [
         { id: 'new', label: 'New', icon: ShoppingBag },
-        { id: 'packing', label: 'Packing', icon: Zap },
-        { id: 'dispatch', label: 'Dispatch', icon: Truck },
+        { id: 'ready', label: 'Ready to Dispatch', icon: Zap },
         { id: 'completed', label: 'Completed', icon: History }
     ];
 
     const filteredOrders = allOrders.filter(order => {
         let matchesTab = false;
         const status = (order.orderStatus || order.status || '').toLowerCase();
-        if (activeTab === 'new') matchesTab = status === 'placed' && !order.franchiseId;
-        else if (activeTab === 'packing') matchesTab = status === 'placed' && !!order.franchiseId;
-        else if (activeTab === 'dispatch') matchesTab = ['packed', 'dispatched'].includes(status);
+        if (activeTab === 'new') matchesTab = status === 'placed';
+        else if (activeTab === 'ready') matchesTab = ['packed', 'dispatched'].includes(status);
         else if (activeTab === 'completed') matchesTab = ['delivered', 'received'].includes(status);
 
         const hotelName = order.hotelName || order.userId?.fullName || 'Unknown';
@@ -187,7 +185,7 @@ export default function OrdersScreen() {
             align: 'right',
             render: (_, row) => (
                 <div className="flex items-center justify-end gap-2">
-                    {activeTab === 'dispatch' && row.status === 'dispatched' && row.deliveryPartner && (
+                    {activeTab === 'ready' && row.status === 'dispatched' && row.deliveryPartner && (
                         <div className="flex items-center gap-2 mr-4 bg-emerald-50 px-2 py-1 rounded-sm border border-emerald-100">
                             <UserCircle2 size={12} className="text-emerald-600" />
                             <span className="text-[10px] font-bold text-emerald-700 uppercase">{row.deliveryPartner?.fullName}</span>
@@ -195,22 +193,14 @@ export default function OrdersScreen() {
                     )}
                     {activeTab === 'new' && (
                         <button
-                            onClick={() => handleAcceptOrder(row.id)}
+                            onClick={() => handleAction(row.id, 'Packed')}
                             disabled={processingOrderId === row.id}
                             className="p-1.5 px-3 text-xs font-bold uppercase text-emerald-600 border border-emerald-600 rounded-sm hover:bg-emerald-600 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {processingOrderId === row.id ? '...' : 'Accept'}
-                        </button>
-                    )}
-                    {activeTab === 'packing' && (
-                        <button
-                            onClick={() => handleAction(row.id, 'Packed')}
-                            className="p-1.5 px-3 text-xs font-bold uppercase text-blue-600 border border-blue-600 rounded-sm hover:bg-blue-600 hover:text-white transition-all"
                         >
                             Mark Packed
                         </button>
                     )}
-                    {activeTab === 'dispatch' && row.status === 'packed' && (
+                    {activeTab === 'ready' && row.status === 'packed' && (
                         <button
                             onClick={() => {
                                 setSelectedOrderForDispatch(row.id);
@@ -282,21 +272,21 @@ export default function OrdersScreen() {
                     icon={ShoppingBag}
                 />
                 <MetricRow
-                    label="Packing"
-                    value={stats.packing}
+                    label="Ready to Dispatch"
+                    value={stats.readyToDispatch}
                     change={0}
                     trend="up"
                     icon={CheckCircle2}
                 />
                 <MetricRow
-                    label="Ready to Dispatch"
-                    value={stats.dispatch}
+                    label="Out for Delivery"
+                    value={stats.outForDelivery}
                     change={0}
                     trend="up"
-                    icon={Clock}
+                    icon={Truck}
                 />
                 <MetricRow
-                    label="Completed Tasks"
+                    label="Completed"
                     value={stats.completedCount}
                     trend="Stable"
                     icon={History}

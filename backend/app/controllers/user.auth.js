@@ -1,5 +1,8 @@
 import User from "../models/user.js";
+import OTP from "../models/otp.js";
 import handleResponse from "../utils/helper.js";
+import { generateOTP, hashOTP, verifyHashedOTP } from "../utils/otpHelper.js";
+import { sendSMS } from "../utils/smsService.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
@@ -28,32 +31,47 @@ export const sendOTP = async (req, res) => {
     }
 
     const devPhone = process.env.USER_DEFAULT_PHONE?.trim();
-    // Prevent OTP spam (60 seconds cooldown)
-    if (
-      user.otpExpiresAt &&
-      user.otpExpiresAt > new Date(Date.now() + 4 * 60 * 1000) &&
-      mobile !== devPhone
-    ) {
-      return handleResponse(
-        res,
-        429,
-        "Please wait 60 seconds before requesting another OTP"
-      );
+
+    // Check if an OTP was recently sent (cooldown)
+    const existingOTP = await OTP.findOne({ mobile, role: "user" });
+    if (existingOTP && mobile !== devPhone) {
+      const timeDiff = (new Date() - existingOTP.updatedAt) / 1000;
+      if (timeDiff < 15) {
+        return handleResponse(
+          res,
+          429,
+          "Please wait 15 seconds before requesting another OTP"
+        );
+      }
     }
 
     // Generate OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = generateOTP();
+    const hashedOtp = await hashOTP(otp);
 
-    user.otp = otp;
-    user.otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 min
-    user.otpAttempts = 0;
+    // Save/Update OTP in database
+    await OTP.findOneAndUpdate(
+      { mobile, role: "user" },
+      {
+        otp: hashedOtp,
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000), // 5 min
+        verified: false,
+      },
+      { upsert: true, returnDocument: 'after' }
+    );
 
-    await user.save();
+    // Send SMS via SMS India API
+    const smsSent = await sendSMS(mobile, otp);
 
-    // ⚠️ SMS gateway yahan integrate hoga
-    console.log("OTP:", otp);
+    if (!smsSent && mobile !== devPhone) {
+      // Delete the OTP record if sending failed so they can retry immediately
+      await OTP.deleteOne({ mobile, role: "user" });
+      return handleResponse(res, 500, "Failed to send SMS. Please try again later.");
+    }
 
-    return handleResponse(res, 200, "OTP sent successfully");
+    // ❌ No console.log(otp)
+
+    return handleResponse(res, 200, "OTP sent successfully via SMS");
   } catch (error) {
     console.error(error);
     return handleResponse(res, 500, "Internal server error");
@@ -91,6 +109,9 @@ export const verifyOTP = async (req, res) => {
         { expiresIn: process.env.JWT_EXPIRES_IN }
       );
 
+      // Invalidate any existing OTP for this user
+      await OTP.deleteOne({ mobile, role: "user" });
+
       return handleResponse(res, 200, "Login successful (DEV MODE)", {
         token,
         user: {
@@ -103,32 +124,34 @@ export const verifyOTP = async (req, res) => {
     }
 
     /* 🔽 NORMAL OTP FLOW */
-    const user = await User.findOne({ mobile });
+    const otpRecord = await OTP.findOne({ mobile, role: "user" });
+
+    if (!otpRecord) {
+      return handleResponse(res, 404, "OTP not found or expired");
+    }
+
+    if (otpRecord.expiresAt < new Date()) {
+      await OTP.deleteOne({ mobile, role: "user" });
+      return handleResponse(res, 400, "OTP expired");
+    }
+
+    const isMatch = await verifyHashedOTP(otp, otpRecord.otp);
+
+    if (!isMatch) {
+      return handleResponse(res, 400, "Invalid OTP");
+    }
+
+    let user = await User.findOne({ mobile });
 
     if (!user) {
       return handleResponse(res, 404, "User not found");
     }
 
-    if (user.otpExpiresAt < new Date()) {
-      return handleResponse(res, 400, "OTP expired");
-    }
-
-    if (user.otpAttempts >= 5) {
-      return handleResponse(res, 429, "Too many invalid attempts");
-    }
-
-    if (user.otp !== otp) {
-      user.otpAttempts += 1;
-      await user.save();
-      return handleResponse(res, 400, "Invalid OTP");
-    }
-
     user.isVerified = true;
-    user.otp = null;
-    user.otpExpiresAt = null;
-    user.otpAttempts = 0;
-
     await user.save();
+
+    // Delete OTP record after successful verification
+    await OTP.deleteOne({ mobile, role: "user" });
 
     const token = jwt.sign(
       { id: user._id, role: "user" },
@@ -232,14 +255,20 @@ export const forgotPassword = async (req, res) => {
     if (!user)
       return handleResponse(res, 404, "User not found");
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = generateOTP();
+    const hashedOtp = await hashOTP(otp);
 
-    user.otp = otp;
-    user.otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
-    user.otpAttempts = 0;
-    await user.save();
+    await OTP.findOneAndUpdate(
+      { mobile, role: "user" },
+      {
+        otp: hashedOtp,
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+        verified: false
+      },
+      { upsert: true }
+    );
 
-    console.log("Forgot OTP:", otp);
+    await sendSMS(mobile, otp);
 
     return handleResponse(res, 200, "OTP sent for password reset");
   } catch (error) {
@@ -259,17 +288,21 @@ export const resetPassword = async (req, res) => {
     if (!user)
       return handleResponse(res, 404, "User not found");
 
-    if (user.otp !== otp)
+    const otpRecord = await OTP.findOne({ mobile, role: "user" });
+    if (!otpRecord)
+      return handleResponse(res, 400, "OTP not found or expired");
+
+    const isMatch = await verifyHashedOTP(otp, otpRecord.otp);
+    if (!isMatch)
       return handleResponse(res, 400, "Invalid OTP");
 
-    if (user.otpExpiresAt < new Date())
+    if (otpRecord.expiresAt < new Date())
       return handleResponse(res, 400, "OTP expired");
 
     user.password = await bcrypt.hash(newPassword, 10);
-    user.otp = null;
-    user.otpExpiresAt = null;
-
     await user.save();
+
+    await OTP.deleteOne({ mobile, role: "user" });
 
     return handleResponse(res, 200, "Password reset successful");
   } catch (error) {

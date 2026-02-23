@@ -10,7 +10,7 @@ export default function ForgotPasswordScreen() {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [step, setStep] = useState(1); // 1: Email, 2: OTP & New Password
-    const [email, setEmail] = useState('');
+    const [mobile, setMobile] = useState('');
     const [otp, setOtp] = useState('');
     const [newPassword, setNewPassword] = useState('');
 
@@ -18,8 +18,7 @@ export default function ForgotPasswordScreen() {
         e.preventDefault();
         setIsLoading(true);
         try {
-            const response = await api.post('/vendor/forgot-password', { email });
-            console.log('OTP sent:', response.data.otp); // For testing visibility
+            await api.post('/vendor/forgot-password', { mobile });
             setStep(2);
         } catch (error) {
             console.error(error);
@@ -33,7 +32,12 @@ export default function ForgotPasswordScreen() {
         e.preventDefault();
         setIsLoading(true);
         try {
-            await api.post('/vendor/reset-password', { email, token: otp, newPassword, confirmPassword: newPassword });
+            await api.post('/vendor/reset-password', {
+                mobile,
+                otp,
+                newPassword,
+                confirmPassword: newPassword
+            });
             alert('Password reset successful! Please login.');
             navigate('/vendor/login');
         } catch (error) {
@@ -93,8 +97,8 @@ export default function ForgotPasswordScreen() {
                     </h1>
                     <p className="text-slate-500 font-medium mt-2">
                         {step === 1
-                            ? "Enter your email to receive a recovery code"
-                            : "Enter the code sent to your email"}
+                            ? "Enter your mobile number to receive a recovery code"
+                            : "Enter the code sent to your mobile"}
                     </p>
                 </div>
 
@@ -109,17 +113,17 @@ export default function ForgotPasswordScreen() {
                             className="space-y-5"
                         >
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mobile Number</label>
                                 <div className="relative group">
                                     <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">
                                         <Mail size={18} />
                                     </div>
                                     <input
-                                        type="email"
+                                        type="tel"
                                         required
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        placeholder="vendor@krishikart.com"
+                                        value={mobile}
+                                        onChange={(e) => setMobile(e.target.value)}
+                                        placeholder="+91 98765 43210"
                                         className="w-full bg-slate-50 border-none rounded-2xl py-4 pl-14 pr-6 outline-none text-sm font-bold focus:ring-4 focus:ring-primary/5 transition-all text-slate-900"
                                     />
                                 </div>

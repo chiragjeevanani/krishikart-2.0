@@ -1,8 +1,10 @@
 import Vendor from "../models/vendor.js";
+import OTP from "../models/otp.js";
 import handleResponse from "../utils/helper.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
+import { sendSMS } from "../utils/smsService.js";
 import crypto from "crypto";
 
 /* 🔐 TOKEN */
@@ -212,12 +214,12 @@ export const changeVendorPassword = async (req, res) => {
 /* ================= FORGOT PASSWORD ================= */
 export const forgotVendorPassword = async (req, res) => {
     try {
-        const { email } = req.body;
+        const { mobile } = req.body;
 
-        if (!email)
-            return handleResponse(res, 400, "Email is required");
+        if (!mobile)
+            return handleResponse(res, 400, "Mobile number is required");
 
-        const vendor = await Vendor.findOne({ email });
+        const vendor = await Vendor.findOne({ mobile });
 
         if (!vendor)
             return handleResponse(res, 404, "Vendor not found");
@@ -225,26 +227,27 @@ export const forgotVendorPassword = async (req, res) => {
         if (vendor.status === "blocked")
             return handleResponse(res, 403, "Account blocked");
 
-        // generate OTP
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const hashedOtp = await bcrypt.hash(otp, 10);
 
-        vendor.resetPasswordToken = crypto
-            .createHash("sha256")
-            .update(otp)
-            .digest("hex");
+        await OTP.findOneAndUpdate(
+            { mobile, role: "vendor" },
+            {
+                otp: hashedOtp,
+                expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+                verified: false
+            },
+            { upsert: true }
+        );
 
-        vendor.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // 15 min
+        const smsSent = await sendSMS(mobile, otp);
 
-        await vendor.save();
+        if (!smsSent) {
+            await OTP.deleteOne({ mobile, role: "vendor" });
+            return handleResponse(res, 500, "Failed to send SMS. Please try again.");
+        }
 
-        console.log("Vendor Reset OTP:", otp);
-
-        // 📧 send email here
-        // await sendEmail(vendor.email, otp);
-
-        return handleResponse(res, 200, "Reset OTP sent to email", {
-            otp, // ❌ remove in production, useful for testing
-        });
+        return handleResponse(res, 200, "Reset OTP sent to your mobile number");
     } catch (err) {
         console.error(err);
         return handleResponse(res, 500, "Server error");
@@ -253,10 +256,10 @@ export const forgotVendorPassword = async (req, res) => {
 /* ================= RESET PASSWORD ================= */
 export const resetVendorPassword = async (req, res) => {
     try {
-        const { email, token, newPassword, confirmPassword } = req.body;
+        const { mobile, otp, newPassword, confirmPassword } = req.body;
 
-        if (!email || !token || !newPassword || !confirmPassword)
-            return handleResponse(res, 400, "All fields required (including email)");
+        if (!mobile || !otp || !newPassword || !confirmPassword)
+            return handleResponse(res, 400, "All fields required");
 
         if (newPassword !== confirmPassword)
             return handleResponse(res, 400, "Passwords do not match");
@@ -264,32 +267,27 @@ export const resetVendorPassword = async (req, res) => {
         if (newPassword.length < 8)
             return handleResponse(res, 400, "Password must be at least 8 characters");
 
-        const vendor = await Vendor.findOne({ email });
+        const vendor = await Vendor.findOne({ mobile });
 
         if (!vendor) return handleResponse(res, 404, "Vendor not found");
 
-        const hashedToken = crypto
-            .createHash("sha256")
-            .update(token)
-            .digest("hex");
+        const otpRecord = await OTP.findOne({ mobile, role: "vendor" });
+        if (!otpRecord)
+            return handleResponse(res, 400, "OTP not found or expired");
 
-        console.log("Input Token:", token);
-        console.log("Input Hash:", hashedToken);
-        console.log("Stored Hash:", vendor.resetPasswordToken);
-        console.log("Expiry:", vendor.resetPasswordExpires);
-        console.log("Now:", new Date());
+        if (otpRecord.expiresAt < new Date()) {
+            await OTP.deleteOne({ mobile: mobile, role: "vendor" });
+            return handleResponse(res, 400, "OTP expired");
+        }
 
-        if (vendor.resetPasswordToken !== hashedToken)
+        const isMatch = await bcrypt.compare(otp, otpRecord.otp);
+        if (!isMatch)
             return handleResponse(res, 400, "Invalid OTP");
 
-        if (vendor.resetPasswordExpires < Date.now())
-            return handleResponse(res, 400, "OTP expired");
-
         vendor.password = await bcrypt.hash(newPassword, 10);
-        vendor.resetPasswordToken = null;
-        vendor.resetPasswordExpires = null;
-
         await vendor.save();
+
+        await OTP.deleteOne({ mobile: mobile, role: "vendor" });
 
         return handleResponse(res, 200, "Password reset successful");
     } catch (err) {

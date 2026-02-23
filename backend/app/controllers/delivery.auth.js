@@ -1,5 +1,8 @@
 import Delivery from "../models/delivery.js";
+import OTP from "../models/otp.js";
 import handleResponse from "../utils/helper.js";
+import { generateOTP, hashOTP, verifyHashedOTP } from "../utils/otpHelper.js";
+import { sendSMS } from "../utils/smsService.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
@@ -38,19 +41,41 @@ export const registerDelivery = async (req, res) => {
       });
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const devPhone = process.env.DELIVERY_DEFAULT_PHONE?.trim();
+    // Check if an OTP was recently sent (cooldown)
+    const existingOTP = await OTP.findOne({ mobile, role: "delivery" });
+    if (existingOTP && mobile !== devPhone) {
+      const timeDiff = (new Date() - existingOTP.updatedAt) / 1000;
+      if (timeDiff < 15) {
+        return handleResponse(res, 429, "Wait 15 seconds before requesting another OTP");
+      }
+    }
 
-    delivery.otp = otp;
-    delivery.otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
-    delivery.otpAttempts = 0;
+    const otp = generateOTP();
+    const hashedOtp = await hashOTP(otp);
 
-    await delivery.save();
+    await OTP.findOneAndUpdate(
+      { mobile, role: "delivery" },
+      {
+        otp: hashedOtp,
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+        verified: false,
+      },
+      { upsert: true, returnDocument: 'after' }
+    );
 
-    console.log("Delivery Register OTP:", otp);
+    const smsSent = await sendSMS(mobile, otp);
 
-    return handleResponse(res, 200, "OTP sent for registration");
+    if (!smsSent && mobile !== devPhone) {
+      // Delete the OTP record if sending failed so they can retry immediately
+      await OTP.deleteOne({ mobile, role: "delivery" });
+      return handleResponse(res, 500, "Failed to send SMS. Please try again later.");
+    }
+
+    return handleResponse(res, 200, "OTP sent for registration via SMS");
   } catch (err) {
-    return handleResponse(res, 500, "Server error");
+    console.error("Delivery Register Error:", err);
+    return handleResponse(res, 500, "Server error: " + err.message);
   }
 };
 
@@ -90,26 +115,34 @@ export const sendDeliveryOTP = async (req, res) => {
     if (delivery.status === "blocked")
       return handleResponse(res, 403, "Delivery partner blocked");
 
-    if (
-      delivery.otpExpiresAt &&
-      delivery.otpExpiresAt > new Date(Date.now() - 60 * 1000) &&
-      mobile !== devPhone
-    ) {
-      return handleResponse(res, 429, "Wait before requesting OTP");
+    // Check if an OTP was recently sent (cooldown)
+    const existingOTP = await OTP.findOne({ mobile, role: "delivery" });
+    if (existingOTP && mobile !== devPhone) {
+      const timeDiff = (new Date() - existingOTP.updatedAt) / 1000;
+      if (timeDiff < 15) {
+        return handleResponse(res, 429, "Wait 15 seconds before requesting another OTP");
+      }
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = generateOTP();
+    const hashedOtp = await hashOTP(otp);
 
-    delivery.otp = otp;
-    delivery.otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
-    delivery.otpAttempts = 0;
+    await OTP.findOneAndUpdate(
+      { mobile, role: "delivery" },
+      {
+        otp: hashedOtp,
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+        verified: false,
+      },
+      { upsert: true }
+    );
 
-    await delivery.save();
+    await sendSMS(mobile, otp);
 
-    console.log("Delivery OTP:", otp);
-
-    return handleResponse(res, 200, "OTP sent");
+    return handleResponse(res, 200, "OTP sent via SMS");
   } catch (err) {
+    // Cleanup OTP record on error if it was created
+    await OTP.deleteOne({ mobile: req.body.mobile, role: "delivery" });
     return handleResponse(res, 500, "Server error");
   }
 };
@@ -144,6 +177,9 @@ export const verifyDeliveryOTP = async (req, res) => {
 
       const token = generateToken(delivery._id);
 
+      // Invalidate any existing OTP
+      await OTP.deleteOne({ mobile, role: "delivery" });
+
       return handleResponse(res, 200, "Delivery login successful (DEV MODE)", {
         token,
         id: delivery._id,
@@ -153,6 +189,22 @@ export const verifyDeliveryOTP = async (req, res) => {
     }
 
     /* 🔽 NORMAL OTP FLOW */
+    const otpRecord = await OTP.findOne({ mobile, role: "delivery" });
+
+    if (!otpRecord)
+      return handleResponse(res, 404, "OTP not found or expired");
+
+    if (otpRecord.expiresAt < new Date()) {
+      await OTP.deleteOne({ mobile, role: "delivery" });
+      return handleResponse(res, 400, "OTP expired");
+    }
+
+    const isMatch = await verifyHashedOTP(otp, otpRecord.otp);
+
+    if (!isMatch) {
+      return handleResponse(res, 400, "Invalid OTP");
+    }
+
     const delivery = await Delivery.findOne({ mobile });
 
     if (!delivery)
@@ -161,23 +213,11 @@ export const verifyDeliveryOTP = async (req, res) => {
     if (delivery.status === "blocked")
       return handleResponse(res, 403, "Delivery partner blocked");
 
-    if (delivery.otpExpiresAt < new Date())
-      return handleResponse(res, 400, "OTP expired");
-
-    if (delivery.otpAttempts >= 5)
-      return handleResponse(res, 429, "Too many attempts");
-
-    if (delivery.otp !== otp) {
-      delivery.otpAttempts += 1;
-      await delivery.save();
-      return handleResponse(res, 400, "Invalid OTP");
-    }
-
     delivery.isVerified = true;
-    delivery.otp = null;
-    delivery.otpExpiresAt = null;
-    delivery.otpAttempts = 0;
     await delivery.save();
+
+    // Delete OTP record after successful verification
+    await OTP.deleteOne({ mobile, role: "delivery" });
 
     const token = generateToken(delivery._id);
 
@@ -211,17 +251,22 @@ export const forgotDeliveryPassword = async (req, res) => {
     if (!delivery)
       return handleResponse(res, 404, "Delivery user not found");
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = generateOTP();
+    const hashedOtp = await hashOTP(otp);
 
-    delivery.otp = otp;
-    delivery.otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
-    delivery.otpAttempts = 0;
+    await OTP.findOneAndUpdate(
+      { mobile, role: "delivery" },
+      {
+        otp: hashedOtp,
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+        verified: false,
+      },
+      { upsert: true }
+    );
 
-    await delivery.save();
+    await sendSMS(mobile, otp);
 
-    console.log("Forgot Password OTP:", otp);
-
-    return handleResponse(res, 200, "OTP sent for password reset");
+    return handleResponse(res, 200, "OTP sent for password reset via SMS");
   } catch (err) {
     return handleResponse(res, 500, "Server error");
   }
@@ -240,17 +285,21 @@ export const resetDeliveryPassword = async (req, res) => {
     if (!delivery)
       return handleResponse(res, 404, "Delivery user not found");
 
-    if (delivery.otp !== otp)
+    const otpRecord = await OTP.findOne({ mobile, role: "delivery" });
+    if (!otpRecord)
+      return handleResponse(res, 400, "OTP not found or expired");
+
+    const isMatch = await verifyHashedOTP(otp, otpRecord.otp);
+    if (!isMatch)
       return handleResponse(res, 400, "Invalid OTP");
 
-    if (delivery.otpExpiresAt < new Date())
+    if (otpRecord.expiresAt < new Date())
       return handleResponse(res, 400, "OTP expired");
 
     delivery.password = await bcrypt.hash(newPassword, 10);
-    delivery.otp = null;
-    delivery.otpExpiresAt = null;
-
     await delivery.save();
+
+    await OTP.deleteOne({ mobile, role: "delivery" });
 
     return handleResponse(res, 200, "Password reset successful");
   } catch (err) {

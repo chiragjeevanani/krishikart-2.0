@@ -1,6 +1,9 @@
 import Franchise from "../models/franchise.js";
+import OTP from "../models/otp.js";
 import handleResponse from "../utils/helper.js";
 import { geocodeAddress } from "../utils/geo.js";
+import { generateOTP, hashOTP, verifyHashedOTP } from "../utils/otpHelper.js";
+import { sendSMS } from "../utils/smsService.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 
@@ -14,6 +17,13 @@ const generateToken = (id) =>
 export const registerFranchise = async (req, res) => {
     try {
         const { franchiseName, ownerName, mobile, city, area, state } = req.body;
+
+        if (!franchiseName || !ownerName || !mobile || !city || !state) {
+            return handleResponse(res, 400, "All fields are required");
+        }
+
+        if (!/^[6-9]\d{9}$/.test(mobile))
+            return handleResponse(res, 400, "Invalid mobile number");
 
         let franchise = await Franchise.findOne({ mobile });
 
@@ -35,19 +45,41 @@ export const registerFranchise = async (req, res) => {
             });
         }
 
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const devPhone = process.env.FRANCHISE_DEFAULT_PHONE?.trim();
+        // Check if an OTP was recently sent (cooldown)
+        const existingOTP = await OTP.findOne({ mobile, role: "franchise" });
+        if (existingOTP && mobile !== devPhone) {
+            const timeDiff = (new Date() - existingOTP.updatedAt) / 1000;
+            if (timeDiff < 15) {
+                return handleResponse(res, 429, "Wait 15 seconds before requesting another OTP");
+            }
+        }
 
-        franchise.otp = otp;
-        franchise.otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
-        franchise.otpAttempts = 0;
+        const otp = generateOTP();
+        const hashedOtp = await hashOTP(otp);
 
-        await franchise.save();
+        await OTP.findOneAndUpdate(
+            { mobile, role: "franchise" },
+            {
+                otp: hashedOtp,
+                expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+                verified: false,
+            },
+            { upsert: true, returnDocument: 'after' }
+        );
 
-        console.log("Franchise Register OTP:", otp);
+        const smsSent = await sendSMS(mobile, otp);
 
-        return handleResponse(res, 200, "OTP sent for registration");
+        if (!smsSent && mobile !== devPhone) {
+            // Delete the OTP record if sending failed so they can retry immediately
+            await OTP.deleteOne({ mobile, role: "franchise" });
+            return handleResponse(res, 500, "Failed to send SMS. Please try again later.");
+        }
+
+        return handleResponse(res, 200, "OTP sent for registration via SMS");
     } catch (err) {
-        return handleResponse(res, 500, "Server error");
+        console.error("Register Error:", err);
+        return handleResponse(res, 500, "Server error: " + err.message);
     }
 };
 
@@ -58,11 +90,16 @@ export const sendFranchiseOTP = async (req, res) => {
 
         if (!mobile) return handleResponse(res, 400, "Mobile number required");
 
-        const franchise = await Franchise.findOne({ mobile });
+        if (!/^[6-9]\d{9}$/.test(mobile))
+            return handleResponse(res, 400, "Invalid mobile number");
+
+        let franchise = await Franchise.findOne({ mobile });
+
+        const devPhone = process.env.FRANCHISE_DEFAULT_PHONE?.trim();
 
         if (!franchise) {
             // ✅ Allow Auto-Register for DEV MODE Number
-            if (mobile === process.env.FRANCHISE_DEFAULT_PHONE) {
+            if (mobile === devPhone) {
                 franchise = await Franchise.create({
                     mobile,
                     franchiseName: "Dev Franchise",
@@ -72,27 +109,49 @@ export const sendFranchiseOTP = async (req, res) => {
                     status: "active",
                 });
             } else {
-                return handleResponse(res, 404, "Franchise not found");
+                return handleResponse(res, 404, "Franchise not found. Please register first.");
             }
         }
 
         if (franchise.status === "blocked")
             return handleResponse(res, 403, "Account blocked");
 
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        // Check if an OTP was recently sent (cooldown)
+        const existingOTP = await OTP.findOne({ mobile, role: "franchise" });
+        if (existingOTP && mobile !== devPhone) {
+            const timeDiff = (new Date() - existingOTP.updatedAt) / 1000;
+            if (timeDiff < 15) {
+                return handleResponse(res, 429, "Wait 15 seconds before requesting another OTP");
+            }
+        }
 
-        franchise.otp = otp;
-        franchise.otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 min
-        franchise.otpAttempts = 0;
+        const otp = generateOTP();
+        const hashedOtp = await hashOTP(otp);
 
-        await franchise.save();
+        await OTP.findOneAndUpdate(
+            { mobile, role: "franchise" },
+            {
+                otp: hashedOtp,
+                expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+                verified: false,
+            },
+            { upsert: true, returnDocument: 'after' }
+        );
 
-        console.log("Franchise Login OTP:", otp);
+        const smsSent = await sendSMS(mobile, otp);
 
-        return handleResponse(res, 200, "OTP sent for login");
+        if (!smsSent && mobile !== devPhone) {
+            // Delete the OTP record if sending failed so they can retry immediately
+            await OTP.deleteOne({ mobile, role: "franchise" });
+            return handleResponse(res, 500, "Failed to send SMS. Please try again later.");
+        }
+
+        return handleResponse(res, 200, "OTP sent for login via SMS");
     } catch (err) {
+        // Cleanup on error
+        await OTP.deleteOne({ mobile: req.body.mobile, role: "franchise" });
         console.error(err);
-        return handleResponse(res, 500, "Server error");
+        return handleResponse(res, 500, "Server error: " + err.message);
     }
 };
 
@@ -129,6 +188,9 @@ export const verifyFranchiseOTP = async (req, res) => {
             const franchiseObj = franchise.toObject();
             delete franchiseObj.password;
 
+            // Invalidate any existing OTP
+            await OTP.deleteOne({ mobile, role: "franchise" });
+
             return handleResponse(res, 200, "Login successful (DEV MODE)", {
                 ...franchiseObj,
                 token
@@ -136,6 +198,21 @@ export const verifyFranchiseOTP = async (req, res) => {
         }
 
         /* 🔽 NORMAL OTP FLOW */
+        const otpRecord = await OTP.findOne({ mobile, role: "franchise" });
+        if (!otpRecord)
+            return handleResponse(res, 404, "OTP not found or expired");
+
+        if (otpRecord.expiresAt < new Date()) {
+            await OTP.deleteOne({ mobile, role: "franchise" });
+            return handleResponse(res, 400, "OTP expired");
+        }
+
+        const isMatch = await verifyHashedOTP(otp, otpRecord.otp);
+
+        if (!isMatch) {
+            return handleResponse(res, 400, "Invalid OTP");
+        }
+
         const franchise = await Franchise.findOne({ mobile });
         if (!franchise)
             return handleResponse(res, 404, "Franchise not found");
@@ -143,28 +220,16 @@ export const verifyFranchiseOTP = async (req, res) => {
         if (franchise.status === "blocked")
             return handleResponse(res, 403, "Account blocked");
 
-        if (franchise.otpExpiresAt < new Date())
-            return handleResponse(res, 400, "OTP expired");
-
-        if (franchise.otpAttempts >= 5)
-            return handleResponse(res, 429, "Too many attempts");
-
-        if (franchise.otp !== otp) {
-            franchise.otpAttempts += 1;
-            await franchise.save();
-            return handleResponse(res, 400, "Invalid OTP");
-        }
-
         franchise.isVerified = true;
-        franchise.otp = null;
-        franchise.otpExpiresAt = null;
-        franchise.otpAttempts = 0;
 
         if (franchise.status === "pending") {
-            franchise.status = "active"; // or keep pending for admin approval
+            franchise.status = "active";
         }
 
         await franchise.save();
+
+        // Delete OTP record after successful verification
+        await OTP.deleteOne({ mobile, role: "franchise" });
 
         const token = generateToken(franchise._id);
 
