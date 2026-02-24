@@ -70,9 +70,7 @@ export default function OrdersScreen() {
         const order = allOrders.find(o => o.id === orderId);
         if (!order) return;
 
-        // Stock Validation Logic (Simplified for UI display)
-        // Stock Validation Logic (Simplified for UI display)
-        if (newStatus === 'Packed' || newStatus === 'Dispatched') {
+        if (newStatus === 'Dispatched') {
             const itemsToValidate = order.items.map(i => ({
                 id: i.id || i.productId,
                 qty: i.quantity || i.qty,

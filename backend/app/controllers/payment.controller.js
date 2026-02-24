@@ -208,7 +208,7 @@ export const verifyPayment = async (req, res) => {
         console.log("Creating order in database...");
         const newOrder = new Order({
             userId,
-            franchiseId,
+            franchiseId: assignedFranchiseId,
             items: orderItems,
             subtotal,
             deliveryFee,
