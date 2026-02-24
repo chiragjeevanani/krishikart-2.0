@@ -26,7 +26,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import StatusBadge from '../common/StatusBadge';
 
-const OrderDetailModal = ({ isOpen, onClose, orderId }) => {
+const OrderDetailModal = ({ isOpen, onClose, orderId, onProcure }) => {
     const [order, setOrder] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -188,6 +188,12 @@ const OrderDetailModal = ({ isOpen, onClose, orderId }) => {
                                                                     <div className="w-0.5 h-0.5 rounded-full bg-slate-300" />
                                                                     <span>₹{item.price?.toLocaleString()} / unit</span>
                                                                 </div>
+                                                                {item.isShortage && (
+                                                                    <div className="mt-1.5 flex items-center gap-1.5 text-rose-600 font-black text-[8px] uppercase tracking-[0.1em] bg-rose-50 px-2 py-0.5 rounded-sm border border-rose-100 w-fit animate-pulse">
+                                                                        <AlertCircle size={10} />
+                                                                        Shortage: {item.shortageQty} {item.unit}
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                             <div className="text-right">
                                                                 <div className="text-[11px] font-black text-slate-900 tabular-nums">
@@ -198,6 +204,18 @@ const OrderDetailModal = ({ isOpen, onClose, orderId }) => {
                                                     ))}
                                                 </div>
                                                 <div className="bg-slate-900 p-6 flex flex-col gap-3">
+                                                    {order.items?.some(i => i.isShortage) && (
+                                                        <button
+                                                            onClick={() => {
+                                                                onClose();
+                                                                onProcure?.(order);
+                                                            }}
+                                                            className="mb-4 w-full bg-amber-500 hover:bg-amber-600 text-slate-900 py-3 rounded-sm text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)]"
+                                                        >
+                                                            <Package size={16} />
+                                                            Procure Shortage Items
+                                                        </button>
+                                                    )}
                                                     <div className="flex items-center justify-between text-slate-400 text-[10px] font-black uppercase tracking-widest">
                                                         <span>Subtotal</span>
                                                         <span className="tabular-nums">₹{order.subtotal?.toLocaleString()}</span>

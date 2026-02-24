@@ -14,6 +14,10 @@ export function FranchiseOrdersProvider({ children }) {
         try {
             const response = await api.get('/orders/franchise/all');
             if (response.data.success) {
+                console.log('Franchise Orders API sync:', response.data.results);
+                // Log unique statuses to debug filtering
+                const statuses = [...new Set(response.data.results.map(o => o.orderStatus))];
+                console.log('Available order statuses in DB:', statuses);
                 setLiveOrders(response.data.results || []);
             }
         } catch (error) {
@@ -37,34 +41,51 @@ export function FranchiseOrdersProvider({ children }) {
     useEffect(() => {
         fetchOrders();
         fetchDeliveryPartners();
+
+        // Auto-poll for new orders every 30 seconds
+        const pollInterval = setInterval(() => {
+            fetchOrders();
+        }, 30000);
+
+        return () => clearInterval(pollInterval);
     }, []);
 
     // Computed combined orders with mapping
     const orders = useMemo(() => {
         return liveOrders.map(o => ({
             id: o._id,
-            hotelName: o.userId?.fullName || o.user?.fullName || 'Guest User',
-            hotelImage: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&q=80",
-            status: o.orderStatus?.toLowerCase() || 'placed',
+            hotelName: o.userId?.legalEntityName || o.userId?.fullName || o.user?.legalEntityName || o.user?.fullName || 'Guest User',
+            hotelImage: (o.items && o.items[0]?.image) || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&q=80",
+            status: (o.orderStatus || '').toLowerCase() || 'placed',
             total: o.totalAmount,
             items: (o.items || []).map(i => ({
                 id: i.productId || i.product,
                 productId: i.productId || i.product,
-                name: i.name,
-                quantity: i.quantity,
-                qty: i.quantity,
-                unit: i.unit || 'units'
+                name: i.name || 'Unnamed Product',
+                image: i.image,
+                quantity: i.quantity || 0,
+                qty: i.quantity || 0,
+                unit: i.unit || 'units',
+                price: i.price || 0,
+                subtotal: i.subtotal || 0
             })),
             address: o.userId?.address || o.user?.address || o.shippingAddress || 'Address not provided',
-            deliveryTime: "30 mins",
+            deliveryTime: "30-45 mins",
             deliverySlot: o.deliverySlot || "Standard",
             paymentMode: o.paymentMethod || "Prepaid",
-            timeline: [{ status: 'Order Placed', time: o.createdAt, completed: true }],
+            timeline: [
+                { status: 'Order Placed', time: o.time || 'N/A', completed: true },
+                ...(o.statusHistory || []).map(h => ({
+                    status: h.status,
+                    time: h.updatedAt || o.time,
+                    completed: true
+                }))
+            ].sort((a, b) => new Date(a.time) - new Date(b.time)),
             date: o.date,
             time: o.time,
-            franchiseId: o.franchiseId,
+            franchiseId: o.franchiseId || o.franchise || null,
             deliveryPartnerId: o.deliveryPartnerId?._id || o.deliveryPartnerId,
-            deliveryPartner: o.deliveryPartnerId, // Will contain populated object if fetched with populate
+            deliveryPartner: o.deliveryPartnerId,
             statusHistory: o.statusHistory || []
         }));
     }, [liveOrders]);
@@ -138,10 +159,10 @@ export function FranchiseOrdersProvider({ children }) {
                     if (response.data.success) {
                         return response.data.results.map(o => ({
                             id: o._id,
-                            hotelName: o.userId?.fullName || 'Guest User',
-                            status: o.orderStatus?.toLowerCase() || 'new',
+                            hotelName: o.userId?.fullName || o.user?.fullName || 'Guest User',
+                            status: (o.orderStatus || '').toLowerCase() || 'new',
                             total: o.totalAmount,
-                            items: o.items,
+                            items: o.items || [],
                             date: o.date,
                             time: o.time
                         }));

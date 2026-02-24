@@ -52,10 +52,6 @@ export default function HomeScreen() {
                 ])
                 if (catRes.data.success) setCategories(catRes.data.results)
                 if (prodRes.data.success) setProducts(prodRes.data.results)
-
-                if (catRes.data.success) setCategories(catRes.data.results)
-                if (prodRes.data.success) setProducts(prodRes.data.results)
-                if (franRes.data.success) setFranchises(franRes.data.results)
             } catch (error) {
                 console.error('Error in home data initialization:', error)
             } finally {

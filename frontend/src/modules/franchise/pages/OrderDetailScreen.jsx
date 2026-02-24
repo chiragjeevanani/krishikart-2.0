@@ -51,23 +51,24 @@ export default function OrderDetailScreen() {
                 console.log('Fields:', { subtotal: o.subtotal, deliveryFee: o.deliveryFee, tax: o.tax, total: o.totalAmount, paymentStatus: o.paymentStatus });
                 setOrder({
                     id: o._id,
-                    customer: o.userId?.fullName || 'Guest Client',
-                    mobile: o.userId?.mobile || 'N/A',
+                    customer: o.userId?.legalEntityName || o.userId?.fullName || o.user?.legalEntityName || o.user?.fullName || 'Guest Client',
+                    mobile: o.userId?.mobile || o.user?.mobile || 'N/A',
                     address: o.shippingAddress || o.userId?.address || 'N/A',
                     total: o.totalAmount,
                     subtotal: o.subtotal,
                     deliveryFee: o.deliveryFee,
                     tax: o.tax,
-                    status: o.orderStatus?.toLowerCase() || 'pending',
-                    items: o.items.map(i => ({
+                    status: (o.orderStatus || '').toLowerCase() || 'pending',
+                    items: (o.items || []).map(i => ({
                         name: i.name,
                         quantity: i.quantity,
                         price: i.price,
                     })),
                     createdAt: o.createdAt,
+                    time: o.time,
                     paymentMethod: o.paymentMethod,
                     paymentStatus: o.paymentStatus || 'Pending',
-                    franchiseId: o.franchiseId
+                    franchiseId: o.franchiseId || o.franchise
                 });
             }
         } catch (error) {
@@ -127,11 +128,11 @@ export default function OrderDetailScreen() {
     }
 
     const timeline = [
-        { status: 'Order Placed', time: order.createdAt ? new Date(order.createdAt).toLocaleTimeString() : '--', desc: 'Order received by system', active: true },
-        { status: 'Accepted', time: '--', desc: 'Franchise accepted the order', active: order.status !== 'new' },
+        { status: 'Order Placed', time: order.time || (order.createdAt ? new Date(order.createdAt).toLocaleTimeString() : '--'), desc: 'Order received by system', active: true },
+        { status: 'Accepted', time: '--', desc: 'Franchise accepted the order', active: !['new', 'placed', 'pending'].includes(order.status) },
         { status: 'Processing', time: '--', desc: 'Order is being prepared', active: ['packed', 'dispatched', 'delivered', 'received'].includes(order.status) },
         { status: 'Dispatch', time: '--', desc: 'Out for delivery', active: ['dispatched', 'delivered', 'received'].includes(order.status) },
-        { status: 'Delivered', time: '--', desc: 'Order delivered successfully', active: ['delivered', 'received'].includes(order.status) }
+        { status: 'Delivered', time: '--', desc: 'Order delivered successfully', active: ['delivered', 'received', 'completed'].includes(order.status) }
     ];
 
     return (

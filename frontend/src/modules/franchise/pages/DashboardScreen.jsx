@@ -31,6 +31,7 @@ import { useCOD } from '../contexts/CODContext';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useFranchiseAuth } from '../contexts/FranchiseAuthContext';
+import { toast } from 'sonner';
 
 // Enterprise Components
 import MetricRow from '../components/cards/MetricRow';
@@ -42,7 +43,7 @@ export default function DashboardScreen() {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(true);
     const { franchise } = useFranchiseAuth();
-    const { stats, orders } = useFranchiseOrders();
+    const { stats, orders, refreshOrders } = useFranchiseOrders();
     const { getStockStats, refreshInventory } = useInventory();
     const { purchaseOrders } = useGRN();
     const { summary: codSummary } = useCOD();
@@ -152,8 +153,8 @@ export default function DashboardScreen() {
                         <button
                             onClick={() => {
                                 refreshInventory();
-                                // Note: fetchOrders is not exposed directly from useFranchiseOrders yet, 
-                                // but we could add it if needed. For now inventory is refreshed.
+                                refreshOrders();
+                                toast.info("Refreshing dashboard data...");
                             }}
                             className="p-1.5 border border-slate-200 rounded-sm hover:bg-slate-50 text-slate-400">
                             <RefreshCw size={14} />
@@ -166,49 +167,41 @@ export default function DashboardScreen() {
                 </div>
             </div>
 
-            {/* Performance Performance Strip */}
             <div className="bg-white border-b border-slate-200 grid grid-cols-1 md:grid-cols-4 lg:grid-cols-7">
                 <MetricRow
                     label="Queued Orders"
                     value={stats.newOrders}
-                    trend="Stable"
                     icon={ShoppingBag}
                 />
                 <MetricRow
                     label="Active Dispatch"
                     value={stats.outForDelivery}
-                    trend="Stable"
                     icon={Truck}
                 />
                 <MetricRow
                     label="Completed"
                     value={stats.completedCount}
-                    trend="Stable"
                     icon={CheckCircle2}
                 />
                 <MetricRow
                     label="Stock Health"
                     value={inventoryStats.lowStockCount}
-                    trend={inventoryStats.lowStockCount > 10 ? 'down' : 'Stable'}
                     icon={AlertTriangle}
                 />
                 <MetricRow
                     label="Est. Commission"
                     value={`₹${(stats.revenue * 0.1).toLocaleString()}`}
                     sub="10% of revenue"
-                    trend="up"
                     icon={TrendingUp}
                 />
                 <MetricRow
                     label="Incoming PO"
                     value={purchaseOrders.length}
-                    trend="Stable"
                     icon={PackageCheck}
                 />
                 <MetricRow
                     label="COD Liability"
                     value={`₹${(codSummary?.totalToDeposit || 0).toLocaleString()}`}
-                    trend="Stable"
                     icon={Wallet}
                 />
             </div>

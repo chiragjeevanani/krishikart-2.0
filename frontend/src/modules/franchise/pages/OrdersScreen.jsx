@@ -16,7 +16,8 @@ import {
     ArrowUpRight,
     ArrowDownRight,
     MoreHorizontal,
-    IndianRupee
+    IndianRupee,
+    RefreshCw
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useFranchiseOrders } from '../contexts/FranchiseOrdersContext';
@@ -43,7 +44,8 @@ export default function OrdersScreen() {
         acceptOrder,
         assignDeliveryPartner,
         deliveryPartners,
-        stats
+        stats,
+        refreshOrders
     } = useFranchiseOrders();
     const { inventory, refreshInventory } = useInventory();
     const [activeTab, setActiveTab] = useState('new');
@@ -261,6 +263,16 @@ export default function OrdersScreen() {
                     </div>
 
                     <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => {
+                                refreshOrders();
+                                refreshInventory();
+                                toast.info("Syncing order data...");
+                            }}
+                            className="p-2 text-slate-400 hover:text-slate-900 transition-colors border border-slate-200 rounded-sm bg-white"
+                        >
+                            <RefreshCw size={16} className={cn(isLoading && "animate-spin")} />
+                        </button>
                         <button className="p-2 text-slate-400 hover:text-slate-900 transition-colors border border-slate-200 rounded-sm bg-white">
                             <Settings2 size={16} />
                         </button>
@@ -280,27 +292,21 @@ export default function OrdersScreen() {
                 <MetricRow
                     label="New Orders"
                     value={stats.newOrders}
-                    trend="Stable"
                     icon={ShoppingBag}
                 />
                 <MetricRow
                     label="Ready to Dispatch"
                     value={stats.readyToDispatch}
-                    change={0}
-                    trend="up"
                     icon={CheckCircle2}
                 />
                 <MetricRow
                     label="Out for Delivery"
                     value={stats.outForDelivery}
-                    change={0}
-                    trend="up"
                     icon={Truck}
                 />
                 <MetricRow
                     label="Completed"
                     value={stats.completedCount}
-                    trend="Stable"
                     icon={History}
                 />
                 <MetricRow

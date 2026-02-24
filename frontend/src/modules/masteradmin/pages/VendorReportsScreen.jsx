@@ -436,7 +436,8 @@ export default function VendorReportsScreen() {
                         franchise: selectedReport.franchiseId?.shopName,
                         destNode: selectedReport.franchiseId?.cityArea,
                         vendor: selectedReport.assignedVendorId?.shopName || 'KrishiKart Partner',
-                        handlingFee: 40
+                        deductionAmount: calculateDamagedLoss(selectedReport),
+                        netSettlement: (selectedReport.totalQuotedAmount || 0) - calculateDamagedLoss(selectedReport)
                     }}
                 />
             )}

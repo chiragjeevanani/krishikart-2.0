@@ -10,7 +10,8 @@ import {
     acceptFranchiseOrder,
     assignDeliveryPartner,
     getDispatchedOrders,
-    getDeliveryOrderHistory
+    getDeliveryOrderHistory,
+    getAdminDeliveryTracking
 } from "../controllers/order.controller.js";
 import { protect } from "../middlewares/authmiddleware.js";
 import { protectMasterAdmin } from "../middlewares/masteradmin.auth.js";
@@ -22,9 +23,11 @@ const router = express.Router();
 // User Routes
 router.post("/place", protect, createOrder);
 router.get("/my-orders", protect, getMyOrders);
+router.put("/:id/status", protect, updateOrderStatus);
 
 // Admin Routes
 router.get("/admin/all", protectMasterAdmin, getAllOrders);
+router.get("/admin/delivery-tracking", protectMasterAdmin, getAdminDeliveryTracking);
 router.get("/admin/:id", protectMasterAdmin, getOrderById);
 router.put("/admin/:id/status", protectMasterAdmin, updateOrderStatus);
 

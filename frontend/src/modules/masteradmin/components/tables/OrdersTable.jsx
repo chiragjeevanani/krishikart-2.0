@@ -32,7 +32,7 @@ const PaymentBadge = ({ method }) => {
     );
 };
 
-export default function OrdersTable({ orders, onAction, onOrderClick }) {
+export default function OrdersTable({ orders, onAction, onOrderClick, onProcure }) {
     const navigate = useNavigate();
 
     return (
@@ -79,9 +79,16 @@ export default function OrdersTable({ orders, onAction, onOrderClick }) {
                                 </div>
                             </td>
                             <td className="px-4 py-4">
-                                <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-sm">
-                                    {order.items?.length || 0} {order.items?.length === 1 ? 'Item' : 'Items'}
-                                </span>
+                                <div className="flex flex-col gap-1 items-start">
+                                    <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-sm">
+                                        {order.items?.length || 0} {order.items?.length === 1 ? 'Item' : 'Items'}
+                                    </span>
+                                    {order.items?.some(i => i.isShortage) && (
+                                        <span className="text-[8px] font-black text-rose-600 bg-rose-50 border border-rose-100 px-1.5 py-0.5 rounded-sm uppercase tracking-tighter animate-pulse">
+                                            Stock Shortage
+                                        </span>
+                                    )}
+                                </div>
                             </td>
                             <td className="px-4 py-4">
                                 <div className="flex flex-col">
@@ -99,8 +106,19 @@ export default function OrdersTable({ orders, onAction, onOrderClick }) {
                                 <span className="tabular-nums text-[11px] font-bold text-slate-900">₹{order.totalAmount?.toLocaleString()}</span>
                             </td>
                             <td className="px-4 py-4 text-right">
-                                <div className="flex items-center justify-end gap-1">
-
+                                <div className="flex items-center justify-end gap-2">
+                                    {order.items?.some(i => i.isShortage) && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onProcure?.(order);
+                                            }}
+                                            className="px-5 py-2.5 bg-amber-600 text-white text-[11px] font-black uppercase tracking-[0.15em] rounded-sm hover:bg-slate-900 transition-all flex items-center gap-2.5 shadow-[0_4px_15px_rgba(217,119,6,0.3)] hover:shadow-[0_4px_20px_rgba(217,119,6,0.5)] active:scale-95 border-2 border-amber-500/50 group/button"
+                                        >
+                                            <Package size={14} strokeWidth={3} className="group-hover/button:scale-110 transition-transform" />
+                                            Procure
+                                        </button>
+                                    )}
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
@@ -109,12 +127,6 @@ export default function OrdersTable({ orders, onAction, onOrderClick }) {
                                         className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-sm transition-all"
                                     >
                                         <ExternalLink size={14} />
-                                    </button>
-                                    <button
-                                        onClick={(e) => e.stopPropagation()}
-                                        className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 border border-transparent hover:border-slate-200 rounded-sm transition-all"
-                                    >
-                                        <MoreVertical size={14} />
                                     </button>
                                 </div>
                             </td>

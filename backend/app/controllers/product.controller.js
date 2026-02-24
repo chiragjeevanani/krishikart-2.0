@@ -71,7 +71,7 @@ export const createProduct = async (req, res) => {
             description,
             shortDescription,
             dietaryType: dietaryType || 'none',
-            status: status || 'active',
+            status: 'active', // Forces status to active on creation
             primaryImage: primaryImageUrl,
             images: galleryImages,
             bulkPricing: parsedBulk,
@@ -79,7 +79,35 @@ export const createProduct = async (req, res) => {
             showOnStorefront: showOnStorefront === 'true' || showOnStorefront === true,
         });
 
-        return handleResponse(res, 201, "Product created and documented in SKU ledger", product);
+        // AUTO-ACTIVATION ACROSS NETWORK: Add to all franchise inventories
+        try {
+            const Franchise = (await import('../models/franchise.js')).default;
+            const Inventory = (await import('../models/inventory.js')).default;
+            const franchises = await Franchise.find({});
+
+            for (const franchise of franchises) {
+                await Inventory.findOneAndUpdate(
+                    { franchiseId: franchise._id },
+                    {
+                        $addToSet: {
+                            items: {
+                                productId: product._id,
+                                currentStock: 50, // Default stock as requested for availability
+                                mbq: 5,
+                                lastUpdated: new Date()
+                            }
+                        }
+                    },
+                    { upsert: true }
+                );
+            }
+            console.log(`[Automation] Product ${product.name} synced to ${franchises.length} franchise nodes.`);
+        } catch (syncErr) {
+            console.error("Auto-inventory sync failed:", syncErr);
+            // Non-blocking for product creation
+        }
+
+        return handleResponse(res, 201, "Product created and activated across network", product);
     } catch (err) {
         console.error("Create Product Error:", err);
         return handleResponse(res, 500, "Server error: " + err.message);

@@ -20,14 +20,19 @@ export const getVendorAssignments = async (req, res) => {
         console.log(`Found ${assignments.length} assignments for vendor ${vendorId}`);
 
         // Manually populate images for items
-        for (let assignment of assignments) {
-            for (let item of assignment.items) {
-                if (!item.image && item.productId) {
-                    if (mongoose.Types.ObjectId.isValid(item.productId)) {
-                        const product = await Product.findById(item.productId).select('primaryImage images');
-                        if (product) {
-                            item.image = product.primaryImage || (product.images && product.images[0]) || "";
+        if (assignments && Array.isArray(assignments)) {
+            for (let assignment of assignments) {
+                if (!assignment.items) continue;
+                for (let item of assignment.items) {
+                    try {
+                        if (!item.image && item.productId && mongoose.Types.ObjectId.isValid(item.productId)) {
+                            const product = await Product.findById(item.productId).select('primaryImage images');
+                            if (product) {
+                                item.image = product.primaryImage || (product.images && product.images[0]) || "";
+                            }
                         }
+                    } catch (itemErr) {
+                        console.error("[VENDOR_ASSIGNMENTS] Item image pop error:", itemErr.message);
                     }
                 }
             }
@@ -36,7 +41,7 @@ export const getVendorAssignments = async (req, res) => {
         return handleResponse(res, 200, "Vendor assignments fetched", assignments);
     } catch (error) {
         console.error("Get vendor assignments error:", error);
-        return handleResponse(res, 500, "Server error");
+        return handleResponse(res, 500, error.message || "Server error");
     }
 };
 
@@ -73,7 +78,7 @@ export const getVendorProcurementById = async (req, res) => {
         return handleResponse(res, 200, "Procurement request details fetched", request);
     } catch (error) {
         console.error("Get vendor procurement by id error:", error);
-        return handleResponse(res, 500, "Server error");
+        return handleResponse(res, 500, error.message || "Server error");
     }
 };
 
@@ -272,9 +277,15 @@ export const getAllProcurementRequests = async (req, res) => {
 // Get approved/active dispatch orders (Vendor)
 export const getVendorActiveDispatch = async (req, res) => {
     try {
+        if (!req.vendor || !req.vendor._id) {
+            return handleResponse(res, 401, "Vendor identification missing");
+        }
+
         const vendorId = req.vendor._id.toString();
+        console.log(`[VENDOR_API] Fetching active dispatches for vendor: ${vendorId}`);
+
         // Fetch orders where status is approved, preparing, or ready for pickup (active cycle)
-        let assignments = await ProcurementRequest.find({
+        const assignments = await ProcurementRequest.find({
             assignedVendorId: vendorId,
             status: { $in: ['approved', 'preparing', 'ready_for_pickup'] }
         })
@@ -282,15 +293,24 @@ export const getVendorActiveDispatch = async (req, res) => {
             .sort({ createdAt: -1 })
             .lean();
 
+        console.log(`[VENDOR_API] Found ${assignments?.length || 0} active assignments`);
+
         // Manually populate images for items
-        for (let assignment of assignments) {
-            for (let item of assignment.items) {
-                if (!item.image && item.productId) {
-                    if (mongoose.Types.ObjectId.isValid(item.productId)) {
-                        const product = await Product.findById(item.productId).select('primaryImage images');
-                        if (product) {
-                            item.image = product.primaryImage || (product.images && product.images[0]) || "";
+        if (assignments && assignments.length > 0) {
+            for (let assignment of assignments) {
+                if (!assignment.items || !Array.isArray(assignment.items)) continue;
+
+                for (let item of assignment.items) {
+                    try {
+                        // Check if we need to populate image and if productId is a valid ObjectId
+                        if (!item.image && item.productId && mongoose.Types.ObjectId.isValid(item.productId)) {
+                            const product = await Product.findById(item.productId).select('primaryImage images');
+                            if (product) {
+                                item.image = product.primaryImage || (product.images && product.images[0]) || "";
+                            }
                         }
+                    } catch (itemErr) {
+                        console.error("[VENDOR_API] Item image population error:", itemErr.message);
                     }
                 }
             }
@@ -298,8 +318,8 @@ export const getVendorActiveDispatch = async (req, res) => {
 
         return handleResponse(res, 200, "Active dispatch orders fetched", assignments);
     } catch (error) {
-        console.error("Get active dispatch error:", error);
-        return handleResponse(res, 500, "Server error");
+        console.error("[VENDOR_API_ERROR] Detail:", error);
+        return handleResponse(res, 500, `Server error: ${error.message}`);
     }
 };
 
@@ -433,5 +453,53 @@ export const franchiseConfirmReceipt = async (req, res) => {
     } catch (error) {
         console.error("Franchise confirm receipt error:", error);
         return handleResponse(res, 500, "Server error");
+    }
+};
+
+// NEW: Create procurement from order shortages (Admin)
+export const createProcurementFromOrder = async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const { vendorId } = req.body;
+        const adminId = req.masteradmin?._id;
+
+        const Order = (await import('../models/order.js')).default;
+        const order = await Order.findById(orderId);
+
+        if (!order) {
+            return handleResponse(res, 404, "Order not found");
+        }
+
+        const shortageItems = order.items.filter(item => item.isShortage);
+        if (shortageItems.length === 0) {
+            return handleResponse(res, 400, "No items in this order require procurement");
+        }
+
+        const procurementRequest = new ProcurementRequest({
+            franchiseId: order.franchiseId,
+            items: shortageItems.map(item => ({
+                productId: item.productId,
+                name: item.name,
+                quantity: item.shortageQty,
+                unit: item.unit,
+                price: item.price,
+                image: item.image
+            })),
+            totalEstimatedAmount: shortageItems.reduce((acc, item) => acc + (item.price * item.shortageQty), 0),
+            status: "assigned",
+            assignedVendorId: vendorId,
+            adminId: adminId
+        });
+
+        await procurementRequest.save();
+
+        // Optional: Update order to indicate procurement has started
+        // order.procurementId = procurementRequest._id;
+        // await order.save();
+
+        return handleResponse(res, 201, "Procurement request created and assigned to vendor", procurementRequest);
+    } catch (error) {
+        console.error("Create procurement from order error:", error);
+        return handleResponse(res, 500, "Server error: " + error.message);
     }
 };

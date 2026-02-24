@@ -38,7 +38,7 @@ export default function DeliveryMonitoringScreen() {
 
     const fetchOrders = async () => {
         try {
-            const response = await api.get('/orders/admin/all');
+            const response = await api.get('/orders/admin/delivery-tracking');
             if (response.data.success) {
                 setOrders(response.data.results || []);
             }
@@ -58,16 +58,8 @@ export default function DeliveryMonitoringScreen() {
         joinAdminDeliveryTracking();
 
         socket.on('order_status_updated', (updatedOrder) => {
-            setOrders(prev => {
-                const index = prev.findIndex(o => o._id === updatedOrder._id);
-                if (index !== -1) {
-                    const newOrders = [...prev];
-                    newOrders[index] = updatedOrder;
-                    return newOrders;
-                }
-                return [updatedOrder, ...prev];
-            });
-            toast.info(`Order #${updatedOrder._id.slice(-6)} updated to ${updatedOrder.orderStatus}`);
+            fetchOrders(); // Refresh to get the fully populated structure
+            toast.info(`Order Status updated to ${updatedOrder.orderStatus}`);
         });
 
         return () => {
@@ -80,8 +72,7 @@ export default function DeliveryMonitoringScreen() {
             const response = await api.put(`/orders/admin/${orderId}/status`, { status: newStatus });
             if (response.data.success) {
                 toast.success('Status updated successfully');
-                // Socket will handle the state update for us as well, but we can update locally for snappiness
-                setOrders(prev => prev.map(o => o._id === orderId ? { ...o, orderStatus: newStatus } : o));
+                fetchOrders();
             }
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to update status');
@@ -91,121 +82,129 @@ export default function DeliveryMonitoringScreen() {
     const matchesSearch = (o) => {
         const query = searchTerm.toLowerCase();
         return o._id.toLowerCase().includes(query) ||
-            (o.userId?.fullName || '').toLowerCase().includes(query) ||
-            (o.franchiseId?.franchiseName || '').toLowerCase().includes(query) ||
-            (o.deliveryPartnerId?.fullName || '').toLowerCase().includes(query);
+            (o.customer?.name || '').toLowerCase().includes(query) ||
+            (o.franchise?.name || '').toLowerCase().includes(query) ||
+            (o.rider?.name || '').toLowerCase().includes(query);
     };
 
     const inTransitOrders = orders.filter(o =>
-        ['packed', 'dispatched'].includes(o.orderStatus?.toLowerCase()) && matchesSearch(o)
+        ['Packed', 'Dispatched'].includes(o.status) && matchesSearch(o)
     );
     const deliveredOrders = orders.filter(o =>
-        ['delivered', 'received'].includes(o.orderStatus?.toLowerCase()) && matchesSearch(o)
+        ['Delivered', 'Received'].includes(o.status) && matchesSearch(o)
     );
 
     const handleExport = () => {
         const columns = [
             { header: 'Order ID', key: '_id' },
-            { header: 'Customer', key: 'userId' },
-            { header: 'Shop', key: 'franchiseId' },
-            { header: 'Rider', key: 'deliveryPartnerId' },
-            { header: 'Status', key: 'orderStatus' },
-            { header: 'Amount', key: 'totalAmount' }
+            { header: 'Customer', key: 'customerName' },
+            { header: 'Shop', key: 'franchiseName' },
+            { header: 'Rider', key: 'riderName' },
+            { header: 'Status', key: 'status' },
+            { header: 'Amount', key: 'amount' }
         ];
 
         const data = (activeTab === 'active' ? inTransitOrders : deliveredOrders).map(o => ({
             ...o,
-            userId: o.userId?.fullName || 'Guest',
-            franchiseId: o.franchiseId?.franchiseName || 'N/A',
-            deliveryPartnerId: o.deliveryPartnerId?.fullName || 'Not Assigned'
+            customerName: o.customer?.name,
+            franchiseName: o.franchise?.name,
+            riderName: o.rider?.name
         }));
 
         exportToCSV(`Delivery_Report_${activeTab}`, columns, data);
     };
 
-    const slotPerformance = [
-        { slot: '6AM-9AM', success: 98, volume: 145 },
-        { slot: '9AM-12PM', success: 94, volume: 220 },
-        { slot: '12PM-3PM', success: 88, volume: 180 },
-        { slot: '3PM-6PM', success: 91, volume: 195 },
-        { slot: '6PM-9PM', success: 96, volume: 110 }
-    ];
-
     const unitColumns = [
         {
-            header: 'Order ID',
+            header: 'DELIVERY PARTNER',
+            key: 'rider',
+            render: (rider) => (
+                <div className="flex items-center gap-3 py-1">
+                    <div className={cn(
+                        "w-10 h-10 rounded-xl flex items-center justify-center transition-all border",
+                        rider?.id ? "bg-blue-50 border-blue-100 text-blue-600" : "bg-slate-50 border-slate-200 text-slate-400"
+                    )}>
+                        <Truck size={18} />
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-[11px] font-black text-slate-900 uppercase tracking-tight">
+                            {rider?.name || 'NOT ASSIGNED'}
+                        </span>
+                        <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{rider?.vehicle || 'NA-00-0000'}</span>
+                            {rider?.mobile && (
+                                <span className="text-[9px] font-bold text-blue-500">{rider.mobile}</span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )
+        },
+        {
+            header: 'ORDER & DESTINATION',
             key: '_id',
-            render: (val) => <span className="font-bold text-slate-900 tracking-wider">#{val?.slice(-6).toUpperCase()}</span>
-        },
-        {
-            header: 'Customer',
-            key: 'userId',
-            render: (val) => <span className="font-medium text-slate-600">{val?.fullName || 'Guest'}</span>
-        },
-        {
-            header: 'Shop Name',
-            key: 'franchiseId',
-            render: (val) => <span className="font-medium text-slate-600">{val?.franchiseName || 'Staging Zone'}</span>
-        },
-        {
-            header: 'Rider',
-            key: 'deliveryPartnerId',
-            render: (val) => (
-                <div className="flex items-center gap-1.5 py-0.5 px-2 bg-blue-50 rounded-sm w-fit border border-blue-100">
-                    <Truck size={10} className="text-blue-500" />
-                    <span className="text-[10px] font-bold text-blue-700 uppercase">{val?.fullName || 'Self/Not Assigned'}</span>
-                </div>
-            )
-        },
-        {
-            header: 'Slot',
-            key: 'deliverySlot',
-            render: (val) => (
-                <div className="flex items-center gap-1.5 py-0.5 px-2 bg-slate-100 rounded-sm w-fit border border-slate-200">
-                    <Clock size={10} className="text-slate-400" />
-                    <span className="text-[10px] font-bold text-slate-600 uppercase">{val || 'Standard'}</span>
-                </div>
-            )
-        },
-        {
-            header: 'Status',
-            key: 'orderStatus',
             render: (val, row) => (
-                <select
-                    value={val}
-                    onChange={(e) => handleStatusUpdate(row._id, e.target.value)}
-                    className={cn(
-                        "text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-sm border outline-none bg-white",
-                        val === 'Placed' && "text-slate-500 border-slate-200",
-                        val === 'Packed' && "text-amber-600 border-amber-200 bg-amber-50",
-                        val === 'Dispatched' && "text-blue-600 border-blue-200 bg-blue-50",
-                        val === 'Delivered' && "text-emerald-600 border-emerald-200 bg-emerald-50",
-                        val === 'Cancelled' && "text-red-600 border-red-200 bg-red-50"
-                    )}
-                >
-                    {['Placed', 'Packed', 'Dispatched', 'Delivered', 'Received', 'Cancelled'].map(s => (
-                        <option key={s} value={s}>{s}</option>
-                    ))}
-                </select>
+                <div className="flex flex-col">
+                    <div className="flex items-center gap-2">
+                        <span className="font-black text-slate-900 text-[10px] tracking-tighter">LID-{val?.slice(-6).toUpperCase()}</span>
+                        <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1 border border-emerald-100 rounded-sm">₹{row.amount?.toLocaleString()}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-1">
+                        <Home size={10} className="text-slate-400" />
+                        <span className="text-[10px] font-bold text-slate-600">{row.customer?.name}</span>
+                    </div>
+                    <span className="text-[8px] font-medium text-slate-400 truncate max-w-[150px]">{row.customer?.address}</span>
+                </div>
             )
         },
         {
-            header: 'Payment',
-            key: 'paymentMethod',
-            render: (val) => (
-                <span className={cn(
-                    "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-sm border",
-                    val === 'Prepaid' || val === 'Wallet' ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-amber-50 text-amber-600 border-amber-100"
-                )}>
-                    {val || 'COD'}
-                </span>
+            header: 'PICKUP HUB',
+            key: 'franchise',
+            render: (franchise) => (
+                <div className="flex flex-col">
+                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-tight">{franchise?.name}</span>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                        <Navigation size={10} className="text-indigo-400" />
+                        <span className="text-[9px] font-bold text-slate-400 uppercase">{franchise?.location || 'Staging Area'}</span>
+                    </div>
+                </div>
             )
         },
         {
-            header: 'Amount',
-            key: 'totalAmount',
-            align: 'right',
-            render: (val) => <span className="font-bold text-slate-900 leading-none">₹{val?.toLocaleString() || 0}</span>
+            header: 'EXECUTION STATUS',
+            key: 'status',
+            render: (val, row) => (
+                <div className="flex flex-col gap-2">
+                    <select
+                        value={val}
+                        onChange={(e) => handleStatusUpdate(row._id, e.target.value)}
+                        className={cn(
+                            "text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-sm border outline-none bg-white",
+                            val === 'Placed' && "text-slate-500 border-slate-200",
+                            (val === 'Packed' || val === 'Preparing') && "text-amber-600 border-amber-200 bg-amber-50",
+                            val === 'Dispatched' && "text-blue-600 border-blue-200 bg-blue-50",
+                            val === 'Delivered' && "text-emerald-600 border-emerald-200 bg-emerald-50",
+                            val === 'Cancelled' && "text-red-600 border-red-200 bg-red-50"
+                        )}
+                    >
+                        {['Placed', 'Packed', 'Dispatched', 'Delivered', 'Received', 'Cancelled'].map(s => (
+                            <option key={s} value={s}>{s}</option>
+                        ))}
+                    </select>
+                    <div className="flex items-center gap-2">
+                        <div className="h-1 flex-1 bg-slate-100 rounded-full overflow-hidden">
+                            <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: val === 'Delivered' || val === 'Received' ? '100%' : val === 'Dispatched' ? '66%' : '33%' }}
+                                className={cn(
+                                    "h-full transition-all",
+                                    val === 'Delivered' ? "bg-emerald-500" : "bg-blue-500"
+                                )}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )
         }
     ];
 
@@ -304,7 +303,10 @@ export default function DeliveryMonitoringScreen() {
                     onRefresh={fetchOrders}
                     actions={
                         <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-sm border border-emerald-100">REAL-TIME FEED ACTIVE</span>
+                            <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 border border-emerald-100 rounded-full animate-pulse">
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Live Tracking Active</span>
+                            </div>
                         </div>
                     }
                 />

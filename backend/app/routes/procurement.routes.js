@@ -10,7 +10,8 @@ import {
     getVendorActiveDispatch,
     vendorUpdateStatus,
     getVendorReports,
-    franchiseConfirmReceipt
+    franchiseConfirmReceipt,
+    createProcurementFromOrder
 } from "../controllers/procurement.controller.js";
 import { protectFranchise } from "../middlewares/franchise.auth.js";
 import { protectMasterAdmin } from "../middlewares/masteradmin.auth.js";
@@ -25,8 +26,8 @@ router.put("/franchise/:requestId/receive", protectFranchise, franchiseConfirmRe
 
 // Vendor Routes (View Assignment)
 router.get("/vendor/my-assignments", protectVendor, getVendorAssignments);
-router.get("/vendor/:requestId", protectVendor, getVendorProcurementById);
 router.get("/vendor/active-dispatch", protectVendor, getVendorActiveDispatch);
+router.get("/vendor/:requestId", protectVendor, getVendorProcurementById);
 router.post("/vendor/:requestId/quote", protectVendor, vendorSubmitQuotation);
 router.put("/vendor/:requestId/status", protectVendor, vendorUpdateStatus);
 
@@ -34,5 +35,6 @@ router.put("/vendor/:requestId/status", protectVendor, vendorUpdateStatus);
 router.get("/admin/all", protectMasterAdmin, getAllProcurementRequests);
 router.get("/admin/reports", protectMasterAdmin, getVendorReports);
 router.put("/admin/:requestId/status", protectMasterAdmin, adminUpdateProcurementRequest);
+router.post("/admin/from-order/:orderId", protectMasterAdmin, createProcurementFromOrder);
 
 export default router;

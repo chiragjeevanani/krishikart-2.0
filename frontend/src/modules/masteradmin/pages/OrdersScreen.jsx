@@ -20,7 +20,8 @@ import {
     CheckCircle2,
     Briefcase,
     FileText,
-    Settings2
+    Settings2,
+    AlertCircle
 } from 'lucide-react';
 import api from '@/lib/axios';
 import { toast } from 'sonner';
@@ -40,6 +41,15 @@ export default function OrdersScreen() {
     const [selectedOrderForProcurement, setSelectedOrderForProcurement] = useState(null);
     const [selectedOrderId, setSelectedOrderId] = useState(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+    // Real Vendors Data
+    const [vendors, setVendors] = useState([]);
+    const [isVendorsLoading, setIsVendorsLoading] = useState(false);
+    const [compatibleVendors, setCompatibleVendors] = useState([]);
 
     const handleExport = () => {
         const columns = [
@@ -93,6 +103,69 @@ export default function OrdersScreen() {
         }
     };
 
+    const fetchCompatibleVendors = async (order) => {
+        setIsVendorsLoading(true);
+        try {
+            const shortageProductIds = order.items
+                .filter(item => item.isShortage)
+                .map(item => item.productId?._id || item.productId);
+
+            const response = await api.get('/masteradmin/vendors', {
+                params: { status: 'active' }
+            });
+
+            if (response.data.success) {
+                const allActiveVendors = response.data.results || response.data.result || [];
+                setVendors(allActiveVendors);
+
+                // Filter vendors who have at least one of the shortage products
+                const compatible = allActiveVendors.filter(vendor =>
+                    vendor.products?.some(p => {
+                        const vendorProdId = p._id || p;
+                        return shortageProductIds.includes(vendorProdId.toString());
+                    })
+                );
+
+                setCompatibleVendors(compatible.length > 0 ? compatible : allActiveVendors);
+            }
+        } catch (error) {
+            console.error('Fetch vendors error:', error);
+            toast.error('Failed to load vendors');
+        } finally {
+            setIsVendorsLoading(false);
+        }
+    };
+
+    const handleProcure = (order) => {
+        setSelectedOrderForProcurement({
+            ...order,
+            id: order._id,
+            customer: order.userId?.fullName || 'Guest',
+            total: order.totalAmount
+        });
+        fetchCompatibleVendors(order);
+    };
+
+    const handleFinalizeProcurement = async (vendor) => {
+        if (!selectedOrderForProcurement) return;
+
+        try {
+            // Using the new bridging API
+            const response = await api.post(`/procurement/admin/from-order/${selectedOrderForProcurement._id}`, {
+                vendorId: vendor.id || vendor._id
+            });
+
+            if (response.data.success) {
+                toast.success(`Procurement request initiated with ${vendor.name}`);
+                setSelectedOrderForProcurement(null);
+                fetchAllOrders();
+            }
+        } catch (error) {
+            console.error('Procurement error:', error);
+            toast.error('Failed to initiate procurement');
+        }
+    };
+
     useEffect(() => {
         const timer = setTimeout(() => setIsLoading(false), 700);
         return () => clearTimeout(timer);
@@ -105,6 +178,16 @@ export default function OrdersScreen() {
         const matchesFilter = activeFilter === 'all' || order.orderStatus.toLowerCase() === activeFilter.toLowerCase();
         return matchesSearch && matchesFilter;
     });
+
+    // Reset to page 1 on search/filter change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, activeFilter]);
+
+    // Pagination Logic
+    const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedOrders = filteredOrders.slice(startIndex, startIndex + itemsPerPage);
 
     if (isLoading) {
         return (
@@ -166,13 +249,57 @@ export default function OrdersScreen() {
                     </div>
 
                     <OrdersTable
-                        orders={filteredOrders}
+                        orders={paginatedOrders}
                         onAction={handleOrderAction}
                         onOrderClick={(id) => {
                             setSelectedOrderId(id);
                             setIsDetailModalOpen(true);
                         }}
+                        onProcure={handleProcure}
                     />
+
+                    {/* Pagination Footer */}
+                    {filteredOrders.length > 0 && (
+                        <div className="px-4 py-4 bg-white border-t border-slate-100 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                    Page {currentPage} of {totalPages || 1}
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                    disabled={currentPage === 1}
+                                    className="px-3 py-1.5 border border-slate-200 rounded-sm text-[10px] font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors uppercase tracking-wider"
+                                >
+                                    Previous
+                                </button>
+                                <div className="flex items-center gap-1">
+                                    {[...Array(totalPages)].map((_, i) => (
+                                        <button
+                                            key={i + 1}
+                                            onClick={() => setCurrentPage(i + 1)}
+                                            className={cn(
+                                                "w-8 h-8 flex items-center justify-center rounded-sm text-[10px] font-bold border transition-all",
+                                                currentPage === i + 1
+                                                    ? "bg-slate-900 border-slate-900 text-white"
+                                                    : "bg-white border-slate-200 text-slate-600 hover:border-slate-400"
+                                            )}
+                                        >
+                                            {i + 1}
+                                        </button>
+                                    )).slice(Math.max(0, currentPage - 3), Math.min(totalPages, currentPage + 2))}
+                                </div>
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                    disabled={currentPage === totalPages || totalPages === 0}
+                                    className="px-3 py-1.5 border border-slate-200 rounded-sm text-[10px] font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors uppercase tracking-wider"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     {filteredOrders.length === 0 && (
                         <div className="py-20 flex flex-col items-center text-center bg-white border-t border-slate-100">
@@ -226,62 +353,107 @@ export default function OrdersScreen() {
 
                                 <div className="flex items-start justify-between">
                                     <div>
-                                        <h2 className="text-2xl font-black text-slate-900 tracking-tighter tabular-nums">#{selectedOrderForProcurement.id}</h2>
+                                        <h2 className="text-2xl font-black text-slate-900 tracking-tighter tabular-nums">#{selectedOrderForProcurement.id?.slice(-8)}</h2>
                                         <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider mt-1">{selectedOrderForProcurement.customer}</p>
                                     </div>
                                     <div className="text-right">
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Order Amount</span>
-                                        <span className="text-xl font-black text-slate-900 tabular-nums">₹{selectedOrderForProcurement.total.toLocaleString()}</span>
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Order Total</span>
+                                        <span className="text-xl font-black text-slate-900 tabular-nums">₹{selectedOrderForProcurement.total?.toLocaleString()}</span>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Vendor Selection List */}
-                            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50">
-                                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2">Available Vendors</h3>
-                                {mockVendors.map((vendor) => (
-                                    <div
-                                        key={vendor.id}
-                                        className="bg-white p-4 border border-slate-200 rounded-sm hover:border-slate-400 transition-all group relative overflow-hidden"
-                                    >
-                                        <div className="flex items-start justify-between relative z-10">
-                                            <div className="flex gap-4">
-                                                <div className="w-10 h-10 rounded-sm bg-slate-50 border border-slate-100 text-slate-400 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-colors">
-                                                    <Users size={18} />
-                                                </div>
-                                                <div>
-                                                    <h4 className="text-sm font-bold text-slate-900 tracking-tight">{vendor.name}</h4>
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        <div className="flex items-center gap-1 text-slate-500 font-bold text-[10px]">
-                                                            <Star size={10} className="text-amber-500 fill-amber-500" />
-                                                            <span className="tabular-nums">{vendor.rating}</span>
-                                                        </div>
-                                                        <span className="text-[10px] text-slate-200">•</span>
-                                                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{vendor.category}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="text-right">
-                                                <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1 tracking-widest">Available</span>
-                                                <span className="text-xs font-bold text-slate-900 tabular-nums">{vendor.capacity}%</span>
-                                            </div>
+                            {/* Shortage Items Summary */}
+                            <div className="px-6 py-3 bg-rose-50/50 border-b border-rose-100 flex items-center justify-between">
+                                <div className="flex items-center gap-2 text-rose-600">
+                                    <AlertCircle size={14} />
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Items to Procure</span>
+                                </div>
+                                <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest bg-white px-2 py-0.5 rounded-sm border border-rose-100 animate-pulse">
+                                    {selectedOrderForProcurement.items?.filter(i => i.isShortage).length} Items Short
+                                </span>
+                            </div>
+                            <div className="px-6 py-3 bg-white flex flex-col gap-2 max-h-40 overflow-y-auto border-b border-slate-100 custom-scrollbar">
+                                {selectedOrderForProcurement.items?.filter(i => i.isShortage).map((item, idx) => (
+                                    <div key={idx} className="flex justify-between items-center group">
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-black text-slate-900 uppercase tracking-tight">{item.name}</span>
+                                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Ordered: {item.quantity} {item.unit}</span>
                                         </div>
-
-                                        <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
-                                            <div className="flex items-center gap-2 text-slate-400">
-                                                <MapPin size={12} />
-                                                <span className="text-[10px] font-bold uppercase tracking-wide">Vendor Shop</span>
-                                            </div>
-                                            <button
-                                                onClick={() => handleFinalizeProcurement(vendor)}
-                                                className="bg-white border border-slate-900 text-slate-900 text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-sm hover:bg-slate-900 hover:text-white transition-all flex items-center gap-2"
-                                            >
-                                                Assign Vendor
-                                                <ArrowRight size={12} />
-                                            </button>
+                                        <div className="px-3 py-1 bg-rose-50 rounded-sm border border-rose-100">
+                                            <span className="text-[10px] font-black text-rose-600 tabular-nums">{item.shortageQty} {item.unit} Short</span>
                                         </div>
                                     </div>
                                 ))}
+                            </div>
+
+                            {/* Vendor Selection List */}
+                            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50">
+                                <div className="flex items-center justify-between mb-2 px-1">
+                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Compatible Vendors</h3>
+                                    {isVendorsLoading && <div className="w-3 h-3 border-2 border-slate-300 border-t-slate-900 rounded-full animate-spin" />}
+                                </div>
+
+                                {isVendorsLoading ? (
+                                    <div className="space-y-3">
+                                        {[1, 2, 3].map(i => (
+                                            <div key={i} className="h-32 bg-white border border-slate-200 rounded-sm animate-pulse" />
+                                        ))}
+                                    </div>
+                                ) : compatibleVendors.length === 0 ? (
+                                    <div className="py-10 text-center bg-white border border-dashed border-slate-200 rounded-sm">
+                                        <Users className="mx-auto text-slate-200 mb-2" size={24} />
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No matching vendors found</p>
+                                    </div>
+                                ) : (
+                                    compatibleVendors.map((vendor) => (
+                                        <div
+                                            key={vendor._id}
+                                            className="bg-white p-4 border border-slate-200 rounded-sm hover:border-slate-400 transition-all group relative overflow-hidden"
+                                        >
+                                            <div className="flex items-start justify-between relative z-10">
+                                                <div className="flex gap-4">
+                                                    <div className="w-10 h-10 rounded-sm bg-slate-50 border border-slate-100 text-slate-400 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-colors">
+                                                        <Users size={18} />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-sm font-bold text-slate-900 tracking-tight">{vendor.fullName || vendor.name}</h4>
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <div className="flex items-center gap-1 text-slate-500 font-bold text-[10px]">
+                                                                <Star size={10} className="text-amber-500 fill-amber-500" />
+                                                                <span className="tabular-nums">{vendor.rating || '4.5'}</span>
+                                                            </div>
+                                                            <span className="text-[10px] text-slate-200">•</span>
+                                                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                                                                {vendor.products?.length || 0} Products
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1 tracking-widest">Available</span>
+                                                    <span className="text-xs font-bold text-slate-900 tabular-nums">{vendor.capacity || '100'}%</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+                                                <div className="flex items-center gap-2 text-slate-400">
+                                                    <MapPin size={12} />
+                                                    <span className="text-[10px] font-bold uppercase tracking-wide truncate max-w-[150px]">
+                                                        {vendor.farmLocation || vendor.city || 'Vendor Location'}
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleFinalizeProcurement(vendor)}
+                                                    className="bg-white border border-slate-900 text-slate-900 text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-sm hover:bg-slate-900 hover:text-white transition-all flex items-center gap-2"
+                                                >
+                                                    Assign Vendor
+                                                    <ArrowRight size={12} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
                             </div>
 
                             {/* Drawer Footer */}
@@ -307,6 +479,7 @@ export default function OrdersScreen() {
                     setSelectedOrderId(null);
                 }}
                 orderId={selectedOrderId}
+                onProcure={handleProcure}
             />
         </div>
     );

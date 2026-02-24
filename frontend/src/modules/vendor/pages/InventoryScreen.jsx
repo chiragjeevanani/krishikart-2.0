@@ -71,22 +71,7 @@ export default function InventoryScreen() {
                 </div>
             )
         },
-        {
-            header: 'Stock Level',
-            key: 'quantity',
-            render: (val, row) => (
-                <button
-                    onClick={() => handleUpdateStock(row.id, val)}
-                    className={cn(
-                        "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest inline-flex hover:ring-2 hover:ring-slate-200 transition-all",
-                        val > 20 ? "bg-emerald-50 text-emerald-600" :
-                            val > 0 ? "bg-amber-50 text-amber-600" : "bg-red-50 text-red-600"
-                    )}
-                >
-                    {val} {row.unit} Available
-                </button>
-            )
-        },
+
         {
             header: 'Status',
             key: 'available',
@@ -243,16 +228,7 @@ export default function InventoryScreen() {
                                     </div>
 
                                     <div className="flex items-center justify-between mt-4">
-                                        <button
-                                            onClick={() => handleUpdateStock(item.id, item.quantity)}
-                                            className={cn(
-                                                "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest hover:ring-2 hover:ring-slate-200 transition-all",
-                                                item.quantity > 20 ? "bg-emerald-50 text-emerald-600" :
-                                                    item.quantity > 0 ? "bg-amber-50 text-amber-600" : "bg-red-50 text-red-600"
-                                            )}
-                                        >
-                                            {item.quantity} {item.unit} Available
-                                        </button>
+                                        <div />
 
                                         <button
                                             onClick={() => toggleAvailability(item.id)}

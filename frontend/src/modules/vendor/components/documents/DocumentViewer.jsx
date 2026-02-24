@@ -197,13 +197,22 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC', aut
                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Subtotal</span>
                                         <span className="text-sm font-black text-slate-900">₹{data.items.reduce((acc, item) => acc + ((item.quantity || item.qty) * (item.quotedPrice || item.price || 0)), 0).toLocaleString()}</span>
                                     </div>
-                                    <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Platform Fee</span>
-                                        <span className="text-sm font-black text-slate-900">₹{(data.handlingFee || 0).toFixed(2)}</span>
-                                    </div>
+
+
+                                    {data.deductionAmount > 0 && (
+                                        <div className="flex justify-between items-center border-b border-rose-100 pb-2 text-rose-600">
+                                            <span className="text-[10px] font-black uppercase tracking-widest">Deduction Amount</span>
+                                            <span className="text-sm font-black tabular-nums">- ₹{data.deductionAmount.toLocaleString()}</span>
+                                        </div>
+                                    )}
+
                                     <div className="flex justify-between items-center pt-2">
-                                        <span className="text-xs font-black text-slate-900 uppercase tracking-widest">Grand Total</span>
-                                        <span className="text-xl font-black text-primary">₹{(data.items.reduce((acc, item) => acc + ((item.quantity || item.qty) * (item.quotedPrice || item.price || 0)), 0) + (data.handlingFee || 0)).toLocaleString()}</span>
+                                        <span className="text-xs font-black text-slate-900 uppercase tracking-widest">
+                                            {data.netSettlement !== undefined ? 'Net Audit Settlement' : 'Grand Total'}
+                                        </span>
+                                        <span className="text-xl font-black text-primary">
+                                            ₹{(data.netSettlement !== undefined ? data.netSettlement : (data.items.reduce((acc, item) => acc + ((item.quantity || item.qty) * (item.quotedPrice || item.price || 0)), 0))).toLocaleString()}
+                                        </span>
                                     </div>
                                 </div>
                             </div>

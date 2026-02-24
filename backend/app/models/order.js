@@ -25,6 +25,14 @@ const orderItemSchema = new mongoose.Schema({
     isBulkRate: {
         type: Boolean,
         default: false
+    },
+    isShortage: {
+        type: Boolean,
+        default: false
+    },
+    shortageQty: {
+        type: Number,
+        default: 0
     }
 }, { _id: false });
 

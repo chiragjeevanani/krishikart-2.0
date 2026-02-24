@@ -31,6 +31,7 @@ export default function FranchiseManagementScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [expandedRow, setExpandedRow] = useState(null);
     const [statusFilter, setStatusFilter] = useState('All');
+    const [searchTerm, setSearchTerm] = useState('');
     const [franchises, setFranchises] = useState([]);
 
     useEffect(() => {

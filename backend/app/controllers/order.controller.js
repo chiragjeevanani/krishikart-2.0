@@ -139,34 +139,13 @@ export const createOrder = async (req, res) => {
       user.usedCredit += totalAmount;
     }
 
-    // 6. Auto Franchise Assignment
+    // 6. Coordinates for Order (Optional)
     let assignedFranchiseId = null;
     let userCoords = null;
     try {
       userCoords = await geocodeAddress(shippingAddress);
-      if (userCoords) {
-        const activeFranchises = await Franchise.find({
-          status: "active",
-          "location.lat": { $ne: null },
-          "location.lng": { $ne: null },
-        });
-
-        let minDistance = Infinity;
-        for (const franchise of activeFranchises) {
-          const dist = getDistance(
-            userCoords.lat,
-            userCoords.lng,
-            franchise.location.lat,
-            franchise.location.lng,
-          );
-          if (dist < minDistance) {
-            minDistance = dist;
-            assignedFranchiseId = franchise._id;
-          }
-        }
-      }
     } catch (geoErr) {
-      console.error("Auto-assignment error:", geoErr);
+      console.error("Geocoding error:", geoErr);
     }
 
     // 7. Create Order
@@ -315,7 +294,15 @@ export const updateOrderStatus = async (req, res) => {
           return handleResponse(res, 403, "This order is not assigned to you");
         }
       }
-      if (status === 'Received' && !isUser) {
+      // User Specific: Check if user owns the order
+      if (isUser) {
+        if (order.userId.toString() !== req.user.id.toString()) {
+          return handleResponse(res, 403, "You can only update your own orders");
+        }
+        if (status === 'Received' && !isUser) {
+          return handleResponse(res, 403, "Only user can update to Received");
+        }
+      } else if (status === 'Received') {
         return handleResponse(res, 403, "Only user can update to Received");
       }
     }
@@ -419,12 +406,65 @@ export const getAllOrders = async (req, res) => {
   }
 };
 
+/**
+ * @desc Get detailed delivery tracking data for admin
+ * @route GET /orders/admin/delivery-tracking
+ * @access Private/Admin
+ */
+export const getAdminDeliveryTracking = async (req, res) => {
+  try {
+    const orders = await Order.find({
+      orderStatus: { $in: ['Packed', 'Dispatched', 'Delivered', 'Received'] }
+    })
+      .populate("userId", "fullName mobile")
+      .populate("franchiseId", "shopName ownerName mobile cityArea address")
+      .populate("deliveryPartnerId", "fullName mobile vehicleNumber vehicleType")
+      .sort({ updatedAt: -1 });
+
+    const trackingData = orders.map(order => ({
+      _id: order._id,
+      status: order.orderStatus,
+      amount: order.totalAmount,
+      payment: order.paymentMethod,
+      customer: {
+        id: order.userId?._id,
+        name: order.userId?.fullName || 'Guest User',
+        mobile: order.userId?.mobile,
+        address: order.shippingAddress
+      },
+      franchise: {
+        id: order.franchiseId?._id,
+        name: order.franchiseId?.shopName || 'Main Hub',
+        location: order.franchiseId?.cityArea,
+        mobile: order.franchiseId?.mobile
+      },
+      rider: {
+        id: order.deliveryPartnerId?._id,
+        name: order.deliveryPartnerId?.fullName || 'Self/Not Assigned',
+        mobile: order.deliveryPartnerId?.mobile,
+        vehicle: order.deliveryPartnerId?.vehicleNumber
+      },
+      timestamp: {
+        created: order.createdAt,
+        updated: order.updatedAt,
+        delivered: order.deliveredAt
+      }
+    }));
+
+    return handleResponse(res, 200, "Delivery tracking data fetched", trackingData);
+  } catch (error) {
+    console.error("Get delivery tracking error:", error);
+    return handleResponse(res, 500, "Internal server error: " + error.message);
+  }
+};
+
 export const getFranchiseOrders = async (req, res) => {
   try {
     const franchiseId = new mongoose.Types.ObjectId(req.franchise._id);
     const franchiseCity = req.franchise.city;
     const { date } = req.query;
 
+    console.log(`[Orders] Franchise City: ${franchiseCity}, ID: ${franchiseId}`);
     let query = {
       $or: [
         { franchiseId: franchiseId },
@@ -448,8 +488,8 @@ export const getFranchiseOrders = async (req, res) => {
     }
 
     const orders = await Order.find(query)
-      .populate("userId", "fullName mobile")
-      .populate("user", "fullName mobile")
+      .populate("userId", "fullName mobile legalEntityName")
+      .populate("user", "fullName mobile legalEntityName")
       .populate(
         "deliveryPartnerId",
         "fullName mobile vehicleNumber vehicleType",
@@ -549,6 +589,27 @@ export const acceptFranchiseOrder = async (req, res) => {
 
     // Assign franchise and keep status as Placed
     order.franchiseId = franchiseId;
+
+    // INVENTORY CHECK: Flag shortages for Admin Procurement
+    const inventory = await Inventory.findOne({ franchiseId });
+    if (inventory) {
+      order.items = order.items.map(item => {
+        const invItem = inventory.items.find(i =>
+          i.productId.toString() === item.productId.toString()
+        );
+        const availableStock = invItem ? invItem.currentStock : 0;
+
+        if (availableStock < item.quantity) {
+          item.isShortage = true;
+          item.shortageQty = item.quantity - availableStock;
+        } else {
+          item.isShortage = false;
+          item.shortageQty = 0;
+        }
+        return item;
+      });
+    }
+
     order.statusHistory.push({
       status: order.orderStatus,
       updatedAt: new Date(),

@@ -127,7 +127,7 @@ const ReceivingScreen = () => {
         {
             key: 'po',
             label: 'PO / INVOICE',
-            render: (row) => (
+            render: (_, row) => (
                 <div className="flex flex-col">
                     <span className="font-black text-slate-900 uppercase text-[10px] tracking-tight">{row.invoice?.invoiceNumber || row._id.slice(-8)}</span>
                     <span className="text-[8px] font-bold text-slate-400">ID: {row._id}</span>
@@ -137,7 +137,7 @@ const ReceivingScreen = () => {
         {
             key: 'vendor',
             label: 'SOURCE VENDOR',
-            render: (row) => (
+            render: (_, row) => (
                 <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-500">
                         {row.vendor?.[0] || 'V'}
@@ -149,24 +149,24 @@ const ReceivingScreen = () => {
         {
             key: 'items',
             label: 'MANIFEST',
-            render: (row) => (
-                <span className="text-[10px] font-black text-slate-900 tabular-nums">{row.items.length} SKUs</span>
+            render: (_, row) => (
+                <span className="text-[10px] font-black text-slate-900 tabular-nums">{row.items?.length || 0} SKUs</span>
             )
         },
         {
             key: 'status',
             label: 'LOGISTICS STATUS',
-            render: (row) => (
+            render: (status) => (
                 <div className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">{row.status.replace(/_/g, ' ')}</span>
+                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">{status?.replace(/_/g, ' ') || 'PENDING'}</span>
                 </div>
             )
         },
         {
             key: 'actions',
             label: '',
-            render: (row) => (
+            render: (_, row) => (
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => {
