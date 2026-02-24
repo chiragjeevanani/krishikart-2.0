@@ -22,6 +22,8 @@ import {
 import { useInventory } from '../contexts/InventoryContext';
 import { cn } from '@/lib/utils';
 
+import { toast } from 'sonner';
+
 // Enterprise Components
 import MetricRow from '../components/cards/MetricRow';
 import DataGrid from '../components/tables/DataGrid';
@@ -29,10 +31,9 @@ import FilterBar from '../components/tables/FilterBar';
 
 export default function InventoryScreen() {
     const navigate = useNavigate();
-    const { inventory, categories, getStockStats, resetAllStockItems } = useInventory();
+    const { inventory, categories, getStockStats, resetAllStockItems, loading: inventoryLoading, refreshInventory } = useInventory();
     const [searchQuery, setSearchQuery] = useState('');
     const [activeCategory, setActiveCategory] = useState('All');
-    const [isLoading, setIsLoading] = useState(true);
     const [isResetting, setIsResetting] = useState(false);
 
     const handleReset = async () => {
@@ -41,18 +42,13 @@ export default function InventoryScreen() {
         const success = await resetAllStockItems();
         setIsResetting(false);
         if (success) {
-            alert("Stock reset successfully!");
+            toast.success("Stock reset successfully!");
         } else {
-            alert("Failed to reset stock.");
+            toast.error("Failed to reset stock.");
         }
     };
 
     const stats = getStockStats();
-
-    useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 700);
-        return () => clearTimeout(timer);
-    }, [activeCategory]);
 
     const filteredItems = inventory.filter(item => {
         const matchesCategory = activeCategory === 'All' || item.category === activeCategory;
@@ -105,7 +101,9 @@ export default function InventoryScreen() {
             header: 'Stock Level',
             key: 'usageRate',
             render: (_, row) => {
-                const percentage = (row.currentStock / 100) * 100; // Mock logic
+                // Calculate percentage based on currentStock vs MBQ (e.g. 5x MBQ is considered 100%)
+                const targetStock = row.mbq * 5 || 50;
+                const percentage = Math.round((row.currentStock / targetStock) * 100);
                 return (
                     <div className="flex items-center gap-2">
                         <div className="flex-1 min-w-[60px] h-1 bg-slate-100 rounded-full overflow-hidden">
@@ -114,7 +112,7 @@ export default function InventoryScreen() {
                                 style={{ width: `${Math.min(percentage, 100)}%` }}
                             />
                         </div>
-                        <span className="text-[9px] font-bold text-slate-400 tabular-nums">{percentage}%</span>
+                        <span className="text-[9px] font-bold text-slate-400 tabular-nums">{Math.min(percentage, 100)}%</span>
                     </div>
                 );
             }
@@ -137,7 +135,7 @@ export default function InventoryScreen() {
         }
     ];
 
-    if (isLoading && !filteredItems.length) {
+    if (inventoryLoading && inventory.length === 0) {
         return (
             <div className="p-4 space-y-4 animate-pulse bg-slate-50 min-h-screen">
                 <div className="h-4 w-48 bg-slate-200 rounded" />
@@ -224,7 +222,6 @@ export default function InventoryScreen() {
                                     <button
                                         key={cat}
                                         onClick={() => {
-                                            setIsLoading(true);
                                             setActiveCategory(cat);
                                         }}
                                         className={cn(
@@ -254,7 +251,7 @@ export default function InventoryScreen() {
 
                 <div className="bg-white border-t border-slate-200">
                     <AnimatePresence mode="wait">
-                        {isLoading ? (
+                        {inventoryLoading && inventory.length === 0 ? (
                             <motion.div
                                 key="loading"
                                 initial={{ opacity: 0 }}

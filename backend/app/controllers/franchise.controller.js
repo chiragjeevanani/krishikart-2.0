@@ -73,29 +73,30 @@ export const getInventory = async (req, res) => {
     try {
         const franchiseId = req.franchise._id;
 
-        // Fetch all products
-        const allProducts = await Product.find({})
-            .populate('category', 'name')
-            .populate('subcategory', 'name');
-
         // Fetch franchise inventory record
         const inventoryRecord = await Inventory.findOne({ franchiseId });
 
-        // Map all products to include stock info from inventoryRecord
+        // Fetch all active products
+        const allProducts = await Product.find({ status: 'active' })
+            .populate('category', 'name')
+            .populate('subcategory', 'name');
+
+        // Map all products to include stock info
         const items = allProducts.map(product => {
-            const stockItem = inventoryRecord?.items.find(
+            const stockItem = inventoryRecord?.items?.find(
                 i => i.productId.toString() === product._id.toString()
             );
 
             return {
+                id: product._id,
                 productId: product,
                 currentStock: stockItem ? stockItem.currentStock : 0,
-                mbq: stockItem ? stockItem.mbq : 5,
+                mbq: stockItem ? stockItem.mbq : (product.stock || 5), // Use product stock as fallback mbq
                 lastUpdated: stockItem ? stockItem.lastUpdated : null
             };
         });
 
-        return handleResponse(res, 200, "Inventory fetched", items);
+        return handleResponse(res, 200, "Inventory sync successful", items);
     } catch (err) {
         console.error("Get Inventory Error:", err);
         return handleResponse(res, 500, "Internal server error");

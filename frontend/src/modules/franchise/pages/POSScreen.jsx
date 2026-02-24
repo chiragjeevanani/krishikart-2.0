@@ -32,7 +32,7 @@ import api from '@/lib/axios';
 import { toast } from 'sonner';
 
 export default function POSScreen() {
-    const { inventory, refreshInventory } = useInventory();
+    const { inventory, refreshInventory, loading: inventoryLoading } = useInventory();
     const { franchise } = useFranchiseAuth();
     const [searchQuery, setSearchQuery] = useState('');
     const [cart, setCart] = useState(() => {
@@ -48,10 +48,7 @@ export default function POSScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 500);
-        return () => clearTimeout(timer);
-    }, []);
+    // Loading state handled by context
 
     // Persist cart
     useEffect(() => {
@@ -215,106 +212,118 @@ export default function POSScreen() {
                 </div>
 
                 <div className="flex-1 overflow-y-auto grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-px bg-slate-200 no-scrollbar content-start">
-                    {filteredItems.map((item) => (
-                        <div
-                            key={item.id}
-                            onClick={() => (item.unit === 'Kg' || item.unit === 'kg') ? setSelectedItemForScale(item) : addToCart(item)}
-                            className="bg-white p-4 pb-6 border border-transparent hover:border-slate-900 transition-all cursor-pointer flex flex-col group relative overflow-hidden h-full min-h-[360px]"
-                        >
-                            <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                <Plus size={20} className="text-slate-900 bg-white rounded-full shadow-lg p-1" />
-                            </div>
-
-                            {/* Category Badge */}
-                            <div className="absolute top-3 left-3 z-10">
-                                <span className="bg-slate-900/5 backdrop-blur-md text-slate-600 text-[10px] font-black px-2 py-0.5 rounded-sm uppercase tracking-tighter">
-                                    {item.category}
-                                </span>
-                            </div>
-
-                            <div className="w-full pt-[100%] bg-slate-50 mb-4 rounded-sm relative overflow-hidden">
-                                <div className="absolute inset-0 flex items-center justify-center p-4 text-slate-300 transition-colors group-hover:bg-slate-100/50">
-                                    {item.image ? (
-                                        <img
-                                            src={item.image}
-                                            className="w-full h-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-110"
-                                            alt={item.name}
-                                            loading="lazy"
-                                            onError={(e) => {
-                                                console.log("Image load error for:", item.name);
-                                                e.target.onerror = null;
-                                                e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600';
-                                            }}
-                                        />
-                                    ) : (
-                                        <div className="flex flex-col items-center gap-2">
-                                            <Package size={40} strokeWidth={1} />
-                                            <span className="text-[10px] uppercase tracking-widest font-black">No Preview</span>
-                                        </div>
-                                    )}
-
-                                    {/* Promo Badges (Unit moved to price section) */}
-                                    <div className="absolute top-3 right-3 flex flex-col items-end gap-1.5 z-10">
-                                        {item.bestPrice > 0 && (
-                                            <div className="bg-emerald-600 text-white text-[9px] font-black px-2 py-0.5 rounded-sm shadow-sm uppercase tracking-tighter">
-                                                Best Rate
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Dietary Type Indicator */}
-                                    {item.dietaryType && item.dietaryType !== 'none' && (
-                                        <div className="absolute bottom-3 left-3">
-                                            <div className={cn(
-                                                "w-5 h-5 border-[1.5px] flex items-center justify-center rounded-[2px] bg-white shadow-sm",
-                                                item.dietaryType === 'veg' ? "border-emerald-600" : "border-red-600"
-                                            )}>
-                                                <div className={cn(
-                                                    "w-[7px] h-[7px] rounded-full",
-                                                    item.dietaryType === 'veg' ? "bg-emerald-600" : "bg-red-600"
-                                                )} />
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col gap-1 flex-1">
-                                <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight line-clamp-2 leading-tight mb-2">{item.name}</h4>
-
-                                <div className="mt-auto flex flex-col gap-1">
-                                    <div className="flex items-baseline gap-1.5">
-                                        <span className="text-lg font-black text-slate-900 tabular-nums">₹{(item.price || 0).toLocaleString()}</span>
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">
-                                            / {item.unitValue} {item.unit}
-                                        </span>
-                                        {item.comparePrice > item.price && (
-                                            <span className="text-xs text-slate-400 line-through font-bold ml-1">₹{item.comparePrice}</span>
-                                        )}
-                                    </div>
-
-                                    <div className={cn(
-                                        "text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 mb-1",
-                                        item.currentStock <= 0 ? "text-rose-500" :
-                                            item.currentStock <= 5 ? "text-amber-500" : "text-emerald-600/70"
-                                    )}>
-                                        <div className={cn(
-                                            "w-1.5 h-1.5 rounded-full animate-pulse",
-                                            item.currentStock <= 0 ? "bg-rose-500" :
-                                                item.currentStock <= 5 ? "bg-amber-500" : "bg-emerald-500"
-                                        )} />
-                                        Stock: {item.currentStock} {item.unit}
-                                    </div>
-                                </div>
-                            </div>
-                            {(item.unit === 'Kg' || item.unit === 'kg') && (
-                                <div className="mt-2 pt-1 border-t border-slate-50 flex items-center gap-1 text-[8px] font-black uppercase text-emerald-600 tracking-widest">
-                                    <Scale size={10} />
-                                    Scalable
-                                </div>
-                            )}
+                    {inventoryLoading && inventory.length === 0 ? (
+                        <div className="col-span-full py-20 flex flex-col items-center justify-center text-slate-400">
+                            <RefreshCw className="animate-spin mb-4" size={32} />
+                            <p className="text-[10px] font-black uppercase tracking-widest">Loading Catalog...</p>
                         </div>
-                    ))}
+                    ) : filteredItems.length === 0 ? (
+                        <div className="col-span-full py-20 flex flex-col items-center justify-center text-slate-400">
+                            <Package size={48} strokeWidth={1} className="mb-4 opacity-20" />
+                            <p className="text-[10px] font-black uppercase tracking-widest">No items found</p>
+                        </div>
+                    ) :
+                        filteredItems.map((item) => (
+                            <div
+                                key={item.id}
+                                onClick={() => (item.unit === 'Kg' || item.unit === 'kg') ? setSelectedItemForScale(item) : addToCart(item)}
+                                className="bg-white p-4 pb-6 border border-transparent hover:border-slate-900 transition-all cursor-pointer flex flex-col group relative overflow-hidden h-full min-h-[360px]"
+                            >
+                                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                    <Plus size={20} className="text-slate-900 bg-white rounded-full shadow-lg p-1" />
+                                </div>
+
+                                {/* Category Badge */}
+                                <div className="absolute top-3 left-3 z-10">
+                                    <span className="bg-slate-900/5 backdrop-blur-md text-slate-600 text-[10px] font-black px-2 py-0.5 rounded-sm uppercase tracking-tighter">
+                                        {item.category}
+                                    </span>
+                                </div>
+
+                                <div className="w-full pt-[100%] bg-slate-50 mb-4 rounded-sm relative overflow-hidden">
+                                    <div className="absolute inset-0 flex items-center justify-center p-4 text-slate-300 transition-colors group-hover:bg-slate-100/50">
+                                        {item.image ? (
+                                            <img
+                                                src={item.image}
+                                                className="w-full h-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-110"
+                                                alt={item.name}
+                                                loading="lazy"
+                                                onError={(e) => {
+                                                    console.log("Image load error for:", item.name);
+                                                    e.target.onerror = null;
+                                                    e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600';
+                                                }}
+                                            />
+                                        ) : (
+                                            <div className="flex flex-col items-center gap-2">
+                                                <Package size={40} strokeWidth={1} />
+                                                <span className="text-[10px] uppercase tracking-widest font-black">No Preview</span>
+                                            </div>
+                                        )}
+
+                                        {/* Promo Badges (Unit moved to price section) */}
+                                        <div className="absolute top-3 right-3 flex flex-col items-end gap-1.5 z-10">
+                                            {item.bestPrice > 0 && (
+                                                <div className="bg-emerald-600 text-white text-[9px] font-black px-2 py-0.5 rounded-sm shadow-sm uppercase tracking-tighter">
+                                                    Best Rate
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Dietary Type Indicator */}
+                                        {item.dietaryType && item.dietaryType !== 'none' && (
+                                            <div className="absolute bottom-3 left-3">
+                                                <div className={cn(
+                                                    "w-5 h-5 border-[1.5px] flex items-center justify-center rounded-[2px] bg-white shadow-sm",
+                                                    item.dietaryType === 'veg' ? "border-emerald-600" : "border-red-600"
+                                                )}>
+                                                    <div className={cn(
+                                                        "w-[7px] h-[7px] rounded-full",
+                                                        item.dietaryType === 'veg' ? "bg-emerald-600" : "bg-red-600"
+                                                    )} />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col gap-1 flex-1">
+                                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight line-clamp-2 leading-tight mb-2">{item.name}</h4>
+
+                                    <div className="mt-auto flex flex-col gap-1">
+                                        <div className="flex items-baseline gap-1.5">
+                                            <span className="text-lg font-black text-slate-900 tabular-nums">₹{(item.price || 0).toLocaleString()}</span>
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">
+                                                / {item.unitValue} {item.unit}
+                                            </span>
+                                            {item.comparePrice > item.price && (
+                                                <span className="text-xs text-slate-400 line-through font-bold ml-1">₹{item.comparePrice}</span>
+                                            )}
+                                        </div>
+
+                                        <div className={cn(
+                                            "text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 mb-1",
+                                            item.currentStock <= 0 ? "text-rose-500" :
+                                                item.currentStock <= 5 ? "text-amber-500" : "text-emerald-600/70"
+                                        )}>
+                                            <div className={cn(
+                                                "w-1.5 h-1.5 rounded-full animate-pulse",
+                                                item.currentStock <= 0 ? "bg-rose-500" :
+                                                    item.currentStock <= 5 ? "bg-amber-500" : "bg-emerald-500"
+                                            )} />
+                                            Stock: {item.currentStock} {item.unit}
+                                        </div>
+                                    </div>
+                                </div>
+                                {(item.unit === 'Kg' || item.unit === 'kg') && (
+                                    <div className="mt-2 pt-1 border-t border-slate-50 flex items-center gap-1 text-[8px] font-black uppercase text-emerald-600 tracking-widest">
+                                        <Scale size={10} />
+                                        Scalable
+                                    </div>
+                                )}
+                            </div>
+                        ))
+                    }
                 </div>
             </div>
 

@@ -23,27 +23,18 @@ export const createPOSSale = async (req, res) => {
             await inventory.save();
         }
 
-        // 2. Ensure all items exist in inventory record
+        // 2. Validate inventory and stock
         for (const item of items) {
             let inventoryItem = inventory.items.find(i => i.productId.toString() === item.productId.toString());
 
             if (!inventoryItem) {
-                // Add product to inventory with initial stock if it was missing
-                // In production, this would be 0, but for smooth testing we can auto-init
-                inventory.items.push({
-                    productId: item.productId,
-                    currentStock: 100, // Initial "Dev" stock or 0
-                    lastUpdated: new Date()
-                });
-            } else if (inventoryItem.currentStock < item.quantity) {
-                // If stock is too low, we can either block it or allow it.
-                // For now, let's keep it informative but allow the sale recorded.
-                // To be strict: return handleResponse(res, 400, `Insufficient stock for ${item.name}`);
-                // To be helpful: inventoryItem.currentStock += (item.quantity + 10); // Auto-refill for testing
-                inventoryItem.currentStock += 100; // Auto-refill for testing convenience
+                return handleResponse(res, 400, `Item ${item.name} not found in inventory`);
+            }
+
+            if (inventoryItem.currentStock < item.quantity) {
+                return handleResponse(res, 400, `Insufficient stock for ${item.name}`);
             }
         }
-        await inventory.save();
 
         // 3. Generate Unique Sale ID
         let saleId;

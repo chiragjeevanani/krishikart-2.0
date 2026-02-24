@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import mockInventory from '../data/mockInventory.json';
 import api from '@/lib/axios';
 
-const InventoryContext = createContext();
+const InventoryContext = React.createContext();
 
 export const InventoryProvider = ({ children }) => {
     const [inventory, setInventory] = useState([]);
@@ -14,7 +13,7 @@ export const InventoryProvider = ({ children }) => {
             const response = await api.get('/franchise/inventory');
             if (response.data.success && Array.isArray(response.data.results)) {
                 const mappedInventory = response.data.results.map(item => ({
-                    id: item.productId?._id || item._id,
+                    id: item.id || item.productId?._id,
                     productId: item.productId?._id,
                     name: item.productId?.name || 'Unknown Product',
                     currentStock: item.currentStock,
@@ -45,53 +44,6 @@ export const InventoryProvider = ({ children }) => {
     useEffect(() => {
         fetchInventory();
     }, []);
-
-    const updateStock = (productId, newQty) => {
-        setInventory(prev => prev.map(item =>
-            (item.id === productId || item.productId === productId)
-                ? { ...item, currentStock: Math.max(0, newQty), lastUpdated: new Date().toISOString() }
-                : item
-        ));
-    };
-
-    const deductStock = (itemsToDeduct) => {
-        // itemsToDeduct: Array of { productId, qty, name }
-        let errors = [];
-        setInventory(prev => {
-            const nextInventory = prev.map(item => {
-                const deduction = itemsToDeduct.find(i => i.productId === item.id || i.id === item.id || i.productId === item.productId);
-                if (deduction) {
-                    if (item.currentStock < deduction.qty) {
-                        errors.push(`Insufficient stock for ${item.name}`);
-                        return item;
-                    }
-                    return {
-                        ...item,
-                        currentStock: item.currentStock - deduction.qty,
-                        lastUpdated: new Date().toISOString()
-                    };
-                }
-                return item;
-            });
-            return nextInventory;
-        });
-        return errors;
-    };
-
-    const addStock = (itemsToAdd) => {
-        // itemsToAdd: Array of { productId, qty }
-        setInventory(prev => prev.map(item => {
-            const added = itemsToAdd.find(i => i.productId === item.id || i.id === item.id || i.productId === item.productId);
-            if (added) {
-                return {
-                    ...item,
-                    currentStock: item.currentStock + added.qty,
-                    lastUpdated: new Date().toISOString()
-                };
-            }
-            return item;
-        }));
-    };
 
     const getLowStockItems = () => {
         return inventory.filter(item => item.currentStock <= item.mbq);
@@ -135,9 +87,6 @@ export const InventoryProvider = ({ children }) => {
             inventory,
             categories,
             loading,
-            updateStock,
-            addStock,
-            deductStock,
             getLowStockItems,
             getStockStats,
             resetAllStockItems,

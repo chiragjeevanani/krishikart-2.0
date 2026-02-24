@@ -45,7 +45,7 @@ export default function OrdersScreen() {
         deliveryPartners,
         stats
     } = useFranchiseOrders();
-    const { inventory, deductStock } = useInventory();
+    const { inventory, refreshInventory } = useInventory();
     const [activeTab, setActiveTab] = useState('new');
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
@@ -66,7 +66,7 @@ export default function OrdersScreen() {
         return () => clearTimeout(timer);
     }, [activeTab]);
 
-    const handleAction = (orderId, newStatus) => {
+    const handleAction = async (orderId, newStatus) => {
         const order = allOrders.find(o => o.id === orderId);
         if (!order) return;
 
@@ -78,24 +78,21 @@ export default function OrdersScreen() {
             }));
 
             const insufficient = itemsToValidate.filter(i => {
-                const stockItem = inventory.find(s => s.id === i.id);
+                const stockItem = inventory.find(s => s.id === i.id || s.productId === i.id);
                 return !stockItem || stockItem.currentStock < i.qty;
             });
 
             if (insufficient.length > 0) {
-                alert(`Cannot proceed! Insufficient stock for: ${insufficient.map(i => i.name).join(', ')}`);
+                toast.error(`Cannot proceed! Insufficient stock for: ${insufficient.map(i => i.name).join(', ')}`);
                 return;
             }
         }
 
-        if (newStatus === 'Dispatched') {
-            deductStock(order.items.map(i => ({
-                id: i.id || i.productId,
-                qty: i.quantity || i.qty
-            })));
-        }
+        await updateOrderStatus(orderId, newStatus);
 
-        updateOrderStatus(orderId, newStatus);
+        if (newStatus === 'Dispatched') {
+            refreshInventory();
+        }
     };
 
     const handleAssignDelivery = async (partnerId) => {
@@ -105,6 +102,7 @@ export default function OrdersScreen() {
         if (success) {
             setIsAssignModalOpen(false);
             setSelectedOrderForDispatch(null);
+            refreshInventory(); // Stock is deducted on the backend during dispatch
         }
         setIsAssigning(false);
     };

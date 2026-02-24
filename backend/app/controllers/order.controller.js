@@ -6,6 +6,7 @@ import Cart from "../models/cart.js";
 import User from "../models/user.js";
 import Franchise from "../models/franchise.js";
 import GlobalSetting from "../models/globalSetting.js";
+import Inventory from "../models/inventory.js";
 import { geocodeAddress, getDistance } from "../utils/geo.js";
 
 /**
@@ -338,6 +339,27 @@ export const updateOrderStatus = async (req, res) => {
 
     await order.save();
 
+    // Deduct stock if status changed to Dispatched
+    if (status === "Dispatched" && isFranchise) {
+      try {
+        const franchiseId = req.franchise._id;
+        const inventory = await Inventory.findOne({ franchiseId });
+        if (inventory) {
+          for (const item of order.items) {
+            const inventoryItem = inventory.items.find(i => i.productId.toString() === item.productId.toString());
+            if (inventoryItem) {
+              inventoryItem.currentStock -= item.quantity;
+              inventoryItem.lastUpdated = new Date();
+            }
+          }
+          await inventory.save();
+          console.log(`[Inventory] Stock deducted for order ${order._id} (Franchise: ${franchiseId})`);
+        }
+      } catch (stockErr) {
+        console.error("Stock deduction error during status update:", stockErr);
+      }
+    }
+
     // Socket Broadcasts
     const populatedOrder = await Order.findById(order._id)
       .populate("userId", "fullName mobile")
@@ -560,6 +582,24 @@ export const assignDeliveryPartner = async (req, res) => {
     });
 
     await order.save();
+
+    // Deduct stock on Dispatch
+    try {
+      const inventory = await Inventory.findOne({ franchiseId });
+      if (inventory) {
+        for (const item of order.items) {
+          const inventoryItem = inventory.items.find(i => i.productId.toString() === item.productId.toString());
+          if (inventoryItem) {
+            inventoryItem.currentStock -= item.quantity;
+            inventoryItem.lastUpdated = new Date();
+          }
+        }
+        await inventory.save();
+        console.log(`[Inventory] Stock deducted for order ${id} during dispatch (Franchise: ${franchiseId})`);
+      }
+    } catch (stockErr) {
+      console.error("Stock deduction error during dispatch:", stockErr);
+    }
 
     console.log(
       `🚚 Order ${id} dispatched by franchise ${franchiseId} via partner ${deliveryPartnerId}`,

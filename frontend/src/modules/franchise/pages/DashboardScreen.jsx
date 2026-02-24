@@ -43,7 +43,7 @@ export default function DashboardScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const { franchise } = useFranchiseAuth();
     const { stats, orders } = useFranchiseOrders();
-    const { getStockStats } = useInventory();
+    const { getStockStats, refreshInventory } = useInventory();
     const { purchaseOrders } = useGRN();
     const { summary: codSummary } = useCOD();
     const [showKYCModal, setShowKYCModal] = useState(false);
@@ -149,7 +149,13 @@ export default function DashboardScreen() {
                             <button className="px-3 py-1 text-[9px] font-bold bg-white text-slate-900 shadow-sm rounded-sm uppercase tracking-widest">Today</button>
                             <button className="px-3 py-1 text-[9px] font-bold text-slate-400 hover:text-slate-900 uppercase tracking-widest transition-colors">History</button>
                         </div>
-                        <button className="p-1.5 border border-slate-200 rounded-sm hover:bg-slate-50 text-slate-400">
+                        <button
+                            onClick={() => {
+                                refreshInventory();
+                                // Note: fetchOrders is not exposed directly from useFranchiseOrders yet, 
+                                // but we could add it if needed. For now inventory is refreshed.
+                            }}
+                            className="p-1.5 border border-slate-200 rounded-sm hover:bg-slate-50 text-slate-400">
                             <RefreshCw size={14} />
                         </button>
                         <button className="bg-slate-900 text-white px-3 py-1.5 rounded-sm text-[11px] font-bold flex items-center gap-2 hover:bg-slate-800 transition-colors shadow-sm uppercase tracking-widest">
@@ -187,9 +193,9 @@ export default function DashboardScreen() {
                     icon={AlertTriangle}
                 />
                 <MetricRow
-                    label="Total Commission"
-                    value="₹24,500"
-                    change={8.2}
+                    label="Est. Commission"
+                    value={`₹${(stats.revenue * 0.1).toLocaleString()}`}
+                    sub="10% of revenue"
                     trend="up"
                     icon={TrendingUp}
                 />
@@ -243,10 +249,10 @@ export default function DashboardScreen() {
                                 <div className="space-y-2">
                                     <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest mb-1">
                                         <span className="text-slate-500">Stock Availability</span>
-                                        <span className="text-emerald-600">84.2%</span>
+                                        <span className="text-emerald-600">{inventoryStats.healthPercentage}%</span>
                                     </div>
                                     <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                        <div className="h-full bg-emerald-500 w-[84.2%]" />
+                                        <div className="h-full bg-emerald-500" style={{ width: `${inventoryStats.healthPercentage}%` }} />
                                     </div>
                                 </div>
 
@@ -256,7 +262,7 @@ export default function DashboardScreen() {
                                         <span className="text-rose-600">{inventoryStats.lowStockCount} SKUs</span>
                                     </div>
                                     <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                        <div className="h-full bg-rose-500 w-[15%]" />
+                                        <div className="h-full bg-rose-500" style={{ width: `${(inventoryStats.lowStockCount / (inventoryStats.totalItems || 1)) * 100}%` }} />
                                     </div>
                                 </div>
 
