@@ -22,7 +22,6 @@ const router = express.Router();
 // User Routes
 router.post("/place", protect, createOrder);
 router.get("/my-orders", protect, getMyOrders);
-router.get("/:id", protect, getOrderById);
 
 // Admin Routes
 router.get("/admin/all", protectMasterAdmin, getAllOrders);
@@ -40,5 +39,7 @@ router.put("/franchise/:id/status", protectFranchise, updateOrderStatus);
 router.get("/delivery/dispatched", protectDelivery, getDispatchedOrders);
 router.get("/delivery/history", protectDelivery, getDeliveryOrderHistory);
 router.put("/delivery/:id/status", protectDelivery, updateOrderStatus);
+
+router.get("/:id", protect, getOrderById);
 
 export default router;

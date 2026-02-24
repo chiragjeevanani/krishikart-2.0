@@ -32,7 +32,11 @@ const orderSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: false // Relaxed for legacy support
+    },
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
     },
     franchiseId: {
         type: mongoose.Schema.Types.ObjectId,

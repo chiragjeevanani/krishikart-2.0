@@ -193,13 +193,24 @@ export default function OrdersScreen() {
                         </div>
                     )}
                     {activeTab === 'new' && (
-                        <button
-                            onClick={() => handleAction(row.id, 'Packed')}
-                            disabled={processingOrderId === row.id}
-                            className="p-1.5 px-3 text-xs font-bold uppercase text-emerald-600 border border-emerald-600 rounded-sm hover:bg-emerald-600 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Mark Packed
-                        </button>
+                        <>
+                            {!row.franchiseId ? (
+                                <button
+                                    onClick={() => acceptOrder(row.id)}
+                                    className="p-1.5 px-3 text-xs font-bold uppercase text-blue-600 border border-blue-600 rounded-sm hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                                >
+                                    Accept Order
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => handleAction(row.id, 'Packed')}
+                                    disabled={processingOrderId === row.id}
+                                    className="p-1.5 px-3 text-xs font-bold uppercase text-emerald-600 border border-emerald-600 rounded-sm hover:bg-emerald-600 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Mark Packed
+                                </button>
+                            )}
+                        </>
                     )}
                     {activeTab === 'ready' && row.status === 'packed' && (
                         <button

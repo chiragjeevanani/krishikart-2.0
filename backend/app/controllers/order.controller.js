@@ -1,3 +1,5 @@
+import fs from "fs";
+import mongoose from "mongoose";
 import Order from "../models/order.js";
 import { handleResponse } from "../utils/helper.js";
 import { emitToAdmin, emitToOrderRoom } from "../lib/socket.js";
@@ -419,10 +421,23 @@ export const getAllOrders = async (req, res) => {
 
 export const getFranchiseOrders = async (req, res) => {
   try {
-    const franchiseId = req.franchise._id;
+    const franchiseId = new mongoose.Types.ObjectId(req.franchise._id);
+    const franchiseCity = req.franchise.city;
     const { date } = req.query;
 
-    let query = { franchiseId: franchiseId };
+    let query = {
+      $or: [
+        { franchiseId: franchiseId },
+        {
+          franchiseId: null,
+          $or: [
+            { "shippingLocation.city": new RegExp(franchiseCity, 'i') },
+            { shippingAddress: new RegExp(franchiseCity, 'i') }
+          ],
+          orderStatus: { $in: ["Placed", "pending", "new"] }
+        }
+      ]
+    };
 
     if (date) {
       const startOfDay = new Date(date);
@@ -432,37 +447,36 @@ export const getFranchiseOrders = async (req, res) => {
       query.createdAt = { $gte: startOfDay, $lte: endOfDay };
     }
 
-    console.log("=== Fetching Franchise Orders ===");
-    console.log("Query:", JSON.stringify(query));
-
     const orders = await Order.find(query)
       .populate("userId", "fullName mobile")
+      .populate("user", "fullName mobile")
       .populate(
         "deliveryPartnerId",
         "fullName mobile vehicleNumber vehicleType",
       )
       .sort({ createdAt: -1 });
 
-    console.log(
-      `Found ${orders.length} orders (Assigned: ${orders.filter((o) => o.franchiseId).length}, Broadcast: ${orders.filter((o) => !o.franchiseId).length})`,
-    );
+    const debugInfo = `\n[${new Date().toISOString()}] Fetching Orders for ${franchiseId} (${franchiseCity})\nQuery: ${JSON.stringify(query)}\nFound: ${orders.length} orders\n`;
+    fs.appendFileSync("debug_log.txt", debugInfo);
 
     const formattedOrders = orders.map((order) => {
-      const dateObj = new Date(order.createdAt);
+      const dateObj = new Date(order.createdAt || Date.now());
+      const isValidDate = !isNaN(dateObj.getTime());
+
       return {
         ...order.toObject(),
-        date: dateObj.toLocaleDateString("en-IN", {
+        date: isValidDate ? dateObj.toLocaleDateString("en-IN", {
           day: "2-digit",
           month: "2-digit",
           year: "numeric",
           timeZone: "Asia/Kolkata",
-        }),
-        time: dateObj.toLocaleTimeString("en-IN", {
+        }) : "N/A",
+        time: isValidDate ? dateObj.toLocaleTimeString("en-IN", {
           hour: "2-digit",
           minute: "2-digit",
           hour12: true,
           timeZone: "Asia/Kolkata",
-        }),
+        }) : "N/A",
       };
     });
 
@@ -473,6 +487,9 @@ export const getFranchiseOrders = async (req, res) => {
       formattedOrders,
     );
   } catch (error) {
+    const errInfo = `\n[${new Date().toISOString()}] ERROR in getFranchiseOrders: ${error.message}\nStack: ${error.stack}\n`;
+    fs.appendFileSync("debug_log.txt", errInfo);
+    console.error("Fetch franchise orders error:", error);
     return handleResponse(res, 500, "Server error");
   }
 };

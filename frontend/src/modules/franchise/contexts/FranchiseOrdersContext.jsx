@@ -43,19 +43,19 @@ export function FranchiseOrdersProvider({ children }) {
     const orders = useMemo(() => {
         return liveOrders.map(o => ({
             id: o._id,
-            hotelName: o.userId?.fullName || 'Guest User',
+            hotelName: o.userId?.fullName || o.user?.fullName || 'Guest User',
             hotelImage: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&q=80",
             status: o.orderStatus?.toLowerCase() || 'placed',
             total: o.totalAmount,
-            items: o.items.map(i => ({
-                id: i.productId,
-                productId: i.productId,
+            items: (o.items || []).map(i => ({
+                id: i.productId || i.product,
+                productId: i.productId || i.product,
                 name: i.name,
                 quantity: i.quantity,
                 qty: i.quantity,
                 unit: i.unit || 'units'
             })),
-            address: o.userId?.address || o.shippingAddress || 'Address not provided',
+            address: o.userId?.address || o.user?.address || o.shippingAddress || 'Address not provided',
             deliveryTime: "30 mins",
             deliverySlot: o.deliverySlot || "Standard",
             paymentMode: o.paymentMethod || "Prepaid",
