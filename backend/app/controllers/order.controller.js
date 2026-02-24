@@ -42,9 +42,9 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 };
@@ -88,12 +88,9 @@ export const createOrder = async (req, res) => {
 
     for (const item of cart.items) {
       const product = item.productId;
-      if (!product || product.status !== "active") {
-        return handleResponse(
-          res,
-          400,
-          `Product ${product?.name || "Unknown"} is no longer available`,
-        );
+      if (!product) {
+        console.warn(`[Order] Skipping a product in cart for user ${userId} because it no longer exists in DB.`);
+        continue; // Skip items that are missing from products collection instead of failing
       }
 
       const { price, isBulkRate } = calculateItemPrice(product, item.quantity);
@@ -300,25 +297,25 @@ export const updateOrderStatus = async (req, res) => {
       );
     }
 
-        // Authorization checks
-        if (!isMasterAdmin) {
-            if (['Packed', 'Dispatched'].includes(status) && !isFranchise) {
-                return handleResponse(res, 403, "Only franchise can update to Packed/Dispatched");
-            }
-            if (status === 'Delivered' && !isDelivery && !isFranchise) {
-                return handleResponse(res, 403, "Only delivery partner can update to Delivered");
-            }
-            // Delivery Specific: Check if this order is assigned to this partner
-            if (isDelivery && status === 'Delivered') {
-                const partnerId = req.delivery?._id || req.user?.id;
-                if (!partnerId || !order.deliveryPartnerId || order.deliveryPartnerId.toString() !== partnerId.toString()) {
-                    return handleResponse(res, 403, "This order is not assigned to you");
-                }
-            }
-            if (status === 'Received' && !isUser) {
-                return handleResponse(res, 403, "Only user can update to Received");
-            }
+    // Authorization checks
+    if (!isMasterAdmin) {
+      if (['Packed', 'Dispatched'].includes(status) && !isFranchise) {
+        return handleResponse(res, 403, "Only franchise can update to Packed/Dispatched");
+      }
+      if (status === 'Delivered' && !isDelivery && !isFranchise) {
+        return handleResponse(res, 403, "Only delivery partner can update to Delivered");
+      }
+      // Delivery Specific: Check if this order is assigned to this partner
+      if (isDelivery && status === 'Delivered') {
+        const partnerId = req.delivery?._id || req.user?.id;
+        if (!partnerId || !order.deliveryPartnerId || order.deliveryPartnerId.toString() !== partnerId.toString()) {
+          return handleResponse(res, 403, "This order is not assigned to you");
         }
+      }
+      if (status === 'Received' && !isUser) {
+        return handleResponse(res, 403, "Only user can update to Received");
+      }
+    }
 
     order.orderStatus = status;
 
@@ -403,7 +400,7 @@ export const getFranchiseOrders = async (req, res) => {
     const franchiseId = req.franchise._id;
     const { date } = req.query;
 
-        let query = { franchiseId: franchiseId };
+    let query = { franchiseId: franchiseId };
 
     if (date) {
       const startOfDay = new Date(date);
@@ -475,10 +472,10 @@ export const getFranchiseOrderById = async (req, res) => {
       return handleResponse(res, 404, "Order not found");
     }
 
-        // Allow only if assigned to this franchise
-        if (!order.franchiseId || order.franchiseId.toString() !== franchiseId.toString()) {
-            return handleResponse(res, 403, "Not authorized to view this order");
-        }
+    // Allow only if assigned to this franchise
+    if (!order.franchiseId || order.franchiseId.toString() !== franchiseId.toString()) {
+      return handleResponse(res, 403, "Not authorized to view this order");
+    }
 
     return handleResponse(res, 200, "Order details fetched", order);
   } catch (error) {
@@ -511,22 +508,22 @@ export const acceptFranchiseOrder = async (req, res) => {
       );
     }
 
-        // Assign franchise and keep status as Placed
-        order.franchiseId = franchiseId;
-        order.statusHistory.push({
-            status: order.orderStatus,
-            updatedAt: new Date(),
-            updatedBy: 'franchise'
-        });
-        await order.save();
+    // Assign franchise and keep status as Placed
+    order.franchiseId = franchiseId;
+    order.statusHistory.push({
+      status: order.orderStatus,
+      updatedAt: new Date(),
+      updatedBy: 'franchise'
+    });
+    await order.save();
 
     console.log(`✅ Order ${id} accepted by franchise ${franchiseId}`);
 
-        return handleResponse(res, 200, "Order accepted successfully", order);
-    } catch (error) {
-        console.error('Accept order error:', error);
-        return handleResponse(res, 500, "Server error");
-    }
+    return handleResponse(res, 200, "Order accepted successfully", order);
+  } catch (error) {
+    console.error('Accept order error:', error);
+    return handleResponse(res, 500, "Server error");
+  }
 };
 
 // Assign delivery partner to order

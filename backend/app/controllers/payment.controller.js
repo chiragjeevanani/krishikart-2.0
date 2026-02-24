@@ -140,9 +140,9 @@ export const verifyPayment = async (req, res) => {
 
         for (const item of cart.items) {
             const product = item.productId;
-            if (!product || product.status !== 'active') {
-                console.error("Inactive product in cart:", product?.name || 'Unknown');
-                return handleResponse(res, 400, `Product ${product?.name || 'Unknown'} is no longer available`);
+            if (!product) {
+                console.warn(`[Payment] Skipping a product in cart for user ${userId} because it no longer exists in DB.`);
+                continue;
             }
 
             const { price, isBulkRate } = calculateItemPrice(product, item.quantity);
