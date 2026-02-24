@@ -113,12 +113,12 @@ export function FranchiseOrdersProvider({ children }) {
 
     const stats = useMemo(() => ({
         todayOrders: orders.length,
-        newOrders: orders.filter(o => o.status === 'placed').length,
-        readyToDispatch: orders.filter(o => o.status === 'packed').length,
-        outForDelivery: orders.filter(o => o.status === 'dispatched').length,
+        newOrders: orders.filter(o => ['placed', 'pending', 'new'].includes(o.status)).length,
+        readyToDispatch: orders.filter(o => ['packed', 'dispatched', 'ready'].includes(o.status)).length,
+        outForDelivery: orders.filter(o => ['dispatched'].includes(o.status)).length,
         dispatch: orders.filter(o => ['packed', 'dispatched'].includes(o.status)).length,
-        completedCount: orders.filter(o => ['delivered', 'received'].includes(o.status)).length,
-        revenue: orders.filter(o => ['delivered', 'received'].includes(o.status)).reduce((acc, curr) => acc + (curr.total || 0), 0)
+        completedCount: orders.filter(o => ['delivered', 'received', 'completed'].includes(o.status)).length,
+        revenue: orders.filter(o => ['delivered', 'received', 'completed'].includes(o.status)).reduce((acc, curr) => acc + (curr.total || 0), 0)
     }), [orders]);
 
     return (

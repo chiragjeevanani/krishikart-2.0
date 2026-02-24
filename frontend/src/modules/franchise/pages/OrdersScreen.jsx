@@ -119,10 +119,15 @@ export default function OrdersScreen() {
 
     const filteredOrders = allOrders.filter(order => {
         let matchesTab = false;
-        const status = (order.orderStatus || order.status || '').toLowerCase();
-        if (activeTab === 'new') matchesTab = status === 'placed';
-        else if (activeTab === 'ready') matchesTab = ['packed', 'dispatched'].includes(status);
-        else if (activeTab === 'completed') matchesTab = ['delivered', 'received'].includes(status);
+        const status = (order.status || '').toLowerCase();
+
+        if (activeTab === 'new') {
+            matchesTab = ['placed', 'pending', 'new'].includes(status);
+        } else if (activeTab === 'ready') {
+            matchesTab = ['packed', 'dispatched', 'ready'].includes(status);
+        } else if (activeTab === 'completed') {
+            matchesTab = ['delivered', 'received', 'completed'].includes(status);
+        }
 
         const hotelName = order.hotelName || order.userId?.fullName || 'Unknown';
         const orderId = (order._id || order.id || '').toString();

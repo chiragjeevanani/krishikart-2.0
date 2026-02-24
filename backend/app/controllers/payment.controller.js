@@ -6,6 +6,7 @@ import Cart from "../models/cart.js";
 import User from "../models/user.js";
 import Product from "../models/product.js";
 import Franchise from "../models/franchise.js";
+import { geocodeAddress, getDistance } from "../utils/geo.js";
 
 /**
  * Helper to calculate price based on quantity and bulk pricing rules (Copied from order controller)
@@ -167,10 +168,42 @@ export const verifyPayment = async (req, res) => {
 
         console.log("Order totals calculated:", { subtotal, deliveryFee, tax, totalAmount });
 
-        // Broadcast Order Model - No specific franchise assignment
-        console.log('=== Broadcast Payment Order ===');
-        const franchiseId = null; // Broadcast to all franchises
-        console.log('Payment order will be broadcast to ALL active franchises');
+        // 2.5 Auto Franchise Assignment
+        let assignedFranchiseId = null;
+        let userCoords = null;
+        console.log('Attempting auto-franchise assignment...');
+        try {
+            userCoords = await geocodeAddress(shippingAddress);
+            if (userCoords) {
+                const activeFranchises = await Franchise.find({
+                    status: 'active',
+                    'location.lat': { $ne: null },
+                    'location.lng': { $ne: null }
+                });
+
+                let minDistance = Infinity;
+                for (const franchise of activeFranchises) {
+                    const dist = getDistance(
+                        userCoords.lat, userCoords.lng,
+                        franchise.location.lat, franchise.location.lng
+                    );
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                        assignedFranchiseId = franchise._id;
+                    }
+                }
+            }
+        } catch (geoErr) {
+            console.error("Auto-assignment error:", geoErr);
+        }
+
+        const franchiseId = assignedFranchiseId;
+        if (franchiseId) {
+            console.log(`Order auto-assigned to franchise ID: ${franchiseId}`);
+        } else {
+            console.log('=== Broadcast Payment Order ===');
+            console.log('Payment order will be broadcast to ALL active franchises');
+        }
 
         console.log("Creating order in database...");
         const newOrder = new Order({
@@ -185,6 +218,7 @@ export const verifyPayment = async (req, res) => {
             paymentStatus: 'Completed',
             orderStatus: 'Placed',
             shippingAddress,
+            shippingLocation: userCoords,
             razorpayOrderId: razorpay_order_id,
             razorpayPaymentId: razorpay_payment_id
         });

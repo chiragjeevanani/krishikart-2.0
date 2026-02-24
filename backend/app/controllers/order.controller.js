@@ -254,6 +254,17 @@ export const updateOrderStatus = async (req, res) => {
 
         // Authorization checks
         if (!isMasterAdmin) {
+            if (isFranchise) {
+                // If it's a franchise, ensure they either own the order or it's unassigned (they are picking it up)
+                if (order.franchiseId && order.franchiseId.toString() !== req.franchise._id.toString()) {
+                    return handleResponse(res, 403, "This order is assigned to another franchise");
+                }
+                // If they are updating it and it's unassigned, assign it to them
+                if (!order.franchiseId) {
+                    order.franchiseId = req.franchise._id;
+                }
+            }
+
             if (['Packed', 'Dispatched'].includes(status) && !isFranchise) {
                 return handleResponse(res, 403, "Only franchise can update to Packed/Dispatched");
             }
@@ -352,7 +363,14 @@ export const getFranchiseOrders = async (req, res) => {
         const franchiseId = req.franchise._id;
         const { date } = req.query;
 
-        let query = { franchiseId: franchiseId };
+        // Query for orders specifically assigned to this franchise 
+        // OR orders that are NOT yet assigned (broadcasted)
+        let query = {
+            $or: [
+                { franchiseId: franchiseId },
+                { franchiseId: null, orderStatus: { $in: ['Placed', 'Packed', 'Pending'] } }
+            ]
+        };
 
         if (date) {
             const startOfDay = new Date(date);
@@ -412,8 +430,11 @@ export const getFranchiseOrderById = async (req, res) => {
             return handleResponse(res, 404, "Order not found");
         }
 
-        // Allow only if assigned to this franchise
-        if (!order.franchiseId || order.franchiseId.toString() !== franchiseId.toString()) {
+        // Allow if assigned to this franchise OR if it's a broadcasted order (unassigned)
+        const isAssigned = order.franchiseId && order.franchiseId.toString() === franchiseId.toString();
+        const isBroadcast = !order.franchiseId && ['Placed', 'Packed', 'Pending'].includes(order.orderStatus);
+
+        if (!isAssigned && !isBroadcast) {
             return handleResponse(res, 403, "Not authorized to view this order");
         }
 
@@ -450,9 +471,21 @@ export const acceptFranchiseOrder = async (req, res) => {
         });
         await order.save();
 
+        // Socket Notification: Notify admin that order is accepted by a franchise
+        const populatedOrder = await Order.findById(order._id)
+            .populate('userId', 'fullName mobile')
+            .populate('franchiseId', 'shopName ownerName cityArea mobile');
+
+        emitToAdmin('order_accepted_by_franchise', populatedOrder);
+        emitToOrderRoom(order._id, 'order_accepted', {
+            orderId: order._id,
+            franchiseId: order.franchiseId,
+            status: order.orderStatus
+        });
+
         console.log(`✅ Order ${id} accepted by franchise ${franchiseId}`);
 
-        return handleResponse(res, 200, "Order accepted successfully", order);
+        return handleResponse(res, 200, "Order accepted successfully", populatedOrder);
     } catch (error) {
         console.error('Accept order error:', error);
         return handleResponse(res, 500, "Server error");
