@@ -349,6 +349,13 @@ export const updateOrderStatus = async (req, res) => {
       order.deliveredAt = new Date();
     }
 
+    // Auto-complete payment for COD/others if order is Received/Delivered
+    if (["Received", "Delivered"].includes(status)) {
+      if (order.paymentStatus === "Pending") {
+        order.paymentStatus = "Completed";
+      }
+    }
+
     await order.save();
 
     // Deduct stock if status changed to Packed

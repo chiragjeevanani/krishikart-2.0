@@ -120,7 +120,7 @@ export default function OrdersScreen() {
         const status = (order.status || '').toLowerCase();
 
         if (activeTab === 'new') {
-            matchesTab = ['placed', 'pending', 'new'].includes(status);
+            matchesTab = ['placed', 'pending', 'new', 'procuring'].includes(status);
         } else if (activeTab === 'ready') {
             matchesTab = ['packed', 'dispatched', 'ready'].includes(status);
         } else if (activeTab === 'completed') {
@@ -188,6 +188,12 @@ export default function OrdersScreen() {
             align: 'right',
             render: (_, row) => (
                 <div className="flex items-center justify-end gap-2">
+                    {row.status === 'procuring' && (
+                        <div className="flex items-center gap-2 mr-4 bg-amber-50 px-2 py-1 rounded-sm border border-amber-200">
+                            <RefreshCw size={12} className="text-amber-600 animate-spin" />
+                            <span className="text-[10px] font-black text-amber-700 uppercase">Under Procurement</span>
+                        </div>
+                    )}
                     {activeTab === 'ready' && row.status === 'dispatched' && row.deliveryPartner && (
                         <div className="flex items-center gap-2 mr-4 bg-emerald-50 px-2 py-1 rounded-sm border border-emerald-100">
                             <UserCircle2 size={12} className="text-emerald-600" />

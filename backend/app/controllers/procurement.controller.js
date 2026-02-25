@@ -504,12 +504,13 @@ export const franchiseConfirmReceipt = async (req, res) => {
         // Update Order if exists
         if (request.orderId) {
             await Order.findByIdAndUpdate(request.orderId, {
+                orderStatus: 'Placed', // Set back to Placed so franchise can Pack it
                 $push: {
                     statusHistory: {
-                        status: 'Procuring',
+                        status: 'Placed',
                         updatedAt: new Date(),
                         updatedBy: 'franchise',
-                        message: 'Items received from vendor at fulfillment center.'
+                        message: 'Items received from vendor. Order is now ready for packing.'
                     }
                 }
             });

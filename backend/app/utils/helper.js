@@ -4,7 +4,7 @@ export const handleResponse = (res, statusCode, message, data = {}) => {
   const sanitize = (item) => {
     if (!item) return item;
     const obj = item.toObject?.() || item;
-    const { createdAt, updatedAt, __v, ...cleaned } = obj;
+    const { password, __v, ...cleaned } = obj;
     return cleaned;
   };
 

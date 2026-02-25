@@ -77,12 +77,9 @@ export function OrderProvider({ children }) {
         try {
             const response = await api.put(`/orders/${orderId}/status`, { status });
             if (response.data.success) {
+                const updatedOrder = response.data.result;
                 setOrders(prev => prev.map(order =>
-                    order._id === orderId ? {
-                        ...order,
-                        orderStatus: status,
-                        ...additionalData,
-                    } : order
+                    order._id === orderId ? updatedOrder : order
                 ));
                 return { success: true };
             }

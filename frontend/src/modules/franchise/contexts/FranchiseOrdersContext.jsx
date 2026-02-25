@@ -56,7 +56,7 @@ export function FranchiseOrdersProvider({ children }) {
             id: o._id,
             hotelName: o.userId?.legalEntityName || o.userId?.fullName || o.user?.legalEntityName || o.user?.fullName || 'Guest User',
             hotelImage: (o.items && o.items[0]?.image) || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&q=80",
-            status: (o.orderStatus || '').toLowerCase() || 'placed',
+            status: (o.orderStatus || '').toLowerCase(),
             total: o.totalAmount,
             items: (o.items || []).map(i => ({
                 id: i.productId || i.product,
@@ -134,7 +134,7 @@ export function FranchiseOrdersProvider({ children }) {
 
     const stats = useMemo(() => ({
         todayOrders: orders.length,
-        newOrders: orders.filter(o => ['placed', 'pending', 'new'].includes(o.status)).length,
+        newOrders: orders.filter(o => ['placed', 'pending', 'new', 'procuring'].includes(o.status)).length,
         readyToDispatch: orders.filter(o => ['packed', 'dispatched', 'ready'].includes(o.status)).length,
         outForDelivery: orders.filter(o => ['dispatched'].includes(o.status)).length,
         dispatch: orders.filter(o => ['packed', 'dispatched'].includes(o.status)).length,

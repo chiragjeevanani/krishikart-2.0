@@ -153,9 +153,11 @@ export default function OrderDetailScreen() {
                         </div>
                         <div className={cn(
                             "px-2 py-0.5 rounded-sm text-[9px] font-black uppercase tracking-widest border",
-                            order.status === 'completed' || order.status === 'delivered' ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-amber-50 text-amber-600 border-amber-100"
+                            order.status === 'completed' || order.status === 'delivered' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
+                                order.status === 'procuring' ? "bg-amber-50 text-amber-600 border-amber-100" :
+                                    "bg-blue-50 text-blue-600 border-blue-100"
                         )}>
-                            {order.status}
+                            {order.status === 'procuring' ? 'Under Procurement' : order.status}
                         </div>
                     </div>
 
@@ -366,6 +368,16 @@ export default function OrderDetailScreen() {
                                 <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-sm">
                                     <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest text-center flex items-center justify-center gap-2">
                                         <CheckCircle2 size={14} /> Order Accepted
+                                    </p>
+                                </div>
+                            )}
+                            {order.status === 'procuring' && (
+                                <div className="p-4 bg-amber-50 border border-amber-200 rounded-sm">
+                                    <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center justify-center gap-2 mb-2">
+                                        <RefreshCw size={14} className="animate-spin" /> Under Procurement
+                                    </p>
+                                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-tight text-center leading-relaxed">
+                                        Stock for some items is low. Procurement request has been initiated. Once received, the order will be ready for packing.
                                     </p>
                                 </div>
                             )}
