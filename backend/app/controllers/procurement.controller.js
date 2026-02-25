@@ -483,6 +483,10 @@ export const franchiseConfirmReceipt = async (req, res) => {
                     Number(reqItem.quantity);
 
                 const existingItem = inventory.items.find(i => i.productId.toString() === prodId.toString());
+
+                // CRITICAL: Ensure we skip if no valid quantity was received
+                if (quantityToAdd <= 0) continue;
+
                 if (existingItem) {
                     existingItem.currentStock += quantityToAdd;
                     existingItem.lastUpdated = new Date();
@@ -501,19 +505,50 @@ export const franchiseConfirmReceipt = async (req, res) => {
             console.error("Critical: Stock sync failed during receipt confirmation:", invErr);
         }
 
-        // Update Order if exists
+        // Update Order and Auto-Pack if exists
         if (request.orderId) {
-            await Order.findByIdAndUpdate(request.orderId, {
-                orderStatus: 'Placed', // Set back to Placed so franchise can Pack it
-                $push: {
-                    statusHistory: {
-                        status: 'Placed',
+            try {
+                const orderId = request.orderId;
+                const order = await Order.findById(orderId);
+
+                if (order) {
+                    // 1. Reset shortage flags since items are now received
+                    order.items = order.items.map(item => {
+                        item.isShortage = false;
+                        item.shortageQty = 0;
+                        return item;
+                    });
+
+                    // 2. Auto-transition to Packed
+                    order.orderStatus = 'Packed';
+                    order.statusHistory.push({
+                        status: 'Packed',
                         updatedAt: new Date(),
-                        updatedBy: 'franchise',
-                        message: 'Items received from vendor. Order is now ready for packing.'
+                        updatedBy: 'system',
+                        message: 'Items received from vendor. Order automatically packed and ready for dispatch.'
+                    });
+
+                    // 3. Deduct stock from inventory (Important to keep sync)
+                    const inventory = await Inventory.findOne({ franchiseId });
+                    if (inventory) {
+                        for (const item of order.items) {
+                            const invItem = inventory.items.find(i =>
+                                i.productId.toString() === (item.productId?._id?.toString() || item.productId?.toString())
+                            );
+                            if (invItem) {
+                                invItem.currentStock -= item.quantity;
+                                invItem.lastUpdated = new Date();
+                            }
+                        }
+                        await inventory.save();
                     }
+
+                    await order.save();
+                    console.log(`[AutoFlow] Order ${orderId} automatically packed for franchise ${franchiseId}`);
                 }
-            });
+            } catch (orderErr) {
+                console.error("Auto-packing error after procurement:", orderErr);
+            }
         }
 
         return handleResponse(res, 200, "Goods received and stock updated successfully", request);

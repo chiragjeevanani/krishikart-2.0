@@ -80,8 +80,11 @@ export default function OrdersScreen() {
             }));
 
             const insufficient = itemsToValidate.filter(i => {
-                const stockItem = inventory.find(s => s.productId === i.id || s.id === i.id);
-                return !stockItem || stockItem.currentStock < i.qty;
+                const stockItem = inventory.find(s =>
+                    (s.productId?.toString() === i.id?.toString()) ||
+                    (s.id?.toString() === i.id?.toString())
+                );
+                return !stockItem || Number(stockItem.currentStock) < Number(i.qty);
             });
 
             if (insufficient.length > 0) {

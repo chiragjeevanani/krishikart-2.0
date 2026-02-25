@@ -25,6 +25,7 @@ import DataGrid from '../components/tables/DataGrid';
 import FilterBar from '../components/tables/FilterBar';
 import DocumentViewer from '../../vendor/components/documents/DocumentViewer';
 import { useInventory } from '../contexts/InventoryContext';
+import { useFranchiseOrders } from '../contexts/FranchiseOrdersContext';
 
 const ReceivingScreen = () => {
     const [orders, setOrders] = useState([]);
@@ -39,6 +40,7 @@ const ReceivingScreen = () => {
     const [docType, setDocType] = useState('GRN');
 
     const { refreshInventory } = useInventory();
+    const { refreshOrders } = useFranchiseOrders();
 
     useEffect(() => {
         fetchOrders();
@@ -102,8 +104,9 @@ const ReceivingScreen = () => {
             if (response.data.success) {
                 toast.success("Consignment received and stock updated");
 
-                // Refresh live inventory from server
+                // Refresh live inventory and orders from server
                 refreshInventory();
+                if (refreshOrders) refreshOrders();
 
                 // Refresh list and close panel
                 fetchOrders();
