@@ -52,7 +52,7 @@ export default function ChartPanel({
             {isExpanded && (
                 <div
                     className="w-full flex-1 overflow-hidden"
-                    style={{ minHeight: height }}
+                    style={{ height: height }}
                 >
                     {children}
                 </div>

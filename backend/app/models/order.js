@@ -89,7 +89,7 @@ const orderSchema = new mongoose.Schema({
     },
     orderStatus: {
         type: String,
-        enum: ['Placed', 'Packed', 'Dispatched', 'Delivered', 'Received', 'Cancelled'],
+        enum: ['Placed', 'Procuring', 'Packed', 'Dispatched', 'Delivered', 'Received', 'Cancelled'],
         default: 'Placed'
     },
     statusHistory: [

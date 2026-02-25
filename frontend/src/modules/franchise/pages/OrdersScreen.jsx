@@ -72,7 +72,7 @@ export default function OrdersScreen() {
         const order = allOrders.find(o => o.id === orderId);
         if (!order) return;
 
-        if (newStatus === 'Dispatched') {
+        if (newStatus === 'Dispatched' || newStatus === 'Packed') {
             const itemsToValidate = order.items.map(i => ({
                 id: i.id || i.productId,
                 qty: i.quantity || i.qty,
@@ -80,19 +80,19 @@ export default function OrdersScreen() {
             }));
 
             const insufficient = itemsToValidate.filter(i => {
-                const stockItem = inventory.find(s => s.id === i.id || s.productId === i.id);
+                const stockItem = inventory.find(s => s.productId === i.id || s.id === i.id);
                 return !stockItem || stockItem.currentStock < i.qty;
             });
 
             if (insufficient.length > 0) {
-                toast.error(`Cannot proceed! Insufficient stock for: ${insufficient.map(i => i.name).join(', ')}`);
+                toast.error(`Insufficient stock for: ${insufficient.map(i => i.name || 'Unknown Item').join(', ')}. Please procure more stock.`);
                 return;
             }
         }
 
         await updateOrderStatus(orderId, newStatus);
 
-        if (newStatus === 'Dispatched') {
+        if (newStatus === 'Dispatched' || newStatus === 'Packed') {
             refreshInventory();
         }
     };

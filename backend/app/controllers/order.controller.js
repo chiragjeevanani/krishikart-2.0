@@ -307,6 +307,29 @@ export const updateOrderStatus = async (req, res) => {
       }
     }
 
+    // Stock validation for franchise
+    if (status === "Packed" && isFranchise) {
+      const franchiseId = req.franchise._id;
+      const inventory = await Inventory.findOne({ franchiseId });
+
+      if (!inventory) {
+        return handleResponse(res, 400, "Franchise inventory not found. Please setup inventory first.");
+      }
+
+      const insufficientItems = [];
+      for (const item of order.items) {
+        const inventoryItem = inventory.items.find(i => i.productId.toString() === item.productId.toString());
+        const availableStock = inventoryItem ? inventoryItem.currentStock : 0;
+        if (availableStock < item.quantity) {
+          insufficientItems.push(item.name || item.productId);
+        }
+      }
+
+      if (insufficientItems.length > 0) {
+        return handleResponse(res, 400, `Insufficient stock for: ${insufficientItems.join(", ")}. Please procure more stock.`);
+      }
+    }
+
     order.orderStatus = status;
 
     // Push to history
@@ -328,8 +351,8 @@ export const updateOrderStatus = async (req, res) => {
 
     await order.save();
 
-    // Deduct stock if status changed to Dispatched
-    if (status === "Dispatched" && isFranchise) {
+    // Deduct stock if status changed to Packed
+    if (status === "Packed" && isFranchise) {
       try {
         const franchiseId = req.franchise._id;
         const inventory = await Inventory.findOne({ franchiseId });
@@ -346,6 +369,27 @@ export const updateOrderStatus = async (req, res) => {
         }
       } catch (stockErr) {
         console.error("Stock deduction error during status update:", stockErr);
+      }
+    }
+
+    // Return stock if status changed to Cancelled from Packed/Dispatched
+    if (status === "Cancelled" && (currentStatus === "Packed" || currentStatus === "Dispatched") && isFranchise) {
+      try {
+        const franchiseId = req.franchise._id;
+        const inventory = await Inventory.findOne({ franchiseId });
+        if (inventory) {
+          for (const item of order.items) {
+            const inventoryItem = inventory.items.find(i => i.productId.toString() === item.productId.toString());
+            if (inventoryItem) {
+              inventoryItem.currentStock += item.quantity;
+              inventoryItem.lastUpdated = new Date();
+            }
+          }
+          await inventory.save();
+          console.log(`[Inventory] Stock returned for cancelled order ${order._id} (Franchise: ${franchiseId})`);
+        }
+      } catch (stockErr) {
+        console.error("Stock return error during status update:", stockErr);
       }
     }
 
@@ -661,23 +705,8 @@ export const assignDeliveryPartner = async (req, res) => {
 
     await order.save();
 
-    // Deduct stock on Dispatch
-    try {
-      const inventory = await Inventory.findOne({ franchiseId });
-      if (inventory) {
-        for (const item of order.items) {
-          const inventoryItem = inventory.items.find(i => i.productId.toString() === item.productId.toString());
-          if (inventoryItem) {
-            inventoryItem.currentStock -= item.quantity;
-            inventoryItem.lastUpdated = new Date();
-          }
-        }
-        await inventory.save();
-        console.log(`[Inventory] Stock deducted for order ${id} during dispatch (Franchise: ${franchiseId})`);
-      }
-    } catch (stockErr) {
-      console.error("Stock deduction error during dispatch:", stockErr);
-    }
+    // Note: Stock deduction is now handled in updateOrderStatus when status changes to "Packed"
+    // So we don't need to deduct it again here.
 
     console.log(
       `🚚 Order ${id} dispatched by franchise ${franchiseId} via partner ${deliveryPartnerId}`,

@@ -134,16 +134,6 @@ export default function OrdersScreen() {
             )
         },
         {
-            header: 'Settle Val',
-            key: 'procurementTotal',
-            render: (val, row) => (
-                <div className="flex items-center gap-1 text-slate-900 tabular-nums font-black">
-                    <IndianRupee size={10} className="text-slate-400" />
-                    <span className="text-[11px]">{(val || row.total || 0).toLocaleString()}</span>
-                </div>
-            )
-        },
-        {
             header: 'Status',
             key: 'status',
             align: 'right',
@@ -271,13 +261,9 @@ export default function OrdersScreen() {
                                 <div className="flex items-center justify-between pt-6 border-t border-slate-50">
                                     <div className="flex items-center gap-6">
                                         <div className="flex items-center gap-2 text-slate-400 capitalize">
-                                            <IndianRupee size={14} className="text-slate-900" />
-                                            <span className="text-[11px] font-black text-slate-900 tabular-nums">₹{(order.procurementTotal || order.total || 0).toLocaleString()}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-slate-400 capitalize">
                                             <Calendar size={14} />
                                             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
-                                                {new Date(order.deadline).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                {new Date(order.date || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </span>
                                         </div>
                                     </div>

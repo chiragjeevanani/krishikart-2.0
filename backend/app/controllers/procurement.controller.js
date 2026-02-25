@@ -3,6 +3,7 @@ import Product from "../models/product.js";
 import ProcurementRequest from "../models/procurementRequest.js";
 import Franchise from "../models/franchise.js";
 import User from "../models/user.js";
+import Order from "../models/order.js";
 import Inventory from "../models/inventory.js";
 import handleResponse from "../utils/helper.js";
 
@@ -119,6 +120,20 @@ export const vendorSubmitQuotation = async (req, res) => {
         request.status = 'quoted';
         await request.save();
 
+        // Update Order if exists
+        if (request.orderId) {
+            await Order.findByIdAndUpdate(request.orderId, {
+                $push: {
+                    statusHistory: {
+                        status: 'Procuring',
+                        updatedAt: new Date(),
+                        updatedBy: 'vendor',
+                        message: 'Vendor has submitted a quotation for out-of-stock items.'
+                    }
+                }
+            });
+        }
+
         return handleResponse(res, 200, "Quotation submitted successfully", request);
     } catch (error) {
         console.error("Vendor submit quotation error:", error);
@@ -172,6 +187,28 @@ export const vendorUpdateStatus = async (req, res) => {
         }
 
         await request.save();
+
+        // Update Order if exists
+        if (request.orderId) {
+            let userMessage = "";
+            switch (status) {
+                case 'preparing': userMessage = "Vendor is preparing your items."; break;
+                case 'ready_for_pickup': userMessage = "Items are ready at vendor location and will be picked up soon."; break;
+                case 'shipped': userMessage = "Items have been shipped from vendor to center."; break;
+                default: userMessage = `Procurement status updated to ${status}`;
+            }
+
+            await Order.findByIdAndUpdate(request.orderId, {
+                $push: {
+                    statusHistory: {
+                        status: 'Procuring',
+                        updatedAt: new Date(),
+                        updatedBy: 'system',
+                        message: userMessage
+                    }
+                }
+            });
+        }
 
         return handleResponse(res, 200, "Status updated successfully", request);
     } catch (error) {
@@ -231,6 +268,21 @@ export const adminUpdateProcurementRequest = async (req, res) => {
 
         await request.save();
         console.log(`Request ${requestId} saved. Assigned Vendor: ${request.assignedVendorId}`);
+
+        // Update Order if exists
+        if (request.orderId) {
+            await Order.findByIdAndUpdate(request.orderId, {
+                orderStatus: 'Procuring',
+                $push: {
+                    statusHistory: {
+                        status: 'Procuring',
+                        updatedAt: new Date(),
+                        updatedBy: 'admin',
+                        message: status === 'assigned' ? 'Vendor assigned for out-of-stock items.' : `Procurement order ${status}.`
+                    }
+                }
+            });
+        }
 
         return handleResponse(res, 200, "Procurement request updated successfully", request);
     } catch (error) {
@@ -449,6 +501,20 @@ export const franchiseConfirmReceipt = async (req, res) => {
             console.error("Critical: Stock sync failed during receipt confirmation:", invErr);
         }
 
+        // Update Order if exists
+        if (request.orderId) {
+            await Order.findByIdAndUpdate(request.orderId, {
+                $push: {
+                    statusHistory: {
+                        status: 'Procuring',
+                        updatedAt: new Date(),
+                        updatedBy: 'franchise',
+                        message: 'Items received from vendor at fulfillment center.'
+                    }
+                }
+            });
+        }
+
         return handleResponse(res, 200, "Goods received and stock updated successfully", request);
     } catch (error) {
         console.error("Franchise confirm receipt error:", error);
@@ -488,14 +554,21 @@ export const createProcurementFromOrder = async (req, res) => {
             totalEstimatedAmount: shortageItems.reduce((acc, item) => acc + (item.price * item.shortageQty), 0),
             status: "assigned",
             assignedVendorId: vendorId,
-            adminId: adminId
+            adminId: adminId,
+            orderId: orderId
         });
 
         await procurementRequest.save();
 
-        // Optional: Update order to indicate procurement has started
-        // order.procurementId = procurementRequest._id;
-        // await order.save();
+        // Update order to indicate procurement has started
+        order.orderStatus = 'Procuring';
+        order.statusHistory.push({
+            status: 'Procuring',
+            updatedAt: new Date(),
+            updatedBy: 'admin',
+            message: 'Order items are currently being procured from our vendor network.'
+        });
+        await order.save();
 
         return handleResponse(res, 201, "Procurement request created and assigned to vendor", procurementRequest);
     } catch (error) {

@@ -63,7 +63,7 @@ export default function MetricCard({
 
                 {sparklineData.length > 0 && (
                     <div className="h-10 w-20">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%" debounce={50}>
                             <LineChart data={sparklineData}>
                                 <Line
                                     type="monotone"

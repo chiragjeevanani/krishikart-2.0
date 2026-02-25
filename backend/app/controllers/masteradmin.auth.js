@@ -55,9 +55,14 @@ export const loginMasterAdmin = async (req, res) => {
     if (!email || !password)
       return handleResponse(res, 400, "Email & password required");
 
-    const admin = await MasterAdmin.findOne({ email });
-    if (!admin)
+    const trimmedEmail = email.trim().toLowerCase();
+    console.log(`[MasterAdmin Login] Attempt for: ${trimmedEmail}`);
+
+    const admin = await MasterAdmin.findOne({ email: trimmedEmail });
+    if (!admin) {
+      console.log(`[MasterAdmin Login] User not found: ${trimmedEmail}`);
       return handleResponse(res, 404, "MasterAdmin not found");
+    }
 
     if (admin.status === "blocked")
       return handleResponse(res, 403, "Account blocked");

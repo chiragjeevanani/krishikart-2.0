@@ -59,6 +59,11 @@ const procurementRequestSchema = new mongoose.Schema({
         invoiceDate: Date,
         fileUrl: String, // PDF URL
         generatedAt: Date
+    },
+    orderId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Order',
+        default: null
     }
 }, { timestamps: true });
 

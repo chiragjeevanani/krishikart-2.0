@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft, MapPin, Phone, MessageSquare, Package, Truck, CheckCircle2, MessageSquare as MessageSquareIcon, ShoppingBag, Zap } from 'lucide-react'
+import { ArrowLeft, MapPin, Phone, MessageSquare, Package, Truck, CheckCircle2, ShoppingBag, Zap, ClipboardList } from 'lucide-react'
 import PageTransition from '../components/layout/PageTransition'
 import { Button } from '@/components/ui/button'
 import { useOrders } from '@/modules/user/contexts/OrderContext'
 
 const steps = [
     { label: 'Placed', status: 'Placed', icon: ShoppingBag },
+    { label: 'Procuring', status: 'Procuring', icon: ClipboardList },
     { label: 'Packed', status: 'Packed', icon: Zap },
     { label: 'Dispatched', status: 'Dispatched', icon: Truck },
     { label: 'Delivered', status: 'Delivered', icon: Package },
@@ -108,10 +109,11 @@ export default function OrderTrackingScreen() {
                                             </div>
                                             <p className="text-xs text-slate-400 font-medium mt-1">
                                                 {step.status === 'Placed' ? 'Your order has been placed successfully.' :
-                                                    step.status === 'Packed' ? 'The items are being packed for you.' :
-                                                        step.status === 'Dispatched' ? 'Package is on its way to you.' :
-                                                            step.status === 'Delivered' ? 'Package reached its destination.' :
-                                                                'Thank you for confirming receipt!'}
+                                                    step.status === 'Procuring' ? 'Some items are being procured from our vendor network.' :
+                                                        step.status === 'Packed' ? 'The items are being packed for you.' :
+                                                            step.status === 'Dispatched' ? 'Package is on its way to you.' :
+                                                                step.status === 'Delivered' ? 'Package reached its destination.' :
+                                                                    'Thank you for confirming receipt!'}
                                             </p>
                                         </div>
                                     </div>

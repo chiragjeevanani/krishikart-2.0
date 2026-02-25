@@ -156,7 +156,7 @@ export default function OrdersScreen() {
             });
 
             if (response.data.success) {
-                toast.success(`Procurement request initiated with ${vendor.name}`);
+                toast.success(`Procurement request initiated with ${vendor.fullName || vendor.name}`);
                 setSelectedOrderForProcurement(null);
                 fetchAllOrders();
             }

@@ -59,7 +59,8 @@ export default function OrderDetailScreen() {
                     }
                     setStatus(currentStatus);
                     setOrder(foundOrder);
-                    setBidPrice(foundOrder.totalEstimatedAmount?.toString() || foundOrder.total?.toString() || '');
+                    const currentQuotedTotal = foundOrder.items?.reduce((sum, item) => sum + (item.quotedPrice || 0) * (item.quantity || 0), 0) || 0;
+                    setBidPrice(currentQuotedTotal.toString());
                     if (foundOrder.items) {
                         setQuotedItems(foundOrder.items.map(item => ({
                             ...item,
@@ -83,7 +84,8 @@ export default function OrderDetailScreen() {
             }
             setStatus(currentStatus);
             setOrder(foundOrder);
-            setBidPrice(foundOrder.totalEstimatedAmount?.toString() || foundOrder.total?.toString() || '');
+            const currentQuotedTotal = foundOrder.items?.reduce((sum, item) => sum + (item.quotedPrice || 0) * (item.quantity || 0), 0) || 0;
+            setBidPrice(currentQuotedTotal.toString());
             if (foundOrder.items) {
                 setQuotedItems(foundOrder.items.map(item => ({
                     ...item,
@@ -226,7 +228,7 @@ export default function OrderDetailScreen() {
                         <div className="relative">
                             <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 font-black text-xl">₹</span>
                             <div className="w-full bg-white border-2 border-slate-100 rounded-[28px] py-4 pl-12 pr-6 text-2xl font-black text-slate-900 tabular-nums">
-                                {parseFloat(bidPrice).toLocaleString()}
+                                {parseFloat(bidPrice || 0).toLocaleString()}
                             </div>
                         </div>
                     </motion.div>
@@ -311,7 +313,7 @@ export default function OrderDetailScreen() {
                                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{item.qty || item.quantity} {item.unit} Requested</p>
                                         </div>
                                     </div>
-                                    {status === 'requested' ? (
+                                    {status === 'requested' || status === 'assigned' ? (
                                         <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-1.5 focus-within:border-primary transition-all shadow-sm">
                                             <span className="text-[11px] font-black text-slate-400">₹</span>
                                             <input
@@ -325,7 +327,7 @@ export default function OrderDetailScreen() {
                                     ) : (
                                         <div className="text-right">
                                             <p className="text-[11px] font-black text-slate-900 tabular-nums">₹{item.quotedPrice || (item.price || 0)}</p>
-                                            <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest">Quoted Rate</p>
+                                            <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest">Rate</p>
                                         </div>
                                     )}
                                 </div>
@@ -364,30 +366,15 @@ export default function OrderDetailScreen() {
                                         <Clock size={18} />
                                     </div>
                                     <div>
-                                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Deadline Sequence</p>
-                                        <p className="text-sm font-black tabular-nums">{new Date(order.deadline).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • Today</p>
+                                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Order Sequence</p>
+                                        <p className="text-sm font-black tabular-nums">{new Date(order.createdAt || order.date || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • Today</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Settle Info */}
-                    <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm flex items-center justify-between">
-                        <div>
-                            <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-2 leading-none">Net Settlement Value</p>
-                            <div className="flex items-baseline gap-1">
-                                <span className="text-3xl font-black text-slate-900 tracking-tight tabular-nums">₹{(order.procurementTotal || order.total || 0).toLocaleString()}</span>
-                            </div>
-                        </div>
-                        <div className="flex flex-col items-end">
-                            <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[9px] font-black uppercase tracking-widest border border-emerald-100">
-                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                ESCROW SECURED
-                            </div>
-                            <p className="text-[8px] font-bold text-slate-300 uppercase mt-2 tracking-tighter">Authorized per PO Agreement</p>
-                        </div>
-                    </div>
+                    {/* Settle Info hidden as per request */}
                 </div>
             </div>
 
