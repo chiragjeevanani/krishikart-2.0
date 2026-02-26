@@ -164,10 +164,6 @@ export default function OnboardingApprovalScreen() {
                     </div>
                 </div>
                 <div className="px-6 py-4 flex items-center justify-center bg-slate-50/50">
-                    <button className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-sm text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-sm">
-                        <FileText size={14} className="text-slate-400" />
-                        Audit Compliance Report
-                    </button>
                 </div>
             </div>
 

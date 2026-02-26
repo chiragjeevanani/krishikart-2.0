@@ -185,10 +185,6 @@ export default function CreditManagementScreen() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <button className="bg-rose-900 text-white px-3 py-1.5 rounded-sm text-[11px] font-bold flex items-center gap-2 hover:bg-rose-800 transition-colors shadow-sm uppercase tracking-widest">
-                            <ShieldAlert size={14} />
-                            System-Wide Freeze
-                        </button>
                         <button className="p-1.5 text-slate-400 hover:text-slate-900 transition-colors border border-slate-200 rounded-sm bg-white">
                             <Download size={14} />
                         </button>

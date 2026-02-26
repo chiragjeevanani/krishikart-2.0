@@ -88,16 +88,7 @@ export default function FranchiseManagementScreen() {
                         <h1 className="text-sm font-bold text-slate-900">Regional Distribution Network</h1>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <button className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-sm text-[10px] font-bold text-slate-600 hover:bg-slate-50 transition-colors">
-                            <Network size={13} className="text-slate-400" />
-                            <span>Map Topology</span>
-                        </button>
-                        <button className="bg-slate-900 text-white px-3 py-1.5 rounded-sm text-[11px] font-bold flex items-center gap-2 hover:bg-slate-800 transition-colors">
-                            <Server size={13} />
-                            Provision Node
-                        </button>
-                    </div>
+
                 </div>
             </div>
 

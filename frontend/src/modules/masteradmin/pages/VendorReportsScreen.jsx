@@ -192,10 +192,6 @@ export default function VendorReportsScreen() {
                         <option value="week">This Week</option>
                         <option value="month">This Month</option>
                     </select>
-                    <button className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-slate-900 px-6 py-4 rounded-2xl text-[12px] font-black text-white hover:bg-slate-800 transition-all uppercase tracking-widest">
-                        <Filter size={16} />
-                        Refine
-                    </button>
                 </div>
             </div>
 

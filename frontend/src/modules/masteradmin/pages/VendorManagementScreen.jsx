@@ -147,17 +147,7 @@ export default function VendorManagementScreen() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <button className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-sm text-[10px] font-bold text-slate-600 hover:bg-slate-50 transition-colors">
-                            <FileText size={13} className="text-slate-400" />
-                            <span>Partnership Report</span>
-                        </button>
-                        <button
-                            onClick={() => setIsOnboardOpen(true)}
-                            className="bg-slate-900 text-white px-3 py-1.5 rounded-sm text-[11px] font-bold flex items-center gap-2 hover:bg-slate-800 transition-colors shadow-sm"
-                        >
-                            <UserPlus size={13} />
-                            Add Vendor
-                        </button>
+
                     </div>
                 </div>
             </div>

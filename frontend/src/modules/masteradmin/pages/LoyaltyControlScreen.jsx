@@ -92,10 +92,7 @@ export default function LoyaltyControlScreen() {
                                 Config Deployed Successfully
                             </motion.div>
                         )}
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-900 text-white text-[9px] font-black rounded-sm uppercase tracking-widest">
-                            <Zap size={10} className="text-amber-400" />
-                            Active Engine: v3.2
-                        </div>
+
                     </div>
                 </div>
             </div>
