@@ -37,6 +37,14 @@ export default function CheckoutScreen() {
 
     const [user, setUser] = useState(null)
     const [deliveryAddress, setDeliveryAddress] = useState('')
+    const [addressDetails, setAddressDetails] = useState({
+        floor: '',
+        colony: '',
+        landmark: '',
+        city: 'Indore',
+        state: 'Madhya Pradesh'
+    });
+    const [deliveryShift, setDeliveryShift] = useState('');
 
     useEffect(() => {
         fetchProfile()
@@ -48,6 +56,9 @@ export default function CheckoutScreen() {
             const userData = response.data.result
             setUser(userData)
             setDeliveryAddress(userData.address || '')
+            if (userData.address) {
+                setAddressDetails(prev => ({ ...prev, colony: userData.address }))
+            }
         } catch (error) {
             console.error('Failed to fetch profile:', error)
         }
@@ -161,9 +172,14 @@ export default function CheckoutScreen() {
     }
 
     const handlePlaceOrder = async () => {
-        if (!deliveryAddress) {
-            toast.error("Please provide a delivery address")
-            return
+        if (!addressDetails.floor || !addressDetails.colony || !addressDetails.landmark || !addressDetails.city || !addressDetails.state) {
+            toast.error("Please fill all the address fields");
+            setIsEditingAddress(true);
+            return;
+        }
+        if (!deliveryShift) {
+            toast.error("Please select a delivery shift timing");
+            return;
         }
 
         setIsPlacingOrder(true)
@@ -175,9 +191,12 @@ export default function CheckoutScreen() {
             cod: 'COD'
         }
 
+        const fullAddress = `${addressDetails.floor}, ${addressDetails.colony}, Landmark: ${addressDetails.landmark}, ${addressDetails.city}, ${addressDetails.state}`
+
         const orderData = {
-            shippingAddress: deliveryAddress,
-            paymentMethod: methodMap[selectedMethod]
+            shippingAddress: fullAddress,
+            paymentMethod: methodMap[selectedMethod],
+            deliveryShift: deliveryShift
         }
 
         // Online Payment Flow (Razorpay)
@@ -306,7 +325,7 @@ export default function CheckoutScreen() {
                                         <div className="flex-1">
                                             <h3 className="text-base font-black text-slate-900 md:font-bold">{user?.fullName || 'My Home'}</h3>
                                             <p className="text-sm text-slate-400 font-medium leading-relaxed mt-1">
-                                                {deliveryAddress || 'No address provided. Click change to add one.'}
+                                                {addressDetails.floor ? `${addressDetails.floor}, ${addressDetails.colony}, ${addressDetails.landmark}, ${addressDetails.city}, ${addressDetails.state}` : 'No address provided. Click change to add one.'}
                                             </p>
                                         </div>
                                         <button
@@ -319,6 +338,30 @@ export default function CheckoutScreen() {
                                 </div>
                             </section>
 
+
+                            {/* Shift Timing */}
+                            <section>
+                                <div className="flex items-center justify-between mb-4 mt-8">
+                                    <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest md:normal-case md:tracking-normal md:text-slate-900 md:text-base">Delivery Shift Timing</h2>
+                                </div>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                    {['6 AM - 8 AM', '8 AM - 10 AM', '10 AM - 12 PM', '12 PM - 2 PM', '2 PM - 4 PM', '4 PM - 6 PM'].map(shift => (
+                                        <button
+                                            key={shift}
+                                            onClick={() => setDeliveryShift(shift)}
+                                            className={cn(
+                                                "p-3 rounded-xl border flex items-center justify-center text-sm font-bold transition-all",
+                                                deliveryShift === shift ? "border-primary bg-primary/[0.05] text-primary" : "border-slate-100 hover:border-slate-200 text-slate-600"
+                                            )}
+                                        >
+                                            <Clock size={14} className="mr-2" />
+                                            {shift}
+                                        </button>
+                                    ))}
+                                </div>
+                            </section>
+
+                            <div className="h-4"></div>
 
                             {/* Payment Method */}
                             <section>
@@ -461,18 +504,54 @@ export default function CheckoutScreen() {
                                         <X size={20} />
                                     </button>
                                 </div>
-                                <div className="space-y-4">
-                                    <div className="relative">
-                                        <textarea
-                                            value={deliveryAddress}
-                                            onChange={(e) => setDeliveryAddress(e.target.value)}
-                                            rows={4}
-                                            placeholder="Enter your full delivery address..."
-                                            className="w-full bg-slate-50 border-slate-100 rounded-2xl p-4 text-sm font-medium focus:ring-primary focus:border-primary resize-none"
+                                <div className="space-y-4 max-h-[60vh] overflow-y-auto px-1">
+                                    <div className="space-y-3">
+                                        <input
+                                            type="text"
+                                            value={addressDetails.floor}
+                                            onChange={(e) => setAddressDetails(prev => ({ ...prev, floor: e.target.value }))}
+                                            placeholder="Floor / Flat / House No. *"
+                                            className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                                         />
+                                        <input
+                                            type="text"
+                                            value={addressDetails.colony}
+                                            onChange={(e) => setAddressDetails(prev => ({ ...prev, colony: e.target.value }))}
+                                            placeholder="Colony / Street / Area *"
+                                            className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                                        />
+                                        <input
+                                            type="text"
+                                            value={addressDetails.landmark}
+                                            onChange={(e) => setAddressDetails(prev => ({ ...prev, landmark: e.target.value }))}
+                                            placeholder="Landmark *"
+                                            className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                                        />
+                                        <div className="flex gap-3">
+                                            <input
+                                                type="text"
+                                                value={addressDetails.city}
+                                                onChange={(e) => setAddressDetails(prev => ({ ...prev, city: e.target.value }))}
+                                                placeholder="City *"
+                                                className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                                            />
+                                            <input
+                                                type="text"
+                                                value={addressDetails.state}
+                                                onChange={(e) => setAddressDetails(prev => ({ ...prev, state: e.target.value }))}
+                                                placeholder="State *"
+                                                className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                                            />
+                                        </div>
                                     </div>
                                     <Button
-                                        onClick={() => setIsEditingAddress(false)}
+                                        onClick={() => {
+                                            if (!addressDetails.floor || !addressDetails.colony || !addressDetails.landmark || !addressDetails.city || !addressDetails.state) {
+                                                toast.error("Please fill all required fields");
+                                                return;
+                                            }
+                                            setIsEditingAddress(false)
+                                        }}
                                         className="w-full h-12 rounded-xl bg-primary font-bold text-white shadow-lg shadow-green-100"
                                     >
                                         Save Address

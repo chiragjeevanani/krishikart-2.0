@@ -562,7 +562,7 @@ export const franchiseConfirmReceipt = async (req, res) => {
 export const createProcurementFromOrder = async (req, res) => {
     try {
         const { orderId } = req.params;
-        const { vendorId } = req.body;
+        const { vendorId, customQuantities } = req.body;
         const adminId = req.masteradmin?._id;
 
         const Order = (await import('../models/order.js')).default;
@@ -579,15 +579,23 @@ export const createProcurementFromOrder = async (req, res) => {
 
         const procurementRequest = new ProcurementRequest({
             franchiseId: order.franchiseId,
-            items: shortageItems.map(item => ({
-                productId: item.productId,
-                name: item.name,
-                quantity: item.shortageQty,
-                unit: item.unit,
-                price: item.price,
-                image: item.image
-            })),
-            totalEstimatedAmount: shortageItems.reduce((acc, item) => acc + (item.price * item.shortageQty), 0),
+            items: shortageItems.map(item => {
+                const prodIdStr = item.productId.toString();
+                const manualQty = customQuantities && customQuantities[prodIdStr] ? Number(customQuantities[prodIdStr]) : item.shortageQty;
+                return {
+                    productId: item.productId,
+                    name: item.name,
+                    quantity: manualQty,
+                    unit: item.unit,
+                    price: item.price,
+                    image: item.image
+                };
+            }),
+            totalEstimatedAmount: shortageItems.reduce((acc, item) => {
+                const prodIdStr = item.productId.toString();
+                const manualQty = customQuantities && customQuantities[prodIdStr] ? Number(customQuantities[prodIdStr]) : item.shortageQty;
+                return acc + (item.price * manualQty);
+            }, 0),
             status: "assigned",
             assignedVendorId: vendorId,
             adminId: adminId,

@@ -109,6 +109,10 @@ const orderSchema = new mongoose.Schema({
         city: String,
         area: String
     },
+    deliveryShift: {
+        type: String,
+        required: true
+    },
     estimatedDelivery: {
         type: Date
     },

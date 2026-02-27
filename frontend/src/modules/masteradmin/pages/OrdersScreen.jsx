@@ -41,6 +41,7 @@ export default function OrdersScreen() {
     const [selectedOrderForProcurement, setSelectedOrderForProcurement] = useState(null);
     const [selectedOrderId, setSelectedOrderId] = useState(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [procurementQuantities, setProcurementQuantities] = useState({});
 
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
@@ -143,6 +144,14 @@ export default function OrdersScreen() {
             customer: order.userId?.fullName || 'Guest',
             total: order.totalAmount
         });
+
+        const initialQtys = {};
+        order.items?.filter(i => i.isShortage).forEach(item => {
+            const prodId = item.productId?._id || item.productId;
+            initialQtys[prodId] = item.shortageQty;
+        });
+        setProcurementQuantities(initialQtys);
+
         fetchCompatibleVendors(order);
     };
 
@@ -152,7 +161,8 @@ export default function OrdersScreen() {
         try {
             // Using the new bridging API
             const response = await api.post(`/procurement/admin/from-order/${selectedOrderForProcurement._id}`, {
-                vendorId: vendor.id || vendor._id
+                vendorId: vendor.id || vendor._id,
+                customQuantities: procurementQuantities
             });
 
             if (response.data.success) {
@@ -374,17 +384,27 @@ export default function OrdersScreen() {
                                 </span>
                             </div>
                             <div className="px-6 py-3 bg-white flex flex-col gap-2 max-h-40 overflow-y-auto border-b border-slate-100 custom-scrollbar">
-                                {selectedOrderForProcurement.items?.filter(i => i.isShortage).map((item, idx) => (
-                                    <div key={idx} className="flex justify-between items-center group">
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] font-black text-slate-900 uppercase tracking-tight">{item.name}</span>
-                                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Ordered: {item.quantity} {item.unit}</span>
+                                {selectedOrderForProcurement.items?.filter(i => i.isShortage).map((item, idx) => {
+                                    const prodId = item.productId?._id || item.productId;
+                                    return (
+                                        <div key={idx} className="flex justify-between items-center group">
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-black text-slate-900 uppercase tracking-tight">{item.name}</span>
+                                                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Ordered: {item.quantity} {item.unit}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 px-3 py-1 bg-rose-50 rounded-sm border border-rose-100">
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    value={procurementQuantities[prodId] || ''}
+                                                    onChange={(e) => setProcurementQuantities(prev => ({ ...prev, [prodId]: Number(e.target.value) }))}
+                                                    className="w-16 px-1 py-0.5 text-[10px] font-black tabular-nums border border-rose-200 outline-none rounded-sm focus:border-rose-400 text-rose-600 bg-white"
+                                                />
+                                                <span className="text-[10px] font-black text-rose-600 tabular-nums"> {item.unit} Short</span>
+                                            </div>
                                         </div>
-                                        <div className="px-3 py-1 bg-rose-50 rounded-sm border border-rose-100">
-                                            <span className="text-[10px] font-black text-rose-600 tabular-nums">{item.shortageQty} {item.unit} Short</span>
-                                        </div>
-                                    </div>
-                                ))}
+                                    )
+                                })}
                             </div>
 
                             {/* Vendor Selection List */}

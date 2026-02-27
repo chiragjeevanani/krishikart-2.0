@@ -55,13 +55,13 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 export const createOrder = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { shippingAddress, paymentMethod } = req.body;
+    const { shippingAddress, paymentMethod, deliveryShift } = req.body;
 
-    if (!shippingAddress || !paymentMethod) {
+    if (!shippingAddress || !paymentMethod || !deliveryShift) {
       return handleResponse(
         res,
         400,
-        "Shipping address and payment method are required",
+        "Shipping address, payment method, and delivery shift are required",
       );
     }
 
@@ -166,6 +166,7 @@ export const createOrder = async (req, res) => {
       orderStatus: "Placed",
       shippingAddress,
       shippingLocation: userCoords,
+      deliveryShift: deliveryShift,
     });
 
     await order.save();

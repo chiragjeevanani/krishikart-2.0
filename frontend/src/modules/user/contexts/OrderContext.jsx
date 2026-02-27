@@ -45,6 +45,7 @@ export function OrderProvider({ children }) {
             const response = await api.post('/orders/place', {
                 shippingAddress: orderData.shippingAddress,
                 paymentMethod: orderData.paymentMethod,
+                deliveryShift: orderData.deliveryShift,
             });
 
             if (response.data.success) {
