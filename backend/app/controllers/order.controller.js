@@ -264,6 +264,10 @@ export const createReturnRequest = async (req, res) => {
       return handleResponse(res, 403, "You can only return your own order");
     }
 
+    if ((order.returnRequests || []).length > 0) {
+      return handleResponse(res, 400, "Return request already submitted for this order");
+    }
+
     const eligibleStatuses = ["Delivered", "Received"];
     if (!eligibleStatuses.includes(order.orderStatus)) {
       return handleResponse(res, 400, "Returns are allowed only for delivered/received orders");
@@ -364,12 +368,14 @@ export const reviewReturnRequestByFranchise = async (req, res) => {
     const { id, requestIndex } = req.params;
     const franchiseId = req.franchise?._id;
     const { action, reason } = req.body;
+    const cleanedReason =
+      typeof reason === "string" ? reason.trim() : "";
 
     if (!["approve", "reject"].includes(action)) {
       return handleResponse(res, 400, "Action must be approve or reject");
     }
 
-    if (!reason || typeof reason !== "string" || reason.trim().length < 5) {
+    if (action === "reject" && cleanedReason.length < 5) {
       return handleResponse(res, 400, "Please provide a valid review reason (minimum 5 characters)");
     }
 
@@ -389,10 +395,23 @@ export const reviewReturnRequestByFranchise = async (req, res) => {
 
     request.status = action === "approve" ? "approved" : "rejected";
     request.reviewedByFranchiseId = franchiseId;
-    request.franchiseReviewReason = reason.trim();
+    request.franchiseReviewReason = cleanedReason;
     request.reviewedAt = new Date();
 
     await order.save();
+    emitToOrderRoom(order._id, "return_request_reviewed", {
+      orderId: order._id,
+      requestIndex: Number(requestIndex),
+      action,
+      status: request.status,
+      reason: request.franchiseReviewReason,
+      reviewedAt: request.reviewedAt,
+      message:
+        action === "reject"
+          ? "Your return request was rejected by franchise."
+          : "Your return request was approved by franchise.",
+    });
+
     return handleResponse(res, 200, `Return request ${action}d successfully`, order);
   } catch (error) {
     console.error("Review return request error:", error);

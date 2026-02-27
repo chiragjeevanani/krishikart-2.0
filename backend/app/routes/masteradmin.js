@@ -26,7 +26,8 @@ import {
   updateFranchiseCommission,
   getFranchiseCommissions,
   getGlobalSettings,
-  updateGlobalSetting
+  updateGlobalSetting,
+  getAllReturnRequests
 } from "../controllers/masteradmin.controller.js";
 
 import { protectMasterAdmin } from "../middlewares/masteradmin.auth.js";
@@ -71,5 +72,6 @@ router.post("/commissions/update", protectMasterAdmin, updateFranchiseCommission
 router.get("/settings", protectMasterAdmin, getGlobalSettings);
 router.post("/settings/update", protectMasterAdmin, updateGlobalSetting);
 router.get("/public-settings", getGlobalSettings); // Public route for user app
+router.get("/returns", protectMasterAdmin, getAllReturnRequests);
 
 export default router;

@@ -15,7 +15,8 @@ import {
     ChevronDown,
     Home,
     Settings,
-    CreditCard
+    CreditCard,
+    Undo2
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -38,6 +39,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                 { icon: PackageCheck, label: 'Vendor Receiving', path: '/franchise/receiving' },
                 { icon: Truck, label: 'Delivery Dispatch', path: '/franchise/dispatch' },
                 { icon: ShoppingBasket, label: 'Procurement', path: '/franchise/procurement' },
+                { icon: Undo2, label: 'Returns', path: '/franchise/returns' },
             ]
         },
         {

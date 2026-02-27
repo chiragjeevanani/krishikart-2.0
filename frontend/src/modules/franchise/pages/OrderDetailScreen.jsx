@@ -119,7 +119,7 @@ export default function OrderDetailScreen() {
 
     const handleReviewReturn = async (requestIndex, action) => {
         const reason = (reviewReasons[requestIndex] || '').trim();
-        if (reason.length < 5) {
+        if (action === 'reject' && reason.length < 5) {
             toast.error('Please enter a valid review reason (minimum 5 characters)');
             return;
         }
@@ -525,7 +525,7 @@ export default function OrderDetailScreen() {
                                                     <textarea
                                                         value={reviewReasons[request.index] || ''}
                                                         onChange={(e) => setReviewReasons(prev => ({ ...prev, [request.index]: e.target.value }))}
-                                                        placeholder="Review reason (minimum 5 characters)"
+                                                        placeholder="Review reason (optional for approve, required for reject)"
                                                         className="w-full min-h-20 border border-slate-200 rounded-sm p-2 text-[11px] font-bold text-slate-700 focus:outline-none focus:border-slate-400"
                                                     />
                                                     <div className="grid grid-cols-2 gap-2">

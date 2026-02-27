@@ -85,13 +85,14 @@ export const verifyPayment = async (req, res) => {
             return handleResponse(res, 400, "Missing order information");
         }
 
-        if (!orderData.shippingAddress || !orderData.paymentMethod) {
+        if (!orderData.shippingAddress || !orderData.paymentMethod || !orderData.deliveryShift) {
             console.error("Incomplete orderData:", {
                 hasShippingAddress: !!orderData.shippingAddress,
                 hasPaymentMethod: !!orderData.paymentMethod,
+                hasDeliveryShift: !!orderData.deliveryShift,
                 orderData
             });
-            return handleResponse(res, 400, "Missing shipping address or payment method");
+            return handleResponse(res, 400, "Missing shipping address, payment method, or delivery shift");
         }
 
         console.log("All fields validated successfully");
@@ -115,7 +116,7 @@ export const verifyPayment = async (req, res) => {
         console.log("Signature verified successfully");
 
         // 2. Original Order Logic (Create the order in DB after payment)
-        const { shippingAddress, paymentMethod } = orderData;
+        const { shippingAddress, paymentMethod, deliveryShift } = orderData;
 
         // Get User Cart
         console.log("Fetching user cart for userId:", userId);
@@ -219,6 +220,7 @@ export const verifyPayment = async (req, res) => {
             orderStatus: 'Placed',
             shippingAddress,
             shippingLocation: userCoords,
+            deliveryShift,
             razorpayOrderId: razorpay_order_id,
             razorpayPaymentId: razorpay_payment_id
         });
@@ -242,6 +244,9 @@ export const verifyPayment = async (req, res) => {
 
         // Send detailed error message to frontend
         const errorMessage = error.message || "Payment verification failed";
+        if (error.name === "ValidationError") {
+            return handleResponse(res, 400, `Verification error: ${errorMessage}`);
+        }
         return handleResponse(res, 500, `Verification error: ${errorMessage}`);
     }
 };

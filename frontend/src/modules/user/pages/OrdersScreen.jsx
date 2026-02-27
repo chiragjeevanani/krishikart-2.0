@@ -11,8 +11,31 @@ export default function OrdersScreen() {
     const navigate = useNavigate()
     const { orders } = useOrders()
 
+    const getDisplayStatus = (order) => {
+        const latestReturn = [...(order.returnRequests || [])]
+            .sort((a, b) => new Date(b.requestedAt || 0) - new Date(a.requestedAt || 0))[0];
+
+        if (!latestReturn?.status) return order.orderStatus;
+
+        const map = {
+            pending: 'return_requested',
+            approved: 'return_approved',
+            rejected: 'return_rejected',
+            pickup_assigned: 'return_pickup_assigned',
+            picked_up: 'return_picked_up',
+            completed: 'return_completed',
+        };
+
+        return map[latestReturn.status] || order.orderStatus;
+    };
+
     const getStatusColor = (status) => {
         const s = (status || '').toLowerCase();
+        if (s.startsWith('return_')) {
+            if (['return_approved', 'return_picked_up', 'return_completed'].includes(s)) return 'bg-green-50 text-green-600 border-green-100';
+            if (['return_requested', 'return_pickup_assigned'].includes(s)) return 'bg-amber-50 text-amber-600 border-amber-100';
+            if (s === 'return_rejected') return 'bg-rose-50 text-rose-600 border-rose-100';
+        }
         switch (s) {
             case 'received':
             case 'delivered': return 'bg-green-50 text-green-600 border-green-100'
@@ -26,6 +49,10 @@ export default function OrdersScreen() {
 
     const getStatusIcon = (status) => {
         const s = (status || '').toLowerCase();
+        if (s.startsWith('return_')) {
+            if (s === 'return_rejected') return <Clock size={12} />;
+            return <CheckCircle2 size={12} />;
+        }
         switch (s) {
             case 'received':
             case 'delivered': return <CheckCircle2 size={12} />
@@ -65,6 +92,9 @@ export default function OrdersScreen() {
                         </div>
                     ) : (
                         orders.map((order, idx) => (
+                            (() => {
+                                const displayStatus = getDisplayStatus(order);
+                                return (
                             <motion.div
                                 key={order._id}
                                 onClick={() => handleOrderClick(order)}
@@ -97,9 +127,9 @@ export default function OrdersScreen() {
                                             <p className="text-[10px] font-bold text-slate-400 mt-1">{new Date(order.createdAt).toLocaleDateString()}</p>
                                         </div>
                                     </div>
-                                    <Badge className={cn("rounded-xl border font-black text-[9px] py-1.5 px-3 flex items-center gap-1.5 shadow-sm", getStatusColor(order.orderStatus))}>
+                                    <Badge className={cn("rounded-xl border font-black text-[9px] py-1.5 px-3 flex items-center gap-1.5 shadow-sm", getStatusColor(displayStatus))}>
                                         <div className="w-1.5 h-1.5 rounded-full bg-current opacity-80" />
-                                        <span className="uppercase tracking-widest">{order.orderStatus?.replace(/_/g, ' ')}</span>
+                                        <span className="uppercase tracking-widest">{displayStatus?.replace(/_/g, ' ')}</span>
                                     </Badge>
                                 </div>
 
@@ -115,6 +145,8 @@ export default function OrdersScreen() {
                                     </div>
                                 </div>
                             </motion.div>
+                                );
+                            })()
                         ))
                     )}
                 </div>

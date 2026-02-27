@@ -40,6 +40,7 @@ export default function CheckoutScreen() {
     const [user, setUser] = useState(null)
     const [deliveryAddress, setDeliveryAddress] = useState('')
     const [addressDetails, setAddressDetails] = useState({
+        flat: '',
         floor: '',
         colony: '',
         landmark: '',
@@ -49,7 +50,7 @@ export default function CheckoutScreen() {
     const [deliveryShift, setDeliveryShift] = useState('');
 
     const buildFullAddress = (details) => (
-        `${details.floor}, ${details.colony}, Landmark: ${details.landmark}, ${details.city}, ${details.state}`
+        `Flat: ${details.flat}, Floor: ${details.floor}, ${details.colony}, Landmark: ${details.landmark}, ${details.city}, ${details.state}`
     )
 
     const parseAddressToDetails = (address = '') => {
@@ -58,10 +59,32 @@ export default function CheckoutScreen() {
         const parts = address.split(',').map(part => part.trim()).filter(Boolean)
         if (parts.length < 5) return null
 
-        const [floor, colony, landmarkPart, city, state] = parts
-        const landmark = landmarkPart.replace(/^Landmark:\s*/i, '').trim()
+        let flat = ''
+        let floor = ''
+        let colony = ''
+        let landmark = ''
+        let city = 'Indore'
+        let state = 'Madhya Pradesh'
+
+        // New format: Flat: X, Floor: Y, Colony..., Landmark: Z, City, State
+        if (parts[0]?.toLowerCase().startsWith('flat:') && parts[1]?.toLowerCase().startsWith('floor:') && parts.length >= 6) {
+            flat = parts[0].replace(/^Flat:\s*/i, '').trim()
+            floor = parts[1].replace(/^Floor:\s*/i, '').trim()
+            colony = parts[2] || ''
+            landmark = (parts[3] || '').replace(/^Landmark:\s*/i, '').trim()
+            city = parts[4] || city
+            state = parts[5] || state
+        } else {
+            // Backward compatibility: Floor, Colony, Landmark, City, State
+            floor = parts[0] || ''
+            colony = parts[1] || ''
+            landmark = (parts[2] || '').replace(/^Landmark:\s*/i, '').trim()
+            city = parts[3] || city
+            state = parts[4] || state
+        }
 
         return {
+            flat: flat || '',
             floor: floor || '',
             colony: colony || '',
             landmark: landmark || '',
@@ -108,9 +131,9 @@ export default function CheckoutScreen() {
     const tax = parseFloat(((cartTotal + deliveryFee) * taxRate).toFixed(2))
 
     const total = parseFloat((cartTotal + deliveryFee + tax).toFixed(2))
-    const hasStructuredAddress = !!(addressDetails.floor && addressDetails.colony && addressDetails.landmark && addressDetails.city && addressDetails.state)
+    const hasStructuredAddress = !!(addressDetails.flat && addressDetails.floor && addressDetails.colony && addressDetails.landmark && addressDetails.city && addressDetails.state)
     const displayAddress = hasStructuredAddress
-        ? `${addressDetails.floor}, ${addressDetails.colony}, ${addressDetails.landmark}, ${addressDetails.city}, ${addressDetails.state}`
+        ? `Flat: ${addressDetails.flat}, Floor: ${addressDetails.floor}, ${addressDetails.colony}, ${addressDetails.landmark}, ${addressDetails.city}, ${addressDetails.state}`
         : (deliveryAddress || '')
 
     const handleRazorpayPayment = async (orderData) => {
@@ -212,7 +235,7 @@ export default function CheckoutScreen() {
     }
 
     const handlePlaceOrder = async () => {
-        if (!addressDetails.floor || !addressDetails.colony || !addressDetails.landmark || !addressDetails.city || !addressDetails.state) {
+        if (!addressDetails.flat || !addressDetails.floor || !addressDetails.colony || !addressDetails.landmark || !addressDetails.city || !addressDetails.state) {
             toast.error("Please fill all the address fields");
             setIsEditingAddress(true);
             return;
@@ -415,13 +438,13 @@ export default function CheckoutScreen() {
                                                 color: 'text-primary bg-primary/5',
                                                 subtitle: 'Balance: ₹' + balance.toLocaleString()
                                             },
-                                            ...(creditLimit > 0 ? [{
+                                            {
                                                 id: 'credit',
-                                                name: 'Business Credit',
+                                                name: 'KK Credit',
                                                 icon: CreditCard,
                                                 color: 'text-amber-600 bg-amber-50',
                                                 subtitle: 'Available: ₹' + availableCredit.toLocaleString()
-                                            }] : []),
+                                            },
                                             { id: 'upi', name: 'Google Pay / UPI', icon: Sparkles, color: 'text-blue-500 bg-blue-50' },
                                             { id: 'cod', name: 'Cash on Delivery', icon: ShieldCheck, color: 'text-emerald-500 bg-emerald-50' }
                                         ];
@@ -476,6 +499,17 @@ export default function CheckoutScreen() {
                                     <div className="flex justify-between items-center text-sm font-medium text-slate-500">
                                         <span>Taxes & Charges ({taxRateString}%)</span>
                                         <span title={`GST applied to total order amount`}>₹{tax}</span>
+                                    </div>
+                                </div>
+
+                                <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 space-y-2">
+                                    <div className="flex items-center justify-between text-[11px] font-bold text-slate-600">
+                                        <span>KK Wallet Balance</span>
+                                        <span className="tabular-nums">₹{balance.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-[11px] font-bold text-amber-700">
+                                        <span>KK Credit Available</span>
+                                        <span className="tabular-nums">₹{availableCredit.toLocaleString()}</span>
                                     </div>
                                 </div>
 
@@ -549,9 +583,16 @@ export default function CheckoutScreen() {
                                     <div className="space-y-3">
                                         <input
                                             type="text"
+                                            value={addressDetails.flat}
+                                            onChange={(e) => setAddressDetails(prev => ({ ...prev, flat: e.target.value }))}
+                                            placeholder="Flat / House No. *"
+                                            className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                                        />
+                                        <input
+                                            type="text"
                                             value={addressDetails.floor}
                                             onChange={(e) => setAddressDetails(prev => ({ ...prev, floor: e.target.value }))}
-                                            placeholder="Floor / Flat / House No. *"
+                                            placeholder="Floor *"
                                             className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                                         />
                                         <input
@@ -587,7 +628,7 @@ export default function CheckoutScreen() {
                                     </div>
                                     <Button
                                         onClick={async () => {
-                                            if (!addressDetails.floor || !addressDetails.colony || !addressDetails.landmark || !addressDetails.city || !addressDetails.state) {
+                                            if (!addressDetails.flat || !addressDetails.floor || !addressDetails.colony || !addressDetails.landmark || !addressDetails.city || !addressDetails.state) {
                                                 toast.error("Please fill all required fields");
                                                 return;
                                             }
@@ -615,4 +656,8 @@ export default function CheckoutScreen() {
         </PageTransition>
     )
 }
+
+
+
+
 

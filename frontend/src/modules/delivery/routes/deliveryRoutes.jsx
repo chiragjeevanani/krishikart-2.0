@@ -17,6 +17,7 @@ const VehicleInfo = lazy(() => import('../pages/VehicleInfoScreen'));
 const HelpSupport = lazy(() => import('../pages/HelpSupportScreen'));
 const NotificationSettings = lazy(() => import('../pages/NotificationSettingsScreen'));
 const PrivacySecurity = lazy(() => import('../pages/PrivacySecurityScreen'));
+const ReturnPickupsScreen = lazy(() => import('../pages/ReturnPickupsScreen'));
 
 import { useDeliveryAuth } from '../contexts/DeliveryAuthContext';
 
@@ -60,6 +61,7 @@ export const deliveryRoutes = (
                 <Route path="requests" element={withSuspense(DeliveryRequests)} />
                 <Route path="active" element={withSuspense(ActiveDelivery)} />
                 <Route path="history" element={withSuspense(DeliveryHistory)} />
+                <Route path="return-pickups" element={withSuspense(ReturnPickupsScreen)} />
                 <Route path="profile" element={withSuspense(Profile)} />
                 <Route path="map" element={withSuspense(MapTracking)} />
                 <Route path="pickup" element={withSuspense(PickupConfirmation)} />

@@ -29,6 +29,7 @@ import CategoryManagementScreen from '../pages/CategoryManagementScreen';
 import SubcategoryManagementScreen from '../pages/SubcategoryManagementScreen';
 import LoyaltyControlScreen from '../pages/LoyaltyControlScreen';
 import VendorQuotationScreen from '../pages/VendorQuotationScreen';
+import ReturnsScreen from '../pages/ReturnsScreen';
 import { useMasterAdminAuth } from '../contexts/MasterAdminAuthContext';
 
 const AdminRootRedirect = () => {
@@ -77,6 +78,7 @@ export const masterAdminRoutes = (
                 <Route path="vendors" element={<VendorManagementScreen />} />
                 <Route path="vendor-economics" element={<VendorTurnoverScreen />} />
                 <Route path="delivery" element={<DeliveryMonitoringScreen />} />
+                <Route path="returns" element={<ReturnsScreen />} />
                 <Route path="kiosk" element={<TakeawayMonitoringScreen />} />
                 <Route path="analytics" element={<AnalyticsScreen />} />
                 <Route path="settings" element={<SettingsScreen />} />

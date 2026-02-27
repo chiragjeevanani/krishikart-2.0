@@ -3,6 +3,7 @@ import Franchise from "../models/franchise.js";
 import User from "../models/user.js";
 import Product from "../models/product.js";
 import Inventory from "../models/inventory.js";
+import Order from "../models/order.js";
 import FranchiseCommission from "../models/franchiseCommission.js";
 import Category from "../models/category.js";
 import GlobalSetting from "../models/globalSetting.js";
@@ -404,6 +405,23 @@ export const updateGlobalSetting = async (req, res) => {
         );
         return handleResponse(res, 200, "Setting updated", setting);
     } catch (err) {
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
+/* ================= RETURN REQUEST MONITORING ================= */
+
+export const getAllReturnRequests = async (req, res) => {
+    try {
+        const orders = await Order.find({ "returnRequests.0": { $exists: true } })
+            .populate("userId", "fullName mobile")
+            .populate("franchiseId", "shopName franchiseName ownerName mobile city")
+            .populate("returnRequests.pickupDeliveryPartnerId", "fullName mobile vehicleNumber vehicleType")
+            .sort({ updatedAt: -1 });
+
+        return handleResponse(res, 200, "Return requests fetched successfully", orders);
+    } catch (err) {
+        console.error("Get all return requests error:", err);
         return handleResponse(res, 500, "Server error");
     }
 };

@@ -41,6 +41,11 @@ export default function OrderDetailScreen() {
 
     const getStatusColor = (status) => {
         const s = (status || '').toLowerCase();
+        if (s.startsWith('return_')) {
+            if (['return_approved', 'return_picked_up', 'return_completed'].includes(s)) return 'bg-emerald-500 text-white';
+            if (['return_requested', 'return_pickup_assigned'].includes(s)) return 'bg-amber-500 text-white';
+            if (s === 'return_rejected') return 'bg-rose-500 text-white';
+        }
         if (['delivered', 'received'].includes(s)) return 'bg-emerald-500 text-white';
         if (s === 'cancelled') return 'bg-rose-500 text-white';
         if (s === 'placed') return 'bg-amber-500 text-white';
@@ -48,6 +53,26 @@ export default function OrderDetailScreen() {
         if (s === 'dispatched') return 'bg-orange-500 text-white';
         return 'bg-slate-500 text-white';
     }
+
+    const getDisplayStatus = () => {
+        const latestReturn = [...(order.returnRequests || [])]
+            .sort((a, b) => new Date(b.requestedAt || 0) - new Date(a.requestedAt || 0))[0];
+
+        if (!latestReturn?.status) return order.orderStatus;
+
+        const map = {
+            pending: 'return_requested',
+            approved: 'return_approved',
+            rejected: 'return_rejected',
+            pickup_assigned: 'return_pickup_assigned',
+            picked_up: 'return_picked_up',
+            completed: 'return_completed',
+        };
+
+        return map[latestReturn.status] || order.orderStatus;
+    };
+
+    const displayStatus = getDisplayStatus();
 
     const isOrderActive = !['delivered', 'received', 'cancelled'].includes(order.orderStatus?.toLowerCase());
 
@@ -76,6 +101,7 @@ export default function OrderDetailScreen() {
     };
 
     const returnEligibility = getReturnEligibility();
+    const hasExistingReturnRequest = (order.returnRequests || []).length > 0;
 
     const getAlreadyRequestedQty = (productId) => {
         if (!productId) return 0;
@@ -97,6 +123,11 @@ export default function OrderDetailScreen() {
     };
 
     const handleSubmitReturnRequest = async () => {
+        if (hasExistingReturnRequest) {
+            toast.error('Return request already submitted for this order');
+            return;
+        }
+
         const items = (order.items || [])
             .map(item => {
                 const productId = item.productId?._id || item.productId;
@@ -152,8 +183,8 @@ export default function OrderDetailScreen() {
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] leading-none mt-1">ID: #{order._id.slice(-8)}</p>
                         </div>
                     </div>
-                    <div className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm", getStatusColor(order.orderStatus))}>
-                        {order.orderStatus?.replace(/_/g, ' ')}
+                    <div className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm", getStatusColor(displayStatus))}>
+                        {displayStatus?.replace(/_/g, ' ')}
                     </div>
                 </div>
 
@@ -197,13 +228,13 @@ export default function OrderDetailScreen() {
                                 <div className="relative z-10 flex flex-col md:flex-row md:items-center md:text-left gap-8">
                                     <div className={cn(
                                         "w-24 h-24 rounded-[32px] flex items-center justify-center mx-auto md:mx-0 border-4 border-white shadow-lg rotate-3 shrink-0",
-                                        ['delivered', 'received'].includes(order.orderStatus?.toLowerCase()) ? "bg-emerald-50 text-emerald-500" : "bg-primary/10 text-primary"
+                                        (displayStatus || '').startsWith('return_') || ['delivered', 'received'].includes(order.orderStatus?.toLowerCase()) ? "bg-emerald-50 text-emerald-500" : "bg-primary/10 text-primary"
                                     )}>
-                                        {['delivered', 'received'].includes(order.orderStatus?.toLowerCase()) ? <CheckCircle2 size={48} strokeWidth={2.5} /> : <Activity size={48} strokeWidth={2.5} />}
+                                        {(displayStatus || '').startsWith('return_') || ['delivered', 'received'].includes(order.orderStatus?.toLowerCase()) ? <CheckCircle2 size={48} strokeWidth={2.5} /> : <Activity size={48} strokeWidth={2.5} />}
                                     </div>
                                     <div className="flex-1">
                                         <h2 className="text-2xl md:text-3xl font-black text-slate-900 leading-tight uppercase tracking-tight italic">
-                                            Order {order.orderStatus?.replace(/_/g, ' ')}
+                                            Order {displayStatus?.replace(/_/g, ' ')}
                                         </h2>
                                         <p className="text-xs md:text-sm text-slate-400 font-bold uppercase tracking-[0.15em] mt-2">
                                             Placed on {new Date(order.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
@@ -258,20 +289,29 @@ export default function OrderDetailScreen() {
                                 </div>
                             </div>
 
-                            {returnEligibility.eligible && (
+                            {(returnEligibility.eligible || hasExistingReturnRequest) && (
                                 <div className="bg-white rounded-[32px] overflow-hidden border border-slate-50 shadow-sm">
                                     <div className="px-6 py-5 border-b border-slate-50 bg-slate-50/30">
                                         <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Return Parcel (Partial Allowed)</h3>
-                                        <p className="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-wide">
-                                            Select only the quantity you want to return.
-                                        </p>
-                                        <p className="text-[10px] font-bold text-amber-600 mt-2 uppercase tracking-wide">
-                                            Return window closes in {returnEligibility.remainingHours}h
-                                        </p>
+                                        {!hasExistingReturnRequest && (
+                                            <>
+                                                <p className="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-wide">
+                                                    Select only the quantity you want to return.
+                                                </p>
+                                                <p className="text-[10px] font-bold text-amber-600 mt-2 uppercase tracking-wide">
+                                                    Return window closes in {returnEligibility.remainingHours}h
+                                                </p>
+                                            </>
+                                        )}
+                                        {hasExistingReturnRequest && (
+                                            <p className="text-[10px] font-bold text-blue-600 mt-2 uppercase tracking-wide">
+                                                Return request already submitted for this order.
+                                            </p>
+                                        )}
                                     </div>
 
                                     <div className="p-6 space-y-4">
-                                        {(order.items || []).map((item, idx) => {
+                                        {!hasExistingReturnRequest && (order.items || []).map((item, idx) => {
                                             const productId = item.productId?._id || item.productId;
                                             const alreadyRequested = getAlreadyRequestedQty(productId);
                                             const maxAllowed = Math.max(0, Number(item.quantity || 0) - alreadyRequested);
@@ -298,22 +338,26 @@ export default function OrderDetailScreen() {
                                             );
                                         })}
 
-                                        <div className="pt-2">
-                                            <textarea
-                                                value={returnReason}
-                                                onChange={(e) => setReturnReason(e.target.value)}
-                                                placeholder="Reason for return (minimum 10 characters)"
-                                                className="w-full min-h-20 border border-slate-200 rounded-2xl p-3 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                            />
-                                        </div>
+                                        {!hasExistingReturnRequest && (
+                                            <div className="pt-2">
+                                                <textarea
+                                                    value={returnReason}
+                                                    onChange={(e) => setReturnReason(e.target.value)}
+                                                    placeholder="Reason for return (minimum 10 characters)"
+                                                    className="w-full min-h-20 border border-slate-200 rounded-2xl p-3 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                                />
+                                            </div>
+                                        )}
 
-                                        <Button
-                                            onClick={handleSubmitReturnRequest}
-                                            disabled={isSubmittingReturn}
-                                            className="w-full h-12 rounded-2xl bg-slate-900 text-white font-black text-[11px] uppercase tracking-widest"
-                                        >
-                                            {isSubmittingReturn ? 'Submitting...' : 'Submit Return Request'}
-                                        </Button>
+                                        {!hasExistingReturnRequest && (
+                                            <Button
+                                                onClick={handleSubmitReturnRequest}
+                                                disabled={isSubmittingReturn}
+                                                className="w-full h-12 rounded-2xl bg-slate-900 text-white font-black text-[11px] uppercase tracking-widest"
+                                            >
+                                                {isSubmittingReturn ? 'Submitting...' : 'Submit Return Request'}
+                                            </Button>
+                                        )}
 
                                         {(order.returnRequests || []).length > 0 && (
                                             <div className="pt-2">

@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Home, ClipboardList, MapPin, History, User } from 'lucide-react';
+import { Home, ClipboardList, MapPin, History, User, Undo2 } from 'lucide-react';
 import { ROUTES } from '../../utils/constants';
 
 const MobileBottomNav = () => {
@@ -9,6 +9,7 @@ const MobileBottomNav = () => {
         { icon: Home, label: 'Home', path: ROUTES.DASHBOARD },
         { icon: ClipboardList, label: 'Requests', path: ROUTES.REQUESTS },
         { icon: MapPin, label: 'Active', path: ROUTES.ACTIVE },
+        { icon: Undo2, label: 'Returns', path: ROUTES.RETURN_PICKUPS },
         { icon: History, label: 'History', path: ROUTES.HISTORY },
         { icon: User, label: 'Profile', path: ROUTES.PROFILE },
     ];

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '@/lib/axios';
 import { toast } from 'sonner';
+import { initSocket, joinOrderRoom } from '@/lib/socket';
 
 const OrderContext = createContext();
 
@@ -39,6 +40,40 @@ export function OrderProvider({ children }) {
     useEffect(() => {
         fetchMyOrders();
     }, []);
+
+    useEffect(() => {
+        const token = localStorage.getItem('userToken');
+        if (!token) return;
+
+        const socket = initSocket();
+
+        const onReturnRequestReviewed = async (payload) => {
+            if (!payload?.orderId) return;
+
+            if (payload?.action === 'reject') {
+                toast.error(payload.message || 'Your return request was rejected.');
+            } else if (payload?.action === 'approve') {
+                toast.success(payload.message || 'Your return request was approved.');
+            }
+
+            await fetchMyOrders();
+        };
+
+        socket.on('return_request_reviewed', onReturnRequestReviewed);
+
+        return () => {
+            socket.off('return_request_reviewed', onReturnRequestReviewed);
+        };
+    }, []);
+
+    useEffect(() => {
+        const token = localStorage.getItem('userToken');
+        if (!token || !orders?.length) return;
+
+        orders.forEach((order) => {
+            if (order?._id) joinOrderRoom(order._id);
+        });
+    }, [orders]);
 
     const placeOrder = async (orderData) => {
         try {

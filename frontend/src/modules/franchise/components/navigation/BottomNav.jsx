@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, ShoppingBag, Package, User, PackageCheck, Truck } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Package, User, PackageCheck, Truck, Undo2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -12,6 +12,7 @@ export default function BottomNav() {
         { icon: ShoppingBag, label: 'Orders', path: '/franchise/orders' },
         { icon: Package, label: 'Inventory', path: '/franchise/inventory' },
         { icon: PackageCheck, label: 'Receiving', path: '/franchise/receiving' },
+        { icon: Undo2, label: 'Returns', path: '/franchise/returns' },
         { icon: Truck, label: 'Delivery', path: '/franchise/dispatch' },
         { icon: User, label: 'Profile', path: '/franchise/profile' }
     ];

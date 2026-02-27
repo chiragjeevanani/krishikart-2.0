@@ -30,7 +30,8 @@ import {
     Star,
     Clock,
     CheckCircle2,
-    FileText
+    FileText,
+    Undo2
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
@@ -67,6 +68,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                 { icon: ShoppingBag, label: 'Orders', path: '/masteradmin/orders' },
                 { icon: UserCheck, label: 'Assign Vendors', path: '/masteradmin/assignment' },
                 { icon: Truck, label: 'Delivery Tracking', path: '/masteradmin/delivery' },
+                { icon: Undo2, label: 'Returns', path: '/masteradmin/returns' },
             ]
         },
         {
