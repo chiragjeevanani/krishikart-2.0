@@ -11,7 +11,9 @@ import {
     Check,
     Loader2,
     X,
-    Edit3
+    Edit3,
+    CreditCard,
+    QrCode
 } from 'lucide-react'
 import PageTransition from '../components/layout/PageTransition'
 import { Button } from '@/components/ui/button'
@@ -27,7 +29,7 @@ export default function CheckoutScreen() {
     const navigate = useNavigate()
     const { cartItems, cartTotal, clearCart, deliveryConstraints } = useCart()
     const { placeOrder } = useOrders()
-    const { balance, payWithWallet, creditLimit, creditUsed } = useWallet()
+    const { balance, payWithWallet, creditLimit, creditUsed, availableCredit } = useWallet()
 
     const [step, setStep] = useState(1) // 1: Address, 2: Payment, 3: Success
     const [lastOrder, setLastOrder] = useState(null)
@@ -185,7 +187,8 @@ export default function CheckoutScreen() {
         setIsPlacingOrder(true)
 
         const methodMap = {
-            wallet: creditLimit > 0 ? 'Credit' : 'Wallet',
+            wallet: 'Wallet',
+            credit: 'Credit',
             upi: 'UPI',
             card: 'Card',
             cod: 'COD'
@@ -205,21 +208,21 @@ export default function CheckoutScreen() {
             return
         }
 
-        // Wallet/Credit specific checks
+        // Wallet Balance check
         if (selectedMethod === 'wallet') {
-            if (creditLimit > 0) {
-                const availableCredit = creditLimit - creditUsed;
-                if (availableCredit < total) {
-                    toast.error("Insufficient Credit Limit!");
-                    setIsPlacingOrder(false)
-                    return
-                }
-            } else {
-                if (balance < total) {
-                    toast.error("Insufficient Wallet Balance!")
-                    setIsPlacingOrder(false)
-                    return
-                }
+            if (balance < total) {
+                toast.error("Insufficient Wallet Balance!");
+                setIsPlacingOrder(false);
+                return;
+            }
+        }
+
+        // Credit Limit check
+        if (selectedMethod === 'credit') {
+            if (availableCredit < total) {
+                toast.error("Insufficient Credit Limit!");
+                setIsPlacingOrder(false);
+                return;
             }
         }
 
@@ -228,32 +231,21 @@ export default function CheckoutScreen() {
 
         if (result.success) {
             if (selectedMethod === 'wallet') {
-                if (creditLimit > 0) {
-                    // Credit handled by backend
-                } else {
-                    payWithWallet(total)
-                }
+                payWithWallet(total)
             }
             setLastOrder(result.order)
             setStep(3)
             setTimeout(() => {
                 clearCart()
             }, 500)
+        } else {
+            toast.error(result.message || "Failed to place order")
         }
 
         setIsPlacingOrder(false)
     }
 
     if (step === 3) {
-        // Calculate estimated delivery time (current time + 30 minutes)
-        const estimatedTime = new Date();
-        estimatedTime.setMinutes(estimatedTime.getMinutes() + 30);
-        const formattedTime = estimatedTime.toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true
-        });
-
         return (
             <PageTransition>
                 <div className="bg-white min-h-screen flex flex-col items-center justify-center p-8 text-center">
@@ -369,49 +361,107 @@ export default function CheckoutScreen() {
                                     <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest md:normal-case md:tracking-normal md:text-slate-900 md:text-base">Select Payment Method</h2>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    {(() => {
-                                        const availableTotal = balance + (creditLimit - creditUsed);
-                                        const paymentMethods = [
-                                            {
-                                                id: 'wallet',
-                                                name: creditLimit > 0 ? 'Business Credit / Wallet' : 'KK Wallet',
-                                                icon: Wallet,
-                                                color: 'text-primary bg-primary/5',
-                                                subtitle: creditLimit > 0
-                                                    ? `Available: ₹${availableTotal.toLocaleString()}`
-                                                    : `Balance: ₹${balance.toLocaleString()}`
-                                            },
-                                            { id: 'upi', name: 'Google Pay / UPI', icon: Sparkles, color: 'text-blue-500 bg-blue-50' },
-                                            { id: 'cod', name: 'Cash on Delivery', icon: ShieldCheck, color: 'text-emerald-500 bg-emerald-50' }
-                                        ];
+                                    {/* KrishiKart Wallet */}
+                                    <button
+                                        onClick={() => setSelectedMethod('wallet')}
+                                        className={cn(
+                                            "w-full p-4 rounded-[28px] md:rounded-xl bg-white border flex items-center justify-between transition-all outline-none text-left",
+                                            selectedMethod === 'wallet' ? "border-primary bg-primary/[0.02] shadow-sm" : "border-slate-100 hover:border-slate-200"
+                                        )}
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-2xl md:rounded-lg bg-primary/5 flex items-center justify-center text-primary">
+                                                <Wallet size={22} />
+                                            </div>
+                                            <div className="text-left">
+                                                <span className="text-sm font-bold text-slate-900 leading-none">KK Wallet</span>
+                                                <p className="text-[10px] font-medium text-primary mt-1">Balance: ₹{balance.toLocaleString()}</p>
+                                            </div>
+                                        </div>
+                                        <div className={cn(
+                                            "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
+                                            selectedMethod === 'wallet' ? "border-primary bg-primary" : "border-slate-200"
+                                        )}>
+                                            {selectedMethod === 'wallet' && <Check size={12} className="text-white" strokeWidth={4} />}
+                                        </div>
+                                    </button>
 
-                                        return paymentMethods.map((method) => (
-                                            <button
-                                                key={method.id}
-                                                onClick={() => setSelectedMethod(method.id)}
-                                                className={cn(
-                                                    "w-full p-4 rounded-[28px] md:rounded-xl bg-white border flex items-center justify-between transition-all outline-none text-left",
-                                                    selectedMethod === method.id ? "border-primary bg-primary/[0.02] shadow-sm" : "border-slate-100 hover:border-slate-200"
-                                                )}
-                                            >
-                                                <div className="flex items-center gap-4">
-                                                    <div className={cn("w-12 h-12 rounded-2xl md:rounded-lg flex items-center justify-center", method.color)}>
-                                                        <method.icon size={22} />
-                                                    </div>
-                                                    <div className="text-left">
-                                                        <span className="text-sm font-bold text-slate-900 leading-none">{method.name}</span>
-                                                        {method.subtitle && <p className="text-[10px] font-medium text-primary mt-1">{method.subtitle}</p>}
-                                                    </div>
+                                    {/* KrishiKart Credit */}
+                                    {creditLimit > 0 && (
+                                        <button
+                                            onClick={() => setSelectedMethod('credit')}
+                                            className={cn(
+                                                "w-full p-4 rounded-[28px] md:rounded-xl bg-white border flex items-center justify-between transition-all outline-none text-left",
+                                                selectedMethod === 'credit' ? "border-primary bg-primary/[0.02] shadow-sm" : "border-slate-100 hover:border-slate-200"
+                                            )}
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 rounded-2xl md:rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+                                                    <CreditCard size={22} />
                                                 </div>
-                                                <div className={cn(
-                                                    "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
-                                                    selectedMethod === method.id ? "border-primary bg-primary" : "border-slate-200"
-                                                )}>
-                                                    {selectedMethod === method.id && <Check size={12} className="text-white" strokeWidth={4} />}
+                                                <div className="text-left">
+                                                    <span className="text-sm font-bold text-slate-900 leading-none">KrishiKart Credit</span>
+                                                    <p className="text-[10px] font-medium text-emerald-600 mt-1">Available: ₹{availableCredit.toLocaleString()}</p>
                                                 </div>
-                                            </button>
-                                        ));
-                                    })()}
+                                            </div>
+                                            <div className={cn(
+                                                "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
+                                                selectedMethod === 'credit' ? "border-emerald-600 bg-emerald-600" : "border-slate-200"
+                                            )}>
+                                                {selectedMethod === 'credit' && <Check size={12} className="text-white" strokeWidth={4} />}
+                                            </div>
+                                        </button>
+                                    )}
+
+                                    {/* UPI */}
+                                    <button
+                                        onClick={() => setSelectedMethod('upi')}
+                                        className={cn(
+                                            "w-full p-4 rounded-[28px] md:rounded-xl bg-white border flex items-center justify-between transition-all outline-none text-left",
+                                            selectedMethod === 'upi' ? "border-primary bg-primary/[0.02] shadow-sm" : "border-slate-100 hover:border-slate-200"
+                                        )}
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-2xl md:rounded-lg bg-blue-50 flex items-center justify-center text-blue-500">
+                                                <QrCode size={22} />
+                                            </div>
+                                            <div className="text-left">
+                                                <span className="text-sm font-bold text-slate-900 leading-none">Google Pay / UPI</span>
+                                                <p className="text-[10px] font-medium text-blue-500 mt-1">Instant & Secure</p>
+                                            </div>
+                                        </div>
+                                        <div className={cn(
+                                            "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
+                                            selectedMethod === 'upi' ? "border-primary bg-primary" : "border-slate-200"
+                                        )}>
+                                            {selectedMethod === 'upi' && <Check size={12} className="text-white" strokeWidth={4} />}
+                                        </div>
+                                    </button>
+
+                                    {/* COD */}
+                                    <button
+                                        onClick={() => setSelectedMethod('cod')}
+                                        className={cn(
+                                            "w-full p-4 rounded-[28px] md:rounded-xl bg-white border flex items-center justify-between transition-all outline-none text-left",
+                                            selectedMethod === 'cod' ? "border-primary bg-primary/[0.02] shadow-sm" : "border-slate-100 hover:border-slate-200"
+                                        )}
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-2xl md:rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-500">
+                                                <ShieldCheck size={22} />
+                                            </div>
+                                            <div className="text-left">
+                                                <span className="text-sm font-bold text-slate-900 leading-none">Cash on Delivery</span>
+                                                <p className="text-[10px] font-medium text-emerald-500 mt-1">Pay at your doorstep</p>
+                                            </div>
+                                        </div>
+                                        <div className={cn(
+                                            "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
+                                            selectedMethod === 'cod' ? "border-primary bg-primary" : "border-slate-200"
+                                        )}>
+                                            {selectedMethod === 'cod' && <Check size={12} className="text-white" strokeWidth={4} />}
+                                        </div>
+                                    </button>
                                 </div>
                             </section>
                         </div>

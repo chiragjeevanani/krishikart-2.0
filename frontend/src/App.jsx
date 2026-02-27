@@ -23,6 +23,7 @@ import VerificationScreen from './modules/user/pages/VerificationScreen'
 import HelpSupportScreen from './modules/user/pages/HelpSupportScreen'
 import AboutScreen from './modules/user/pages/AboutScreen'
 import WishlistScreen from './modules/user/pages/WishlistScreen'
+import CreditInfoScreen from './modules/user/pages/CreditInfoScreen'
 import BusinessRegistrationScreen from './modules/user/pages/BusinessRegistrationScreen'
 import { WishlistProvider } from './modules/user/contexts/WishlistContext'
 import { LocationProvider } from './modules/user/contexts/LocationContext'
@@ -137,6 +138,7 @@ function App() {
             <Route path="/order-summary/:id" element={<OrderSummaryScreen />} />
             <Route path="/order-detail/:id" element={<OrderDetailScreen />} />
             <Route path="/wallet" element={<WalletScreen />} />
+            <Route path="/credit-info" element={<CreditInfoScreen />} />
             <Route path="/notifications" element={<NotificationsScreen />} />
             <Route path="/favorites" element={<FavoritesScreen />} />
             <Route path="/wishlist" element={<WishlistScreen />} />

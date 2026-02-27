@@ -13,11 +13,14 @@ import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../utils/constants';
 import { useWallet } from '../../user/contexts/WalletContext';
 import { useDeliveryOrders } from '../contexts/DeliveryOrderContext';
+import DocumentViewer from '../../vendor/components/documents/DocumentViewer';
+import { Package } from 'lucide-react';
 
 const DeliveryCompletion = () => {
     const [photo, setPhoto] = useState(null);
     const [signed, setSigned] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
+    const [isDocOpen, setIsDocOpen] = useState(false);
     const navigate = useNavigate();
     const { addLoyaltyPoints, loyaltyConfig } = useWallet();
     const { dispatchedOrders, updateStatus } = useDeliveryOrders();
@@ -131,6 +134,21 @@ const DeliveryCompletion = () => {
                 <div className="space-y-4">
                     <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Proof of Delivery</h2>
 
+                    {order?.bilty && (
+                        <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex flex-col gap-3">
+                            <div className="flex items-center gap-3">
+                                <Package className="w-5 h-5 text-amber-500" />
+                                <p className="text-xs text-amber-900 font-bold uppercase tracking-tight">Handover Bilty To Customer</p>
+                            </div>
+                            <button
+                                onClick={() => setIsDocOpen(true)}
+                                className="w-full py-2.5 bg-white border border-amber-200 rounded-xl text-[10px] font-black text-amber-600 uppercase tracking-widest"
+                            >
+                                Show Digital Bilty
+                            </button>
+                        </div>
+                    )}
+
                     <div className="grid grid-cols-2 gap-4">
                         <button
                             onClick={() => setPhoto(!photo)}
@@ -175,6 +193,14 @@ const DeliveryCompletion = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Bilty Modal */}
+            <DocumentViewer
+                isOpen={isDocOpen}
+                onClose={() => setIsDocOpen(false)}
+                type="BILTY"
+                data={order?.bilty || {}}
+            />
 
             {/* Action Button */}
             <div className="p-6 mt-auto pb-10">

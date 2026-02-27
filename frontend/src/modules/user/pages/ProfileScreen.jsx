@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import {
   User, Package, Wallet,
   ChevronRight, Bell, Heart,
-  Info, Power
+  Info, Power, CreditCard
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import PageTransition from '../components/layout/PageTransition'
@@ -13,7 +13,7 @@ import { useWallet } from '../contexts/WalletContext'
 
 export default function ProfileScreen() {
   const navigate = useNavigate()
-  const { balance } = useWallet()
+  const { balance, creditLimit, availableCredit } = useWallet()
   const [isVegMode, setIsVegMode] = useState(false)
 
   const userData = JSON.parse(localStorage.getItem('userData') || '{}')
@@ -25,6 +25,24 @@ export default function ProfileScreen() {
     navigate('/login')
   }
 
+  const walletItems = [
+    {
+      icon: Wallet,
+      label: "KrishiKart wallet",
+      path: "/wallet",
+      badge: <div className="bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-lg flex items-center justify-center">₹{balance || 0}</div>
+    }
+  ];
+
+  if (creditLimit > 0) {
+    walletItems.push({
+      icon: CreditCard,
+      label: "KrishiKart Credit",
+      path: "/credit-info",
+      badge: <div className="bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-lg flex items-center justify-center">₹{availableCredit || 0}</div>
+    });
+  }
+
   const sections = [
     {
       title: "Orders",
@@ -34,14 +52,7 @@ export default function ProfileScreen() {
     },
     {
       title: "Wallet & payment",
-      items: [
-        {
-          icon: Wallet,
-          label: "KrishiKart wallet",
-          path: "/wallet",
-          badge: <div className="bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-lg flex items-center justify-center">₹{balance || 0}</div>
-        },
-      ]
+      items: walletItems
     },
     {
       title: "Others",

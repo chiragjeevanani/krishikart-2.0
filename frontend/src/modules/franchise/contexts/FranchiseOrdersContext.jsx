@@ -90,12 +90,15 @@ export function FranchiseOrdersProvider({ children }) {
         }));
     }, [liveOrders]);
 
-    const updateOrderStatus = async (orderId, newStatus) => {
+    const updateOrderStatus = async (orderId, newStatus, extraData = {}) => {
         try {
-            const response = await api.put(`/orders/franchise/${orderId}/status`, { status: newStatus });
+            const response = await api.put(`/orders/franchise/${orderId}/status`, {
+                status: newStatus,
+                ...extraData
+            });
             if (response.data.success) {
                 toast.success(`Order status updated to ${newStatus}`);
-                setLiveOrders(prev => prev.map(o => o._id === orderId ? { ...o, orderStatus: newStatus } : o));
+                setLiveOrders(prev => prev.map(o => o._id === orderId ? { ...o, orderStatus: newStatus, ...extraData } : o));
             }
         } catch (error) {
             console.error('Update order status error:', error);

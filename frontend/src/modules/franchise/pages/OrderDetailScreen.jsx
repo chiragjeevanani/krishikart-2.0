@@ -68,7 +68,8 @@ export default function OrderDetailScreen() {
                     time: o.time,
                     paymentMethod: o.paymentMethod,
                     paymentStatus: o.paymentStatus || 'Pending',
-                    franchiseId: o.franchiseId || o.franchise
+                    franchiseId: o.franchiseId || o.franchise,
+                    bilty: o.bilty
                 });
             }
         } catch (error) {
@@ -227,6 +228,21 @@ export default function OrderDetailScreen() {
                                     <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em]">Documents</h3>
                                 </div>
                                 <div className="space-y-2">
+                                    {order.bilty && (
+                                        <button
+                                            onClick={() => { setDocType('BILTY'); setIsDocOpen(true); }}
+                                            className="w-full flex items-center justify-between p-3 bg-amber-50 border border-amber-100 rounded-sm hover:border-amber-900 transition-all text-left group"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <Package size={16} className="text-amber-500" />
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Bilty / Consignment Note</span>
+                                                    <span className="text-[8px] font-bold text-amber-600 uppercase tracking-tight">{order.bilty.numberOfPackages} Packages • {order.bilty.biltyNumber}</span>
+                                                </div>
+                                            </div>
+                                            <ChevronRight size={12} className="text-slate-300" />
+                                        </button>
+                                    )}
                                     {order.deliveryChallan && (
                                         <button
                                             onClick={() => { setDocType('DC'); setIsDocOpen(true); }}

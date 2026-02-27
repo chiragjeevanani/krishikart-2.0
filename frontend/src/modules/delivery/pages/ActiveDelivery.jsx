@@ -13,12 +13,14 @@ import StatusProgress from '../components/ui/StatusProgress';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../utils/constants';
 import { useDeliveryOrders } from '../contexts/DeliveryOrderContext';
+import DocumentViewer from '../../vendor/components/documents/DocumentViewer';
 
 const ActiveDelivery = () => {
     const navigate = useNavigate();
     const { dispatchedOrders, loading, updateStatus } = useDeliveryOrders();
     const [order, setOrder] = useState(null);
     const [isUpdating, setIsUpdating] = useState(false);
+    const [isDocOpen, setIsDocOpen] = useState(false);
 
     useEffect(() => {
         const activeOrderId = localStorage.getItem('activeDeliveryId');
@@ -142,10 +144,10 @@ const ActiveDelivery = () => {
                     </div>
                 </div>
 
-                {/* Order Items */}
+                {/* Order Items & Bilty */}
                 <div className="bg-white rounded-2xl border border-border overflow-hidden">
                     <div className="px-4 py-3 border-b border-border bg-muted/20 flex justify-between items-center">
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Items from {order?.franchiseId?.shopName || 'Store'}</h4>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Consignment Items</h4>
                         <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
                             {order?.items?.length || 0} Items
                         </span>
@@ -161,8 +163,36 @@ const ActiveDelivery = () => {
                             </div>
                         ))}
                     </div>
+
+                    {order.bilty && (
+                        <div className="p-4 bg-amber-50/50 border-t border-amber-100 flex flex-col gap-3">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-amber-600 rounded-lg flex items-center justify-center text-white">
+                                    <Package size={18} />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest leading-none mb-1">Logistics Bilty</p>
+                                    <p className="text-[9px] font-bold text-amber-600 uppercase tracking-tight">{order.bilty.numberOfPackages} Packages • {order.bilty.biltyNumber}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setIsDocOpen(true)}
+                                className="w-full py-3 bg-white border border-amber-200 rounded-xl text-xs font-black text-amber-600 uppercase tracking-widest shadow-sm active:scale-95 transition-all text-center"
+                            >
+                                View Consignment Note
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
+
+            {/* Document Viewer Modal */}
+            <DocumentViewer
+                isOpen={isDocOpen}
+                onClose={() => setIsDocOpen(false)}
+                type="BILTY"
+                data={order.bilty || {}}
+            />
 
             {/* Bottom Action */}
             <div className="fixed bottom-16 left-0 right-0 p-6 bg-gradient-to-t from-white via-white to-transparent pointer-events-none">

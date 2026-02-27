@@ -119,6 +119,27 @@ const orderSchema = new mongoose.Schema({
     deliveredAt: {
         type: Date
     },
+    numberOfPackages: {
+        type: Number,
+        default: 0
+    },
+    bilty: {
+        biltyNumber: String,
+        generatedAt: Date,
+        numberOfPackages: Number,
+        items: [{
+            name: String,
+            quantity: Number,
+            unit: String
+        }],
+        totalWeight: String,
+        fromFranchise: String,
+        toCustomer: String,
+        toAddress: String,
+        deliveryPartner: String,
+        vehicleNumber: String,
+        vehicleType: String
+    },
     razorpayOrderId: String,
     razorpayPaymentId: String
 }, {

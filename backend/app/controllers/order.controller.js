@@ -331,6 +331,11 @@ export const updateOrderStatus = async (req, res) => {
       }
     }
 
+    // Accept number of packages when marking as packed
+    if (status === "Packed" && req.body.numberOfPackages) {
+      order.numberOfPackages = req.body.numberOfPackages;
+    }
+
     order.orderStatus = status;
 
     // Push to history
@@ -357,6 +362,38 @@ export const updateOrderStatus = async (req, res) => {
       }
     }
 
+    // Generate Bilty when order is dispatched
+    if (status === "Dispatched") {
+      try {
+        const fullOrder = await Order.findById(order._id)
+          .populate("userId", "fullName mobile legalEntityName address")
+          .populate("deliveryPartnerId", "fullName mobile vehicleNumber vehicleType")
+          .populate("franchiseId", "franchiseName ownerName city");
+
+        const biltyNumber = `BLT-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+
+        order.bilty = {
+          biltyNumber,
+          generatedAt: new Date(),
+          numberOfPackages: order.numberOfPackages || 0,
+          items: order.items.map(item => ({
+            name: item.name,
+            quantity: item.quantity,
+            unit: item.unit
+          })),
+          totalWeight: `${order.items.reduce((acc, i) => acc + (i.quantity || 0), 0)} Units`, // Using total units as weight since weight isn't explicitly tracked per item here
+          fromFranchise: fullOrder.franchiseId?.franchiseName || "KrishiKart Franchise",
+          toCustomer: fullOrder.userId?.legalEntityName || fullOrder.userId?.fullName || "Valued Customer",
+          toAddress: order.shippingAddress || fullOrder.userId?.address || "Delivery Address",
+          deliveryPartner: fullOrder.deliveryPartnerId?.fullName || "Not Assigned",
+          vehicleNumber: fullOrder.deliveryPartnerId?.vehicleNumber || "N/A",
+          vehicleType: fullOrder.deliveryPartnerId?.vehicleType || "N/A"
+        };
+      } catch (biltyErr) {
+        console.error("Bilty generation error:", biltyErr);
+      }
+    }
+
     await order.save();
 
     // Deduct stock if status changed to Packed
@@ -380,8 +417,8 @@ export const updateOrderStatus = async (req, res) => {
       }
     }
 
-    // Return stock if status changed to Cancelled from Packed/Dispatched
-    if (status === "Cancelled" && (currentStatus === "Packed" || currentStatus === "Dispatched") && isFranchise) {
+    // Return stock if status changed to Cancelled from Packed/Dispatched/Delivered/Received
+    if (status === "Cancelled" && (currentStatus === "Packed" || currentStatus === "Dispatched" || currentStatus === "Delivered" || currentStatus === "Received") && isFranchise) {
       try {
         const franchiseId = req.franchise._id;
         const inventory = await Inventory.findOne({ franchiseId });
@@ -398,6 +435,20 @@ export const updateOrderStatus = async (req, res) => {
         }
       } catch (stockErr) {
         console.error("Stock return error during status update:", stockErr);
+      }
+    }
+
+    // Refund credit if order was paid via Credit
+    if (status === "Cancelled" && order.paymentMethod === "Credit") {
+      try {
+        const user = await User.findById(order.userId);
+        if (user) {
+          user.usedCredit = Math.max(0, user.usedCredit - order.totalAmount);
+          await user.save();
+          console.log(`[Credit] Refunded ₹${order.totalAmount} to user ${order.userId} for cancelled order ${order._id}`);
+        }
+      } catch (creditErr) {
+        console.error("Credit refund error during status update:", creditErr);
       }
     }
 

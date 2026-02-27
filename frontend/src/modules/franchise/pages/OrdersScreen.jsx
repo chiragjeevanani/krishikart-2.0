@@ -53,7 +53,10 @@ export default function OrdersScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [processingOrderId, setProcessingOrderId] = useState(null);
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+    const [isPackageModalOpen, setIsPackageModalOpen] = useState(false);
+    const [packageCount, setPackageCount] = useState(1);
     const [selectedOrderForDispatch, setSelectedOrderForDispatch] = useState(null);
+    const [selectedOrderForPacking, setSelectedOrderForPacking] = useState(null);
     const [isAssigning, setIsAssigning] = useState(false);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
@@ -68,9 +71,15 @@ export default function OrdersScreen() {
         return () => clearTimeout(timer);
     }, [activeTab]);
 
-    const handleAction = async (orderId, newStatus) => {
+    const handleAction = async (orderId, newStatus, extraData = {}) => {
         const order = allOrders.find(o => o.id === orderId);
         if (!order) return;
+
+        if (newStatus === 'Packed' && !extraData.numberOfPackages) {
+            setSelectedOrderForPacking(orderId);
+            setIsPackageModalOpen(true);
+            return;
+        }
 
         if (newStatus === 'Dispatched' || newStatus === 'Packed') {
             const itemsToValidate = order.items.map(i => ({
@@ -93,11 +102,21 @@ export default function OrdersScreen() {
             }
         }
 
-        await updateOrderStatus(orderId, newStatus);
+        setProcessingOrderId(orderId);
+        await updateOrderStatus(orderId, newStatus, extraData);
+        setProcessingOrderId(null);
 
         if (newStatus === 'Dispatched' || newStatus === 'Packed') {
             refreshInventory();
         }
+    };
+
+    const handleConfirmPacking = async () => {
+        if (!selectedOrderForPacking) return;
+        await handleAction(selectedOrderForPacking, 'Packed', { numberOfPackages: packageCount });
+        setIsPackageModalOpen(false);
+        setSelectedOrderForPacking(null);
+        setPackageCount(1);
     };
 
     const handleAssignDelivery = async (partnerId) => {
@@ -472,6 +491,73 @@ export default function OrdersScreen() {
                     </div>
                 )}
             </AnimatePresence>
+            {/* Package Count Modal */}
+            <AnimatePresence>
+                {isPackageModalOpen && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsPackageModalOpen(false)}
+                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                            className="relative w-full max-w-sm bg-white rounded-sm shadow-2xl overflow-hidden"
+                        >
+                            <div className="bg-slate-900 p-6 text-white flex justify-between items-center">
+                                <div>
+                                    <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                                        <Package size={16} className="text-emerald-400" />
+                                        Shipment Packaging
+                                    </h3>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Finalizing Manifest</p>
+                                </div>
+                                <button onClick={() => setIsPackageModalOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="p-8 space-y-6">
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Number of Packages</label>
+                                    <div className="relative group">
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            value={packageCount}
+                                            onChange={(e) => setPackageCount(parseInt(e.target.value) || 0)}
+                                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-sm py-4 px-6 text-3xl font-black text-slate-900 outline-none focus:border-slate-900 transition-all text-center tabular-nums"
+                                            placeholder="0"
+                                            autoFocus
+                                        />
+                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-1">
+                                            <button onClick={() => setPackageCount(p => p + 1)} className="p-1 hover:bg-white border border-slate-200 rounded text-slate-400 hover:text-slate-900 shadow-sm transition-all"><ArrowUpRight size={12} /></button>
+                                            <button onClick={() => setPackageCount(p => Math.max(1, p - 1))} className="p-1 hover:bg-white border border-slate-200 rounded text-slate-400 hover:text-slate-900 shadow-sm transition-all"><ArrowDownRight size={12} /></button>
+                                        </div>
+                                    </div>
+                                    <p className="text-[9px] font-bold text-slate-400 text-center uppercase tracking-tight leading-relaxed">
+                                        Enter total number of physical packages for this consignment. This count will be printed on the Bilty.
+                                    </p>
+                                </div>
+
+                                <button
+                                    onClick={handleConfirmPacking}
+                                    disabled={packageCount < 1 || processingOrderId === selectedOrderForPacking}
+                                    className="w-full h-14 bg-slate-900 text-white rounded-sm font-black uppercase text-[11px] tracking-[0.2em] shadow-lg hover:bg-slate-800 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                                >
+                                    Confirm & Mark Packed
+                                    <Check size={16} className="text-emerald-400" />
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
             {/* Order History Modal */}
             <OrderHistoryModal
                 isOpen={isHistoryModalOpen}
