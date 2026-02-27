@@ -1,6 +1,6 @@
 
 import express from "express";
-import { sendOTP, verifyOTP, forgotPassword, resetPassword, getMe, updateUserProfile, changeUserPassword } from "../controllers/user.auth.js";
+import { sendOTP, verifyOTP, forgotPassword, resetPassword, getMe, updateUserProfile, changeUserPassword, rechargeWallet } from "../controllers/user.auth.js";
 import {
     getCart,
     addToCart,
@@ -21,6 +21,7 @@ router.post("/reset-password", resetPassword);
 router.get("/me", protect, getMe);
 router.put("/update-profile", protect, updateUserProfile);
 router.post("/change-password", protect, changeUserPassword);
+router.post("/wallet/recharge", protect, rechargeWallet);
 
 // Cart Routes
 router.get("/cart", protect, getCart);

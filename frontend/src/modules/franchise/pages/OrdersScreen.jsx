@@ -5,6 +5,7 @@ import {
     Filter,
     ShoppingBag,
     Truck,
+    Package,
     CheckCircle2,
     Clock,
     Zap,

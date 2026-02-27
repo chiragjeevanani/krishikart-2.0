@@ -131,12 +131,30 @@ export const createOrder = async (req, res) => {
         return handleResponse(res, 400, "Insufficient wallet balance");
       }
       user.walletBalance -= totalAmount;
+      user.walletTransactions = user.walletTransactions || [];
+      user.walletTransactions.unshift({
+        txnId: `WAL-${Date.now()}`,
+        type: "Paid",
+        amount: totalAmount,
+        status: "Success",
+        note: "Order paid via wallet",
+        createdAt: new Date(),
+      });
     } else if (paymentMethod === "Credit") {
       const availableCredit = user.creditLimit - user.usedCredit;
       if (availableCredit < totalAmount) {
         return handleResponse(res, 400, "Insufficient credit limit");
       }
       user.usedCredit += totalAmount;
+      user.walletTransactions = user.walletTransactions || [];
+      user.walletTransactions.unshift({
+        txnId: `CRD-${Date.now()}`,
+        type: "Credit Used",
+        amount: totalAmount,
+        status: "Success",
+        note: "Order paid via business credit",
+        createdAt: new Date(),
+      });
     }
 
     // 6. Coordinates for Order (Optional)
@@ -515,7 +533,40 @@ export const updateReturnPickupStatus = async (req, res) => {
 
     request.status = status;
     if (status === "picked_up") request.pickupPickedAt = new Date();
-    if (status === "completed") request.pickupCompletedAt = new Date();
+    if (status === "completed") {
+      request.pickupCompletedAt = new Date();
+
+      const priceByProduct = new Map();
+      for (const item of order.items || []) {
+        const pid = item.productId?.toString?.();
+        if (!pid) continue;
+        priceByProduct.set(pid, Number(item.price || 0));
+      }
+
+      const refundAmount = (request.items || []).reduce((sum, item) => {
+        const pid = item.productId?.toString?.();
+        const price = pid ? (priceByProduct.get(pid) || 0) : 0;
+        return sum + (price * Number(item.quantity || 0));
+      }, 0);
+
+      if (refundAmount > 0) {
+        const user = await User.findById(order.userId);
+        if (user) {
+          user.walletBalance = Number((Number(user.walletBalance || 0) + refundAmount).toFixed(2));
+          user.walletTransactions = user.walletTransactions || [];
+          user.walletTransactions.unshift({
+            txnId: `RFD-${Date.now()}`,
+            type: "Refund",
+            amount: refundAmount,
+            status: "Success",
+            note: `Return refund for order ${order._id}`,
+            referenceOrderId: order._id,
+            createdAt: new Date(),
+          });
+          await user.save();
+        }
+      }
+    }
 
     await order.save();
     return handleResponse(res, 200, "Return pickup status updated", order);
@@ -744,6 +795,16 @@ export const updateOrderStatus = async (req, res) => {
         const user = await User.findById(order.userId);
         if (user) {
           user.usedCredit = Math.max(0, user.usedCredit - order.totalAmount);
+          user.walletTransactions = user.walletTransactions || [];
+          user.walletTransactions.unshift({
+            txnId: `CRR-${Date.now()}`,
+            type: "Credit Refunded",
+            amount: order.totalAmount,
+            status: "Success",
+            note: `Credit refunded for cancelled order ${order._id}`,
+            referenceOrderId: order._id,
+            createdAt: new Date(),
+          });
           await user.save();
           console.log(`[Credit] Refunded ₹${order.totalAmount} to user ${order.userId} for cancelled order ${order._id}`);
         }
@@ -1176,3 +1237,4 @@ export const getDeliveryOrderHistory = async (req, res) => {
     return handleResponse(res, 500, "Server error");
   }
 };
+

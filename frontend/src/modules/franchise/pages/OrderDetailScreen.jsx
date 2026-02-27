@@ -72,7 +72,6 @@ export default function OrderDetailScreen() {
                     paymentMethod: o.paymentMethod,
                     paymentStatus: o.paymentStatus || 'Pending',
                     franchiseId: o.franchiseId || o.franchise,
-<<<<<<< HEAD
                     returnRequests: (o.returnRequests || []).map((rr, idx) => ({
                         index: idx,
                         items: rr.items || [],
@@ -81,10 +80,8 @@ export default function OrderDetailScreen() {
                         franchiseReviewReason: rr.franchiseReviewReason || '',
                         requestedAt: rr.requestedAt,
                         pickupDeliveryPartnerId: rr.pickupDeliveryPartnerId || null
-                    }))
-=======
+                    })),
                     bilty: o.bilty
->>>>>>> 1cafd49630f6891ef7d5ae51254168387bcc9878
                 });
             }
         } catch (error) {

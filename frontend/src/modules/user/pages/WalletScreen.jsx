@@ -41,18 +41,21 @@ export default function WalletScreen() {
 
     const quickAddAmounts = [1000, 2000, 5000]
 
-    const handleAddMoney = (amount = amountToAdd) => {
+    const handleAddMoney = async (amount = amountToAdd) => {
         const value = amount || amountToAdd;
         if (!value || isNaN(value) || value <= 0) return
 
         setIsProcessing(true)
-        setTimeout(() => {
-            addMoney(Number(value))
-            setIsProcessing(false)
+        const success = await addMoney(Number(value))
+        setIsProcessing(false)
+        if (success) {
             setSuccessMessage('Recharge successful! Funds added to your wallet.')
             setShowSuccess(true)
             setAmountToAdd('')
-        }, 1200)
+        } else {
+            setSuccessMessage('Recharge failed. Please try again.')
+            setShowSuccess(true)
+        }
     }
 
     const filteredTransactions = activeFilter === 'All'

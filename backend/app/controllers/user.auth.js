@@ -382,3 +382,34 @@ export const changeUserPassword = async (req, res) => {
   }
 };
 
+export const rechargeWallet = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const amount = Number(req.body.amount || 0);
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return handleResponse(res, 400, "Valid recharge amount is required");
+    }
+
+    const user = await User.findById(userId);
+    if (!user) return handleResponse(res, 404, "User not found");
+
+    user.walletBalance = Number((Number(user.walletBalance || 0) + amount).toFixed(2));
+    user.walletTransactions = user.walletTransactions || [];
+    user.walletTransactions.unshift({
+      txnId: `WAL-${Date.now()}`,
+      type: "Added",
+      amount,
+      status: "Success",
+      note: "Wallet recharge",
+      createdAt: new Date(),
+    });
+
+    await user.save();
+    return handleResponse(res, 200, "Wallet recharged successfully", user);
+  } catch (error) {
+    console.error("Wallet recharge error:", error);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+

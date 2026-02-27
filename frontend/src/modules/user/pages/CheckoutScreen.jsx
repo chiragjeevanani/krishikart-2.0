@@ -407,17 +407,21 @@ export default function CheckoutScreen() {
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     {(() => {
-                                        const availableTotal = balance + (creditLimit - creditUsed);
                                         const paymentMethods = [
                                             {
                                                 id: 'wallet',
-                                                name: creditLimit > 0 ? 'Business Credit / Wallet' : 'KK Wallet',
+                                                name: 'KK Wallet',
                                                 icon: Wallet,
                                                 color: 'text-primary bg-primary/5',
-                                                subtitle: creditLimit > 0
-                                                    ? `Available: ₹${availableTotal.toLocaleString()}`
-                                                    : `Balance: ₹${balance.toLocaleString()}`
+                                                subtitle: 'Balance: ₹' + balance.toLocaleString()
                                             },
+                                            ...(creditLimit > 0 ? [{
+                                                id: 'credit',
+                                                name: 'Business Credit',
+                                                icon: CreditCard,
+                                                color: 'text-amber-600 bg-amber-50',
+                                                subtitle: 'Available: ₹' + availableCredit.toLocaleString()
+                                            }] : []),
                                             { id: 'upi', name: 'Google Pay / UPI', icon: Sparkles, color: 'text-blue-500 bg-blue-50' },
                                             { id: 'cod', name: 'Cash on Delivery', icon: ShieldCheck, color: 'text-emerald-500 bg-emerald-50' }
                                         ];
@@ -611,3 +615,4 @@ export default function CheckoutScreen() {
         </PageTransition>
     )
 }
+

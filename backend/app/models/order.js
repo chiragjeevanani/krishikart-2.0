@@ -184,11 +184,10 @@ const orderSchema = new mongoose.Schema({
     deliveredAt: {
         type: Date
     },
-<<<<<<< HEAD
     returnRequests: {
         type: [returnRequestSchema],
         default: []
-=======
+    },
     numberOfPackages: {
         type: Number,
         default: 0
@@ -209,7 +208,6 @@ const orderSchema = new mongoose.Schema({
         deliveryPartner: String,
         vehicleNumber: String,
         vehicleType: String
->>>>>>> 1cafd49630f6891ef7d5ae51254168387bcc9878
     },
     razorpayOrderId: String,
     razorpayPaymentId: String

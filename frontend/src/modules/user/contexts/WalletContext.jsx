@@ -45,11 +45,16 @@ export function WalletProvider({ children }) {
                 setCreditLimit(user.creditLimit || 0);
                 setCreditUsed(user.usedCredit || 0);
                 setLoyaltyPoints(user.loyaltyPoints || 0);
-
-                // Note: Transactions are currently mock as they aren't in User model
-                setTransactions([
-                    { id: 'TXN-INIT', type: 'Added', amount: user.walletBalance || 0, date: 'Current Session', status: 'Success' }
-                ]);
+                const txns = (user.walletTransactions || []).map((txn, idx) => ({
+                    id: txn.txnId || `TXN-${idx}`,
+                    type: txn.type || 'Added',
+                    amount: Number(txn.amount || 0),
+                    date: txn.createdAt
+                        ? new Date(txn.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                        : 'N/A',
+                    status: txn.status || 'Success'
+                }));
+                setTransactions(txns);
             }
         } catch (error) {
             console.error('Failed to fetch wallet data:', error);
@@ -93,18 +98,32 @@ export function WalletProvider({ children }) {
         return false;
     };
 
-    const addMoney = (amount) => {
-        // In a real app, this would involve Razorpay SDK
-        const newTxn = {
-            id: `TXN-${Math.floor(1000 + Math.random() * 9000)}`,
-            type: 'Added',
-            amount: amount,
-            date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-            status: 'Success'
-        };
-        setBalance(prev => prev + amount);
-        setTransactions(prev => [newTxn, ...prev]);
-        return true;
+    const addMoney = async (amount) => {
+        try {
+            const response = await api.post('/user/wallet/recharge', { amount });
+            if (response.data?.success) {
+                const user = response.data.result;
+                setBalance(user.walletBalance || 0);
+                setCreditLimit(user.creditLimit || 0);
+                setCreditUsed(user.usedCredit || 0);
+                setLoyaltyPoints(user.loyaltyPoints || 0);
+                const txns = (user.walletTransactions || []).map((txn, idx) => ({
+                    id: txn.txnId || `TXN-${idx}`,
+                    type: txn.type || 'Added',
+                    amount: Number(txn.amount || 0),
+                    date: txn.createdAt
+                        ? new Date(txn.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                        : 'N/A',
+                    status: txn.status || 'Success'
+                }));
+                setTransactions(txns);
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Wallet recharge failed:', error);
+            return false;
+        }
     };
 
     const payWithWallet = (amount) => {

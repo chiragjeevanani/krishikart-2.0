@@ -1,5 +1,26 @@
 import mongoose from "mongoose";
 
+const walletTransactionSchema = new mongoose.Schema(
+  {
+    txnId: { type: String, required: true },
+    type: {
+      type: String,
+      enum: ["Added", "Paid", "Refund", "Credit Used", "Credit Refunded", "Adjustment"],
+      required: true,
+    },
+    amount: { type: Number, required: true, min: 0 },
+    status: { type: String, default: "Success" },
+    note: { type: String, default: "" },
+    referenceOrderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Order",
+      default: null,
+    },
+    createdAt: { type: Date, default: Date.now },
+  },
+  { _id: false }
+);
+
 const userSchema = new mongoose.Schema(
   {
     fullName: {
@@ -81,6 +102,11 @@ const userSchema = new mongoose.Schema(
     usedCredit: {
       type: Number,
       default: 0
+    },
+
+    walletTransactions: {
+      type: [walletTransactionSchema],
+      default: []
     }
   },
   { timestamps: true }
