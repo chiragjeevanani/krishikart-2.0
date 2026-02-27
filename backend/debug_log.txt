@@ -3102,3 +3102,7 @@ Found: 28 orders
 [2026-02-27T12:38:35.720Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (indore)
 Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
 Found: 28 orders
+
+[2026-02-27T12:39:35.637Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (indore)
+Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
+Found: 28 orders
