@@ -184,9 +184,32 @@ const orderSchema = new mongoose.Schema({
     deliveredAt: {
         type: Date
     },
+<<<<<<< HEAD
     returnRequests: {
         type: [returnRequestSchema],
         default: []
+=======
+    numberOfPackages: {
+        type: Number,
+        default: 0
+    },
+    bilty: {
+        biltyNumber: String,
+        generatedAt: Date,
+        numberOfPackages: Number,
+        items: [{
+            name: String,
+            quantity: Number,
+            unit: String
+        }],
+        totalWeight: String,
+        fromFranchise: String,
+        toCustomer: String,
+        toAddress: String,
+        deliveryPartner: String,
+        vehicleNumber: String,
+        vehicleType: String
+>>>>>>> 1cafd49630f6891ef7d5ae51254168387bcc9878
     },
     razorpayOrderId: String,
     razorpayPaymentId: String

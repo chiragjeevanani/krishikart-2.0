@@ -128,7 +128,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                 <button
                     onClick={() => navigate('/franchise/login')}
                     className={cn(
-                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all group",
+                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-slate-400 hover:bg-emerald-50 hover:text-emerald-600 transition-all group",
                         isCollapsed && "justify-center"
                     )}
                 >

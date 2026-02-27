@@ -11,7 +11,9 @@ import {
     Check,
     Loader2,
     X,
-    Edit3
+    Edit3,
+    CreditCard,
+    QrCode
 } from 'lucide-react'
 import PageTransition from '../components/layout/PageTransition'
 import { Button } from '@/components/ui/button'
@@ -27,7 +29,7 @@ export default function CheckoutScreen() {
     const navigate = useNavigate()
     const { cartItems, cartTotal, clearCart, deliveryConstraints } = useCart()
     const { placeOrder } = useOrders()
-    const { balance, payWithWallet, creditLimit, creditUsed } = useWallet()
+    const { balance, payWithWallet, creditLimit, creditUsed, availableCredit } = useWallet()
 
     const [step, setStep] = useState(1) // 1: Address, 2: Payment, 3: Success
     const [lastOrder, setLastOrder] = useState(null)
@@ -223,7 +225,8 @@ export default function CheckoutScreen() {
         setIsPlacingOrder(true)
 
         const methodMap = {
-            wallet: creditLimit > 0 ? 'Credit' : 'Wallet',
+            wallet: 'Wallet',
+            credit: 'Credit',
             upi: 'UPI',
             card: 'Card',
             cod: 'COD'
@@ -250,21 +253,21 @@ export default function CheckoutScreen() {
             return
         }
 
-        // Wallet/Credit specific checks
+        // Wallet Balance check
         if (selectedMethod === 'wallet') {
-            if (creditLimit > 0) {
-                const availableCredit = creditLimit - creditUsed;
-                if (availableCredit < total) {
-                    toast.error("Insufficient Credit Limit!");
-                    setIsPlacingOrder(false)
-                    return
-                }
-            } else {
-                if (balance < total) {
-                    toast.error("Insufficient Wallet Balance!")
-                    setIsPlacingOrder(false)
-                    return
-                }
+            if (balance < total) {
+                toast.error("Insufficient Wallet Balance!");
+                setIsPlacingOrder(false);
+                return;
+            }
+        }
+
+        // Credit Limit check
+        if (selectedMethod === 'credit') {
+            if (availableCredit < total) {
+                toast.error("Insufficient Credit Limit!");
+                setIsPlacingOrder(false);
+                return;
             }
         }
 
@@ -273,32 +276,21 @@ export default function CheckoutScreen() {
 
         if (result.success) {
             if (selectedMethod === 'wallet') {
-                if (creditLimit > 0) {
-                    // Credit handled by backend
-                } else {
-                    payWithWallet(total)
-                }
+                payWithWallet(total)
             }
             setLastOrder(result.order)
             setStep(3)
             setTimeout(() => {
                 clearCart()
             }, 500)
+        } else {
+            toast.error(result.message || "Failed to place order")
         }
 
         setIsPlacingOrder(false)
     }
 
     if (step === 3) {
-        // Calculate estimated delivery time (current time + 30 minutes)
-        const estimatedTime = new Date();
-        estimatedTime.setMinutes(estimatedTime.getMinutes() + 30);
-        const formattedTime = estimatedTime.toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true
-        });
-
         return (
             <PageTransition>
                 <div className="bg-white min-h-screen flex flex-col items-center justify-center p-8 text-center">

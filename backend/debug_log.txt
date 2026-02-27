@@ -1899,6 +1899,7 @@ Found: 23 orders
 Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
 Found: 23 orders
 
+<<<<<<< HEAD
 [2026-02-27T06:15:35.382Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (indore)
 Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
 Found: 23 orders
@@ -2248,5 +2249,8 @@ Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$
 Found: 23 orders
 
 [2026-02-27T07:37:35.682Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (indore)
+=======
+[2026-02-27T07:34:46.856Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (indore)
+>>>>>>> 1cafd49630f6891ef7d5ae51254168387bcc9878
 Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
 Found: 23 orders

@@ -123,6 +123,8 @@ export function WalletProvider({ children }) {
         return false;
     };
 
+    const availableCredit = Math.max(0, creditLimit - creditUsed);
+
     return (
         <WalletContext.Provider value={{
             balance,
@@ -131,6 +133,7 @@ export function WalletProvider({ children }) {
             payWithWallet,
             creditLimit,
             creditUsed,
+            availableCredit,
             loyaltyPoints,
             addLoyaltyPoints,
             redeemLoyaltyPoints,
@@ -140,7 +143,7 @@ export function WalletProvider({ children }) {
             isLoading
         }}>
             {children}
-        </WalletContext.Provider>
+        </WalletContext.Provider >
     );
 }
 

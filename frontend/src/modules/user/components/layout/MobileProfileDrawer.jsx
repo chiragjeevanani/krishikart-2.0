@@ -11,10 +11,11 @@ import {
     ChevronRight,
     MessageCircle,
     CircleDot,
-    Info
+    Info,
+    CreditCard
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription, SheetClose } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { useWallet } from '../../contexts/WalletContext'
 import { cn } from '@/lib/utils'
 
@@ -28,7 +29,7 @@ const HamburgerIcon = () => (
 
 const SectionHeader = ({ title }) => (
     <div className="flex items-center gap-3 mb-3 px-2">
-        <div className="w-1 h-5 bg-red-600 rounded-full" />
+        <div className="w-1 h-5 bg-emerald-600 rounded-full" />
         <h4 className="text-[15px] font-bold text-slate-900 tracking-tight">{title}</h4>
     </div>
 )
@@ -52,11 +53,11 @@ const MenuItem = ({ icon: Icon, label, path, badge, isNew, hasToggle, isActive, 
             <div className="flex items-center gap-2">
                 {badge && (
                     <span className="bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                        ₹{badge}
+                        {badge}
                     </span>
                 )}
                 {isNew && (
-                    <span className="bg-red-400 text-white text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider">
+                    <span className="bg-emerald-400 text-white text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider">
                         NEW
                     </span>
                 )}
@@ -87,7 +88,7 @@ const MenuItem = ({ icon: Icon, label, path, badge, isNew, hasToggle, isActive, 
 
 export default function MobileProfileDrawer() {
     const navigate = useNavigate()
-    const { balance } = useWallet()
+    const { balance, creditLimit, availableCredit } = useWallet()
     const [vegMode, setVegMode] = useState(false)
     const [isOpen, setIsOpen] = useState(false)
     const [user, setUser] = useState(null)
@@ -180,7 +181,23 @@ export default function MobileProfileDrawer() {
                                     <div>
                                         <SectionHeader title="Wallet & payment" />
                                         <div className="bg-white rounded-[24px] overflow-hidden border border-slate-100 shadow-sm">
-                                            <MenuItem icon={Wallet} label="KrishiKart wallet" path="/wallet" badge={balance.toLocaleString()} isFirst isLast />
+                                            <MenuItem
+                                                icon={Wallet}
+                                                label="KrishiKart wallet"
+                                                path="/wallet"
+                                                badge={`₹${balance.toLocaleString()}`}
+                                                isFirst
+                                                isLast={creditLimit <= 0}
+                                            />
+                                            {creditLimit > 0 && (
+                                                <MenuItem
+                                                    icon={CreditCard}
+                                                    label="KrishiKart Credit"
+                                                    path="/credit-info"
+                                                    badge={`₹${availableCredit.toLocaleString()}`}
+                                                    isLast
+                                                />
+                                            )}
                                         </div>
                                     </div>
 
@@ -206,7 +223,7 @@ export default function MobileProfileDrawer() {
                                     <div className="pb-8">
                                         <button
                                             onClick={() => navigate('/login')}
-                                            className="w-full h-14 rounded-[20px] flex items-center gap-4 px-6 text-red-600 font-bold hover:bg-slate-50 transition-colors bg-white border border-slate-100 shadow-sm group active:scale-[0.98]"
+                                            className="w-full h-14 rounded-[20px] flex items-center gap-4 px-6 text-emerald-600 font-bold hover:bg-slate-50 transition-colors bg-white border border-slate-100 shadow-sm group active:scale-[0.98]"
                                         >
                                             <Power size={18} strokeWidth={2.5} />
                                             <span className="text-[15px]">Logout</span>
