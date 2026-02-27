@@ -172,7 +172,8 @@ export default function OrdersScreen() {
             }
         } catch (error) {
             console.error('Procurement error:', error);
-            toast.error('Failed to initiate procurement');
+            const message = error?.response?.data?.message || 'Failed to initiate procurement';
+            toast.error(message);
         }
     };
 

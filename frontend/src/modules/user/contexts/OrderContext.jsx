@@ -92,8 +92,29 @@ export function OrderProvider({ children }) {
         }
     };
 
+    const requestReturn = async (orderId, payload) => {
+        try {
+            const response = await api.post(`/orders/${orderId}/return-request`, payload);
+            if (response.data.success) {
+                const updatedOrder = response.data.result;
+                setOrders(prev => prev.map(order =>
+                    order._id === orderId ? updatedOrder : order
+                ));
+                return { success: true, order: updatedOrder };
+            }
+            const msg = response.data.message || "Failed to submit return request";
+            toast.error(msg);
+            return { success: false, message: msg };
+        } catch (error) {
+            console.error("Request return error:", error);
+            const msg = error.response?.data?.message || "Failed to submit return request";
+            toast.error(msg);
+            return { success: false, message: msg };
+        }
+    };
+
     return (
-        <OrderContext.Provider value={{ orders, placeOrder, updateOrderStatus, getOrderById, isLoading, fetchMyOrders }}>
+        <OrderContext.Provider value={{ orders, placeOrder, updateOrderStatus, requestReturn, getOrderById, isLoading, fetchMyOrders }}>
             {children}
         </OrderContext.Provider>
     );

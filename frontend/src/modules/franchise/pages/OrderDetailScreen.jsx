@@ -34,12 +34,15 @@ import DocumentViewer from '../../vendor/components/documents/DocumentViewer';
 export default function OrderDetailScreen() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { updateOrderStatus } = useFranchiseOrders();
+    const { updateOrderStatus, deliveryPartners, refreshPartners } = useFranchiseOrders();
     const [order, setOrder] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isDocOpen, setIsDocOpen] = useState(false);
     const [docType, setDocType] = useState('GRN');
     const [isAccepting, setIsAccepting] = useState(false);
+    const [reviewReasons, setReviewReasons] = useState({});
+    const [isReviewing, setIsReviewing] = useState(false);
+    const [isAssigningPickup, setIsAssigningPickup] = useState(false);
 
     const fetchOrderDetail = async () => {
         setIsLoading(true);
@@ -68,7 +71,16 @@ export default function OrderDetailScreen() {
                     time: o.time,
                     paymentMethod: o.paymentMethod,
                     paymentStatus: o.paymentStatus || 'Pending',
-                    franchiseId: o.franchiseId || o.franchise
+                    franchiseId: o.franchiseId || o.franchise,
+                    returnRequests: (o.returnRequests || []).map((rr, idx) => ({
+                        index: idx,
+                        items: rr.items || [],
+                        reason: rr.reason || '',
+                        status: rr.status || 'pending',
+                        franchiseReviewReason: rr.franchiseReviewReason || '',
+                        requestedAt: rr.requestedAt,
+                        pickupDeliveryPartnerId: rr.pickupDeliveryPartnerId || null
+                    }))
                 });
             }
         } catch (error) {
@@ -103,6 +115,55 @@ export default function OrderDetailScreen() {
         await updateOrderStatus(id, newStatus);
         fetchOrderDetail(); // Refresh
     };
+
+    const handleReviewReturn = async (requestIndex, action) => {
+        const reason = (reviewReasons[requestIndex] || '').trim();
+        if (reason.length < 5) {
+            toast.error('Please enter a valid review reason (minimum 5 characters)');
+            return;
+        }
+        setIsReviewing(true);
+        try {
+            const response = await api.put(`/orders/franchise/${id}/returns/${requestIndex}/review`, {
+                action,
+                reason
+            });
+            if (response.data.success) {
+                toast.success(`Return request ${action}d`);
+                await fetchOrderDetail();
+            }
+        } catch (error) {
+            console.error('Review return request error:', error);
+            toast.error(error.response?.data?.message || 'Failed to review return request');
+        } finally {
+            setIsReviewing(false);
+        }
+    };
+
+    const handleAssignReturnPickup = async (requestIndex, deliveryPartnerId) => {
+        if (!deliveryPartnerId) return;
+        setIsAssigningPickup(true);
+        try {
+            const response = await api.put(`/orders/franchise/${id}/returns/${requestIndex}/assign-pickup`, {
+                deliveryPartnerId
+            });
+            if (response.data.success) {
+                toast.success('Pickup assigned to delivery partner');
+                await fetchOrderDetail();
+            }
+        } catch (error) {
+            console.error('Assign return pickup error:', error);
+            toast.error(error.response?.data?.message || 'Failed to assign pickup');
+        } finally {
+            setIsAssigningPickup(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!deliveryPartners?.length) {
+            refreshPartners?.();
+        }
+    }, [deliveryPartners?.length, refreshPartners]);
 
     if (isLoading) {
         return (
@@ -403,6 +464,107 @@ export default function OrderDetailScreen() {
                                 Report Issue
                             </button>
                         </div>
+
+                        {order.returnRequests?.length > 0 && (
+                            <div className="bg-white border border-slate-200 p-6 rounded-sm space-y-4">
+                                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Return Requests</h3>
+                                <div className="space-y-4">
+                                    {order.returnRequests.map((request) => (
+                                        <div key={request.index} className="border border-slate-200 rounded-sm p-4 space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                                    Request #{request.index + 1}
+                                                </span>
+                                                <span className={cn(
+                                                    "text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-sm border",
+                                                    request.status === 'pending' ? "bg-amber-50 text-amber-700 border-amber-200" :
+                                                        request.status === 'approved' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                                                            request.status === 'rejected' ? "bg-rose-50 text-rose-700 border-rose-200" :
+                                                                request.status === 'pickup_assigned' ? "bg-blue-50 text-blue-700 border-blue-200" :
+                                                                    "bg-slate-50 text-slate-700 border-slate-200"
+                                                )}>
+                                                    {request.status.replace(/_/g, ' ')}
+                                                </span>
+                                            </div>
+
+                                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                                                Requested: {new Date(request.requestedAt).toLocaleString()}
+                                            </p>
+
+                                            <div className="text-[10px] font-bold text-slate-600 uppercase tracking-tight bg-slate-50 border border-slate-100 p-2 rounded-sm">
+                                                Customer Reason: {request.reason}
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                {request.items.map((item, idx) => (
+                                                    <div key={idx} className="text-[10px] font-bold text-slate-700 uppercase tracking-wider flex justify-between">
+                                                        <span>{item.name}</span>
+                                                        <span>{item.quantity} {item.unit}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            {request.status === 'pending' && (
+                                                <div className="space-y-2 pt-1">
+                                                    <textarea
+                                                        value={reviewReasons[request.index] || ''}
+                                                        onChange={(e) => setReviewReasons(prev => ({ ...prev, [request.index]: e.target.value }))}
+                                                        placeholder="Review reason (minimum 5 characters)"
+                                                        className="w-full min-h-20 border border-slate-200 rounded-sm p-2 text-[11px] font-bold text-slate-700 focus:outline-none focus:border-slate-400"
+                                                    />
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <button
+                                                            disabled={isReviewing}
+                                                            onClick={() => handleReviewReturn(request.index, 'approve')}
+                                                            className="h-9 bg-emerald-600 text-white rounded-sm font-black uppercase text-[9px] tracking-widest disabled:opacity-50"
+                                                        >
+                                                            Approve
+                                                        </button>
+                                                        <button
+                                                            disabled={isReviewing}
+                                                            onClick={() => handleReviewReturn(request.index, 'reject')}
+                                                            className="h-9 bg-rose-600 text-white rounded-sm font-black uppercase text-[9px] tracking-widest disabled:opacity-50"
+                                                        >
+                                                            Reject
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {['approved', 'pickup_assigned'].includes(request.status) && (
+                                                <div className="space-y-2 pt-1">
+                                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Assign Delivery Partner For Pickup</p>
+                                                    <select
+                                                        className="w-full h-9 border border-slate-200 rounded-sm px-2 text-[11px] font-bold text-slate-700"
+                                                        defaultValue=""
+                                                        onChange={(e) => handleAssignReturnPickup(request.index, e.target.value)}
+                                                        disabled={isAssigningPickup}
+                                                    >
+                                                        <option value="" disabled>Select Partner</option>
+                                                        {deliveryPartners.map((p) => (
+                                                            <option key={p._id} value={p._id}>
+                                                                {p.fullName} - {p.vehicleNumber}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    {request.pickupDeliveryPartnerId && (
+                                                        <p className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">
+                                                            Pickup partner assigned
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {request.franchiseReviewReason && (
+                                                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-tight bg-slate-50 border border-slate-100 p-2 rounded-sm">
+                                                    Franchise Note: {request.franchiseReviewReason}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

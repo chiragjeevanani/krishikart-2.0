@@ -225,6 +225,306 @@ export const getOrderById = async (req, res) => {
   }
 };
 
+export const createReturnRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id || req.user?._id;
+    const { items, reason } = req.body;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return handleResponse(res, 400, "At least one return item is required");
+    }
+
+    if (!reason || typeof reason !== "string" || reason.trim().length < 10) {
+      return handleResponse(res, 400, "Please provide a valid return reason (minimum 10 characters)");
+    }
+
+    const order = await Order.findById(id);
+    if (!order) return handleResponse(res, 404, "Order not found");
+
+    if (!order.userId || order.userId.toString() !== userId.toString()) {
+      return handleResponse(res, 403, "You can only return your own order");
+    }
+
+    const eligibleStatuses = ["Delivered", "Received"];
+    if (!eligibleStatuses.includes(order.orderStatus)) {
+      return handleResponse(res, 400, "Returns are allowed only for delivered/received orders");
+    }
+
+    const deliveredOrReceivedHistory = (order.statusHistory || [])
+      .filter((entry) => eligibleStatuses.includes(entry.status))
+      .map((entry) => new Date(entry.updatedAt))
+      .filter((date) => !Number.isNaN(date.getTime()))
+      .sort((a, b) => b.getTime() - a.getTime());
+
+    const referenceDate =
+      (order.deliveredAt ? new Date(order.deliveredAt) : null) ||
+      deliveredOrReceivedHistory[0] ||
+      new Date(order.updatedAt);
+
+    const returnWindowMs = 2 * 24 * 60 * 60 * 1000;
+    if (Date.now() - referenceDate.getTime() > returnWindowMs) {
+      return handleResponse(res, 400, "Return window has expired. You can request return within 2 days only.");
+    }
+
+    const orderedQtyByProduct = new Map();
+    for (const item of order.items || []) {
+      if (!item.productId) continue;
+      const pid = item.productId.toString();
+      orderedQtyByProduct.set(pid, (orderedQtyByProduct.get(pid) || 0) + Number(item.quantity || 0));
+    }
+
+    const alreadyRequestedByProduct = new Map();
+    for (const request of order.returnRequests || []) {
+      // Rejected requests should not block fresh requests.
+      if (request.status === "rejected") continue;
+      for (const item of request.items || []) {
+        const pid = item.productId?.toString?.();
+        if (!pid) continue;
+        alreadyRequestedByProduct.set(pid, (alreadyRequestedByProduct.get(pid) || 0) + Number(item.quantity || 0));
+      }
+    }
+
+    const validatedItems = [];
+    for (const item of items) {
+      const productId = item?.productId?.toString?.();
+      const quantity = Number(item?.quantity || 0);
+
+      if (!productId || !Number.isFinite(quantity) || quantity <= 0) continue;
+      if (!orderedQtyByProduct.has(productId)) continue;
+
+      const orderedQty = orderedQtyByProduct.get(productId) || 0;
+      const alreadyRequestedQty = alreadyRequestedByProduct.get(productId) || 0;
+      const maxReturnable = Math.max(0, orderedQty - alreadyRequestedQty);
+
+      if (maxReturnable <= 0 || quantity > maxReturnable) {
+        return handleResponse(
+          res,
+          400,
+          `Return quantity for one or more items exceeds allowed quantity`
+        );
+      }
+
+      const orderItem = (order.items || []).find((o) => o.productId?.toString?.() === productId);
+      validatedItems.push({
+        productId,
+        name: orderItem?.name || item?.name || "",
+        quantity,
+        unit: orderItem?.unit || item?.unit || ""
+      });
+    }
+
+    if (validatedItems.length === 0) {
+      return handleResponse(res, 400, "No valid return items found");
+    }
+
+    order.returnRequests.push({
+      items: validatedItems,
+      reason: reason.trim(),
+      status: "pending",
+      requestedAt: new Date()
+    });
+
+    await order.save();
+
+    return handleResponse(res, 201, "Return request submitted successfully", order);
+  } catch (error) {
+    console.error("Create return request error:", error);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+const getReturnRequestByIndex = (order, indexParam) => {
+  const requestIndex = Number(indexParam);
+  if (!Number.isInteger(requestIndex) || requestIndex < 0) return { request: null, requestIndex: -1 };
+  const request = order?.returnRequests?.[requestIndex] || null;
+  return { request, requestIndex };
+};
+
+export const reviewReturnRequestByFranchise = async (req, res) => {
+  try {
+    const { id, requestIndex } = req.params;
+    const franchiseId = req.franchise?._id;
+    const { action, reason } = req.body;
+
+    if (!["approve", "reject"].includes(action)) {
+      return handleResponse(res, 400, "Action must be approve or reject");
+    }
+
+    if (!reason || typeof reason !== "string" || reason.trim().length < 5) {
+      return handleResponse(res, 400, "Please provide a valid review reason (minimum 5 characters)");
+    }
+
+    const order = await Order.findById(id);
+    if (!order) return handleResponse(res, 404, "Order not found");
+
+    if (!order.franchiseId || order.franchiseId.toString() !== franchiseId.toString()) {
+      return handleResponse(res, 403, "This return request does not belong to your franchise");
+    }
+
+    const { request } = getReturnRequestByIndex(order, requestIndex);
+    if (!request) return handleResponse(res, 404, "Return request not found");
+
+    if (request.status !== "pending") {
+      return handleResponse(res, 400, `Return request is already ${request.status}`);
+    }
+
+    request.status = action === "approve" ? "approved" : "rejected";
+    request.reviewedByFranchiseId = franchiseId;
+    request.franchiseReviewReason = reason.trim();
+    request.reviewedAt = new Date();
+
+    await order.save();
+    return handleResponse(res, 200, `Return request ${action}d successfully`, order);
+  } catch (error) {
+    console.error("Review return request error:", error);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+export const assignReturnPickupDelivery = async (req, res) => {
+  try {
+    const { id, requestIndex } = req.params;
+    const { deliveryPartnerId } = req.body;
+    const franchiseId = req.franchise?._id;
+
+    if (!deliveryPartnerId) {
+      return handleResponse(res, 400, "Delivery partner ID is required");
+    }
+
+    const order = await Order.findById(id);
+    if (!order) return handleResponse(res, 404, "Order not found");
+
+    if (!order.franchiseId || order.franchiseId.toString() !== franchiseId.toString()) {
+      return handleResponse(res, 403, "This return request does not belong to your franchise");
+    }
+
+    const { request } = getReturnRequestByIndex(order, requestIndex);
+    if (!request) return handleResponse(res, 404, "Return request not found");
+
+    if (!["approved", "pickup_assigned"].includes(request.status)) {
+      return handleResponse(res, 400, "Only approved return requests can be assigned for pickup");
+    }
+
+    request.pickupDeliveryPartnerId = deliveryPartnerId;
+    request.pickupAssignedAt = new Date();
+    request.status = "pickup_assigned";
+
+    await order.save();
+    return handleResponse(res, 200, "Pickup assigned to delivery partner", order);
+  } catch (error) {
+    console.error("Assign return pickup error:", error);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+export const getFranchiseReturnRequests = async (req, res) => {
+  try {
+    const franchiseId = req.franchise?._id;
+
+    const orders = await Order.find({
+      franchiseId,
+      "returnRequests.0": { $exists: true }
+    })
+      .populate("userId", "fullName mobile")
+      .populate("returnRequests.pickupDeliveryPartnerId", "fullName mobile vehicleNumber vehicleType")
+      .sort({ updatedAt: -1 });
+
+    return handleResponse(res, 200, "Franchise return requests fetched", orders);
+  } catch (error) {
+    console.error("Get franchise return requests error:", error);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+export const getDeliveryReturnPickups = async (req, res) => {
+  try {
+    const partnerId = req.delivery?._id?.toString();
+    if (!partnerId) return handleResponse(res, 401, "Delivery partner not identified");
+
+    const orders = await Order.find({
+      returnRequests: {
+        $elemMatch: {
+          pickupDeliveryPartnerId: req.delivery._id,
+          status: { $in: ["pickup_assigned", "picked_up"] }
+        }
+      }
+    })
+      .populate("userId", "fullName mobile address")
+      .populate("franchiseId", "shopName address location")
+      .sort({ updatedAt: -1 });
+
+    const pickups = [];
+    for (const order of orders) {
+      (order.returnRequests || []).forEach((rr, idx) => {
+        if (!rr.pickupDeliveryPartnerId) return;
+        if (rr.pickupDeliveryPartnerId.toString() !== partnerId) return;
+        if (!["pickup_assigned", "picked_up"].includes(rr.status)) return;
+
+        pickups.push({
+          orderId: order._id,
+          requestIndex: idx,
+          status: rr.status,
+          requestedAt: rr.requestedAt,
+          items: rr.items || [],
+          customerName: order.userId?.fullName || "Customer",
+          customerMobile: order.userId?.mobile || "",
+          pickupAddress: order.shippingAddress,
+          franchiseName: order.franchiseId?.shopName || "Franchise",
+          franchiseAddress: order.franchiseId?.address || "",
+          franchiseId: order.franchiseId,
+          userId: order.userId
+        });
+      });
+    }
+
+    return handleResponse(res, 200, "Assigned return pickups fetched", pickups);
+  } catch (error) {
+    console.error("Get delivery return pickups error:", error);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+export const updateReturnPickupStatus = async (req, res) => {
+  try {
+    const { id, requestIndex } = req.params;
+    const { status } = req.body;
+    const partnerId = req.delivery?._id?.toString();
+
+    if (!["picked_up", "completed"].includes(status)) {
+      return handleResponse(res, 400, "Invalid return pickup status");
+    }
+
+    const order = await Order.findById(id);
+    if (!order) return handleResponse(res, 404, "Order not found");
+
+    const { request } = getReturnRequestByIndex(order, requestIndex);
+    if (!request) return handleResponse(res, 404, "Return request not found");
+
+    if (!request.pickupDeliveryPartnerId || request.pickupDeliveryPartnerId.toString() !== partnerId) {
+      return handleResponse(res, 403, "This pickup is not assigned to you");
+    }
+
+    if (status === "picked_up" && request.status !== "pickup_assigned") {
+      return handleResponse(res, 400, "Only assigned pickups can be marked picked up");
+    }
+
+    if (status === "completed" && !["pickup_assigned", "picked_up"].includes(request.status)) {
+      return handleResponse(res, 400, "Pickup is not in a completable state");
+    }
+
+    request.status = status;
+    if (status === "picked_up") request.pickupPickedAt = new Date();
+    if (status === "completed") request.pickupCompletedAt = new Date();
+
+    await order.save();
+    return handleResponse(res, 200, "Return pickup status updated", order);
+  } catch (error) {
+    console.error("Update return pickup status error:", error);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
 export const updateOrderStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -596,6 +896,10 @@ export const getFranchiseOrderById = async (req, res) => {
       .populate("userId", "fullName mobile address")
       .populate(
         "deliveryPartnerId",
+        "fullName mobile vehicleNumber vehicleType",
+      )
+      .populate(
+        "returnRequests.pickupDeliveryPartnerId",
         "fullName mobile vehicleNumber vehicleType",
       );
 

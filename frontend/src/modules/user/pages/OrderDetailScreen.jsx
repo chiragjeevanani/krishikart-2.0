@@ -10,11 +10,16 @@ import PageTransition from '../components/layout/PageTransition'
 import { Button } from '@/components/ui/button'
 import { useOrders } from '@/modules/user/contexts/OrderContext'
 import { cn } from '@/lib/utils'
+import { useState } from 'react'
+import { toast } from 'sonner'
 
 export default function OrderDetailScreen() {
     const navigate = useNavigate()
     const { id } = useParams()
-    const { orders } = useOrders()
+    const { orders, requestReturn } = useOrders()
+    const [returnQuantities, setReturnQuantities] = useState({})
+    const [returnReason, setReturnReason] = useState('')
+    const [isSubmittingReturn, setIsSubmittingReturn] = useState(false)
     const order = orders.find(o => o._id === id)
 
     if (!order) return (
@@ -45,6 +50,93 @@ export default function OrderDetailScreen() {
     }
 
     const isOrderActive = !['delivered', 'received', 'cancelled'].includes(order.orderStatus?.toLowerCase());
+
+    const getReturnEligibility = () => {
+        const status = (order.orderStatus || '').toLowerCase();
+        const eligibleByStatus = ['delivered', 'received'].includes(status);
+        if (!eligibleByStatus) return { eligible: false, remainingHours: 0 };
+
+        const historyCandidates = (order.statusHistory || [])
+            .filter(entry => ['Delivered', 'Received'].includes(entry.status))
+            .map(entry => new Date(entry.updatedAt))
+            .filter(date => !Number.isNaN(date.getTime()))
+            .sort((a, b) => b.getTime() - a.getTime());
+
+        const referenceDate = order.deliveredAt
+            ? new Date(order.deliveredAt)
+            : (historyCandidates[0] || new Date(order.updatedAt || order.createdAt));
+
+        const returnWindowMs = 2 * 24 * 60 * 60 * 1000;
+        const elapsed = Date.now() - referenceDate.getTime();
+        const remainingMs = Math.max(0, returnWindowMs - elapsed);
+        const eligible = elapsed <= returnWindowMs;
+        const remainingHours = Math.ceil(remainingMs / (60 * 60 * 1000));
+
+        return { eligible, remainingHours };
+    };
+
+    const returnEligibility = getReturnEligibility();
+
+    const getAlreadyRequestedQty = (productId) => {
+        if (!productId) return 0;
+        const pid = productId.toString();
+        return (order.returnRequests || [])
+            .filter(req => req.status !== 'rejected')
+            .reduce((sum, req) => {
+                const itemQty = (req.items || [])
+                    .filter(item => item.productId?.toString() === pid)
+                    .reduce((itemSum, item) => itemSum + Number(item.quantity || 0), 0);
+                return sum + itemQty;
+            }, 0);
+    };
+
+    const handleReturnQuantityChange = (productId, maxAllowed, value) => {
+        const parsed = Number(value);
+        const sanitized = Number.isFinite(parsed) ? Math.max(0, Math.min(maxAllowed, Math.floor(parsed))) : 0;
+        setReturnQuantities(prev => ({ ...prev, [productId]: sanitized }));
+    };
+
+    const handleSubmitReturnRequest = async () => {
+        const items = (order.items || [])
+            .map(item => {
+                const productId = item.productId?._id || item.productId;
+                const quantity = Number(returnQuantities[productId] || 0);
+                if (!productId || quantity <= 0) return null;
+                return {
+                    productId,
+                    quantity,
+                    name: item.name,
+                    unit: item.unit
+                };
+            })
+            .filter(Boolean);
+
+        if (items.length === 0) {
+            toast.error('Enter quantity for at least one item');
+            return;
+        }
+
+        if (!returnReason || returnReason.trim().length < 10) {
+            toast.error('Please enter a valid reason (minimum 10 characters)');
+            return;
+        }
+
+        setIsSubmittingReturn(true);
+        try {
+            const result = await requestReturn(order._id, {
+                items,
+                reason: returnReason.trim()
+            });
+
+            if (result?.success) {
+                toast.success('Return request submitted');
+                setReturnQuantities({});
+                setReturnReason('');
+            }
+        } finally {
+            setIsSubmittingReturn(false);
+        }
+    };
 
     return (
         <PageTransition>
@@ -165,6 +257,79 @@ export default function OrderDetailScreen() {
                                     ))}
                                 </div>
                             </div>
+
+                            {returnEligibility.eligible && (
+                                <div className="bg-white rounded-[32px] overflow-hidden border border-slate-50 shadow-sm">
+                                    <div className="px-6 py-5 border-b border-slate-50 bg-slate-50/30">
+                                        <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Return Parcel (Partial Allowed)</h3>
+                                        <p className="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-wide">
+                                            Select only the quantity you want to return.
+                                        </p>
+                                        <p className="text-[10px] font-bold text-amber-600 mt-2 uppercase tracking-wide">
+                                            Return window closes in {returnEligibility.remainingHours}h
+                                        </p>
+                                    </div>
+
+                                    <div className="p-6 space-y-4">
+                                        {(order.items || []).map((item, idx) => {
+                                            const productId = item.productId?._id || item.productId;
+                                            const alreadyRequested = getAlreadyRequestedQty(productId);
+                                            const maxAllowed = Math.max(0, Number(item.quantity || 0) - alreadyRequested);
+                                            const value = Number(returnQuantities[productId] || 0);
+
+                                            return (
+                                                <div key={`${productId}-${idx}`} className="flex items-center justify-between gap-4">
+                                                    <div>
+                                                        <p className="text-sm font-black text-slate-900">{item.name}</p>
+                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                                            Ordered: {item.quantity} {item.unit} | Returnable: {maxAllowed} {item.unit}
+                                                        </p>
+                                                    </div>
+                                                    <input
+                                                        type="number"
+                                                        min={0}
+                                                        max={maxAllowed}
+                                                        value={value}
+                                                        disabled={maxAllowed <= 0}
+                                                        onChange={(e) => handleReturnQuantityChange(productId, maxAllowed, e.target.value)}
+                                                        className="w-24 h-10 border border-slate-200 rounded-xl px-3 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:bg-slate-100 disabled:text-slate-400"
+                                                    />
+                                                </div>
+                                            );
+                                        })}
+
+                                        <div className="pt-2">
+                                            <textarea
+                                                value={returnReason}
+                                                onChange={(e) => setReturnReason(e.target.value)}
+                                                placeholder="Reason for return (minimum 10 characters)"
+                                                className="w-full min-h-20 border border-slate-200 rounded-2xl p-3 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                            />
+                                        </div>
+
+                                        <Button
+                                            onClick={handleSubmitReturnRequest}
+                                            disabled={isSubmittingReturn}
+                                            className="w-full h-12 rounded-2xl bg-slate-900 text-white font-black text-[11px] uppercase tracking-widest"
+                                        >
+                                            {isSubmittingReturn ? 'Submitting...' : 'Submit Return Request'}
+                                        </Button>
+
+                                        {(order.returnRequests || []).length > 0 && (
+                                            <div className="pt-2">
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Previous Return Requests</p>
+                                                <div className="space-y-2">
+                                                    {(order.returnRequests || []).map((req, reqIdx) => (
+                                                        <div key={reqIdx} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-[11px] font-bold text-slate-600">
+                                                            {new Date(req.requestedAt).toLocaleDateString()} - {req.status?.toUpperCase()}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Right Column: Address, Payment & Pricing (Sidebar) */}

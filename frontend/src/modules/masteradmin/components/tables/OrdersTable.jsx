@@ -113,7 +113,14 @@ export default function OrdersTable({ orders, onAction, onOrderClick, onProcure 
                                                 e.stopPropagation();
                                                 onProcure?.(order);
                                             }}
-                                            className="px-5 py-2.5 bg-amber-600 text-white text-[11px] font-black uppercase tracking-[0.15em] rounded-sm hover:bg-slate-900 transition-all flex items-center gap-2.5 shadow-[0_4px_15px_rgba(217,119,6,0.3)] hover:shadow-[0_4px_20px_rgba(217,119,6,0.5)] active:scale-95 border-2 border-amber-500/50 group/button"
+                                            disabled={!order.franchiseId}
+                                            title={!order.franchiseId ? 'Assign franchise before procurement' : 'Create procurement request'}
+                                            className={cn(
+                                                "px-5 py-2.5 text-white text-[11px] font-black uppercase tracking-[0.15em] rounded-sm transition-all flex items-center gap-2.5 border-2 group/button",
+                                                order.franchiseId
+                                                    ? "bg-amber-600 hover:bg-slate-900 shadow-[0_4px_15px_rgba(217,119,6,0.3)] hover:shadow-[0_4px_20px_rgba(217,119,6,0.5)] active:scale-95 border-amber-500/50"
+                                                    : "bg-slate-300 border-slate-300 cursor-not-allowed opacity-70"
+                                            )}
                                         >
                                             <Package size={14} strokeWidth={3} className="group-hover/button:scale-110 transition-transform" />
                                             Procure

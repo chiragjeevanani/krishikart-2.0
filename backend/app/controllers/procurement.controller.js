@@ -565,11 +565,14 @@ export const createProcurementFromOrder = async (req, res) => {
         const { vendorId, customQuantities } = req.body;
         const adminId = req.masteradmin?._id;
 
-        const Order = (await import('../models/order.js')).default;
         const order = await Order.findById(orderId);
 
         if (!order) {
             return handleResponse(res, 404, "Order not found");
+        }
+
+        if (!order.franchiseId) {
+            return handleResponse(res, 400, "Order is not assigned to a franchise yet");
         }
 
         const shortageItems = order.items.filter(item => item.isShortage);
@@ -577,25 +580,41 @@ export const createProcurementFromOrder = async (req, res) => {
             return handleResponse(res, 400, "No items in this order require procurement");
         }
 
-        const procurementRequest = new ProcurementRequest({
-            franchiseId: order.franchiseId,
-            items: shortageItems.map(item => {
+        if (!vendorId) {
+            return handleResponse(res, 400, "Vendor is required to create procurement");
+        }
+
+        const mappedItems = shortageItems
+            .map(item => {
+                if (!item.productId) return null;
+
                 const prodIdStr = item.productId.toString();
-                const manualQty = customQuantities && customQuantities[prodIdStr] ? Number(customQuantities[prodIdStr]) : item.shortageQty;
+                const rawQty = customQuantities ? customQuantities[prodIdStr] : undefined;
+                const parsedQty = rawQty !== undefined && rawQty !== null && rawQty !== ''
+                    ? Number(rawQty)
+                    : Number(item.shortageQty || 0);
+                const quantity = Number.isFinite(parsedQty) ? parsedQty : Number(item.shortageQty || 0);
+
                 return {
-                    productId: item.productId,
+                    productId: prodIdStr,
                     name: item.name,
-                    quantity: manualQty,
+                    quantity,
                     unit: item.unit,
                     price: item.price,
                     image: item.image
                 };
-            }),
-            totalEstimatedAmount: shortageItems.reduce((acc, item) => {
-                const prodIdStr = item.productId.toString();
-                const manualQty = customQuantities && customQuantities[prodIdStr] ? Number(customQuantities[prodIdStr]) : item.shortageQty;
-                return acc + (item.price * manualQty);
-            }, 0),
+            })
+            .filter(Boolean)
+            .filter(item => item.quantity > 0);
+
+        if (mappedItems.length === 0) {
+            return handleResponse(res, 400, "No valid shortage quantities found for procurement");
+        }
+
+        const procurementRequest = new ProcurementRequest({
+            franchiseId: order.franchiseId,
+            items: mappedItems,
+            totalEstimatedAmount: mappedItems.reduce((acc, item) => acc + ((item.price || 0) * item.quantity), 0),
             status: "assigned",
             assignedVendorId: vendorId,
             adminId: adminId,

@@ -36,6 +36,71 @@ const orderItemSchema = new mongoose.Schema({
     }
 }, { _id: false });
 
+const returnItemSchema = new mongoose.Schema({
+    productId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Product',
+        required: true
+    },
+    name: String,
+    quantity: {
+        type: Number,
+        required: true,
+        min: 1
+    },
+    unit: String
+}, { _id: false });
+
+const returnRequestSchema = new mongoose.Schema({
+    items: {
+        type: [returnItemSchema],
+        default: []
+    },
+    reason: {
+        type: String,
+        default: ''
+    },
+    status: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected', 'pickup_assigned', 'picked_up', 'completed'],
+        default: 'pending'
+    },
+    reviewedByFranchiseId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Franchise',
+        default: null
+    },
+    franchiseReviewReason: {
+        type: String,
+        default: ''
+    },
+    reviewedAt: {
+        type: Date,
+        default: null
+    },
+    pickupDeliveryPartnerId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Delivery',
+        default: null
+    },
+    pickupAssignedAt: {
+        type: Date,
+        default: null
+    },
+    pickupPickedAt: {
+        type: Date,
+        default: null
+    },
+    pickupCompletedAt: {
+        type: Date,
+        default: null
+    },
+    requestedAt: {
+        type: Date,
+        default: Date.now
+    }
+}, { _id: false });
+
 const orderSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -118,6 +183,10 @@ const orderSchema = new mongoose.Schema({
     },
     deliveredAt: {
         type: Date
+    },
+    returnRequests: {
+        type: [returnRequestSchema],
+        default: []
     },
     razorpayOrderId: String,
     razorpayPaymentId: String

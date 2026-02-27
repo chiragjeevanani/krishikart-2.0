@@ -46,6 +46,35 @@ export default function CheckoutScreen() {
     });
     const [deliveryShift, setDeliveryShift] = useState('');
 
+    const buildFullAddress = (details) => (
+        `${details.floor}, ${details.colony}, Landmark: ${details.landmark}, ${details.city}, ${details.state}`
+    )
+
+    const parseAddressToDetails = (address = '') => {
+        if (!address || typeof address !== 'string') return null
+
+        const parts = address.split(',').map(part => part.trim()).filter(Boolean)
+        if (parts.length < 5) return null
+
+        const [floor, colony, landmarkPart, city, state] = parts
+        const landmark = landmarkPart.replace(/^Landmark:\s*/i, '').trim()
+
+        return {
+            floor: floor || '',
+            colony: colony || '',
+            landmark: landmark || '',
+            city: city || 'Indore',
+            state: state || 'Madhya Pradesh'
+        }
+    }
+
+    const persistAddressToProfile = async (fullAddress) => {
+        if (!fullAddress) return
+        await api.put('/user/update-profile', { address: fullAddress })
+        setUser(prev => prev ? { ...prev, address: fullAddress } : prev)
+        setDeliveryAddress(fullAddress)
+    }
+
     useEffect(() => {
         fetchProfile()
     }, [])
@@ -57,7 +86,12 @@ export default function CheckoutScreen() {
             setUser(userData)
             setDeliveryAddress(userData.address || '')
             if (userData.address) {
-                setAddressDetails(prev => ({ ...prev, colony: userData.address }))
+                const parsed = parseAddressToDetails(userData.address)
+                if (parsed) {
+                    setAddressDetails(parsed)
+                } else {
+                    setAddressDetails(prev => ({ ...prev, colony: userData.address }))
+                }
             }
         } catch (error) {
             console.error('Failed to fetch profile:', error)
@@ -72,6 +106,10 @@ export default function CheckoutScreen() {
     const tax = parseFloat(((cartTotal + deliveryFee) * taxRate).toFixed(2))
 
     const total = parseFloat((cartTotal + deliveryFee + tax).toFixed(2))
+    const hasStructuredAddress = !!(addressDetails.floor && addressDetails.colony && addressDetails.landmark && addressDetails.city && addressDetails.state)
+    const displayAddress = hasStructuredAddress
+        ? `${addressDetails.floor}, ${addressDetails.colony}, ${addressDetails.landmark}, ${addressDetails.city}, ${addressDetails.state}`
+        : (deliveryAddress || '')
 
     const handleRazorpayPayment = async (orderData) => {
         try {
@@ -191,7 +229,14 @@ export default function CheckoutScreen() {
             cod: 'COD'
         }
 
-        const fullAddress = `${addressDetails.floor}, ${addressDetails.colony}, Landmark: ${addressDetails.landmark}, ${addressDetails.city}, ${addressDetails.state}`
+        const fullAddress = buildFullAddress(addressDetails)
+
+        try {
+            await persistAddressToProfile(fullAddress)
+        } catch (error) {
+            console.error('Failed to persist address:', error)
+            toast.error('Could not save address to profile')
+        }
 
         const orderData = {
             shippingAddress: fullAddress,
@@ -299,7 +344,7 @@ export default function CheckoutScreen() {
                                     <div className={cn("flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all", step >= 1 ? "bg-primary text-white" : "bg-slate-100 text-slate-400")}>
                                         <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[10px]">1</span> Address
                                     </div>
-                                    <div className="w-8 h-[1px] bg-slate-200" />
+                                    <div className="w-8 h-px bg-slate-200" />
                                     <div className={cn("flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all", step >= 2 ? "bg-primary text-white" : "bg-slate-100 text-slate-400")}>
                                         <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[10px]">2</span> Payment
                                     </div>
@@ -317,7 +362,7 @@ export default function CheckoutScreen() {
                                         Change
                                     </button>
                                 </div>
-                                <div className="bg-white rounded-[32px] md:rounded-xl p-6 border border-slate-100 shadow-sm">
+                                <div className="bg-white rounded-4xl md:rounded-xl p-6 border border-slate-100 shadow-sm">
                                     <div className="flex items-start gap-4">
                                         <div className="w-12 h-12 rounded-2xl md:rounded-lg bg-primary/5 flex items-center justify-center text-primary shrink-0">
                                             <MapPin size={24} />
@@ -325,7 +370,7 @@ export default function CheckoutScreen() {
                                         <div className="flex-1">
                                             <h3 className="text-base font-black text-slate-900 md:font-bold">{user?.fullName || 'My Home'}</h3>
                                             <p className="text-sm text-slate-400 font-medium leading-relaxed mt-1">
-                                                {addressDetails.floor ? `${addressDetails.floor}, ${addressDetails.colony}, ${addressDetails.landmark}, ${addressDetails.city}, ${addressDetails.state}` : 'No address provided. Click change to add one.'}
+                                                {displayAddress || 'No address provided. Click change to add one.'}
                                             </p>
                                         </div>
                                         <button
@@ -351,7 +396,7 @@ export default function CheckoutScreen() {
                                             onClick={() => setDeliveryShift(shift)}
                                             className={cn(
                                                 "p-3 rounded-xl border flex items-center justify-center text-sm font-bold transition-all",
-                                                deliveryShift === shift ? "border-primary bg-primary/[0.05] text-primary" : "border-slate-100 hover:border-slate-200 text-slate-600"
+                                                deliveryShift === shift ? "border-primary bg-primary/5 text-primary" : "border-slate-100 hover:border-slate-200 text-slate-600"
                                             )}
                                         >
                                             <Clock size={14} className="mr-2" />
@@ -391,7 +436,7 @@ export default function CheckoutScreen() {
                                                 onClick={() => setSelectedMethod(method.id)}
                                                 className={cn(
                                                     "w-full p-4 rounded-[28px] md:rounded-xl bg-white border flex items-center justify-between transition-all outline-none text-left",
-                                                    selectedMethod === method.id ? "border-primary bg-primary/[0.02] shadow-sm" : "border-slate-100 hover:border-slate-200"
+                                                    selectedMethod === method.id ? "border-primary bg-primary/2 shadow-sm" : "border-slate-100 hover:border-slate-200"
                                                 )}
                                             >
                                                 <div className="flex items-center gap-4">
@@ -417,7 +462,7 @@ export default function CheckoutScreen() {
                         </div>
 
                         {/* Order Summary Sidebar */}
-                        <div className="w-full md:w-[400px] shrink-0 mt-10 md:mt-0 px-6 md:px-0">
+                        <div className="w-full md:w-100 shrink-0 mt-10 md:mt-0 px-6 md:px-0">
                             <div className="bg-white rounded-[40px] md:rounded-xl p-8 space-y-6 border border-slate-100 shadow-sm sticky top-24">
                                 <h3 className="text-base font-bold text-slate-900 mb-4">Checkout Summary</h3>
 
@@ -463,7 +508,7 @@ export default function CheckoutScreen() {
                 </div>
 
                 {/* Integrated Sticky Proceed Bar - Mobile Only */}
-                <div className="fixed bottom-0 left-0 right-0 z-[60] bg-white border-t border-slate-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:hidden">
+                <div className="fixed bottom-0 left-0 right-0 z-60 bg-white border-t border-slate-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:hidden">
                     <div className="flex items-center gap-4 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] px-6">
                         <div className="shrink-0 flex flex-col">
                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Final Amount</span>
@@ -489,14 +534,14 @@ export default function CheckoutScreen() {
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
                                 onClick={() => setIsEditingAddress(false)}
-                                className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[100]"
+                                className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-100"
                             />
                             <motion.div
                                 initial={{ y: '100%' }}
                                 animate={{ y: 0 }}
                                 exit={{ y: '100%' }}
                                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                                className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[40px] z-[101] p-8 pb-12 shadow-2xl md:max-w-xl md:mx-auto md:bottom-10 md:rounded-[40px]"
+                                className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[40px] z-101 p-8 pb-12 shadow-2xl md:max-w-xl md:mx-auto md:bottom-10 md:rounded-[40px]"
                             >
                                 <div className="flex justify-between items-center mb-6">
                                     <h2 className="text-xl font-bold text-slate-900">Change Delivery Address</h2>
@@ -545,10 +590,19 @@ export default function CheckoutScreen() {
                                         </div>
                                     </div>
                                     <Button
-                                        onClick={() => {
+                                        onClick={async () => {
                                             if (!addressDetails.floor || !addressDetails.colony || !addressDetails.landmark || !addressDetails.city || !addressDetails.state) {
                                                 toast.error("Please fill all required fields");
                                                 return;
+                                            }
+                                            const fullAddress = buildFullAddress(addressDetails)
+                                            try {
+                                                await persistAddressToProfile(fullAddress)
+                                                toast.success('Address saved')
+                                            } catch (error) {
+                                                console.error('Save address error:', error)
+                                                toast.error('Failed to save address')
+                                                return
                                             }
                                             setIsEditingAddress(false)
                                         }}
