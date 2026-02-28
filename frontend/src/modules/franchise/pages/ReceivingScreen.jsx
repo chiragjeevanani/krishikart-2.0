@@ -65,12 +65,13 @@ const ReceivingScreen = () => {
 
     const handleSelectPO = (po) => {
         setSelectedPO(po);
-        // Initialize receiving data with full quantities
+        // Initialize receiving data with vendor's dispatched quantities (as default)
         const initialData = {};
         po.items.forEach(item => {
             const itemId = item._id || item.productId;
+            const defaultQty = item.dispatchedQuantity !== undefined ? item.dispatchedQuantity : item.quantity;
             initialData[itemId] = {
-                received: item.quantity,
+                received: defaultQty,
                 damage: 0,
                 productId: item.productId,
                 name: item.name
@@ -153,7 +154,9 @@ const ReceivingScreen = () => {
             key: 'items',
             label: 'MANIFEST',
             render: (_, row) => (
-                <span className="text-[10px] font-black text-slate-900 tabular-nums">{row.items?.length || 0} SKUs</span>
+                <span className="text-[10px] font-black text-slate-900 tabular-nums">
+                    {row.items?.filter(item => (item.dispatchedQuantity ?? item.quantity) > 0).length || 0} SKUs
+                </span>
             )
         },
         {
@@ -300,7 +303,7 @@ const ReceivingScreen = () => {
                                         </div>
 
                                         <div className="space-y-3">
-                                            {selectedPO.items.map((item) => {
+                                            {selectedPO.items.filter(item => (item.dispatchedQuantity ?? item.quantity) > 0).map((item) => {
                                                 const itemId = item._id || item.productId;
                                                 const data = receivingData[itemId] || { received: item.quantity, damage: 0 };
                                                 return (
@@ -317,10 +320,17 @@ const ReceivingScreen = () => {
                                                                     <Package size={20} />
                                                                 )}
                                                             </div>
-                                                            <div className="min-w-0">
+                                                            <div className="min-w-0 flex-1">
                                                                 <h4 className="text-xs font-black text-slate-900 uppercase truncate leading-none mb-1.5">{item.name}</h4>
-                                                                <div className="flex items-center gap-3">
-                                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest tabular-nums">Manifest: {item.quantity} {item.unit}</span>
+                                                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Order:</span>
+                                                                        <span className="text-[10px] font-black text-slate-500 tabular-nums">{item.quantity} {item.unit}</span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-900 text-white rounded-[4px]">
+                                                                        <span className="text-[8px] font-black uppercase tracking-widest whitespace-nowrap">Vendor Sent:</span>
+                                                                        <span className="text-[10px] font-black tabular-nums">{item.dispatchedQuantity || item.quantity} {item.unit}</span>
+                                                                    </div>
                                                                     <span className="text-[10px] font-black text-primary uppercase bg-primary/5 px-2 py-0.5 rounded-sm">₹{item.quotedPrice || 0}/{item.unit}</span>
                                                                 </div>
                                                             </div>
@@ -456,13 +466,15 @@ const ReceivingScreen = () => {
                 data={selectedPO ? {
                     invoiceNumber: selectedPO.invoice?.invoiceNumber,
                     invoiceDate: selectedPO.invoice?.invoiceDate,
-                    items: selectedPO.items.map(i => ({
-                        name: i.name,
-                        quantity: i.quantity,
-                        unit: i.unit,
-                        price: i.price,
-                        quotedPrice: i.quotedPrice
-                    })),
+                    items: selectedPO.items
+                        .filter(i => (i.dispatchedQuantity ?? i.quantity) > 0)
+                        .map(i => ({
+                            name: i.name,
+                            quantity: i.dispatchedQuantity || i.quantity,
+                            unit: i.unit,
+                            price: i.price,
+                            quotedPrice: i.quotedPrice
+                        })),
                     vendor: selectedPO.vendor || 'KrishiKart Partner',
                     franchise: 'My Franchise Node', // Ideally from context
                     handlingFee: 40

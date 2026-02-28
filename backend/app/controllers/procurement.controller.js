@@ -145,7 +145,7 @@ export const vendorSubmitQuotation = async (req, res) => {
 export const vendorUpdateStatus = async (req, res) => {
     try {
         const { requestId } = req.params;
-        const { status, weight } = req.body;
+        const { status, weight, itemUpdates } = req.body; // itemUpdates: [{ productId, dispatchedQuantity }]
 
         if (!mongoose.Types.ObjectId.isValid(requestId)) {
             return handleResponse(res, 400, "Invalid request ID format");
@@ -161,7 +161,19 @@ export const vendorUpdateStatus = async (req, res) => {
         const currentVendorId = req.vendor._id.toString();
 
         if (assignedVendorId !== currentVendorId) {
-            return handleResponse(res, 403, "Not authorized to update this request. Assigned: " + assignedVendorId + " Current: " + currentVendorId);
+            return handleResponse(res, 403, "Not authorized to update this request");
+        }
+
+        // Update items if provided
+        if (itemUpdates && Array.isArray(itemUpdates)) {
+            itemUpdates.forEach(update => {
+                const item = request.items.find(i => i.productId?.toString() === update.productId?.toString());
+                if (item) {
+                    item.dispatchedQuantity = update.dispatchedQuantity ?? item.quantity;
+                }
+            });
+            // Recalculate total amount if partial
+            request.totalQuotedAmount = request.items.reduce((acc, i) => acc + ((i.quotedPrice || i.price || 0) * (i.dispatchedQuantity || i.quantity || 0)), 0);
         }
 
         request.status = status;
@@ -182,7 +194,6 @@ export const vendorUpdateStatus = async (req, res) => {
                 };
             } catch (invErr) {
                 console.error("Invoice generation error:", invErr);
-                // Continue anyway or handle
             }
         }
 
@@ -210,7 +221,8 @@ export const vendorUpdateStatus = async (req, res) => {
             });
         }
 
-        return handleResponse(res, 200, "Status updated successfully", request);
+        return handleResponse(res, 200, "Status and quantities updated successfully", request);
+
     } catch (error) {
         console.error("Vendor update status error DETAILS:", error);
         return handleResponse(res, 500, error.message || "Server error");
@@ -512,39 +524,68 @@ export const franchiseConfirmReceipt = async (req, res) => {
                 const order = await Order.findById(orderId);
 
                 if (order) {
-                    // 1. Reset shortage flags since items are now received
-                    order.items = order.items.map(item => {
-                        item.isShortage = false;
-                        item.shortageQty = 0;
-                        return item;
-                    });
+                    // 1. Reset/Reduce shortage flags based on RECEIVED quantities
+                    let allShortagesResolved = true;
 
-                    // 2. Auto-transition to Packed
-                    order.orderStatus = 'Packed';
-                    order.statusHistory.push({
-                        status: 'Packed',
-                        updatedAt: new Date(),
-                        updatedBy: 'system',
-                        message: 'Items received from vendor. Order automatically packed and ready for dispatch.'
-                    });
+                    order.items = order.items.map(oItem => {
+                        // Find matching item in procurement request
+                        const reqItem = request.items.find(ri =>
+                            ri.productId?.toString() === (oItem.productId?._id?.toString() || oItem.productId?.toString())
+                        );
 
-                    // 3. Deduct stock from inventory (Important to keep sync)
-                    const inventory = await Inventory.findOne({ franchiseId });
-                    if (inventory) {
-                        for (const item of order.items) {
-                            const invItem = inventory.items.find(i =>
-                                i.productId.toString() === (item.productId?._id?.toString() || item.productId?.toString())
-                            );
-                            if (invItem) {
-                                invItem.currentStock -= item.quantity;
-                                invItem.lastUpdated = new Date();
+                        if (reqItem && oItem.isShortage) {
+                            const received = reqItem.receivedQuantity || 0;
+                            // Reduce shortage by what was actually received
+                            oItem.shortageQty = Math.max(0, (oItem.shortageQty || 0) - received);
+                            if (oItem.shortageQty === 0) {
+                                oItem.isShortage = false;
                             }
                         }
-                        await inventory.save();
+
+                        // If anything is still a shortage, we haven't resolved the whole order
+                        if (oItem.isShortage && oItem.shortageQty > 0) {
+                            allShortagesResolved = false;
+                        }
+
+                        return oItem;
+                    });
+
+                    // 2. Only transition to 'Packed' if ALL shortages for the WHOLE order are gone
+                    if (allShortagesResolved) {
+                        order.orderStatus = 'Packed';
+                        order.statusHistory.push({
+                            status: 'Packed',
+                            updatedAt: new Date(),
+                            updatedBy: 'system',
+                            message: 'All procurement items received. Order automatically packed and ready for dispatch.'
+                        });
+
+                        // 3. Deduct stock from inventory for THE WHOLE ORDER only when packing
+                        const inventory = await Inventory.findOne({ franchiseId });
+                        if (inventory) {
+                            for (const item of order.items) {
+                                const invItem = inventory.items.find(i =>
+                                    i.productId.toString() === (item.productId?._id?.toString() || item.productId?.toString())
+                                );
+                                if (invItem) {
+                                    invItem.currentStock -= item.quantity;
+                                    invItem.lastUpdated = new Date();
+                                }
+                            }
+                            await inventory.save();
+                        }
+                    } else {
+                        // Still in procuring state, just add a note
+                        order.statusHistory.push({
+                            status: 'Procuring',
+                            updatedAt: new Date(),
+                            updatedBy: 'system',
+                            message: `Partial procurement of ${request.items.length} SKUs received. Remaining shortages still being tracked.`
+                        });
                     }
 
                     await order.save();
-                    console.log(`[AutoFlow] Order ${orderId} automatically packed for franchise ${franchiseId}`);
+                    console.log(`[AutoFlow] Order ${orderId} updated. Resolved: ${allShortagesResolved}`);
                 }
             } catch (orderErr) {
                 console.error("Auto-packing error after procurement:", orderErr);

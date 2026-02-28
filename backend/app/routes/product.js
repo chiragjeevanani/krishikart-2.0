@@ -4,7 +4,8 @@ import {
     getProducts,
     getProductById,
     updateProduct,
-    deleteProduct
+    deleteProduct,
+    importProductsFromExcel
 } from "../controllers/product.controller.js";
 import { protectMasterAdmin } from "../middlewares/masteradmin.auth.js";
 import upload from "../middlewares/upload.js";
@@ -36,6 +37,7 @@ router.put(
     updateProduct
 );
 
+router.post("/import", protectMasterAdmin, upload.single("file"), importProductsFromExcel);
 router.delete("/:id", protectMasterAdmin, deleteProduct);
 
 export default router;

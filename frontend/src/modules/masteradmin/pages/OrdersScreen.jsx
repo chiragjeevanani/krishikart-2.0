@@ -42,6 +42,8 @@ export default function OrdersScreen() {
     const [selectedOrderId, setSelectedOrderId] = useState(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [procurementQuantities, setProcurementQuantities] = useState({});
+    const [procurementMode, setProcurementMode] = useState('full'); // 'full' or 'partial'
+    const [selectedProcurementIds, setSelectedProcurementIds] = useState(new Set());
 
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
@@ -146,11 +148,15 @@ export default function OrdersScreen() {
         });
 
         const initialQtys = {};
+        const initialIds = new Set();
         order.items?.filter(i => i.isShortage).forEach(item => {
             const prodId = item.productId?._id || item.productId;
             initialQtys[prodId] = item.shortageQty;
+            initialIds.add(prodId.toString());
         });
         setProcurementQuantities(initialQtys);
+        setSelectedProcurementIds(initialIds);
+        setProcurementMode('full');
 
         fetchCompatibleVendors(order);
     };
@@ -159,12 +165,24 @@ export default function OrdersScreen() {
         if (!selectedOrderForProcurement) return;
 
         try {
+            const finalQuantities = {};
+            selectedOrderForProcurement.items?.filter(i => i.isShortage).forEach(item => {
+                const prodId = (item.productId?._id || item.productId).toString();
+                if (procurementMode === 'full' || selectedProcurementIds.has(prodId)) {
+                    finalQuantities[prodId] = procurementQuantities[prodId];
+                }
+            });
+
+            if (Object.keys(finalQuantities).length === 0) {
+                toast.error("Please select at least one item to procure");
+                return;
+            }
+
             // Using the new bridging API
             const response = await api.post(`/procurement/admin/from-order/${selectedOrderForProcurement._id}`, {
                 vendorId: vendor.id || vendor._id,
-                customQuantities: procurementQuantities
+                customQuantities: finalQuantities
             });
-
             if (response.data.success) {
                 toast.success(`Procurement request initiated with ${vendor.fullName || vendor.name}`);
                 setSelectedOrderForProcurement(null);
@@ -364,7 +382,7 @@ export default function OrdersScreen() {
 
                                 <div className="flex items-start justify-between">
                                     <div>
-                                        <h2 className="text-2xl font-black text-slate-900 tracking-tighter tabular-nums">#{selectedOrderForProcurement.id?.slice(-8)}</h2>
+                                        <h2 className="text-2xl font-black text-slate-900 tracking-tighter tabular-nums">#{selectedOrderForProcurement._id?.slice(-8)}</h2>
                                         <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider mt-1">{selectedOrderForProcurement.customer}</p>
                                     </div>
                                     <div className="text-right">
@@ -376,32 +394,82 @@ export default function OrdersScreen() {
 
                             {/* Shortage Items Summary */}
                             <div className="px-6 py-3 bg-rose-50/50 border-b border-rose-100 flex items-center justify-between">
-                                <div className="flex items-center gap-2 text-rose-600">
-                                    <AlertCircle size={14} />
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Items to Procure</span>
+                                <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-2 text-rose-600">
+                                        <AlertCircle size={14} />
+                                        <span className="text-[10px] font-black uppercase tracking-widest">Procurement Plan</span>
+                                    </div>
+                                    <div className="flex bg-white rounded-sm border border-rose-200 p-0.5">
+                                        <button
+                                            onClick={() => {
+                                                setProcurementMode('full');
+                                                const allIds = new Set(selectedOrderForProcurement.items?.filter(i => i.isShortage).map(i => (i.productId?._id || i.productId).toString()));
+                                                setSelectedProcurementIds(allIds);
+                                            }}
+                                            className={cn(
+                                                "px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-[1px] transition-all",
+                                                procurementMode === 'full' ? "bg-rose-600 text-white" : "text-rose-400 hover:text-rose-600"
+                                            )}
+                                        >
+                                            Bundle
+                                        </button>
+                                        <button
+                                            onClick={() => setProcurementMode('partial')}
+                                            className={cn(
+                                                "px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-[1px] transition-all",
+                                                procurementMode === 'partial' ? "bg-rose-600 text-white" : "text-rose-400 hover:text-rose-600"
+                                            )}
+                                        >
+                                            Partial
+                                        </button>
+                                    </div>
                                 </div>
-                                <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest bg-white px-2 py-0.5 rounded-sm border border-rose-100 animate-pulse">
-                                    {selectedOrderForProcurement.items?.filter(i => i.isShortage).length} Items Short
+                                <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest">
+                                    {procurementMode === 'full' ? 'BUNDLE MODE' : `${selectedProcurementIds.size} SELECTED`}
                                 </span>
                             </div>
-                            <div className="px-6 py-3 bg-white flex flex-col gap-2 max-h-40 overflow-y-auto border-b border-slate-100 custom-scrollbar">
+                            <div className="px-6 py-3 bg-white flex flex-col gap-2 max-h-48 overflow-y-auto border-b border-slate-100 custom-scrollbar shadow-inner">
                                 {selectedOrderForProcurement.items?.filter(i => i.isShortage).map((item, idx) => {
-                                    const prodId = item.productId?._id || item.productId;
+                                    const prodId = (item.productId?._id || item.productId).toString();
+                                    const isSelected = procurementMode === 'full' || selectedProcurementIds.has(prodId);
+
                                     return (
-                                        <div key={idx} className="flex justify-between items-center group">
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] font-black text-slate-900 uppercase tracking-tight">{item.name}</span>
-                                                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Ordered: {item.quantity} {item.unit}</span>
+                                        <div key={idx} className={cn(
+                                            "flex justify-between items-center group p-2 rounded-sm transition-all border",
+                                            isSelected ? "border-rose-100 bg-rose-50/20" : "border-transparent opacity-50 grayscale"
+                                        )}>
+                                            <div className="flex items-center gap-3">
+                                                {procurementMode === 'partial' && (
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedProcurementIds.has(prodId)}
+                                                        onChange={() => {
+                                                            const newSet = new Set(selectedProcurementIds);
+                                                            if (newSet.has(prodId)) newSet.delete(prodId);
+                                                            else newSet.add(prodId);
+                                                            setSelectedProcurementIds(newSet);
+                                                        }}
+                                                        className="w-4 h-4 rounded-sm accent-rose-600 cursor-pointer"
+                                                    />
+                                                )}
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] font-black text-slate-900 uppercase tracking-tight">{item.name}</span>
+                                                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Order: {item.quantity} {item.unit}</span>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-2 px-3 py-1 bg-rose-50 rounded-sm border border-rose-100">
+                                            <div className={cn(
+                                                "flex items-center gap-2 px-3 py-1 rounded-sm border transition-all",
+                                                isSelected ? "bg-white border-rose-100" : "bg-slate-50 border-slate-200"
+                                            )}>
                                                 <input
                                                     type="number"
+                                                    disabled={!isSelected}
                                                     min="1"
                                                     value={procurementQuantities[prodId] || ''}
                                                     onChange={(e) => setProcurementQuantities(prev => ({ ...prev, [prodId]: Number(e.target.value) }))}
-                                                    className="w-16 px-1 py-0.5 text-[10px] font-black tabular-nums border border-rose-200 outline-none rounded-sm focus:border-rose-400 text-rose-600 bg-white"
+                                                    className="w-16 px-1 py-0.5 text-[10px] font-black tabular-nums outline-none rounded-sm focus:border-rose-400 text-rose-600 bg-transparent disabled:text-slate-400"
                                                 />
-                                                <span className="text-[10px] font-black text-rose-600 tabular-nums"> {item.unit} Short</span>
+                                                <span className="text-[10px] font-black text-rose-600 tabular-nums"> {item.unit}</span>
                                             </div>
                                         </div>
                                     )

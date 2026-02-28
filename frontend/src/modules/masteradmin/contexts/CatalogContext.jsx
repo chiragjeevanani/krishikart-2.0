@@ -281,6 +281,27 @@ export const CatalogProvider = ({ children }) => {
         }
     };
 
+    const importProducts = async (file) => {
+        setIsLoading(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const response = await api.post('/products/import', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            if (response.data.success) {
+                toast.success(response.data.message);
+                await fetchProducts();
+                return response.data;
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Bulk import failed');
+            throw error;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <CatalogContext.Provider value={{
             categories,
@@ -296,6 +317,7 @@ export const CatalogProvider = ({ children }) => {
             addProduct,
             updateProduct,
             deleteProduct,
+            importProducts,
             fetchProducts,
             getSubcategoriesByCategory,
             refreshCatalog: fetchCatalog

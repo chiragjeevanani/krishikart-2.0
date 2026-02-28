@@ -77,6 +77,7 @@ export default function PackingScreen() {
             franchiseName: foundOrder.franchiseId?.shopName || foundOrder.franchiseId?.ownerName || 'Franchise Node',
             franchiseLocation: foundOrder.franchiseId?.cityArea || foundOrder.franchiseId?.address || 'Main Hub',
             items: foundOrder.items.map(i => ({
+                productId: i.productId,
                 name: i.name,
                 quantity: i.quantity || i.qty || 0,
                 unit: i.unit || 'units',
@@ -88,27 +89,31 @@ export default function PackingScreen() {
         };
     }
 
+    const [itemQuantities, setItemQuantities] = useState({});
+
     useEffect(() => {
         if (order && order.items) {
-            const init = {};
+            const initChecked = {};
+            const initQtys = {};
             order.items.forEach(item => {
-                init[item.name] = false;
+                const id = item.productId || item.name; // Use productId as primary key
+                initChecked[id] = false;
+                initQtys[id] = item.quantity;
             });
-            setCheckedItems(init);
+            setCheckedItems(initChecked);
+            setItemQuantities(initQtys);
         }
     }, [order]);
 
-    const handleToggleCheck = (itemName) => {
+    const handleToggleCheck = (id) => {
         setCheckedItems(prev => ({
             ...prev,
-            [itemName]: !prev[itemName]
+            [id]: !prev[id]
         }));
     };
 
-    /* const isPackingComplete = Object.values(checkedItems).every(v => v); */
-    // Ensure accurate check
-    const isPackingComplete = order?.items && Object.keys(checkedItems).length > 0 &&
-        order.items.every(item => checkedItems[item.name]);
+    // Enable calibration as soon as at least one item is checked
+    const isPackingComplete = order?.items && Object.values(checkedItems).some(v => v === true);
 
     const [actualWeight, setActualWeight] = useState(42.50);
     const [isWeightLocked, setIsWeightLocked] = useState(false);
@@ -119,7 +124,7 @@ export default function PackingScreen() {
         let count = 0;
 
         // Calculate target weight based on real order quantities
-        const totalItemsQty = order.items?.reduce((sum, i) => sum + (Number(i.quantity) || 0), 0) || 45.32;
+        const totalItemsQty = order.items?.reduce((sum, i) => sum + (Number(itemQuantities[i.productId]) || 0), 0) || 45.32;
         const target = +(totalItemsQty * (0.95 + Math.random() * 0.1)).toFixed(2); // +/- 5% variance
 
         const interval = setInterval(() => {
@@ -144,11 +149,22 @@ export default function PackingScreen() {
 
         setIsDispatching(true);
         try {
+            // Prepare item updates for partial fulfilment
+            // ONLY items that are "checked" in the UI will have their quantities sent.
+            const itemUpdates = order.items.map(item => {
+                const id = item.productId || item.name;
+                return {
+                    productId: item.productId,
+                    dispatchedQuantity: checkedItems[id] ? (itemQuantities[id] || 0) : 0
+                };
+            });
+
             // Update status on backend
             // Status: 'ready_for_pickup' implies vendor has finished and goods are ready
             const response = await api.put(`/procurement/vendor/${order.id}/status`, {
                 status: 'ready_for_pickup',
-                weight: actualWeight
+                weight: actualWeight,
+                itemUpdates
             });
 
             if (response.data.success) {
@@ -233,40 +249,64 @@ export default function PackingScreen() {
                             <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest border-b border-slate-50 pb-4">Audit current batch for quality compliance</p>
 
                             <div className="space-y-3">
-                                {order.items.map((item, idx) => (
-                                    <div
-                                        key={idx}
-                                        onClick={() => handleToggleCheck(item.name)}
-                                        className={cn(
-                                            "flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer group",
-                                            checkedItems[item.name]
-                                                ? "bg-emerald-50 border-emerald-100"
-                                                : "bg-slate-50 border-slate-50 hover:border-slate-200"
-                                        )}
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <div className={cn(
-                                                "w-10 h-10 rounded-xl overflow-hidden border transition-all",
-                                                checkedItems[item.name] ? "border-emerald-200" : "border-slate-100"
-                                            )}>
-                                                <img src={item.image} className={cn("w-full h-full object-cover grayscale", checkedItems[item.name] && "grayscale-0")} alt="" />
+                                {order.items.map((item, idx) => {
+                                    const id = item.productId || item.name;
+                                    return (
+                                        <div
+                                            key={idx}
+                                            className={cn(
+                                                "flex items-center justify-between p-4 rounded-2xl border transition-all group",
+                                                checkedItems[id]
+                                                    ? "bg-emerald-50 border-emerald-100"
+                                                    : "bg-slate-50 border-slate-50 hover:border-slate-200"
+                                            )}
+                                        >
+                                            <div className="flex items-center gap-4 flex-1">
+                                                <div
+                                                    onClick={() => handleToggleCheck(id)}
+                                                    className={cn(
+                                                        "w-10 h-10 rounded-xl overflow-hidden border transition-all cursor-pointer",
+                                                        checkedItems[id] ? "border-emerald-200" : "border-slate-100"
+                                                    )}
+                                                >
+                                                    <img src={item.image} className={cn("w-full h-full object-cover grayscale", checkedItems[id] && "grayscale-0")} alt="" />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <span
+                                                        onClick={() => handleToggleCheck(id)}
+                                                        className={cn(
+                                                            "font-black text-sm tracking-tight block cursor-pointer",
+                                                            checkedItems[id] ? "text-emerald-900" : "text-slate-600"
+                                                        )}
+                                                    >{item.name}</span>
+                                                    <div className="flex items-center gap-3 mt-1">
+                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">{item.quantity} {item.unit} Requested</span>
+                                                        {checkedItems[id] && (
+                                                            <div className="flex items-center gap-2 px-2 py-0.5 bg-white border border-emerald-200 rounded-lg">
+                                                                <span className="text-[9px] font-black text-emerald-600">SEND:</span>
+                                                                <input
+                                                                    type="number"
+                                                                    value={itemQuantities[id] || ''}
+                                                                    onChange={(e) => setItemQuantities(prev => ({ ...prev, [id]: Number(e.target.value) }))}
+                                                                    className="w-12 bg-transparent text-[11px] font-black text-emerald-700 outline-none tabular-nums"
+                                                                />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <span className={cn(
-                                                    "font-black text-sm tracking-tight block",
-                                                    checkedItems[item.name] ? "text-emerald-900" : "text-slate-600"
-                                                )}>{item.name}</span>
-                                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{item.quantity} {item.unit} Allocated</span>
+                                            <div
+                                                onClick={() => handleToggleCheck(id)}
+                                                className={cn(
+                                                    "w-6 h-6 rounded-full flex items-center justify-center border-2 transition-all cursor-pointer",
+                                                    checkedItems[id] ? "bg-emerald-600 border-emerald-600 text-white" : "bg-white border-slate-200 group-hover:border-slate-400"
+                                                )}
+                                            >
+                                                {checkedItems[id] && <CheckCircle2 size={12} />}
                                             </div>
                                         </div>
-                                        <div className={cn(
-                                            "w-6 h-6 rounded-full flex items-center justify-center border-2 transition-all",
-                                            checkedItems[item.name] ? "bg-emerald-600 border-emerald-600 text-white" : "bg-white border-slate-200 group-hover:border-slate-400"
-                                        )}>
-                                            {checkedItems[item.name] && <CheckCircle2 size={12} />}
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
 
@@ -413,13 +453,26 @@ export default function PackingScreen() {
                         </div>
 
                         <div className="bg-slate-50 p-8 rounded-[40px] border border-slate-100 text-left space-y-6">
+                            <div className="space-y-3">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200 pb-2">Final Dispatch Manifest</p>
+                                {order.items.filter(item => checkedItems[item.productId || item.name]).map((item, idx) => (
+                                    <div key={idx} className="flex justify-between items-center text-[11px] font-black uppercase tracking-tight">
+                                        <span className="text-slate-600">{item.name}</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-slate-400 text-[9px]">SENT:</span>
+                                            <span className="text-slate-900 tabular-nums">{itemQuantities[item.productId || item.name] || 0} {item.unit}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="flex justify-between items-center border-t border-slate-200 pt-4">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Total Payload</span>
+                                <span className="text-lg font-black text-slate-900 tabular-nums">{actualWeight} KG</span>
+                            </div>
                             <div className="flex justify-between items-center border-b border-slate-100 pb-4">
                                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Target Node</span>
                                 <span className="text-sm font-black text-slate-900 uppercase tracking-tight">{order.franchiseName}</span>
-                            </div>
-                            <div className="flex justify-between items-center border-b border-slate-100 pb-4">
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gross Payload</span>
-                                <span className="text-sm font-black text-slate-900 tabular-nums">{actualWeight} KG</span>
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Network Status</span>
@@ -463,7 +516,12 @@ export default function PackingScreen() {
                 data={{
                     invoiceNumber: orders.find(o => o._id === order.id)?.invoice?.invoiceNumber || `KK-INV-${order.id?.slice(-6).toUpperCase()}`,
                     invoiceDate: orders.find(o => o._id === order.id)?.invoice?.invoiceDate || new Date(),
-                    items: order.items,
+                    items: order.items
+                        .filter(i => checkedItems[i.productId || i.name])
+                        .map(i => ({
+                            ...i,
+                            quantity: itemQuantities[i.productId || i.name] || i.quantity
+                        })),
                     totalWeight: actualWeight,
                     franchise: order.franchiseName,
                     destNode: order.franchiseLocation,

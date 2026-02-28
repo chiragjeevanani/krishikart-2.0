@@ -52,7 +52,7 @@ export default function EditProductScreen() {
         bulkUnit: 'kg',
         description: '',
         shortDescription: '',
-        tags: '',
+        tags: [],
         status: 'active',
         images: [],
         primaryImage: null,
@@ -65,38 +65,67 @@ export default function EditProductScreen() {
         showOnStorefront: true
     });
 
+    const [currentTag, setCurrentTag] = useState('');
+
+    const handleTagKeyDown = (e) => {
+        if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            const tag = currentTag.trim().replace(/,/g, '');
+            if (tag && !formData.tags.includes(tag)) {
+                setFormData(prev => ({
+                    ...prev,
+                    tags: [...prev.tags, tag]
+                }));
+            }
+            setCurrentTag('');
+        } else if (e.key === 'Backspace' && !currentTag && formData.tags.length > 0) {
+            const newTags = [...formData.tags];
+            newTags.pop();
+            setFormData(prev => ({ ...prev, tags: newTags }));
+        }
+    };
+
+    const removeTag = (indexToRemove) => {
+        setFormData(prev => ({
+            ...prev,
+            tags: prev.tags.filter((_, index) => index !== indexToRemove)
+        }));
+    };
+
     useEffect(() => {
-        const product = products.find(p => p._id === id);
-        if (product) {
-            setFormData({
-                name: product.name || '',
-                skuCode: product.skuCode || '',
-                category: typeof product.category === 'object' ? product.category._id : product.category || '',
-                subcategory: typeof product.subcategory === 'object' ? product.subcategory._id : product.subcategory || '',
-                price: product.price || '',
-                comparePrice: product.comparePrice || '',
-                stock: product.stock || '',
-                unit: product.unit || 'kg',
-                unitValue: product.unitValue || '1',
-                bulkUnit: product.bulkUnit || 'kg',
-                description: product.description || '',
-                shortDescription: product.shortDescription || '',
-                tags: Array.isArray(product.tags) ? product.tags.join(', ') : '',
-                status: 'active',
-                images: product.images || [],
-                primaryImage: product.primaryImage || null,
-                primaryFile: null,
-                galleryFiles: [],
-                bulkPricing: product.bulkPricing || [],
-                bestPrice: product.bestPrice || '',
-                dietaryType: product.dietaryType || 'veg',
-                showOnPOS: product.showOnPOS !== undefined ? product.showOnPOS : true,
-                showOnStorefront: product.showOnStorefront !== undefined ? product.showOnStorefront : true
-            });
+        if (products.length > 0) {
+            const product = products.find(p => p._id === id);
+            if (product) {
+                setFormData({
+                    name: product.name || '',
+                    skuCode: product.skuCode || '',
+                    category: typeof product.category === 'object' ? product.category._id : product.category || '',
+                    subcategory: typeof product.subcategory === 'object' ? product.subcategory._id : product.subcategory || '',
+                    price: product.price || '',
+                    comparePrice: product.comparePrice || '',
+                    stock: product.stock || '',
+                    unit: product.unit || 'kg',
+                    unitValue: product.unitValue || '1',
+                    bulkUnit: product.bulkUnit || 'kg',
+                    description: product.description || '',
+                    shortDescription: product.shortDescription || '',
+                    tags: Array.isArray(product.tags) ? product.tags : [],
+                    status: 'active',
+                    images: product.images || [],
+                    primaryImage: product.primaryImage || null,
+                    primaryFile: null,
+                    galleryFiles: [],
+                    bulkPricing: product.bulkPricing || [],
+                    bestPrice: product.bestPrice || '',
+                    dietaryType: product.dietaryType || 'veg',
+                    showOnPOS: product.showOnPOS !== undefined ? product.showOnPOS : true,
+                    showOnStorefront: product.showOnStorefront !== undefined ? product.showOnStorefront : true
+                });
+            } else {
+                toast.error('Product not found');
+                navigate('/masteradmin/products/manage');
+            }
             setIsLoading(false);
-        } else if (products.length > 0) {
-            toast.error('Product not found');
-            navigate('/masteradmin/products/manage');
         }
     }, [id, products, navigate]);
 
@@ -394,16 +423,38 @@ export default function EditProductScreen() {
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Search Tags</label>
-                                        <input
-                                            type="text"
-                                            name="tags"
-                                            value={formData.tags}
-                                            onChange={handleChange}
-                                            placeholder="e.g. organic, banana, fresh, fruit"
-                                            className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-2.5 text-sm font-medium focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-300"
-                                        />
+                                        <div className="min-h-[46px] w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-2 focus-within:ring-1 focus-within:ring-emerald-500 focus-within:border-emerald-500 transition-all flex flex-wrap gap-2 items-center text-sm font-medium">
+                                            <AnimatePresence>
+                                                {formData.tags.map((tag, index) => (
+                                                    <motion.span
+                                                        key={`${tag}-${index}`}
+                                                        initial={{ scale: 0.8, opacity: 0 }}
+                                                        animate={{ scale: 1, opacity: 1 }}
+                                                        exit={{ scale: 0.8, opacity: 0 }}
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase tracking-tight rounded-full border border-emerald-100 shadow-sm group/tag"
+                                                    >
+                                                        {tag}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeTag(index)}
+                                                            className="hover:bg-emerald-200/50 p-0.5 rounded-full transition-colors text-emerald-400 hover:text-emerald-600"
+                                                        >
+                                                            <X size={10} strokeWidth={3} />
+                                                        </button>
+                                                    </motion.span>
+                                                ))}
+                                            </AnimatePresence>
+                                            <input
+                                                type="text"
+                                                value={currentTag}
+                                                onChange={(e) => setCurrentTag(e.target.value)}
+                                                onKeyDown={handleTagKeyDown}
+                                                placeholder={formData.tags.length === 0 ? "e.g. organic, banana, fresh..." : ""}
+                                                className="flex-1 bg-transparent border-none outline-none text-sm font-medium placeholder:text-slate-300 min-w-[120px]"
+                                            />
+                                        </div>
                                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                                            Separate tags with commas for better search matching.
+                                            Press Enter or comma to add a tag. Backspace to remove last tag.
                                         </p>
                                     </div>
                                 </div>

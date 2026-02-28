@@ -21,6 +21,10 @@ const procurementRequestSchema = new mongoose.Schema({
                 default: 0
             },
             image: String,
+            dispatchedQuantity: {
+                type: Number,
+                default: 0
+            },
             receivedQuantity: {
                 type: Number,
                 default: 0

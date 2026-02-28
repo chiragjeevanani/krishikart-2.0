@@ -17,7 +17,9 @@ import {
     Eye,
     EyeOff,
     X,
-    ChevronDown
+    ChevronDown,
+    FileUp,
+    Download
 } from 'lucide-react';
 import { useCatalog } from '../contexts/CatalogContext';
 import { useNavigate } from 'react-router-dom';
@@ -25,16 +27,46 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export default function ManageProductScreen() {
-    const { products, isLoading: contextLoading, fetchProducts, deleteProduct, updateProduct } = useCatalog();
+    const {
+        products,
+        isLoading: contextLoading,
+        fetchProducts,
+        deleteProduct,
+        updateProduct,
+        importProducts
+    } = useCatalog();
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isImporting, setIsImporting] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
         fetchProducts();
     }, []);
+
+    const handleImportExcel = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setIsImporting(true);
+        try {
+            const result = await importProducts(file);
+            if (result && result.success) {
+                toast.success('Inventory synced successfully via Excel');
+                if (result.data?.summary) {
+                    const { createdCount, updatedCount, errorCount } = result.data.summary;
+                    toast.info(`Created: ${createdCount}, Updated: ${updatedCount}, Errors: ${errorCount}`);
+                }
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsImporting(false);
+            e.target.value = ''; // Reset input
+        }
+    };
 
     const handleDelete = async (id) => {
         if (window.confirm('Are you sure you want to permanently remove this SKU from inventory?')) {
@@ -82,8 +114,64 @@ export default function ManageProductScreen() {
                     </div>
                     <div className="flex items-center gap-3">
                         <button
+                            onClick={() => {
+                                const headers = ['name', 'skuCode', 'categoryName', 'subcategoryName', 'price', 'comparePrice', 'stock', 'unit', 'description', 'tags', 'dietaryType', 'status'];
+
+                                // Map all existing products to CSV rows
+                                const rows = products.map(p => {
+                                    return [
+                                        `"${(p.name || '').replace(/"/g, '""')}"`,
+                                        `"${(p.skuCode || '').replace(/"/g, '""')}"`,
+                                        `"${(p.category?.name || '').replace(/"/g, '""')}"`,
+                                        `"${(p.subcategory?.name || '').replace(/"/g, '""')}"`,
+                                        p.price || 0,
+                                        p.comparePrice || '',
+                                        p.stock || 0,
+                                        `"${(p.unit || 'kg').replace(/"/g, '""')}"`,
+                                        `"${(p.description || '').replace(/"/g, '""')}"`,
+                                        `"${(Array.isArray(p.tags) ? p.tags.join(',') : '').replace(/"/g, '""')}"`,
+                                        `"${(p.dietaryType || 'none').replace(/"/g, '""')}"`,
+                                        `"${(p.status || 'active').replace(/"/g, '""')}"`
+                                    ].join(",");
+                                });
+
+                                // If no products, add one example row at least
+                                if (rows.length === 0) {
+                                    rows.push("Example Product,SKU001,Vegetables,Leafy Greens,100,120,50,kg,Describe product...,\"organic,fresh\",veg,active");
+                                }
+
+                                const csvString = [headers.join(","), ...rows].join("\n");
+                                const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+                                const url = URL.createObjectURL(blob);
+                                const link = document.createElement("a");
+                                link.setAttribute("href", url);
+                                link.setAttribute("download", `inventory_ledger_${new Date().toISOString().split('T')[0]}.csv`);
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                            }}
+                            title="Download Full Inventory CSV"
+                            className="px-4 py-1.5 border border-slate-200 text-slate-500 hover:text-slate-900 rounded-sm text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all shadow-sm group/export"
+                        >
+                            <Download size={12} className="group-hover/export:translate-y-0.5 transition-transform" />
+                            Export Ledger
+                        </button>
+                        <label className={cn(
+                            "px-6 py-1.5 bg-emerald-600 text-white rounded-sm text-[10px] font-black uppercase tracking-widest flex items-center gap-2 cursor-pointer transition-all hover:bg-emerald-700 shadow-sm",
+                            isImporting && "opacity-50 pointer-events-none"
+                        )}>
+                            {isImporting ? 'Importing...' : <><FileUp size={12} /> Bulk Induction</>}
+                            <input
+                                type="file"
+                                className="hidden"
+                                accept=".xlsx, .xls, .csv"
+                                onChange={handleImportExcel}
+                                disabled={isImporting}
+                            />
+                        </label>
+                        <button
                             onClick={() => navigate('/masteradmin/products/add')}
-                            className="px-6 py-1.5 bg-slate-900 text-white rounded-sm text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all hover:bg-emerald-600 shadow-sm"
+                            className="px-6 py-1.5 bg-slate-900 text-white rounded-sm text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all hover:bg-indigo-600 shadow-sm"
                         >
                             <Plus size={12} />
                             Induct New Product

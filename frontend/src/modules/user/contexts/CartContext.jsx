@@ -121,21 +121,44 @@ export function CartProvider({ children }) {
         const token = localStorage.getItem('userToken') || localStorage.getItem('token');
 
         let newQty = 1;
-        setCartItems((prevItems) =>
-            prevItems.map((item) => {
+        setCartItems((prevItems) => {
+            const updated = prevItems.map((item) => {
                 if (item.id === productId) {
                     newQty = Math.max(0, item.quantity + delta);
                     return { ...item, quantity: newQty };
                 }
                 return item;
-            }).filter(item => item.quantity > 0)
-        );
+            }).filter(item => item.quantity > 0);
+            return updated;
+        });
 
         if (token) {
             try {
                 await api.put('/user/cart/update', { productId, quantity: newQty });
             } catch (error) {
                 console.error("API update quantity error:", error);
+            }
+        }
+    };
+
+    const setQuantity = async (productId, quantity) => {
+        const token = localStorage.getItem('userToken') || localStorage.getItem('token');
+        const targetQty = Math.max(0, parseInt(quantity) || 0);
+
+        setCartItems((prevItems) =>
+            prevItems.map((item) => {
+                if (item.id === productId) {
+                    return { ...item, quantity: targetQty };
+                }
+                return item;
+            }).filter(item => item.quantity > 0)
+        );
+
+        if (token && targetQty >= 0) {
+            try {
+                await api.put('/user/cart/update', { productId, quantity: targetQty });
+            } catch (error) {
+                console.error("API set quantity error:", error);
             }
         }
     };
@@ -160,6 +183,7 @@ export function CartProvider({ children }) {
                 addToCart,
                 removeFromCart,
                 updateQuantity,
+                setQuantity,
                 clearCart,
                 cartCount,
                 cartTotal,

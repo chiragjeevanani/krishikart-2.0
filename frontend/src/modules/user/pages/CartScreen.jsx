@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button'
 import { useCart } from '../contexts/CartContext'
 
 export default function CartScreen() {
-  const { cartItems, updateQuantity, removeFromCart, cartTotal, getActivePrice, deliveryConstraints } = useCart()
+  const { cartItems, updateQuantity, setQuantity, removeFromCart, cartTotal, getActivePrice, deliveryConstraints } = useCart()
   const navigate = useNavigate()
 
   const deliveryFee = cartTotal >= parseFloat(deliveryConstraints.freeMov) ? 0 : parseFloat(deliveryConstraints.baseFee)
@@ -103,7 +103,12 @@ export default function CartScreen() {
                           >
                             <Minus size={14} />
                           </button>
-                          <span className="w-6 text-center text-sm font-black text-slate-900 md:font-bold">{item.quantity}</span>
+                          <input
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) => setQuantity(item.id, e.target.value)}
+                            className="w-10 text-center text-sm font-black text-slate-900 md:font-bold bg-transparent border-none focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
                           <button
                             onClick={() => updateQuantity(item.id, 1)}
                             className="w-8 h-8 flex items-center justify-center rounded-lg bg-white shadow-sm text-slate-600 hover:text-primary transition-colors active:scale-90"
