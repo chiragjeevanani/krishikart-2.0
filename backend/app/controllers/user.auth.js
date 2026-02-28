@@ -119,6 +119,8 @@ export const verifyOTP = async (req, res) => {
           mobile: user.mobile,
           fullName: user.fullName || "Dev User",
           role: "user",
+          onboardingCompleted: user.onboardingCompleted || false,
+          businessType: user.businessType || null,
         },
       });
     }
@@ -169,6 +171,8 @@ export const verifyOTP = async (req, res) => {
         email: user.email,
         profileImage: user.profileImage,
         role: "user",
+        onboardingCompleted: user.onboardingCompleted || false,
+        businessType: user.businessType || null,
       },
     });
   } catch (error) {
@@ -324,6 +328,10 @@ export const updateUserProfile = async (req, res) => {
       address,
       preferences,
       profileImage,
+      businessType,
+      gstNumber,
+      fssaiNumber,
+      onboardingCompleted,
     } = req.body;
 
     const user = await User.findById(userId);
@@ -337,6 +345,10 @@ export const updateUserProfile = async (req, res) => {
     if (legalEntityName !== undefined) user.legalEntityName = legalEntityName;
     if (address !== undefined) user.address = address;
     if (profileImage !== undefined) user.profileImage = profileImage;
+    if (businessType !== undefined) user.businessType = businessType;
+    if (gstNumber !== undefined) user.gstNumber = gstNumber;
+    if (fssaiNumber !== undefined) user.fssaiNumber = fssaiNumber;
+    if (onboardingCompleted !== undefined) user.onboardingCompleted = onboardingCompleted;
 
     if (preferences) {
       user.preferences = {

@@ -37,6 +37,7 @@ import { MapPin } from 'lucide-react'
 import { useLocation } from '../contexts/LocationContext'
 import LocationPermissionPopup from '../components/common/LocationPermissionPopup'
 import BusinessTypeSelector from '../components/common/BusinessTypeSelector'
+import DocumentUploadPopup from '../components/common/DocumentUploadPopup'
 
 export default function HomeScreen() {
     const [categories, setCategories] = useState([])
@@ -45,6 +46,7 @@ export default function HomeScreen() {
     const [loading, setLoading] = useState(true)
     const [showLocationPopup, setShowLocationPopup] = useState(false)
     const [showBusinessPopup, setShowBusinessPopup] = useState(false)
+    const [showDocumentPopup, setShowDocumentPopup] = useState(false)
     const navigate = useNavigate()
 
     useEffect(() => {
@@ -65,28 +67,44 @@ export default function HomeScreen() {
         fetchData()
     }, [])
 
-    // Dedicated effect for onboarding sequence (Location -> Business Type)
+    // Dedicated effect for onboarding sequence (Location -> Business Type -> Documents)
     useEffect(() => {
         const userData = JSON.parse(localStorage.getItem('userData') || '{}');
         const hasDeclinedLoc = localStorage.getItem('kk_location_declined');
         const hasSetBiz = userData.businessType || localStorage.getItem('kk_business_type');
+        const isOnboarded = userData.onboardingCompleted || localStorage.getItem('kk_onboarding_completed');
+
+        if (isOnboarded) return;
 
         // Step 1: Location Access
         if (!userLocation && !hasDeclinedLoc) {
             setShowLocationPopup(true);
             setShowBusinessPopup(false);
+            setShowDocumentPopup(false);
         }
         // Step 2: Business Type (if location is resolved or declined)
         else if (!hasSetBiz) {
             setShowBusinessPopup(true);
             setShowLocationPopup(false);
+            setShowDocumentPopup(false);
+        }
+        // Step 3: Documents (only for registered businesses)
+        else if (hasSetBiz === 'registered' && !localStorage.getItem('kk_documents_skipped')) {
+            setShowDocumentPopup(true);
+            setShowBusinessPopup(false);
+            setShowLocationPopup(false);
         }
     }, [userLocation]);
+
+    const syncUserData = (updates) => {
+        const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+        const merged = { ...userData, ...updates };
+        localStorage.setItem('userData', JSON.stringify(merged));
+    };
 
     const handleAllowLocation = async () => {
         try {
             await updateLocation();
-            // Business popup will trigger automatically via useEffect [userLocation] dependency
             setShowLocationPopup(false);
         } catch (err) {
             console.error('Failed to get location:', err);
@@ -96,15 +114,50 @@ export default function HomeScreen() {
     const handleManualLocation = () => {
         setShowLocationPopup(false);
         localStorage.setItem('kk_location_declined', 'true');
-        // Business popup will trigger via useEffect as userLocation remains null but declined is set
     };
 
-    const handleBusinessSelect = (type) => {
+    const handleBusinessSelect = async (type) => {
         localStorage.setItem('kk_business_type', type);
-        // Optionally update backend userData.businessType here
         setShowBusinessPopup(false);
 
-        // Finalized onboarding - potentially refresh or show a welcome toast
+        try {
+            const payload = { businessType: type };
+            // If unregistered, mark onboarding as complete immediately
+            if (type === 'unregistered') {
+                payload.onboardingCompleted = true;
+                localStorage.setItem('kk_onboarding_completed', 'true');
+            }
+            await api.put('/user/update-profile', payload);
+            syncUserData(payload);
+        } catch (err) {
+            console.error('Failed to save business type:', err);
+        }
+
+        if (type === 'registered') {
+            setShowDocumentPopup(true);
+        }
+    };
+
+    const handleOnboardingFinalize = async (docsData = null) => {
+        setShowDocumentPopup(false);
+
+        try {
+            const payload = { onboardingCompleted: true };
+            if (docsData) {
+                if (docsData.gst) payload.gstNumber = docsData.gst;
+                if (docsData.fssai) payload.fssaiNumber = docsData.fssai;
+            } else {
+                localStorage.setItem('kk_documents_skipped', 'true');
+            }
+
+            await api.put('/user/update-profile', payload);
+            syncUserData(payload);
+            localStorage.setItem('kk_onboarding_completed', 'true');
+        } catch (err) {
+            console.error('Failed to save documents:', err);
+            // Still mark locally so user isn't stuck
+            localStorage.setItem('kk_onboarding_completed', 'true');
+        }
     };
 
     return (
@@ -317,6 +370,13 @@ export default function HomeScreen() {
                 isOpen={showBusinessPopup}
                 onSelect={handleBusinessSelect}
                 onClose={() => setShowBusinessPopup(false)}
+            />
+
+            <DocumentUploadPopup
+                isOpen={showDocumentPopup}
+                onSubmit={handleOnboardingFinalize}
+                onSkip={() => handleOnboardingFinalize()}
+                onClose={() => setShowDocumentPopup(false)}
             />
         </PageTransition>
     )

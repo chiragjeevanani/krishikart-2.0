@@ -5,7 +5,7 @@ const walletTransactionSchema = new mongoose.Schema(
     txnId: { type: String, required: true },
     type: {
       type: String,
-      enum: ["Added", "Paid", "Refund", "Credit Used", "Credit Refunded", "Adjustment"],
+      enum: ["Added", "Paid", "Refund", "Credit Used", "Credit Refunded", "Adjustment", "Loyalty Bonus"],
       required: true,
     },
     amount: { type: Number, required: true, min: 0 },
@@ -107,6 +107,29 @@ const userSchema = new mongoose.Schema(
     walletTransactions: {
       type: [walletTransactionSchema],
       default: []
+    },
+
+    businessType: {
+      type: String,
+      enum: ['registered', 'unregistered'],
+      default: null,
+    },
+
+    gstNumber: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+
+    fssaiNumber: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+
+    onboardingCompleted: {
+      type: Boolean,
+      default: false,
     }
   },
   { timestamps: true }
