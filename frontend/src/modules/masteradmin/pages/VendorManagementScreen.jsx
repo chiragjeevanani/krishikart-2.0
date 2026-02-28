@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import {
     Users,
     Search,
@@ -34,7 +33,7 @@ import DataGrid from '../components/tables/DataGrid';
 import FilterBar from '../components/tables/FilterBar';
 
 export default function VendorManagementScreen() {
-    const { vendors, fetchVendors, isLoading: adminLoading, updateVendorStatus } = useAdmin();
+    const { vendors, fetchVendors, isLoading: adminLoading, updateVendorStatus, createVendorByAdmin } = useAdmin();
     const [statusFilter, setStatusFilter] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
     const [isOnboardOpen, setIsOnboardOpen] = useState(false);
@@ -147,7 +146,13 @@ export default function VendorManagementScreen() {
                     </div>
 
                     <div className="flex items-center gap-2">
-
+                        <button
+                            onClick={() => setIsOnboardOpen(true)}
+                            className="px-3 py-2 bg-slate-900 text-white rounded-sm hover:bg-slate-800 transition-colors flex items-center gap-2"
+                        >
+                            <Plus size={14} />
+                            <span className="text-[10px] font-bold uppercase tracking-widest">Add Vendor</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -234,9 +239,10 @@ export default function VendorManagementScreen() {
             <VendorOnboardingDrawer
                 isOpen={isOnboardOpen}
                 onClose={() => setIsOnboardOpen(false)}
-                onSave={(data) => {
-                    console.log('Vendor Provisioned:', data);
-                    setIsOnboardOpen(false);
+                onSave={async (payload) => {
+                    const created = await createVendorByAdmin(payload);
+                    if (created) fetchVendors();
+                    return created;
                 }}
             />
 

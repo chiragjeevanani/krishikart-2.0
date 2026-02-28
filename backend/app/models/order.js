@@ -147,6 +147,43 @@ const orderSchema = new mongoose.Schema({
         enum: ['Wallet', 'Credit', 'UPI', 'Card', 'COD'],
         required: true
     },
+    codTracking: {
+        isCollected: {
+            type: Boolean,
+            default: false
+        },
+        collectedAmount: {
+            type: Number,
+            default: 0
+        },
+        collectedAt: {
+            type: Date,
+            default: null
+        },
+        collectedByDeliveryId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Delivery',
+            default: null
+        },
+        remittanceStatus: {
+            type: String,
+            enum: ['pending', 'submitted', 'verified'],
+            default: 'pending'
+        },
+        remittanceId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'DeliveryCodRemittance',
+            default: null
+        },
+        remittedAt: {
+            type: Date,
+            default: null
+        },
+        verifiedAt: {
+            type: Date,
+            default: null
+        }
+    },
     paymentStatus: {
         type: String,
         enum: ['Pending', 'Completed', 'Failed', 'Refunded'],

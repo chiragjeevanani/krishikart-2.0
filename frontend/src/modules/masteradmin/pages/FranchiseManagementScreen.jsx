@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Store,
@@ -18,35 +18,42 @@ import {
     Server,
     ShieldCheck,
     Cpu,
-    Network
+    Network,
+    Plus
 } from 'lucide-react';
 import api from '@/lib/axios';
 import { cn } from '@/lib/utils';
+import { useAdmin } from '../contexts/AdminContext';
 
 // Enterprise Components
 import MetricRow from '../components/cards/MetricRow';
 import FilterBar from '../components/tables/FilterBar';
+import FranchiseOnboardingDrawer from '../components/drawers/FranchiseOnboardingDrawer';
 
 export default function FranchiseManagementScreen() {
+    const { createFranchiseByAdmin } = useAdmin();
     const [isLoading, setIsLoading] = useState(true);
     const [expandedRow, setExpandedRow] = useState(null);
     const [statusFilter, setStatusFilter] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
     const [franchises, setFranchises] = useState([]);
+    const [isOnboardOpen, setIsOnboardOpen] = useState(false);
+
+    const fetchFranchises = async () => {
+        try {
+            setIsLoading(true);
+            const response = await api.get('/masteradmin/franchises');
+            if (response.data.success) {
+                setFranchises(response.data.results || []);
+            }
+        } catch (error) {
+            console.error("Error fetching franchises:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchFranchises = async () => {
-            try {
-                const response = await api.get('/masteradmin/franchises');
-                if (response.data.success) {
-                    setFranchises(response.data.results);
-                }
-            } catch (error) {
-                console.error("Error fetching franchises:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
         fetchFranchises();
     }, []);
 
@@ -87,8 +94,13 @@ export default function FranchiseManagementScreen() {
                         </div>
                         <h1 className="text-sm font-bold text-slate-900">Regional Distribution Network</h1>
                     </div>
-
-
+                    <button
+                        onClick={() => setIsOnboardOpen(true)}
+                        className="px-3 py-2 bg-slate-900 text-white rounded-sm hover:bg-slate-800 transition-colors flex items-center gap-2"
+                    >
+                        <Plus size={14} />
+                        <span className="text-[10px] font-bold uppercase tracking-widest">Add Franchise</span>
+                    </button>
                 </div>
             </div>
 
@@ -134,7 +146,7 @@ export default function FranchiseManagementScreen() {
                     onSearch={setSearchTerm}
                     activeFilter={statusFilter}
                     onFilterChange={setStatusFilter}
-                    onRefresh={() => location.reload()}
+                    onRefresh={fetchFranchises}
                 />
 
                 <div className="bg-white border-t border-slate-200 overflow-hidden">
@@ -311,9 +323,16 @@ export default function FranchiseManagementScreen() {
                     )}
                 </div>
             </div>
+
+            <FranchiseOnboardingDrawer
+                isOpen={isOnboardOpen}
+                onClose={() => setIsOnboardOpen(false)}
+                onSave={async (payload) => {
+                    const created = await createFranchiseByAdmin(payload);
+                    if (created) fetchFranchises();
+                    return created;
+                }}
+            />
         </div>
     );
 }
-
-// Simple React import fix for component use
-import React from 'react';

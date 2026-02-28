@@ -16,6 +16,8 @@ import {
     UserCheck,
     UserCircle,
     CreditCard,
+    Landmark,
+    HandCoins,
     BookOpen,
     Percent,
     ClipboardCheck,
@@ -74,6 +76,8 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
         {
             group: 'Finance', items: [
                 { icon: CreditCard, label: 'Credit Management', path: '/masteradmin/credit' },
+                { icon: Landmark, label: 'Franchise Payouts', path: '/masteradmin/franchise-payouts' },
+                { icon: HandCoins, label: 'COD Remittance', path: '/masteradmin/cod-remittance' },
                 { icon: Star, label: 'Loyalty Engine', path: '/masteradmin/loyalty' },
                 { icon: Truck, label: 'Delivery Constraints', path: '/masteradmin/delivery-constraints' },
             ]

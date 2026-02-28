@@ -152,8 +152,8 @@ export default function DesktopNavbar() {
                     >
                         <ShoppingCart size={20} strokeWidth={2.5} />
                         {cartCount > 0 && (
-                            <span className="absolute -top-0.5 -right-0.5 w-[19px] h-[19px] bg-black text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white">
-                                {cartCount}
+                            <span className="absolute -top-1.5 -right-1.5 min-w-[23px] h-[23px] px-1.5 bg-black text-white text-[11px] leading-none font-black rounded-full flex items-center justify-center border-2 border-white">
+                                {cartCount > 99 ? '99+' : cartCount}
                             </span>
                         )}
                     </button>

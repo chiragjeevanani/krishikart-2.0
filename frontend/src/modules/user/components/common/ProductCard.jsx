@@ -24,6 +24,8 @@ export default function ProductCard({ product, layout = 'grid' }) {
         return () => window.removeEventListener('resize', checkMobile)
     }, [])
     const productId = product._id || product.id
+    const comparePrice = Number(product.comparePrice || product.mrp || 0)
+    const hasComparePrice = comparePrice > Number(product.price || 0)
     const cartItem = cartItems.find(item => item.id === productId)
     const quantity = cartItem ? cartItem.quantity : 0
     const isLoved = isWishlisted(productId)
@@ -84,7 +86,12 @@ export default function ProductCard({ product, layout = 'grid' }) {
 
                         <div className="flex items-center justify-between mt-3">
                             <div>
-                                <p className="text-[15px] font-black text-slate-900 leading-none md:text-base md:font-bold">₹{product.price}</p>
+                                <div className="flex items-center gap-1.5">
+                                    <p className="text-[15px] font-black text-slate-900 leading-none md:text-base md:font-bold">₹{product.price}</p>
+                                    {hasComparePrice && (
+                                        <span className="text-[11px] font-bold text-slate-400 line-through">₹{comparePrice}</span>
+                                    )}
+                                </div>
                                 <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-1 md:text-[10px] md:normal-case md:tracking-normal">{product.unit}</p>
                             </div>
 
@@ -213,7 +220,7 @@ export default function ProductCard({ product, layout = 'grid' }) {
                     <div className="mt-auto px-1 space-y-1">
                         <div className="flex items-baseline gap-1.5">
                             <span className="text-[18px] font-extrabold text-slate-900">₹{product.price}</span>
-                            {product.mrp && <span className="text-xs text-slate-400 line-through">₹{product.mrp}</span>}
+                            {hasComparePrice && <span className="text-xs text-slate-400 line-through">₹{comparePrice}</span>}
                         </div>
 
                         <p className="text-[11px] font-bold text-slate-400">

@@ -98,6 +98,8 @@ export default function ProductDetailScreen() {
 
   const productImage = product.primaryImage || product.image
   const productCategory = product.category?.name || product.category || 'General'
+  const comparePrice = Number(product.comparePrice || product.mrp || 0)
+  const hasComparePrice = comparePrice > Number(currentPrice || 0)
 
   return (
     <PageTransition>
@@ -189,6 +191,9 @@ export default function ProductDetailScreen() {
                       ₹{currentPrice}
                     </motion.span>
                   </AnimatePresence>
+                  {hasComparePrice && (
+                    <span className="text-lg text-slate-400 line-through font-bold">₹{comparePrice}</span>
+                  )}
                   <span className="text-sm text-slate-400 font-bold md:font-medium">/ {product.unit}</span>
                   {currentPrice < product.price && (
                     <div className="flex items-center gap-1 ml-2 bg-orange-100 text-orange-600 px-2 py-0.5 rounded-lg text-[10px] font-black md:normal-case md:font-bold">

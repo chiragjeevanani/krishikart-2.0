@@ -9,7 +9,8 @@ export default function QuantityModal({ isOpen, onClose, product, onAdd }) {
 
     if (!isOpen) return null;
 
-    const originalPrice = (product.price * 1.35).toFixed(0);
+    const originalPrice = Number(product.comparePrice || product.mrp || 0);
+    const hasOriginalPrice = originalPrice > Number(product.price || 0);
 
     const handleFinalAdd = () => {
         const finalQty = Math.max(1, Number(modalQty) || 1);
@@ -72,7 +73,9 @@ export default function QuantityModal({ isOpen, onClose, product, onAdd }) {
                             <div className="flex items-center justify-between mt-8">
                                 <div className="flex items-baseline gap-2">
                                     <span className="text-3xl font-black text-slate-900">₹{product.price}</span>
-                                    <span className="text-base text-slate-400 line-through font-medium">₹{originalPrice}</span>
+                                    {hasOriginalPrice && (
+                                        <span className="text-base text-slate-400 line-through font-medium">₹{originalPrice}</span>
+                                    )}
                                 </div>
 
                                 <div className="flex items-center bg-white border border-emerald-200 rounded-xl overflow-hidden h-11">

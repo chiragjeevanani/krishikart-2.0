@@ -65,8 +65,8 @@ export default function StickySearchBar() {
                     >
                         <ShoppingCart size={18} className="text-slate-900" />
                         {cartCount > 0 && (
-                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm">
-                                {cartCount}
+                            <span className="absolute -top-1.5 -right-1.5 min-w-[23px] h-[23px] px-1.5 bg-primary text-white text-[11px] leading-none font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+                                {cartCount > 99 ? '99+' : cartCount}
                             </span>
                         )}
                     </button>

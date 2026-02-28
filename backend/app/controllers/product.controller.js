@@ -3,11 +3,42 @@ import handleResponse from "../utils/helper.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 
 /* ================= PRODUCT CONTROLLERS ================= */
+const normalizeTags = (tagsInput) => {
+    if (tagsInput === undefined || tagsInput === null || tagsInput === '') {
+        return [];
+    }
+
+    let parsedTags = tagsInput;
+
+    if (typeof tagsInput === 'string') {
+        try {
+            parsedTags = JSON.parse(tagsInput);
+        } catch {
+            parsedTags = tagsInput.split(',');
+        }
+    }
+
+    if (!Array.isArray(parsedTags)) {
+        parsedTags = [parsedTags];
+    }
+
+    return [...new Set(
+        parsedTags
+            .map((tag) => String(tag).trim().toLowerCase())
+            .filter(Boolean)
+    )];
+};
+
+const normalizeSkuCode = (skuInput) => {
+    if (skuInput === undefined || skuInput === null) return '';
+    return String(skuInput).trim().toUpperCase();
+};
 
 export const createProduct = async (req, res) => {
     try {
         const {
             name,
+            skuCode,
             category,
             subcategory,
             price,
@@ -17,6 +48,7 @@ export const createProduct = async (req, res) => {
             unit,
             description,
             shortDescription,
+            tags,
             dietaryType,
             status,
             bulkPricing,
@@ -61,6 +93,7 @@ export const createProduct = async (req, res) => {
 
         const product = await Product.create({
             name,
+            skuCode: normalizeSkuCode(skuCode) || undefined,
             category,
             subcategory: subcategory || null,
             price: Number(price),
@@ -70,6 +103,7 @@ export const createProduct = async (req, res) => {
             unit: unit || 'kg',
             description,
             shortDescription,
+            tags: normalizeTags(tags),
             dietaryType: dietaryType || 'none',
             status: 'active', // Forces status to active on creation
             primaryImage: primaryImageUrl,
@@ -129,7 +163,10 @@ export const getProducts = async (req, res) => {
         if (search) {
             filter.$or = [
                 { name: { $regex: search, $options: 'i' } },
-                { description: { $regex: search, $options: 'i' } }
+                { skuCode: { $regex: search, $options: 'i' } },
+                { description: { $regex: search, $options: 'i' } },
+                { shortDescription: { $regex: search, $options: 'i' } },
+                { tags: { $regex: search, $options: 'i' } }
             ];
         }
 
@@ -198,6 +235,13 @@ export const updateProduct = async (req, res) => {
             } catch (e) {
                 console.error("Bulk Pricing Parse Error:", e);
             }
+        }
+
+        if (updateData.tags !== undefined) {
+            updateData.tags = normalizeTags(updateData.tags);
+        }
+        if (updateData.skuCode !== undefined) {
+            updateData.skuCode = normalizeSkuCode(updateData.skuCode) || undefined;
         }
 
         // Normalize booleans

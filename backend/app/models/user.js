@@ -5,7 +5,7 @@ const walletTransactionSchema = new mongoose.Schema(
     txnId: { type: String, required: true },
     type: {
       type: String,
-      enum: ["Added", "Paid", "Refund", "Credit Used", "Credit Refunded", "Adjustment"],
+      enum: ["Added", "Paid", "Refund", "Credit Used", "Credit Refunded", "Adjustment", "Loyalty Bonus", "Redemption"],
       required: true,
     },
     amount: { type: Number, required: true, min: 0 },

@@ -7,7 +7,12 @@ import Order from "../models/order.js";
 import FranchiseCommission from "../models/franchiseCommission.js";
 import Category from "../models/category.js";
 import GlobalSetting from "../models/globalSetting.js";
+import LoyaltyConfigHistory from "../models/loyaltyConfigHistory.js";
+import DeliveryCodRemittance from "../models/deliveryCodRemittance.js";
 import handleResponse from "../utils/helper.js";
+import bcrypt from "bcryptjs";
+import { uploadToCloudinary } from "../utils/cloudinary.js";
+import { geocodeAddress } from "../utils/geo.js";
 
 /* ================= VENDOR MANAGEMENT ================= */
 
@@ -114,6 +119,98 @@ export const assignProductsToVendor = async (req, res) => {
     }
 };
 
+export const createVendorByAdmin = async (req, res) => {
+    try {
+        const {
+            fullName,
+            email,
+            mobile,
+            farmLocation,
+            fssaiLicense,
+            password
+        } = req.body;
+
+        if (!fullName || !email || !mobile || !farmLocation || !fssaiLicense) {
+            return handleResponse(res, 400, "fullName, email, mobile, farmLocation and fssaiLicense are required");
+        }
+
+        if (!/^[6-9]\d{9}$/.test(String(mobile))) {
+            return handleResponse(res, 400, "Invalid mobile number");
+        }
+
+        let bankDetails = {};
+        if (req.body.bankDetails) {
+            try {
+                bankDetails = typeof req.body.bankDetails === "string"
+                    ? JSON.parse(req.body.bankDetails)
+                    : req.body.bankDetails;
+            } catch (e) {
+                return handleResponse(res, 400, "Invalid bankDetails payload");
+            }
+        } else {
+            bankDetails = {
+                accountHolderName: req.body["bankDetails[accountHolderName]"] || req.body.accountHolderName,
+                accountNumber: req.body["bankDetails[accountNumber]"] || req.body.accountNumber,
+                ifscCode: req.body["bankDetails[ifscCode]"] || req.body.ifscCode,
+                bankName: req.body["bankDetails[bankName]"] || req.body.bankName
+            };
+        }
+
+        if (!bankDetails?.accountHolderName || !bankDetails?.accountNumber || !bankDetails?.ifscCode || !bankDetails?.bankName) {
+            return handleResponse(res, 400, "Bank details are required");
+        }
+
+        const exists = await Vendor.findOne({
+            $or: [{ email: String(email).toLowerCase() }, { mobile: String(mobile) }]
+        });
+
+        if (exists) {
+            return handleResponse(res, 409, "Vendor with this email or mobile already exists");
+        }
+
+        if (!req.files?.aadharFile?.[0] || !req.files?.panFile?.[0] || !req.files?.shopProofFile?.[0]) {
+            return handleResponse(res, 400, "Aadhaar, PAN and Shop Proof files are required");
+        }
+
+        const profilePicture = req.files?.profilePicture?.[0]
+            ? await uploadToCloudinary(req.files.profilePicture[0].buffer, "vendors/profiles")
+            : "";
+
+        const aadharCard = await uploadToCloudinary(req.files.aadharFile[0].buffer, "vendors/aadhar");
+        const panCard = await uploadToCloudinary(req.files.panFile[0].buffer, "vendors/pan");
+        const shopEstablishmentProof = await uploadToCloudinary(req.files.shopProofFile[0].buffer, "vendors/shop_proof");
+
+        const generatedPassword = password?.trim() || `KK@${String(mobile).slice(-6)}`;
+        const hashedPassword = await bcrypt.hash(generatedPassword, 10);
+
+        const vendor = await Vendor.create({
+            fullName: String(fullName).trim(),
+            email: String(email).toLowerCase().trim(),
+            mobile: String(mobile).trim(),
+            farmLocation: String(farmLocation).trim(),
+            password: hashedPassword,
+            profilePicture,
+            fssaiLicense: String(fssaiLicense).trim(),
+            bankDetails,
+            aadharCard,
+            panCard,
+            shopEstablishmentProof,
+            status: "active"
+        });
+
+        const vendorObj = vendor.toObject();
+        delete vendorObj.password;
+
+        return handleResponse(res, 201, "Vendor onboarded successfully", {
+            vendor: vendorObj,
+            loginPassword: generatedPassword
+        });
+    } catch (err) {
+        console.error("Create vendor by admin error:", err);
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
 /* ================= FRANCHISE MANAGEMENT ================= */
 
 export const getAllFranchises = async (req, res) => {
@@ -206,6 +303,76 @@ export const reviewFranchiseKYC = async (req, res) => {
         await franchise.save();
         return handleResponse(res, 200, `Franchise KYC ${status} successfully`, franchise);
     } catch (err) {
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
+export const createFranchiseByAdmin = async (req, res) => {
+    try {
+        const { franchiseName, ownerName, mobile, city, area, state, email } = req.body;
+
+        if (!franchiseName || !ownerName || !mobile || !city || !state) {
+            return handleResponse(res, 400, "franchiseName, ownerName, mobile, city and state are required");
+        }
+
+        if (!/^[6-9]\d{9}$/.test(String(mobile))) {
+            return handleResponse(res, 400, "Invalid mobile number");
+        }
+
+        const existing = await Franchise.findOne({ mobile: String(mobile) });
+        if (existing) {
+            return handleResponse(res, 409, "Franchise with this mobile already exists");
+        }
+
+        let coords = { lat: null, lng: null };
+        try {
+            const geocoded = await geocodeAddress(city);
+            if (geocoded) coords = geocoded;
+        } catch (geoErr) {
+            console.warn("Franchise geocode failed:", geoErr?.message || geoErr);
+        }
+
+        const franchiseData = {
+            franchiseName: String(franchiseName).trim(),
+            ownerName: String(ownerName).trim(),
+            mobile: String(mobile).trim(),
+            city: String(city).trim(),
+            area: area ? String(area).trim() : null,
+            state: String(state).trim(),
+            email: email ? String(email).toLowerCase().trim() : undefined,
+            location: coords,
+            isVerified: true,
+            status: "active",
+            kyc: {
+                status: "verified",
+                verifiedAt: new Date()
+            }
+        };
+
+        if (req.files?.aadhaarImage?.[0]) {
+            franchiseData.kyc.aadhaarImage = await uploadToCloudinary(req.files.aadhaarImage[0].buffer, "franchise/kyc");
+        }
+
+        if (req.files?.panImage?.[0]) {
+            franchiseData.kyc.panImage = await uploadToCloudinary(req.files.panImage[0].buffer, "franchise/kyc");
+        }
+
+        if (req.body.aadhaarNumber) {
+            franchiseData.kyc.aadhaarNumber = String(req.body.aadhaarNumber).trim();
+        }
+
+        if (req.body.panNumber) {
+            franchiseData.kyc.panNumber = String(req.body.panNumber).trim();
+        }
+
+        const franchise = await Franchise.create(franchiseData);
+
+        const franchiseObj = franchise.toObject();
+        delete franchiseObj.password;
+
+        return handleResponse(res, 201, "Franchise onboarded successfully", franchiseObj);
+    } catch (err) {
+        console.error("Create franchise by admin error:", err);
         return handleResponse(res, 500, "Server error");
     }
 };
@@ -384,6 +551,254 @@ export const getFranchiseCommissions = async (req, res) => {
     }
 };
 
+export const getFranchisePayoutsSummary = async (req, res) => {
+    try {
+        const { from, to } = req.query;
+        const match = {
+            franchiseId: { $ne: null },
+            orderStatus: { $in: ["Delivered", "Received"] }
+        };
+
+        if (from || to) {
+            match.createdAt = {};
+            if (from) {
+                const fromDate = new Date(from);
+                if (!Number.isNaN(fromDate.getTime())) {
+                    match.createdAt.$gte = fromDate;
+                }
+            }
+            if (to) {
+                const toDate = new Date(to);
+                if (!Number.isNaN(toDate.getTime())) {
+                    toDate.setHours(23, 59, 59, 999);
+                    match.createdAt.$lte = toDate;
+                }
+            }
+            if (!match.createdAt.$gte && !match.createdAt.$lte) {
+                delete match.createdAt;
+            }
+        }
+
+        const orders = await Order.find(match)
+            .select("franchiseId items subtotal totalAmount createdAt orderStatus")
+            .lean();
+
+        if (!orders.length) {
+            return handleResponse(res, 200, "Franchise payouts calculated", {
+                summary: {
+                    totalFranchises: 0,
+                    totalOrders: 0,
+                    totalOrderValue: 0,
+                    totalPayable: 0
+                },
+                franchises: []
+            });
+        }
+
+        const franchiseIdSet = new Set();
+        const productIdSet = new Set();
+
+        for (const order of orders) {
+            if (order.franchiseId) franchiseIdSet.add(String(order.franchiseId));
+            for (const item of order.items || []) {
+                if (item.productId) productIdSet.add(String(item.productId));
+            }
+        }
+
+        const [franchises, products, commissions] = await Promise.all([
+            Franchise.find({ _id: { $in: Array.from(franchiseIdSet) } })
+                .select("franchiseName ownerName city mobile")
+                .lean(),
+            Product.find({ _id: { $in: Array.from(productIdSet) } })
+                .select("category")
+                .lean(),
+            FranchiseCommission.find({ franchiseId: { $in: Array.from(franchiseIdSet) } })
+                .select("franchiseId categoryId commissionPercentage")
+                .lean()
+        ]);
+
+        const franchiseMap = new Map(franchises.map((f) => [String(f._id), f]));
+        const productCategoryMap = new Map(products.map((p) => [String(p._id), String(p.category)]));
+        const commissionMap = new Map(
+            commissions.map((c) => [`${String(c.franchiseId)}:${String(c.categoryId)}`, Number(c.commissionPercentage || 0)])
+        );
+
+        const payoutMap = new Map();
+
+        for (const order of orders) {
+            const franchiseId = String(order.franchiseId);
+            const franchise = franchiseMap.get(franchiseId);
+            if (!franchise) continue;
+
+            if (!payoutMap.has(franchiseId)) {
+                payoutMap.set(franchiseId, {
+                    franchiseId,
+                    franchiseName: franchise.franchiseName || franchise.ownerName || "Unnamed Franchise",
+                    ownerName: franchise.ownerName || "N/A",
+                    city: franchise.city || "N/A",
+                    mobile: franchise.mobile || "N/A",
+                    orderCount: 0,
+                    orderValue: 0,
+                    payableAmount: 0,
+                    categories: {}
+                });
+            }
+
+            const entry = payoutMap.get(franchiseId);
+            entry.orderCount += 1;
+            entry.orderValue += Number(order.subtotal || order.totalAmount || 0);
+
+            for (const item of order.items || []) {
+                const itemSubtotal = Number(item.subtotal || (Number(item.price || 0) * Number(item.quantity || 0)));
+                if (!itemSubtotal) continue;
+
+                const categoryId = productCategoryMap.get(String(item.productId));
+                if (!categoryId) continue;
+
+                const commissionPercentage = commissionMap.get(`${franchiseId}:${categoryId}`) || 0;
+                const payout = (itemSubtotal * commissionPercentage) / 100;
+
+                entry.payableAmount += payout;
+
+                if (!entry.categories[categoryId]) {
+                    entry.categories[categoryId] = {
+                        categoryId,
+                        orderValue: 0,
+                        commissionPercentage,
+                        payoutAmount: 0
+                    };
+                }
+
+                entry.categories[categoryId].orderValue += itemSubtotal;
+                entry.categories[categoryId].payoutAmount += payout;
+            }
+        }
+
+        const categoryIds = Array.from(
+            new Set(
+                Array.from(payoutMap.values()).flatMap((f) => Object.keys(f.categories))
+            )
+        );
+
+        const categories = await Category.find({ _id: { $in: categoryIds } })
+            .select("name")
+            .lean();
+        const categoryNameMap = new Map(categories.map((c) => [String(c._id), c.name]));
+
+        const franchiseRows = Array.from(payoutMap.values())
+            .map((f) => ({
+                ...f,
+                orderValue: Number(f.orderValue.toFixed(2)),
+                payableAmount: Number(f.payableAmount.toFixed(2)),
+                categories: Object.values(f.categories).map((c) => ({
+                    ...c,
+                    categoryName: categoryNameMap.get(c.categoryId) || "Uncategorized",
+                    orderValue: Number(c.orderValue.toFixed(2)),
+                    payoutAmount: Number(c.payoutAmount.toFixed(2))
+                }))
+            }))
+            .sort((a, b) => b.payableAmount - a.payableAmount);
+
+        const summary = franchiseRows.reduce((acc, row) => {
+            acc.totalFranchises += 1;
+            acc.totalOrders += row.orderCount;
+            acc.totalOrderValue += row.orderValue;
+            acc.totalPayable += row.payableAmount;
+            return acc;
+        }, {
+            totalFranchises: 0,
+            totalOrders: 0,
+            totalOrderValue: 0,
+            totalPayable: 0
+        });
+
+        summary.totalOrderValue = Number(summary.totalOrderValue.toFixed(2));
+        summary.totalPayable = Number(summary.totalPayable.toFixed(2));
+
+        return handleResponse(res, 200, "Franchise payouts calculated", {
+            summary,
+            franchises: franchiseRows
+        });
+    } catch (err) {
+        console.error("Get franchise payouts summary error:", err);
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
+export const getCodRemittances = async (req, res) => {
+    try {
+        const { status = "submitted" } = req.query;
+        const query = {};
+        if (status && status !== "all") query.status = status;
+
+        const remittances = await DeliveryCodRemittance.find(query)
+            .populate("deliveryPartnerId", "fullName mobile vehicleNumber")
+            .populate("verifiedBy", "fullName email")
+            .sort({ createdAt: -1 })
+            .limit(200);
+
+        return handleResponse(res, 200, "COD remittances fetched", remittances);
+    } catch (err) {
+        console.error("Get COD remittances error:", err);
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
+export const reviewCodRemittance = async (req, res) => {
+    try {
+        const { remittanceId } = req.params;
+        const { action, reason = "" } = req.body;
+
+        if (!["verify", "reject"].includes(action)) {
+            return handleResponse(res, 400, "Action must be verify or reject");
+        }
+
+        const remittance = await DeliveryCodRemittance.findById(remittanceId);
+        if (!remittance) return handleResponse(res, 404, "Remittance not found");
+
+        if (remittance.status !== "submitted") {
+            return handleResponse(res, 400, "Only submitted remittances can be reviewed");
+        }
+
+        if (action === "verify") {
+            remittance.status = "verified";
+            remittance.verifiedBy = req.masteradmin?._id || null;
+            remittance.verifiedAt = new Date();
+            remittance.rejectionReason = "";
+
+            await Order.updateMany(
+                { _id: { $in: remittance.orderIds } },
+                {
+                    $set: {
+                        "codTracking.remittanceStatus": "verified",
+                        "codTracking.verifiedAt": new Date()
+                    }
+                }
+            );
+        } else {
+            remittance.status = "rejected";
+            remittance.rejectionReason = String(reason || "").trim();
+
+            await Order.updateMany(
+                { _id: { $in: remittance.orderIds } },
+                {
+                    $set: {
+                        "codTracking.remittanceStatus": "pending",
+                        "codTracking.remittanceId": null,
+                        "codTracking.remittedAt": null
+                    }
+                }
+            );
+        }
+
+        await remittance.save();
+        return handleResponse(res, 200, `COD remittance ${action}d successfully`, remittance);
+    } catch (err) {
+        console.error("Review COD remittance error:", err);
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
 /* ================= SYSTEM SETTINGS ================= */
 
 export const getGlobalSettings = async (req, res) => {
@@ -403,8 +818,35 @@ export const updateGlobalSetting = async (req, res) => {
             { value },
             { new: true, upsert: true }
         );
+
+        if (key === "loyalty_config" && value && typeof value === "object") {
+            await LoyaltyConfigHistory.create({
+                config: {
+                    awardRate: Number(value.awardRate ?? 5),
+                    redemptionRate: Number(value.redemptionRate ?? 10),
+                    minRedeemPoints: Number(value.minRedeemPoints ?? 100),
+                },
+                changedById: req.masteradmin?._id || null,
+                changedByName: req.masteradmin?.fullName || "Super Admin",
+                changeNote: "Loyalty settings updated",
+            });
+        }
+
         return handleResponse(res, 200, "Setting updated", setting);
     } catch (err) {
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
+export const getLoyaltyConfigHistory = async (req, res) => {
+    try {
+        const history = await LoyaltyConfigHistory.find()
+            .sort({ createdAt: -1 })
+            .limit(20);
+
+        return handleResponse(res, 200, "Loyalty config history fetched", history);
+    } catch (err) {
+        console.error("Get loyalty config history error:", err);
         return handleResponse(res, 500, "Server error");
     }
 };

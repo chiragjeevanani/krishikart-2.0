@@ -1,6 +1,17 @@
 
 import express from "express";
-import { sendOTP, verifyOTP, forgotPassword, resetPassword, getMe, updateUserProfile, changeUserPassword, rechargeWallet } from "../controllers/user.auth.js";
+import {
+    sendOTP,
+    verifyOTP,
+    forgotPassword,
+    resetPassword,
+    getMe,
+    updateUserProfile,
+    changeUserPassword,
+    createWalletRechargeOrder,
+    verifyWalletRecharge,
+    redeemLoyaltyPoints
+} from "../controllers/user.auth.js";
 import {
     getCart,
     addToCart,
@@ -21,7 +32,10 @@ router.post("/reset-password", resetPassword);
 router.get("/me", protect, getMe);
 router.put("/update-profile", protect, updateUserProfile);
 router.post("/change-password", protect, changeUserPassword);
-router.post("/wallet/recharge", protect, rechargeWallet);
+router.post("/wallet/recharge", protect, createWalletRechargeOrder); // backward-compatible alias
+router.post("/wallet/recharge/create-order", protect, createWalletRechargeOrder);
+router.post("/wallet/recharge/verify", protect, verifyWalletRecharge);
+router.post("/wallet/redeem-loyalty", protect, redeemLoyaltyPoints);
 
 // Cart Routes
 router.get("/cart", protect, getCart);

@@ -148,10 +148,6 @@ export default function OrderTrackingScreen() {
                                 >
                                     {isUpdating ? 'Verifying...' : 'Items Verified & Received'}
                                 </Button>
-
-                                <button className="w-full mt-4 text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] hover:text-emerald-700 transition-colors">
-                                    Report Missing Items
-                                </button>
                             </div>
                         </div>
                     )}

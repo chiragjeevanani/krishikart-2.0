@@ -12,7 +12,12 @@ import {
 
 import { protectDelivery } from "../middlewares/delivery.auth.js";
 import { protectFranchise } from "../middlewares/franchise.auth.js";
-import { getAllDeliveryPartners } from "../controllers/delivery.controller.js";
+import {
+  getAllDeliveryPartners,
+  getMyCodSummary,
+  submitCodRemittance,
+  getMyCodRemittances,
+} from "../controllers/delivery.controller.js";
 
 const router = express.Router();
 router.post("/register", registerDelivery);
@@ -29,5 +34,8 @@ router.put("/profile", protectDelivery, updateDeliveryProfile);
 
 // Public/Franchise access to partners list
 router.get("/partners", protectFranchise, getAllDeliveryPartners);
+router.get("/cod/summary", protectDelivery, getMyCodSummary);
+router.get("/cod/remittances", protectDelivery, getMyCodRemittances);
+router.post("/cod/remittance", protectDelivery, submitCodRemittance);
 
 export default router;

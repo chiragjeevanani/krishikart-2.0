@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import api from '@/lib/axios';
 import { toast } from 'sonner';
 
@@ -94,6 +94,46 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
+    const createVendorByAdmin = async (payload) => {
+        try {
+            const response = await api.post('/masteradmin/vendors', payload, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            if (response.data.success) {
+                const createdVendor = response.data.result?.vendor;
+                if (createdVendor) {
+                    setVendors(prev => [createdVendor, ...prev]);
+                }
+                toast.success('Vendor onboarded successfully');
+                return response.data.result;
+            }
+            return null;
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Vendor onboarding failed');
+            return null;
+        }
+    };
+
+    const createFranchiseByAdmin = async (payload) => {
+        try {
+            const response = await api.post('/masteradmin/franchises', payload, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            if (response.data.success) {
+                const createdFranchise = response.data.result;
+                if (createdFranchise?._id) {
+                    setFranchises(prev => [createdFranchise, ...prev]);
+                }
+                toast.success('Franchise onboarded successfully');
+                return createdFranchise;
+            }
+            return null;
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Franchise onboarding failed');
+            return null;
+        }
+    };
+
     return (
         <AdminContext.Provider value={{
             vendors,
@@ -104,7 +144,9 @@ export const AdminProvider = ({ children }) => {
             updateVendorStatus,
             reviewFranchiseKYC,
             fetchProducts,
-            assignProductsToVendor
+            assignProductsToVendor,
+            createVendorByAdmin,
+            createFranchiseByAdmin
         }}>
             {children}
         </AdminContext.Provider>

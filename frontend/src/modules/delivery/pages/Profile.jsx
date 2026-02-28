@@ -20,6 +20,7 @@ const Profile = () => {
 
     const menuItems = [
         { label: 'Vehicle Information', icon: Truck, color: 'text-blue-500', bg: 'bg-blue-50', path: '/delivery/vehicle' },
+        { label: 'COD Remittance', icon: Settings, color: 'text-emerald-500', bg: 'bg-emerald-50', path: '/delivery/cod-remittance' },
         { label: 'Help & Support', icon: HelpCircle, color: 'text-purple-500', bg: 'bg-purple-50', path: '/delivery/help' },
     ];
 

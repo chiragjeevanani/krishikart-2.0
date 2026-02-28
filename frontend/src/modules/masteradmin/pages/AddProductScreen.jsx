@@ -40,6 +40,7 @@ export default function AddProductScreen() {
     // Form State
     const [formData, setFormData] = useState({
         name: '',
+        skuCode: '',
         category: '',
         subcategory: '',
         price: '',
@@ -50,6 +51,7 @@ export default function AddProductScreen() {
         bulkUnit: 'kg',
         description: '',
         shortDescription: '',
+        tags: '',
         status: 'active',
         images: [],
         primaryImage: null,
@@ -313,6 +315,17 @@ export default function AddProductScreen() {
                                                 className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-2.5 text-sm font-medium focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-300"
                                             />
                                         </div>
+                                        <div className="md:w-64 space-y-1.5">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">SKU Code</label>
+                                            <input
+                                                type="text"
+                                                name="skuCode"
+                                                value={formData.skuCode}
+                                                onChange={handleChange}
+                                                placeholder="e.g. BAN-ORG-001"
+                                                className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-2.5 text-sm font-medium uppercase focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-300"
+                                            />
+                                        </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Dietary Classification</label>
                                             <div className="flex items-center gap-2 p-1 bg-slate-50 border border-slate-200 rounded-sm w-fit">
@@ -371,6 +384,20 @@ export default function AddProductScreen() {
                                             placeholder="Specify detailed product characteristics..."
                                             className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-3 text-sm font-medium focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-300 resize-none"
                                         ></textarea>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Search Tags</label>
+                                        <input
+                                            type="text"
+                                            name="tags"
+                                            value={formData.tags}
+                                            onChange={handleChange}
+                                            placeholder="e.g. organic, banana, fresh, fruit"
+                                            className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-2.5 text-sm font-medium focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-300"
+                                        />
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                                            Separate tags with commas for better search matching.
+                                        </p>
                                     </div>
                                 </div>
                             </div>

@@ -133,8 +133,15 @@ export default function ProductListScreen() {
     }, [categories])
 
     const filteredProducts = useMemo(() => {
+        const normalizedSearch = searchQuery.trim().toLowerCase()
+
         let result = (products || []).filter(p => {
-            const matchesSearch = p.name?.toLowerCase().includes(searchQuery.toLowerCase())
+            const tagsText = Array.isArray(p.tags) ? p.tags.join(' ') : (p.tags || '')
+            const matchesSearch = !normalizedSearch ||
+                p.name?.toLowerCase().includes(normalizedSearch) ||
+                p.skuCode?.toLowerCase().includes(normalizedSearch) ||
+                p.description?.toLowerCase().includes(normalizedSearch) ||
+                tagsText.toLowerCase().includes(normalizedSearch)
             const matchesRating = !activeFilters.rating || (p.rating >= 4.0 || p.comparePrice > p.price) // Simplified rating logic or deal logic
             const matchesVeg = !activeFilters.veg || p.dietaryType !== 'non-veg'
             const matchesInStock = !activeFilters.inStock || (p.stock > 0)

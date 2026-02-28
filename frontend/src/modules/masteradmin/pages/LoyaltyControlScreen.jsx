@@ -5,24 +5,22 @@ import {
     Zap,
     RefreshCcw,
     ShieldCheck,
-    TrendingUp,
     Settings2,
     Save,
     Home,
     ChevronRight,
     ArrowRight,
-    HandCoins,
     BarChart3,
     History,
     IndianRupee,
     Info
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useWallet } from '../../user/contexts/WalletContext';
+import api from '@/lib/axios';
 
 export default function LoyaltyControlScreen() {
-    const { loyaltyConfig, updateLoyaltyConfig } = useWallet();
     const [isLoading, setIsLoading] = useState(true);
+    const [history, setHistory] = useState([]);
     const [formData, setFormData] = useState({
         awardRate: 5,
         redemptionRate: 10,
@@ -31,21 +29,54 @@ export default function LoyaltyControlScreen() {
     const [showSuccess, setShowSuccess] = useState(false);
 
     useEffect(() => {
-        if (loyaltyConfig) {
-            setFormData(loyaltyConfig);
-        }
-        const timer = setTimeout(() => setIsLoading(false), 800);
-        return () => clearTimeout(timer);
-    }, [loyaltyConfig]);
+        const loadLoyaltyConfig = async () => {
+            setIsLoading(true);
+            try {
+                const [settingsRes, historyRes] = await Promise.all([
+                    api.get('/masteradmin/settings'),
+                    api.get('/masteradmin/loyalty/history'),
+                ]);
 
-    const handleSave = () => {
+                const settings = settingsRes.data?.results || [];
+                const loyaltySetting = settings.find((s) => s.key === 'loyalty_config');
+                if (loyaltySetting?.value && typeof loyaltySetting.value === 'object') {
+                    setFormData((prev) => ({ ...prev, ...loyaltySetting.value }));
+                }
+
+                setHistory(historyRes.data?.results || []);
+            } catch (error) {
+                console.error('Failed to load loyalty config:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        loadLoyaltyConfig();
+    }, []);
+
+    const handleSave = async () => {
         setIsLoading(true);
-        setTimeout(() => {
-            updateLoyaltyConfig(formData);
+        try {
+            await api.post('/masteradmin/settings/update', {
+                key: 'loyalty_config',
+                value: {
+                    awardRate: Number(formData.awardRate || 0),
+                    redemptionRate: Math.max(1, Number(formData.redemptionRate || 1)),
+                    minRedeemPoints: Math.max(1, Number(formData.minRedeemPoints || 1)),
+                }
+            });
             setIsLoading(false);
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 2000);
-        }, 1000);
+            try {
+                const historyRes = await api.get('/masteradmin/loyalty/history');
+                setHistory(historyRes.data?.results || []);
+            } catch (historyError) {
+                console.error('Failed to refresh loyalty history:', historyError);
+            }
+        } catch (error) {
+            console.error('Failed to save loyalty config:', error);
+            setIsLoading(false);
+        }
     };
 
     // Simulation Data
@@ -76,9 +107,9 @@ export default function LoyaltyControlScreen() {
                             <ChevronRight size={10} />
                             <span>System</span>
                             <ChevronRight size={10} />
-                            <span className="text-slate-900 uppercase tracking-widest">Loyalty Engine</span>
+                            <span className="text-slate-900 uppercase tracking-widest">Loyalty Settings</span>
                         </div>
-                        <h1 className="text-sm font-bold text-slate-900 whitespace-nowrap">Loyalty Strategy Control</h1>
+                        <h1 className="text-sm font-bold text-slate-900 whitespace-nowrap">Loyalty Settings</h1>
                     </div>
 
                     <div className="flex items-center gap-3">
@@ -104,9 +135,9 @@ export default function LoyaltyControlScreen() {
                         <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <Settings2 size={14} className="text-slate-400" />
-                                <h2 className="text-xs font-black uppercase tracking-[0.2em]">Parameter Configuration</h2>
+                                <h2 className="text-xs font-black uppercase tracking-[0.2em]">Settings</h2>
                             </div>
-                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Engine-ID: LYLT-01</span>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Loyalty Rules</span>
                         </div>
 
                         <div className="p-8 space-y-8">
@@ -114,7 +145,7 @@ export default function LoyaltyControlScreen() {
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                        Award Protocol (%)
+                                        Points per order (%)
                                         <Info size={10} className="text-slate-300" />
                                     </label>
                                     <span className="text-[10px] font-bold text-slate-900">{formData.awardRate}%</span>
@@ -128,14 +159,14 @@ export default function LoyaltyControlScreen() {
                                     onChange={(e) => setFormData({ ...formData, awardRate: parseFloat(e.target.value) })}
                                     className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-slate-900"
                                 />
-                                <p className="text-[9px] text-slate-400 font-medium italic">Determines global percentage of order value awarded as KK Points.</p>
+                                <p className="text-[9px] text-slate-400 font-medium italic">Customers earn this percent of order value as points.</p>
                             </div>
 
-                            {/* Redemption Rate Section */}
+                            {/* Redeem Rate Section */}
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                        Redemption Threshold (Pts = ₹1)
+                                        Points for 1 rupee
                                         <Info size={10} className="text-slate-300" />
                                     </label>
                                     <span className="text-[10px] font-bold text-slate-900">{formData.redemptionRate} Pts</span>
@@ -149,14 +180,14 @@ export default function LoyaltyControlScreen() {
                                     />
                                     <div className="flex-1 h-px bg-slate-100" />
                                     <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 capitalize whitespace-nowrap">
-                                        Current: {formData.redemptionRate} Points = ₹1.00
+                                        Now: {formData.redemptionRate} points = 1 rupee
                                     </div>
                                 </div>
                             </div>
 
                             {/* Min Redeem Section */}
                             <div className="space-y-4">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Minimum Redemption Floor</label>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Minimum points to redeem</label>
                                 <div className="relative">
                                     <input
                                         type="number"
@@ -174,33 +205,11 @@ export default function LoyaltyControlScreen() {
                                 className="w-full bg-slate-900 text-white py-3 rounded-sm text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-slate-800 transition-all active:scale-[0.99] shadow-lg shadow-slate-200"
                             >
                                 <Save size={14} />
-                                Commit Changes to Registry
+                                Save Settings
                             </button>
                         </div>
                     </div>
 
-                    {/* Quick Stats Block */}
-                    <div className="bg-slate-900 border border-slate-800 rounded-sm p-6 text-white relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-4 opacity-5">
-                            <HandCoins size={120} />
-                        </div>
-                        <div className="relative z-10">
-                            <div className="flex items-center gap-2 mb-4">
-                                <TrendingUp size={16} className="text-emerald-400" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60">Loyalty Impact Matrix</span>
-                            </div>
-                            <div className="grid grid-cols-2 gap-8">
-                                <div>
-                                    <div className="text-2xl font-black text-white tabular-nums">₹4.2M</div>
-                                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em]">Liability Pool</span>
-                                </div>
-                                <div>
-                                    <div className="text-2xl font-black text-blue-400 tabular-nums">84%</div>
-                                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em]">Redemption Rate</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
                 {/* Right: Simulation Deck */}
@@ -208,8 +217,8 @@ export default function LoyaltyControlScreen() {
                     <div className="bg-white border border-slate-200 rounded-sm shadow-sm overflow-hidden h-fit">
                         <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
                             <div>
-                                <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Real-time Logic Simulator</h3>
-                                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Reference Basis: ₹{simOrderValue.toLocaleString()} Order</p>
+                                <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Quick Preview</h3>
+                                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Based on: ₹{simOrderValue.toLocaleString()} Order</p>
                             </div>
                             <BarChart3 size={14} className="text-slate-300" />
                         </div>
@@ -217,12 +226,12 @@ export default function LoyaltyControlScreen() {
                         <div className="p-8 space-y-8">
                             <div className="flex items-center justify-between p-4 bg-emerald-50 border border-emerald-100 rounded-sm">
                                 <div className="space-y-1">
-                                    <span className="text-[9px] font-black text-emerald-600/60 uppercase tracking-widest block">Entry Point</span>
+                                    <span className="text-[9px] font-black text-emerald-600/60 uppercase tracking-widest block">Order Value</span>
                                     <span className="text-lg font-black text-emerald-900 font-sans tracking-tight">₹{simOrderValue.toLocaleString()}</span>
                                 </div>
                                 <ArrowRight className="text-emerald-400" size={20} />
                                 <div className="text-right space-y-1">
-                                    <span className="text-[9px] font-black text-emerald-600/60 uppercase tracking-widest block">Points Awarded</span>
+                                    <span className="text-[9px] font-black text-emerald-600/60 uppercase tracking-widest block">Points Earned</span>
                                     <span className="text-lg font-black text-emerald-900 tabular-nums">{simPointsAwarded} <span className="text-[10px] uppercase font-bold text-emerald-600">Pts</span></span>
                                 </div>
                             </div>
@@ -238,12 +247,12 @@ export default function LoyaltyControlScreen() {
 
                             <div className="flex items-center justify-between p-4 bg-blue-50 border border-blue-100 rounded-sm">
                                 <div className="space-y-1">
-                                    <span className="text-[9px] font-black text-blue-600/60 uppercase tracking-widest block">Redemption Floor</span>
+                                    <span className="text-[9px] font-black text-blue-600/60 uppercase tracking-widest block">Minimum Redeem</span>
                                     <span className="text-lg font-black text-blue-900 tabular-nums">{formData.minRedeemPoints} <span className="text-[10px] uppercase font-bold text-blue-600">Pts</span></span>
                                 </div>
                                 <ArrowRight className="text-blue-400" size={20} />
                                 <div className="text-right space-y-1">
-                                    <span className="text-[9px] font-black text-blue-600/60 uppercase tracking-widest block">Exit Value (Cash)</span>
+                                    <span className="text-[9px] font-black text-blue-600/60 uppercase tracking-widest block">Cash Value</span>
                                     <span className="text-lg font-black text-blue-900 tabular-nums">₹{simCashValue.toLocaleString()}</span>
                                 </div>
                             </div>
@@ -251,12 +260,12 @@ export default function LoyaltyControlScreen() {
                             <div className="p-4 bg-slate-900 text-white rounded-sm">
                                 <div className="flex items-center gap-3 mb-2">
                                     <IndianRupee size={14} className="text-amber-400" />
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Effective Discount Rate</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Effective Reward %</span>
                                 </div>
                                 <div className="text-3xl font-black text-white tabular-nums mb-1">
                                     {((simCashValue / simOrderValue) * 100).toFixed(1)}%
                                 </div>
-                                <p className="text-[9px] text-slate-400 font-medium italic">This represents the net margin impact per transaction after full point maturity.</p>
+                                <p className="text-[9px] text-slate-400 font-medium italic">Approx reward impact per order after full redemption.</p>
                             </div>
                         </div>
                     </div>
@@ -265,21 +274,31 @@ export default function LoyaltyControlScreen() {
                     <div className="bg-white border border-slate-200 rounded-sm shadow-sm overflow-hidden">
                         <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-2">
                             <History size={14} className="text-slate-400" />
-                            <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">System Revision History</h3>
+                            <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Recent Changes</h3>
                         </div>
                         <div className="divide-y divide-slate-50">
-                            {[1, 2].map(i => (
-                                <div key={i} className="px-5 py-3 flex items-center justify-between text-[10px] font-bold">
+                            {history.length > 0 ? history.map((item, idx) => (
+                                <div key={item._id || idx} className="px-5 py-3 flex items-center justify-between text-[10px] font-bold">
                                     <div className="space-y-0.5">
-                                        <span className="text-slate-900 block">Registry Update #77{i}</span>
-                                        <span className="text-slate-400 uppercase tracking-tight tabular-nums">12 Feb 2026 • 14:32</span>
+                                        <span className="text-slate-900 block">Settings Update #{history.length - idx}</span>
+                                        <span className="text-slate-400 uppercase tracking-tight tabular-nums">
+                                            {item.createdAt
+                                                ? new Date(item.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) +
+                                                  ' • ' +
+                                                  new Date(item.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+                                                : 'N/A'}
+                                        </span>
                                     </div>
                                     <div className="text-right">
-                                        <span className="text-slate-900 block uppercase">Super Admin</span>
+                                        <span className="text-slate-900 block uppercase">{item.changedByName || 'Super Admin'}</span>
                                         <span className="text-emerald-500 uppercase tracking-tight">Verified</span>
                                     </div>
                                 </div>
-                            ))}
+                            )) : (
+                                <div className="px-5 py-6 text-[11px] font-bold text-slate-400">
+                                    No changes recorded yet
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -287,3 +306,4 @@ export default function LoyaltyControlScreen() {
         </div>
     );
 }
+

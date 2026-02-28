@@ -1,10 +1,14 @@
 import User from "../models/user.js";
 import OTP from "../models/otp.js";
+import WalletRecharge from "../models/walletRecharge.js";
+import GlobalSetting from "../models/globalSetting.js";
 import handleResponse from "../utils/helper.js";
 import { generateOTP, hashOTP, verifyHashedOTP } from "../utils/otpHelper.js";
 import { sendSMS } from "../utils/smsService.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
+import razorpay from "../utils/razorpay.js";
 
 
 /**
@@ -382,33 +386,179 @@ export const changeUserPassword = async (req, res) => {
   }
 };
 
-export const rechargeWallet = async (req, res) => {
+export const createWalletRechargeOrder = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user?.id || req.user?._id?.toString();
+    if (!userId) return handleResponse(res, 401, "User not authenticated");
     const amount = Number(req.body.amount || 0);
 
     if (!Number.isFinite(amount) || amount <= 0) {
       return handleResponse(res, 400, "Valid recharge amount is required");
     }
 
+    if (amount > 100000) {
+      return handleResponse(res, 400, "Recharge amount exceeds allowed limit");
+    }
+
+    const user = await User.findById(userId).select("_id");
+    if (!user) return handleResponse(res, 404, "User not found");
+
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+      return handleResponse(res, 500, "Razorpay is not configured");
+    }
+
+    const shortUser = String(userId).slice(-6);
+    const shortTs = Date.now().toString(36);
+    const receipt = `wr_${shortUser}_${shortTs}`; // Razorpay receipt max length: 40
+
+    const order = await razorpay.orders.create({
+      amount: Math.round(amount * 100),
+      currency: "INR",
+      receipt,
+      notes: {
+        type: "wallet_recharge",
+        userId: userId.toString(),
+      },
+    });
+
+    await WalletRecharge.findOneAndUpdate(
+      { razorpayOrderId: order.id },
+      {
+        userId,
+        amount: Number(amount.toFixed(2)),
+        currency: "INR",
+        status: "created",
+        razorpayOrderId: order.id,
+      },
+      { upsert: true, new: true }
+    );
+
+    return handleResponse(res, 200, "Wallet recharge order created", {
+      id: order.id,
+      amount: order.amount,
+      currency: order.currency,
+    });
+  } catch (error) {
+    const reason =
+      error?.error?.description ||
+      error?.message ||
+      "Unknown error";
+    console.error("Create wallet recharge order error:", reason, error);
+    return handleResponse(res, 500, `Failed to initialize wallet recharge: ${reason}`);
+  }
+};
+
+export const verifyWalletRecharge = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return handleResponse(res, 400, "Missing payment credentials");
+    }
+
+    const sign = `${razorpay_order_id}|${razorpay_payment_id}`;
+    const expectedSign = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(sign)
+      .digest("hex");
+
+    if (razorpay_signature !== expectedSign) {
+      return handleResponse(res, 400, "Invalid payment signature");
+    }
+
+    const recharge = await WalletRecharge.findOne({
+      userId,
+      razorpayOrderId: razorpay_order_id,
+    });
+
+    if (!recharge) {
+      return handleResponse(res, 404, "Recharge order not found");
+    }
+
+    // Idempotency: do not credit wallet twice for same Razorpay order.
+    if (recharge.status === "paid") {
+      const existingUser = await User.findById(userId);
+      return handleResponse(res, 200, "Wallet already recharged", existingUser);
+    }
+
     const user = await User.findById(userId);
     if (!user) return handleResponse(res, 404, "User not found");
 
-    user.walletBalance = Number((Number(user.walletBalance || 0) + amount).toFixed(2));
+    user.walletBalance = Number((Number(user.walletBalance || 0) + Number(recharge.amount || 0)).toFixed(2));
     user.walletTransactions = user.walletTransactions || [];
     user.walletTransactions.unshift({
-      txnId: `WAL-${Date.now()}`,
+      txnId: `WAL-RZP-${Date.now()}`,
       type: "Added",
-      amount,
+      amount: Number(recharge.amount || 0),
       status: "Success",
-      note: "Wallet recharge",
+      note: "Wallet recharge via Razorpay",
+      createdAt: new Date(),
+    });
+
+    recharge.status = "paid";
+    recharge.razorpayPaymentId = razorpay_payment_id;
+    recharge.paidAt = new Date();
+
+    await recharge.save();
+    await user.save();
+
+    return handleResponse(res, 200, "Wallet recharged successfully", user);
+  } catch (error) {
+    console.error("Wallet recharge error:", error);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+export const redeemLoyaltyPoints = async (req, res) => {
+  try {
+    const userId = req.user?.id || req.user?._id?.toString();
+    if (!userId) return handleResponse(res, 401, "User not authenticated");
+
+    const requestedPoints = Number(req.body.points || 0);
+    if (!Number.isFinite(requestedPoints) || requestedPoints <= 0) {
+      return handleResponse(res, 400, "Valid points are required");
+    }
+
+    const loyaltySetting = await GlobalSetting.findOne({ key: "loyalty_config" });
+    const cfg = loyaltySetting?.value || {};
+    const redemptionRate = Math.max(1, Number(cfg.redemptionRate || 10)); // points per ₹1
+    const minRedeemPoints = Math.max(1, Number(cfg.minRedeemPoints || 100));
+
+    if (requestedPoints < minRedeemPoints) {
+      return handleResponse(res, 400, `Minimum ${minRedeemPoints} points required to redeem`);
+    }
+
+    const user = await User.findById(userId);
+    if (!user) return handleResponse(res, 404, "User not found");
+
+    const currentPoints = Number(user.loyaltyPoints || 0);
+    if (currentPoints < requestedPoints) {
+      return handleResponse(res, 400, "Insufficient loyalty points");
+    }
+
+    const redeemRupees = Math.floor(requestedPoints / redemptionRate);
+    if (redeemRupees <= 0) {
+      return handleResponse(res, 400, "Redeem points are below conversion threshold");
+    }
+
+    const pointsConsumed = redeemRupees * redemptionRate;
+    user.loyaltyPoints = Math.max(0, currentPoints - pointsConsumed);
+    user.walletBalance = Number((Number(user.walletBalance || 0) + redeemRupees).toFixed(2));
+    user.walletTransactions = user.walletTransactions || [];
+    user.walletTransactions.unshift({
+      txnId: `RED-${Date.now()}`,
+      type: "Redemption",
+      amount: redeemRupees,
+      status: "Success",
+      note: `Redeemed ${pointsConsumed} points to wallet`,
       createdAt: new Date(),
     });
 
     await user.save();
-    return handleResponse(res, 200, "Wallet recharged successfully", user);
+    return handleResponse(res, 200, "Loyalty points redeemed successfully", user);
   } catch (error) {
-    console.error("Wallet recharge error:", error);
+    console.error("Redeem loyalty points error:", error);
     return handleResponse(res, 500, "Server error");
   }
 };

@@ -38,6 +38,22 @@ export function WalletProvider({ children }) {
 
         setIsLoading(true);
         try {
+            try {
+                const settingsRes = await api.get('/masteradmin/public-settings');
+                const settings = settingsRes.data?.results || settingsRes.data?.result || [];
+                const loyaltySetting = Array.isArray(settings)
+                    ? settings.find((s) => s.key === 'loyalty_config')
+                    : null;
+                if (loyaltySetting?.value && typeof loyaltySetting.value === 'object') {
+                    setLoyaltyConfig((prev) => ({
+                        ...prev,
+                        ...loyaltySetting.value,
+                    }));
+                }
+            } catch (settingsError) {
+                console.error('Failed to fetch loyalty config:', settingsError);
+            }
+
             const response = await api.get('/user/me');
             if (response.data && response.data.result) {
                 const user = response.data.result;
@@ -79,50 +95,115 @@ export function WalletProvider({ children }) {
         setTransactions(prev => [newTxn, ...prev]);
     };
 
-    const redeemLoyaltyPoints = (points) => {
-        if (loyaltyPoints >= points && points >= (loyaltyConfig?.minRedeemPoints || 100)) {
-            const rupees = Math.floor(points / (loyaltyConfig?.redemptionRate || 10));
-            setLoyaltyPoints(prev => prev - points);
-            setBalance(prev => prev + rupees);
-
-            const newTxn = {
-                id: `RED-${Math.floor(1000 + Math.random() * 9000)}`,
-                type: 'Redemption',
-                amount: rupees,
-                date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-                status: 'Success'
-            };
-            setTransactions(prev => [newTxn, ...prev]);
-            return true;
-        }
-        return false;
-    };
-
-    const addMoney = async (amount) => {
+    const redeemLoyaltyPoints = async (points) => {
         try {
-            const response = await api.post('/user/wallet/recharge', { amount });
+            const response = await api.post('/user/wallet/redeem-loyalty', { points });
             if (response.data?.success) {
-                const user = response.data.result;
-                setBalance(user.walletBalance || 0);
-                setCreditLimit(user.creditLimit || 0);
-                setCreditUsed(user.usedCredit || 0);
-                setLoyaltyPoints(user.loyaltyPoints || 0);
-                const txns = (user.walletTransactions || []).map((txn, idx) => ({
-                    id: txn.txnId || `TXN-${idx}`,
-                    type: txn.type || 'Added',
-                    amount: Number(txn.amount || 0),
-                    date: txn.createdAt
-                        ? new Date(txn.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                        : 'N/A',
-                    status: txn.status || 'Success'
-                }));
-                setTransactions(txns);
+                syncWalletFromUser(response.data.result || {});
                 return true;
             }
             return false;
         } catch (error) {
-            console.error('Wallet recharge failed:', error);
+            console.error('Redeem loyalty points failed:', error);
             return false;
+        }
+    };
+
+    const syncWalletFromUser = (user) => {
+        setBalance(user.walletBalance || 0);
+        setCreditLimit(user.creditLimit || 0);
+        setCreditUsed(user.usedCredit || 0);
+        setLoyaltyPoints(user.loyaltyPoints || 0);
+        const txns = (user.walletTransactions || []).map((txn, idx) => ({
+            id: txn.txnId || `TXN-${idx}`,
+            type: txn.type || 'Added',
+            amount: Number(txn.amount || 0),
+            date: txn.createdAt
+                ? new Date(txn.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                : 'N/A',
+            status: txn.status || 'Success'
+        }));
+        setTransactions(txns);
+    };
+
+    const loadRazorpay = () => {
+        return new Promise((resolve) => {
+            if (window.Razorpay) {
+                resolve(true);
+                return;
+            }
+            const script = document.createElement('script');
+            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            script.async = true;
+            script.onload = () => resolve(true);
+            script.onerror = () => resolve(false);
+            document.body.appendChild(script);
+        });
+    };
+
+    const addMoney = async (amount) => {
+        try {
+            const value = Number(amount || 0);
+            if (!Number.isFinite(value) || value <= 0) return { success: false, message: 'Invalid amount' };
+
+            const sdkLoaded = await loadRazorpay();
+            if (!sdkLoaded) {
+                console.error('Razorpay SDK failed to load');
+                return { success: false, message: 'Razorpay SDK failed to load' };
+            }
+
+            const createRes = await api.post('/user/wallet/recharge/create-order', { amount: value });
+            if (!createRes.data?.success || !createRes.data?.result?.id) {
+                return { success: false, message: createRes.data?.message || 'Failed to create recharge order' };
+            }
+            const order = createRes.data.result;
+
+            let prefill = {};
+            try {
+                const meRes = await api.get('/user/me');
+                const me = meRes.data?.result || {};
+                prefill = {
+                    name: me.fullName || '',
+                    email: me.email || '',
+                    contact: me.mobile || ''
+                };
+            } catch (err) {
+                console.error('Failed to load user prefill details for Razorpay', err);
+            }
+
+            return await new Promise((resolve) => {
+                const paymentObject = new window.Razorpay({
+                    key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+                    amount: order.amount,
+                    currency: order.currency || 'INR',
+                    name: 'KrishiKart',
+                    description: 'Wallet Recharge',
+                    order_id: order.id,
+                    prefill,
+                    theme: { color: '#00b894' },
+                    handler: async (response) => {
+                        try {
+                            const verifyRes = await api.post('/user/wallet/recharge/verify', response);
+                            if (verifyRes.data?.success) {
+                                syncWalletFromUser(verifyRes.data.result || {});
+                                resolve({ success: true, message: verifyRes.data?.message || 'Wallet recharged successfully' });
+                                return;
+                            }
+                            resolve({ success: false, message: verifyRes.data?.message || 'Payment verification failed' });
+                        } catch (verifyError) {
+                            console.error('Wallet recharge verify failed:', verifyError);
+                            resolve({ success: false, message: verifyError?.response?.data?.message || 'Payment verification failed' });
+                        }
+                    },
+                    modal: {
+                        ondismiss: () => resolve({ success: false, message: 'Payment cancelled' })
+                    }
+                });
+                paymentObject.open();
+            });
+        } catch (error) {
+            console.error('Wallet recharge failed:', error);
+            return { success: false, message: error?.response?.data?.message || 'Wallet recharge failed' };
         }
     };
 

@@ -17,6 +17,11 @@ const productSchema = new mongoose.Schema({
         required: [true, 'Product name is required'],
         trim: true
     },
+    skuCode: {
+        type: String,
+        trim: true,
+        uppercase: true
+    },
     category: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Category',
@@ -65,6 +70,11 @@ const productSchema = new mongoose.Schema({
         type: String,
         trim: true
     },
+    tags: [{
+        type: String,
+        trim: true,
+        lowercase: true
+    }],
     dietaryType: {
         type: String,
         enum: ['veg', 'non-veg', 'none'],
@@ -100,8 +110,9 @@ const productSchema = new mongoose.Schema({
 });
 
 // Indexing for faster searches
-productSchema.index({ name: 'text', description: 'text' });
+productSchema.index({ name: 'text', description: 'text', tags: 'text' });
 productSchema.index({ category: 1, subcategory: 1 });
+productSchema.index({ skuCode: 1 });
 
 const Product = mongoose.model('Product', productSchema);
 
