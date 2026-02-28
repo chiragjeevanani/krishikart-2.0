@@ -43,6 +43,15 @@ export default function LoginScreen() {
                     localStorage.setItem('userData', JSON.stringify(response.data.result.user));
                     window.dispatchEvent(new Event('userDataUpdated'));
 
+                    // Sync onboarding state from backend for returning users
+                    const u = response.data.result.user;
+                    if (u.onboardingCompleted) {
+                        localStorage.setItem('kk_onboarding_completed', 'true');
+                    }
+                    if (u.businessType) {
+                        localStorage.setItem('kk_business_type', u.businessType);
+                    }
+
                     // Sync cart and wishlist immediately
                     fetchCart();
                     fetchWishlist();

@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import AppLayout from './modules/user/layouts/AppLayout'
+import LandingPage from './modules/landing/LandingPage'
 import SplashScreen from './modules/user/pages/SplashScreen'
 import LoginScreen from './modules/user/pages/LoginScreen'
 import HomeScreen from './modules/user/pages/HomeScreen'
@@ -120,7 +121,8 @@ function App() {
         </div>
       }>
         <Routes>
-          <Route path="/" element={<SplashScreen />} />
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/splash" element={<SplashScreen />} />
           <Route path="/login" element={<UserProviders><LoginScreen /></UserProviders>} />
 
           {/* User Module */}

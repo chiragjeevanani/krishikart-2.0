@@ -107,6 +107,29 @@ const userSchema = new mongoose.Schema(
     walletTransactions: {
       type: [walletTransactionSchema],
       default: []
+    },
+
+    businessType: {
+      type: String,
+      enum: ['registered', 'unregistered'],
+      default: null,
+    },
+
+    gstNumber: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+
+    fssaiNumber: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+
+    onboardingCompleted: {
+      type: Boolean,
+      default: false,
     }
   },
   { timestamps: true }
