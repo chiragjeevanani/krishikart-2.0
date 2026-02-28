@@ -284,12 +284,12 @@ export default function LandingPage() {
                     <div className="lp-flow-center">
                         <svg className="lp-flow-svg lp-flow-svg-left" viewBox="-10 -60 420 420" preserveAspectRatio="none">
                             <defs>
-                                <clipPath id="thumbL1"><circle cx="0" cy="0" r="16" /></clipPath>
-                                <clipPath id="thumbL2"><circle cx="0" cy="0" r="16" /></clipPath>
-                                <clipPath id="thumbL3"><circle cx="0" cy="0" r="16" /></clipPath>
-                                <clipPath id="thumbL4"><circle cx="0" cy="0" r="14" /></clipPath>
-                                <clipPath id="thumbL5"><circle cx="0" cy="0" r="14" /></clipPath>
-                                <clipPath id="thumbL6"><circle cx="0" cy="0" r="14" /></clipPath>
+                                <clipPath id="thumbL1"><circle cx="0" cy="0" r="24" /></clipPath>
+                                <clipPath id="thumbL2"><circle cx="0" cy="0" r="24" /></clipPath>
+                                <clipPath id="thumbL3"><circle cx="0" cy="0" r="24" /></clipPath>
+                                <clipPath id="thumbL4"><circle cx="0" cy="0" r="20" /></clipPath>
+                                <clipPath id="thumbL5"><circle cx="0" cy="0" r="20" /></clipPath>
+                                <clipPath id="thumbL6"><circle cx="0" cy="0" r="20" /></clipPath>
                                 <filter id="shadowL" x="-50%" y="-50%" width="200%" height="200%">
                                     <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.15" />
                                 </filter>
@@ -301,35 +301,35 @@ export default function LandingPage() {
                             {/* Floating thumbnail 1: vegetables on green path */}
                             <g filter="url(#shadowL)">
                                 <animateMotion dur="7s" repeatCount="indefinite" path="M0,50 C80,-50 320,-50 400,150" />
-                                <circle r="18" fill="white" />
-                                <image href="/assets/cat_vegetables.png" x="-16" y="-16" width="32" height="32" clipPath="url(#thumbL1)" />
+                                <circle r="26" fill="white" />
+                                <image href="/assets/cat_vegetables.png" x="-24" y="-24" width="48" height="48" clipPath="url(#thumbL1)" />
                             </g>
                             <g filter="url(#shadowL)">
                                 <animateMotion dur="7s" repeatCount="indefinite" path="M0,50 C80,-50 320,-50 400,150" begin="3.5s" />
-                                <circle r="16" fill="white" />
-                                <image href="/assets/cat_fruits.png" x="-14" y="-14" width="28" height="28" clipPath="url(#thumbL4)" />
+                                <circle r="22" fill="white" />
+                                <image href="/assets/cat_fruits.png" x="-20" y="-20" width="40" height="40" clipPath="url(#thumbL4)" />
                             </g>
                             {/* Floating thumbnail 2: dairy on orange path */}
                             <g filter="url(#shadowL)">
                                 <animateMotion dur="6s" repeatCount="indefinite" path="M0,150 C100,80 300,220 400,150" />
-                                <circle r="18" fill="white" />
-                                <image href="/assets/cat_dairy.png" x="-16" y="-16" width="32" height="32" clipPath="url(#thumbL2)" />
+                                <circle r="26" fill="white" />
+                                <image href="/assets/cat_dairy.png" x="-24" y="-24" width="48" height="48" clipPath="url(#thumbL2)" />
                             </g>
                             <g filter="url(#shadowL)">
                                 <animateMotion dur="6s" repeatCount="indefinite" path="M0,150 C100,80 300,220 400,150" begin="3s" />
-                                <circle r="16" fill="white" />
-                                <image href="/assets/cat_grains.png" x="-14" y="-14" width="28" height="28" clipPath="url(#thumbL5)" />
+                                <circle r="22" fill="white" />
+                                <image href="/assets/cat_grains.png" x="-20" y="-20" width="40" height="40" clipPath="url(#thumbL5)" />
                             </g>
                             {/* Floating thumbnail 3: spices on blue path */}
                             <g filter="url(#shadowL)">
                                 <animateMotion dur="7.5s" repeatCount="indefinite" path="M0,250 C80,350 320,350 400,150" />
-                                <circle r="18" fill="white" />
-                                <image href="/assets/cat_spices.png" x="-16" y="-16" width="32" height="32" clipPath="url(#thumbL3)" />
+                                <circle r="26" fill="white" />
+                                <image href="/assets/cat_spices.png" x="-24" y="-24" width="48" height="48" clipPath="url(#thumbL3)" />
                             </g>
                             <g filter="url(#shadowL)">
                                 <animateMotion dur="7.5s" repeatCount="indefinite" path="M0,250 C80,350 320,350 400,150" begin="3.8s" />
-                                <circle r="16" fill="white" />
-                                <image href="/assets/cat_pulses.png" x="-14" y="-14" width="28" height="28" clipPath="url(#thumbL6)" />
+                                <circle r="22" fill="white" />
+                                <image href="/assets/cat_pulses.png" x="-20" y="-20" width="40" height="40" clipPath="url(#thumbL6)" />
                             </g>
                         </svg>
 
@@ -342,12 +342,12 @@ export default function LandingPage() {
 
                         <svg className="lp-flow-svg lp-flow-svg-right" viewBox="-10 -60 420 420" preserveAspectRatio="none">
                             <defs>
-                                <clipPath id="thumbR1"><circle cx="0" cy="0" r="16" /></clipPath>
-                                <clipPath id="thumbR2"><circle cx="0" cy="0" r="16" /></clipPath>
-                                <clipPath id="thumbR3"><circle cx="0" cy="0" r="16" /></clipPath>
-                                <clipPath id="thumbR4"><circle cx="0" cy="0" r="14" /></clipPath>
-                                <clipPath id="thumbR5"><circle cx="0" cy="0" r="14" /></clipPath>
-                                <clipPath id="thumbR6"><circle cx="0" cy="0" r="14" /></clipPath>
+                                <clipPath id="thumbR1"><circle cx="0" cy="0" r="24" /></clipPath>
+                                <clipPath id="thumbR2"><circle cx="0" cy="0" r="24" /></clipPath>
+                                <clipPath id="thumbR3"><circle cx="0" cy="0" r="24" /></clipPath>
+                                <clipPath id="thumbR4"><circle cx="0" cy="0" r="20" /></clipPath>
+                                <clipPath id="thumbR5"><circle cx="0" cy="0" r="20" /></clipPath>
+                                <clipPath id="thumbR6"><circle cx="0" cy="0" r="20" /></clipPath>
                                 <filter id="shadowR" x="-50%" y="-50%" width="200%" height="200%">
                                     <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.15" />
                                 </filter>
@@ -359,35 +359,35 @@ export default function LandingPage() {
                             {/* Floating thumbnail 1: vegetables on purple path */}
                             <g filter="url(#shadowR)">
                                 <animateMotion dur="7s" repeatCount="indefinite" path="M0,150 C80,-50 320,-50 400,50" />
-                                <circle r="18" fill="white" />
-                                <image href="/assets/cat_vegetables.png" x="-16" y="-16" width="32" height="32" clipPath="url(#thumbR1)" />
+                                <circle r="26" fill="white" />
+                                <image href="/assets/cat_vegetables.png" x="-24" y="-24" width="48" height="48" clipPath="url(#thumbR1)" />
                             </g>
                             <g filter="url(#shadowR)">
                                 <animateMotion dur="7s" repeatCount="indefinite" path="M0,150 C80,-50 320,-50 400,50" begin="3.5s" />
-                                <circle r="16" fill="white" />
-                                <image href="/assets/cat_grains.png" x="-14" y="-14" width="28" height="28" clipPath="url(#thumbR4)" />
+                                <circle r="22" fill="white" />
+                                <image href="/assets/cat_grains.png" x="-20" y="-20" width="40" height="40" clipPath="url(#thumbR4)" />
                             </g>
                             {/* Floating thumbnail 2: fruits on red path */}
                             <g filter="url(#shadowR)">
                                 <animateMotion dur="6s" repeatCount="indefinite" path="M0,150 C100,220 300,80 400,150" />
-                                <circle r="18" fill="white" />
-                                <image href="/assets/cat_fruits.png" x="-16" y="-16" width="32" height="32" clipPath="url(#thumbR2)" />
+                                <circle r="26" fill="white" />
+                                <image href="/assets/cat_fruits.png" x="-24" y="-24" width="48" height="48" clipPath="url(#thumbR2)" />
                             </g>
                             <g filter="url(#shadowR)">
                                 <animateMotion dur="6s" repeatCount="indefinite" path="M0,150 C100,220 300,80 400,150" begin="3s" />
-                                <circle r="16" fill="white" />
-                                <image href="/assets/cat_spices.png" x="-14" y="-14" width="28" height="28" clipPath="url(#thumbR5)" />
+                                <circle r="22" fill="white" />
+                                <image href="/assets/cat_spices.png" x="-20" y="-20" width="40" height="40" clipPath="url(#thumbR5)" />
                             </g>
                             {/* Floating thumbnail 3: dairy on teal path */}
                             <g filter="url(#shadowR)">
                                 <animateMotion dur="7.5s" repeatCount="indefinite" path="M0,150 C80,350 320,350 400,250" />
-                                <circle r="18" fill="white" />
-                                <image href="/assets/cat_dairy.png" x="-16" y="-16" width="32" height="32" clipPath="url(#thumbR3)" />
+                                <circle r="26" fill="white" />
+                                <image href="/assets/cat_dairy.png" x="-24" y="-24" width="48" height="48" clipPath="url(#thumbR3)" />
                             </g>
                             <g filter="url(#shadowR)">
                                 <animateMotion dur="7.5s" repeatCount="indefinite" path="M0,150 C80,350 320,350 400,250" begin="3.8s" />
-                                <circle r="16" fill="white" />
-                                <image href="/assets/cat_pulses.png" x="-14" y="-14" width="28" height="28" clipPath="url(#thumbR6)" />
+                                <circle r="22" fill="white" />
+                                <image href="/assets/cat_pulses.png" x="-20" y="-20" width="40" height="40" clipPath="url(#thumbR6)" />
                             </g>
                         </svg>
                     </div>
@@ -504,43 +504,45 @@ export default function LandingPage() {
             <section className="lp-testimonials">
                 <h2>What our partners say about us</h2>
                 <div className="lp-testimonials-scroll">
-                    {testimonials.map((t, i) => (
-                        <div key={i} className="lp-flip-card">
-                            <div className="lp-flip-card-inner">
-                                {/* ── FRONT ── */}
-                                <div className="lp-flip-card-front">
-                                    <div className="lp-flip-front-top">
-                                        <div className="lp-flip-avatar" style={{ background: t.color }}>
-                                            {t.name.charAt(0)}
+                    <div className="lp-marquee-track">
+                        {[...testimonials, ...testimonials].map((t, i) => (
+                            <div key={i} className="lp-flip-card">
+                                <div className="lp-flip-card-inner">
+                                    {/* ── FRONT ── */}
+                                    <div className="lp-flip-card-front">
+                                        <div className="lp-flip-front-top">
+                                            <div className="lp-flip-avatar" style={{ background: t.color }}>
+                                                {t.name.charAt(0)}
+                                            </div>
+                                            <div className="lp-flip-brand-img" style={{ background: t.color + '18' }}>
+                                                <Sprout size={32} color={t.color} />
+                                            </div>
                                         </div>
-                                        <div className="lp-flip-brand-img" style={{ background: t.color + '18' }}>
-                                            <Sprout size={32} color={t.color} />
-                                        </div>
-                                    </div>
-                                    <div className="lp-flip-front-info">
-                                        <div className="lp-flip-name">{t.name}</div>
-                                        <div className="lp-flip-role">{t.role}</div>
-                                    </div>
-                                    <div className="lp-flip-snippet">{t.snippet}</div>
-                                </div>
-
-                                {/* ── BACK ── */}
-                                <div className="lp-flip-card-back">
-                                    <div className="lp-flip-back-quote">
-                                        <Sprout size={20} color={t.color} style={{ marginBottom: 12, opacity: 0.6 }} />
-                                        <p>{t.quote}</p>
-                                    </div>
-                                    <div className="lp-flip-back-author">
-                                        <div className="lp-flip-avatar-sm" style={{ background: t.color }}>{t.name.charAt(0)}</div>
-                                        <div>
+                                        <div className="lp-flip-front-info">
                                             <div className="lp-flip-name">{t.name}</div>
                                             <div className="lp-flip-role">{t.role}</div>
+                                        </div>
+                                        <div className="lp-flip-snippet">{t.snippet}</div>
+                                    </div>
+
+                                    {/* ── BACK ── */}
+                                    <div className="lp-flip-card-back">
+                                        <div className="lp-flip-back-quote">
+                                            <Sprout size={20} color={t.color} style={{ marginBottom: 12, opacity: 0.6 }} />
+                                            <p>{t.quote}</p>
+                                        </div>
+                                        <div className="lp-flip-back-author">
+                                            <div className="lp-flip-avatar-sm" style={{ background: t.color }}>{t.name.charAt(0)}</div>
+                                            <div>
+                                                <div className="lp-flip-name">{t.name}</div>
+                                                <div className="lp-flip-role">{t.role}</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
             </section>
 

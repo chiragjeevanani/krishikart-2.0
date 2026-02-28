@@ -839,15 +839,33 @@
 }
 
 .lp-testimonials-scroll {
-    display: flex;
-    gap: 24px;
-    overflow-x: auto;
-    padding-bottom: 16px;
-    scrollbar-width: none;
+    overflow: hidden;
+    padding: 20px 0 40px;
+    width: 100%;
+    position: relative;
+    mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
 }
 
-.lp-testimonials-scroll::-webkit-scrollbar {
-    display: none;
+.lp-marquee-track {
+    display: flex;
+    gap: 24px;
+    width: max-content;
+    animation: lpMarquee 35s linear infinite;
+}
+
+.lp-marquee-track:hover {
+    animation-play-state: paused;
+}
+
+@keyframes lpMarquee {
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(calc(-50% - 12px));
+    }
 }
 
 

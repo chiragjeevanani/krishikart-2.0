@@ -35,12 +35,16 @@ import api from '@/lib/axios'
 import { Button } from '@/components/ui/button'
 import { MapPin } from 'lucide-react'
 import { useLocation } from '../contexts/LocationContext'
+import LocationPermissionPopup from '../components/common/LocationPermissionPopup'
+import BusinessTypeSelector from '../components/common/BusinessTypeSelector'
 
 export default function HomeScreen() {
     const [categories, setCategories] = useState([])
     const [products, setProducts] = useState([])
     const { location: userLocation, updateLocation, address } = useLocation()
     const [loading, setLoading] = useState(true)
+    const [showLocationPopup, setShowLocationPopup] = useState(false)
+    const [showBusinessPopup, setShowBusinessPopup] = useState(false)
     const navigate = useNavigate()
 
     useEffect(() => {
@@ -61,13 +65,47 @@ export default function HomeScreen() {
         fetchData()
     }, [])
 
-    // Dedicated effect for location to ensure it triggers correctly
+    // Dedicated effect for onboarding sequence (Location -> Business Type)
     useEffect(() => {
-        // Auto-request location if not already set
-        if (!userLocation) {
-            updateLocation();
+        const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+        const hasDeclinedLoc = localStorage.getItem('kk_location_declined');
+        const hasSetBiz = userData.businessType || localStorage.getItem('kk_business_type');
+
+        // Step 1: Location Access
+        if (!userLocation && !hasDeclinedLoc) {
+            setShowLocationPopup(true);
+            setShowBusinessPopup(false);
         }
-    }, []);
+        // Step 2: Business Type (if location is resolved or declined)
+        else if (!hasSetBiz) {
+            setShowBusinessPopup(true);
+            setShowLocationPopup(false);
+        }
+    }, [userLocation]);
+
+    const handleAllowLocation = async () => {
+        try {
+            await updateLocation();
+            // Business popup will trigger automatically via useEffect [userLocation] dependency
+            setShowLocationPopup(false);
+        } catch (err) {
+            console.error('Failed to get location:', err);
+        }
+    };
+
+    const handleManualLocation = () => {
+        setShowLocationPopup(false);
+        localStorage.setItem('kk_location_declined', 'true');
+        // Business popup will trigger via useEffect as userLocation remains null but declined is set
+    };
+
+    const handleBusinessSelect = (type) => {
+        localStorage.setItem('kk_business_type', type);
+        // Optionally update backend userData.businessType here
+        setShowBusinessPopup(false);
+
+        // Finalized onboarding - potentially refresh or show a welcome toast
+    };
 
     return (
         <PageTransition>
@@ -264,6 +302,22 @@ export default function HomeScreen() {
                     </div>
                 </div>
             </div>
+
+            <LocationPermissionPopup
+                isOpen={showLocationPopup}
+                onAllow={handleAllowLocation}
+                onManual={handleManualLocation}
+                onClose={() => {
+                    setShowLocationPopup(false);
+                    localStorage.setItem('kk_location_declined', 'true');
+                }}
+            />
+
+            <BusinessTypeSelector
+                isOpen={showBusinessPopup}
+                onSelect={handleBusinessSelect}
+                onClose={() => setShowBusinessPopup(false)}
+            />
         </PageTransition>
     )
 }
