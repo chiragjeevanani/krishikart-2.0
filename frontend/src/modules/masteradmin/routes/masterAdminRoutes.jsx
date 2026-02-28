@@ -30,6 +30,8 @@ import SubcategoryManagementScreen from '../pages/SubcategoryManagementScreen';
 import LoyaltyControlScreen from '../pages/LoyaltyControlScreen';
 import VendorQuotationScreen from '../pages/VendorQuotationScreen';
 import ReturnsScreen from '../pages/ReturnsScreen';
+import FranchisePayoutsScreen from '../pages/FranchisePayoutsScreen';
+import CodRemittanceScreen from '../pages/CodRemittanceScreen';
 import { useMasterAdminAuth } from '../contexts/MasterAdminAuthContext';
 
 const AdminRootRedirect = () => {
@@ -87,6 +89,8 @@ export const masterAdminRoutes = (
                 <Route path="credit" element={<CreditManagementScreen />} />
                 <Route path="ledger" element={<LedgerSystemScreen />} />
                 <Route path="commission" element={<CommissionControlScreen />} />
+                <Route path="franchise-payouts" element={<FranchisePayoutsScreen />} />
+                <Route path="cod-remittance" element={<CodRemittanceScreen />} />
                 <Route path="loyalty" element={<LoyaltyControlScreen />} />
                 <Route path="delivery-constraints" element={<DeliveryConstraintsScreen />} />
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
     Phone,
@@ -7,7 +7,8 @@ import {
     MapPin,
     Clock,
     MoreVertical,
-    Loader2
+    Loader2,
+    Package
 } from 'lucide-react';
 import StatusProgress from '../components/ui/StatusProgress';
 import { useNavigate } from 'react-router-dom';
@@ -18,20 +19,18 @@ import DocumentViewer from '../../vendor/components/documents/DocumentViewer';
 const ActiveDelivery = () => {
     const navigate = useNavigate();
     const { dispatchedOrders, loading, updateStatus } = useDeliveryOrders();
-    const [order, setOrder] = useState(null);
     const [isUpdating, setIsUpdating] = useState(false);
     const [isDocOpen, setIsDocOpen] = useState(false);
 
-    useEffect(() => {
+    const order = useMemo(() => {
         const activeOrderId = localStorage.getItem('activeDeliveryId');
-        if (activeOrderId) {
-            const found = dispatchedOrders.find(o => o.id === activeOrderId);
-            if (found) setOrder(found);
-        }
+        if (!activeOrderId) return null;
+        return dispatchedOrders.find(o => o.id === activeOrderId) || null;
     }, [dispatchedOrders]);
 
     // Current order status from backend: 'Dispatched' or 'Delivered'
     const currentStatus = order?.orderStatus || 'Dispatched';
+    const isCodOrder = String(order?.paymentMethod || '').toUpperCase() === 'COD';
 
     const handleMarkDelivered = async () => {
         if (!order || isUpdating) return;
@@ -93,7 +92,11 @@ const ActiveDelivery = () => {
                     </div>
                     <div>
                         <p className="text-sm font-bold text-primary">On Your Way</p>
-                        <p className="text-xs text-muted-foreground">Deliver to customer and tap the button below when done.</p>
+                        <p className="text-xs text-muted-foreground">
+                            {isCodOrder
+                                ? `Collect COD Rs ${Number(order?.totalAmount || 0).toFixed(2)} and then mark delivered.`
+                                : 'Deliver to customer and tap the button below when done.'}
+                        </p>
                     </div>
                 </motion.div>
 
@@ -206,7 +209,7 @@ const ActiveDelivery = () => {
                         {isUpdating ? (
                             <Loader2 className="w-5 h-5 animate-spin" />
                         ) : (
-                            'Mark as Delivered'
+                            isCodOrder ? 'Collect COD & Mark Delivered' : 'Mark as Delivered'
                         )}
                     </motion.button>
                 </div>

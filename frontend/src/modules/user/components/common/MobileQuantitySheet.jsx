@@ -1,17 +1,15 @@
 import React, { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { X, Plus, Minus } from 'lucide-react'
 import {
     Sheet,
     SheetContent,
-    SheetHeader,
     SheetTitle,
-    SheetClose,
 } from "@/components/ui/sheet"
-import { cn } from '@/lib/utils'
 
 export default function MobileQuantitySheet({ isOpen, onClose, product, onAdd }) {
     const [qty, setQty] = useState(1)
+    const comparePrice = Number(product?.comparePrice || product?.mrp || 0)
+    const hasComparePrice = comparePrice > Number(product?.price || 0)
 
     if (!product) return null
 
@@ -57,9 +55,16 @@ export default function MobileQuantitySheet({ isOpen, onClose, product, onAdd })
 
                         {/* Price and Add button */}
                         <div className="flex items-center justify-between mb-6">
-                            <span className="text-[24px] font-black text-slate-900">
-                                ₹{product.price}
-                            </span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[24px] font-black text-slate-900">
+                                    ₹{product.price}
+                                </span>
+                                {hasComparePrice && (
+                                    <span className="text-sm text-slate-400 line-through font-bold">
+                                        ₹{comparePrice}
+                                    </span>
+                                )}
+                            </div>
 
                             <button
                                 onClick={handleAdd}

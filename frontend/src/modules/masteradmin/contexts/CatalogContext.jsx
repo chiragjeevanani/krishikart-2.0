@@ -195,6 +195,13 @@ export const CatalogProvider = ({ children }) => {
                         tier.minQty !== null && tier.price !== null
                     );
                     formData.append(key, JSON.stringify(validTiers));
+                } else if (key === 'tags') {
+                    const normalizedTags = Array.isArray(productData[key])
+                        ? productData[key]
+                        : String(productData[key] || '').split(',');
+                    formData.append(key, JSON.stringify(
+                        normalizedTags.map(t => String(t).trim()).filter(Boolean)
+                    ));
                 } else if (key === 'primaryFile') {
                     if (productData[key]) formData.append('primaryImage', productData[key]);
                 } else if (key === 'galleryFiles') {
@@ -242,6 +249,13 @@ export const CatalogProvider = ({ children }) => {
                         tier.minQty !== null && tier.price !== null
                     );
                     formData.append(key, JSON.stringify(validTiers));
+                } else if (key === 'tags') {
+                    const normalizedTags = Array.isArray(updateData[key])
+                        ? updateData[key]
+                        : String(updateData[key] || '').split(',');
+                    formData.append(key, JSON.stringify(
+                        normalizedTags.map(t => String(t).trim()).filter(Boolean)
+                    ));
                 } else if (key === 'primaryFile' && updateData[key]) {
                     formData.append('primaryImage', updateData[key]);
                 } else if (key === 'galleryFiles' && updateData[key]) {

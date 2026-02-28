@@ -18,25 +18,21 @@ import {
 import PageTransition from '../components/layout/PageTransition'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
 import { useState } from 'react'
 import { useWallet } from '../contexts/WalletContext'
 import { cn } from '@/lib/utils'
 
 export default function WalletScreen() {
     const navigate = useNavigate()
-    const { balance, transactions, addMoney, creditLimit, creditUsed, loyaltyPoints, redeemLoyaltyPoints, loyaltyConfig, fetchWalletData, isLoading: walletLoading } = useWallet()
+    const { balance, transactions, addMoney, loyaltyPoints, redeemLoyaltyPoints, loyaltyConfig, fetchWalletData, isLoading: walletLoading } = useWallet()
     const [amountToAdd, setAmountToAdd] = useState('')
     const [isProcessing, setIsProcessing] = useState(false)
     const [showSuccess, setShowSuccess] = useState(false)
     const [activeFilter, setActiveFilter] = useState('All')
-    const [refundToWallet, setRefundToWallet] = useState(true)
     const [successMessage, setSuccessMessage] = useState('')
 
     const filters = [
-        'All', 'Used', 'Expiring', 'Recharge', 'Refund', 'Loyalty',
-        'Promotion', 'Sampling', 'Advance payments', 'COD payment',
-        'Cashback savings', 'KrishiKart rewards'
+        'All', 'Expiring', 'Recharge', 'Refund', 'Loyalty'
     ]
 
     const quickAddAmounts = [1000, 2000, 5000]
@@ -46,14 +42,14 @@ export default function WalletScreen() {
         if (!value || isNaN(value) || value <= 0) return
 
         setIsProcessing(true)
-        const success = await addMoney(Number(value))
+        const result = await addMoney(Number(value))
         setIsProcessing(false)
-        if (success) {
+        if (result?.success) {
             setSuccessMessage('Recharge successful! Funds added to your wallet.')
             setShowSuccess(true)
             setAmountToAdd('')
         } else {
-            setSuccessMessage('Recharge failed. Please try again.')
+            setSuccessMessage(result?.message || 'Recharge failed. Please try again.')
             setShowSuccess(true)
         }
     }
@@ -63,6 +59,7 @@ export default function WalletScreen() {
         : transactions.filter(t => {
             if (activeFilter === 'Loyalty') return t.type === 'Loyalty Bonus' || t.type === 'Redemption';
             if (activeFilter === 'Recharge') return t.type === 'Added';
+            if (activeFilter === 'Refund') return t.type === 'Refund';
             if (activeFilter === 'Used') return t.type === 'Paid';
             return true;
         })
@@ -97,17 +94,12 @@ export default function WalletScreen() {
                                     </div>
                                     <div className="space-y-1">
                                         <h2 className="text-5xl font-bold text-[#1e40af] tracking-tight tabular-nums">
-                                            ₹{(creditLimit > 0 ? (creditLimit - creditUsed) : balance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                            ₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                         </h2>
                                         <div className="flex flex-col">
                                             <p className="text-[11px] font-black text-[#60a5fa] uppercase tracking-[0.15em] ml-1">
-                                                {creditLimit > 0 ? 'Remaining Credit Limit' : 'Your Wallet Balance'}
+                                                Your Wallet Balance
                                             </p>
-                                            {creditLimit > 0 && (
-                                                <p className="text-[10px] font-bold text-slate-400 ml-1 mt-1">
-                                                    Total Assigned Limit: <span className="text-slate-600">₹{creditLimit.toLocaleString('en-IN')}</span>
-                                                </p>
-                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -122,58 +114,10 @@ export default function WalletScreen() {
                                 </div>
                             </div>
 
-                            {/* Business Credit Ledger - New Section */}
-                            {creditLimit > 0 && (
-                                <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
-                                                <Zap size={20} />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-base font-bold text-slate-800 tracking-tight">Business Credit Limit</h3>
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Enterprise Line of Credit</p>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-lg font-black text-slate-900 tabular-nums">₹{creditLimit.toLocaleString()}</p>
-                                            <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Total Approved</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between items-end">
-                                            <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Utilization Index</span>
-                                            <span className="text-[11px] font-black text-slate-900 tabular-nums">{((creditUsed / creditLimit) * 100).toFixed(1)}%</span>
-                                        </div>
-                                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                                            <div
-                                                className={cn(
-                                                    "h-full transition-all duration-1000",
-                                                    (creditUsed / creditLimit) > 0.9 ? "bg-rose-500" : (creditUsed / creditLimit) > 0.7 ? "bg-amber-400" : "bg-emerald-500"
-                                                )}
-                                                style={{ width: `${Math.min((creditUsed / creditLimit) * 100, 100)}%` }}
-                                            />
-                                        </div>
-                                        <div className="flex justify-between items-center pt-1">
-                                            <div className="flex flex-col">
-                                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Used Credit</span>
-                                                <span className="text-xs font-bold text-slate-700">₹{creditUsed.toLocaleString()}</span>
-                                            </div>
-                                            <div className="flex flex-col items-end">
-                                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Available Credit</span>
-                                                <span className="text-xs font-bold text-emerald-600">₹{(creditLimit - creditUsed).toLocaleString()}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-
-                            {/* Credit History Section */}
+                            {/* Wallet History Section */}
                             <div className="space-y-6">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-lg font-bold text-slate-800 tracking-tight">Credit History</h3>
+                                    <h3 className="text-lg font-bold text-slate-800 tracking-tight">Wallet History</h3>
                                     <button
                                         onClick={fetchWalletData}
                                         className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors"
@@ -214,13 +158,13 @@ export default function WalletScreen() {
                                                 <div className="flex items-center gap-4">
                                                     <div className={cn(
                                                         "w-10 h-10 rounded-lg flex items-center justify-center transition-colors shadow-sm",
-                                                        txn.type === 'Added' ? "bg-emerald-50 text-emerald-500" :
+                                                        txn.type === 'Added' || txn.type === 'Refund' || txn.type === 'Redemption' ? "bg-emerald-50 text-emerald-500" :
                                                             txn.type === 'Loyalty Bonus' ? "bg-blue-50 text-blue-500" :
                                                                 "bg-[#fef2f2] text-red-500"
                                                     )}>
                                                         {txn.type === 'Added' ? <RefreshCcw size={18} /> :
                                                             txn.type === 'Loyalty Bonus' ? <Star size={18} className="fill-current" /> :
-                                                                txn.type === 'Redemption' ? <Zap size={18} /> :
+                                                                txn.type === 'Redemption' || txn.type === 'Refund' ? <Zap size={18} /> :
                                                                     <Clock size={18} />}
                                                     </div>
                                                     <div>
@@ -228,6 +172,7 @@ export default function WalletScreen() {
                                                             {txn.type === 'Added' ? 'Recharge' :
                                                                 txn.type === 'Loyalty Bonus' ? 'Loyalty Bonus' :
                                                                     txn.type === 'Redemption' ? 'Points Redeemed' :
+                                                                        txn.type === 'Refund' ? 'Refund Received' :
                                                                         'Debit Payment'}
                                                         </p>
                                                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{txn.date} • {txn.id}</p>
@@ -236,11 +181,11 @@ export default function WalletScreen() {
                                                 <div className="text-right space-y-0.5">
                                                     <p className={cn(
                                                         "text-base font-bold tracking-tight tabular-nums",
-                                                        txn.type === 'Added' || txn.type === 'Redemption' ? "text-emerald-600" :
+                                                        txn.type === 'Added' || txn.type === 'Redemption' || txn.type === 'Refund' ? "text-emerald-600" :
                                                             txn.type === 'Loyalty Bonus' ? "text-blue-600" :
                                                                 "text-slate-900"
                                                     )}>
-                                                        {txn.type === 'Added' || txn.type === 'Loyalty Bonus' || txn.type === 'Redemption' ? '+' : '-'}
+                                                        {txn.type === 'Added' || txn.type === 'Loyalty Bonus' || txn.type === 'Redemption' || txn.type === 'Refund' ? '+' : '-'}
                                                         {txn.type === 'Loyalty Bonus' ? '' : '₹'}
                                                         {txn.amount.toLocaleString('en-IN')}
                                                         {txn.type === 'Loyalty Bonus' ? ' Pts' : ''}
@@ -311,19 +256,6 @@ export default function WalletScreen() {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="pt-4 mt-4 border-t border-slate-50">
-                                    <div className="flex items-center justify-between">
-                                        <div className="space-y-1 pr-4">
-                                            <h3 className="text-sm font-bold text-slate-800">Refund to KrishiKart wallet</h3>
-                                            <p className="text-[9px] font-bold text-slate-400 leading-tight">Enable this to get instant refunds to KrishiKart wallet</p>
-                                        </div>
-                                        <Switch
-                                            checked={refundToWallet}
-                                            onCheckedChange={setRefundToWallet}
-                                            className="data-[state=checked]:bg-[#3b82f6]"
-                                        />
-                                    </div>
-                                </div>
                             </div>
 
                             {/* Loyalty Points Redemption Card */}
@@ -356,8 +288,8 @@ export default function WalletScreen() {
 
                                 <Button
                                     disabled={loyaltyPoints < (loyaltyConfig?.minRedeemPoints || 100)}
-                                    onClick={() => {
-                                        if (redeemLoyaltyPoints(loyaltyPoints)) {
+                                    onClick={async () => {
+                                        if (await redeemLoyaltyPoints(loyaltyPoints)) {
                                             setSuccessMessage(`Redeemed ₹${Math.floor(loyaltyPoints / (loyaltyConfig?.redemptionRate || 10))} to your wallet!`)
                                             setShowSuccess(true);
                                             setTimeout(() => setShowSuccess(false), 2000);
@@ -365,7 +297,7 @@ export default function WalletScreen() {
                                     }}
                                     className={cn(
                                         "w-full h-12 font-bold tracking-tight rounded-xl transition-all",
-                                        loyaltyPoints >= 100
+                                        loyaltyPoints >= (loyaltyConfig?.minRedeemPoints || 100)
                                             ? "bg-slate-900 text-white hover:bg-slate-800 shadow-lg shadow-slate-200 active:scale-[0.98]"
                                             : "bg-slate-100 text-slate-400"
                                     )}
@@ -374,16 +306,6 @@ export default function WalletScreen() {
                                 </Button>
                             </div>
 
-                            {/* Promotional/Nexus Card */}
-                            <div className="bg-gradient-to-br from-[#1e40af] to-[#3b82f6] rounded-2xl p-6 text-white overflow-hidden relative group shadow-lg shadow-blue-500/10">
-                                <Zap className="absolute top-4 right-4 text-white/10 group-hover:scale-125 transition-transform duration-700" size={60} strokeWidth={1} />
-                                <div className="relative z-10 space-y-4">
-                                    <div className="bg-white/20 inline-block px-2 py-1 rounded text-[9px] font-black uppercase tracking-widest backdrop-blur-sm">Nexus Exclusive</div>
-                                    <h4 className="text-lg font-bold leading-tight tracking-tight italic uppercase">Unlock High-Yield Benefits</h4>
-                                    <p className="text-[10px] text-white/90 font-medium leading-relaxed">Boost your loyalty multiplier x1.5 with monthly KK Wallet top-ups over ₹10k.</p>
-                                    <button className="text-[10px] font-black uppercase tracking-widest bg-white text-blue-600 px-4 py-2.5 rounded-xl shadow-sm hover:bg-slate-50 transition-colors w-full">Learn More</button>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -408,3 +330,5 @@ export default function WalletScreen() {
         </PageTransition>
     )
 }
+
+

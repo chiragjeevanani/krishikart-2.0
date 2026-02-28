@@ -18,6 +18,7 @@ export const ROUTES = {
     ACTIVE: '/delivery/active',
     HISTORY: '/delivery/history',
     RETURN_PICKUPS: '/delivery/return-pickups',
+    COD_REMITTANCE: '/delivery/cod-remittance',
     PROFILE: '/delivery/profile',
     MAP: '/delivery/map',
     PICKUP: '/delivery/pickup',

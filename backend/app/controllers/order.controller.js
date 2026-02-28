@@ -723,12 +723,61 @@ export const updateOrderStatus = async (req, res) => {
 
     if (status === "Delivered") {
       order.deliveredAt = new Date();
+
+      if (order.paymentMethod === "COD") {
+        const collectorId = req.delivery?._id || order.deliveryPartnerId || null;
+        order.codTracking = order.codTracking || {};
+        order.codTracking.isCollected = true;
+        order.codTracking.collectedAmount = Number(order.totalAmount || 0);
+        order.codTracking.collectedAt = new Date();
+        order.codTracking.collectedByDeliveryId = collectorId;
+        order.codTracking.remittanceStatus = "pending";
+      }
     }
 
     // Auto-complete payment for COD/others if order is Received/Delivered
     if (["Received", "Delivered"].includes(status)) {
       if (order.paymentStatus === "Pending") {
         order.paymentStatus = "Completed";
+      }
+    }
+
+    // Award loyalty points once when order is confirmed received.
+    if (status === "Received") {
+      try {
+        const user = await User.findById(order.userId);
+        if (user) {
+          user.walletTransactions = user.walletTransactions || [];
+          const alreadyAwarded = user.walletTransactions.some(
+            (txn) =>
+              txn.type === "Loyalty Bonus" &&
+              txn.referenceOrderId &&
+              txn.referenceOrderId.toString() === order._id.toString(),
+          );
+
+          if (!alreadyAwarded) {
+            const loyaltySetting = await GlobalSetting.findOne({ key: "loyalty_config" });
+            const cfg = loyaltySetting?.value || {};
+            const awardRate = Math.max(0, Number(cfg.awardRate ?? 5));
+            const points = Math.max(0, Math.floor((Number(order.totalAmount || 0) * awardRate) / 100));
+
+            if (points > 0) {
+              user.loyaltyPoints = Number(user.loyaltyPoints || 0) + points;
+              user.walletTransactions.unshift({
+                txnId: `LYT-${Date.now()}`,
+                type: "Loyalty Bonus",
+                amount: points,
+                status: "Success",
+                note: `Loyalty bonus for order ${order._id}`,
+                referenceOrderId: order._id,
+                createdAt: new Date(),
+              });
+              await user.save();
+            }
+          }
+        }
+      } catch (loyaltyErr) {
+        console.error("Loyalty award error during status update:", loyaltyErr);
       }
     }
 
@@ -1191,6 +1240,7 @@ export const getDispatchedOrders = async (req, res) => {
 
       return {
         id: order._id,
+        _id: order._id,
         franchise: order.franchiseId?.shopName || "KrishiKart Store",
         franchiseAddress: order.franchiseId?.address || "N/A",
         customerName: order.userId?.fullName || "Customer",
@@ -1201,10 +1251,14 @@ export const getDispatchedOrders = async (req, res) => {
         timeWindow: "20-30 mins",
         priority: "medium",
         amount: 50, // Delivery earnings per order
+        totalAmount: order.totalAmount,
+        paymentMethod: order.paymentMethod,
         status: order.orderStatus,
+        orderStatus: order.orderStatus,
         franchiseId: order.franchiseId,
         userId: order.userId,
         shippingAddress: order.shippingAddress,
+        codTracking: order.codTracking || {},
       };
     });
 

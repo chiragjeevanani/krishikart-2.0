@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../utils/constants';
-import { useWallet } from '../../user/contexts/WalletContext';
 import { useDeliveryOrders } from '../contexts/DeliveryOrderContext';
 import DocumentViewer from '../../vendor/components/documents/DocumentViewer';
 import { Package } from 'lucide-react';
@@ -22,7 +21,6 @@ const DeliveryCompletion = () => {
     const [isSuccess, setIsSuccess] = useState(false);
     const [isDocOpen, setIsDocOpen] = useState(false);
     const navigate = useNavigate();
-    const { addLoyaltyPoints, loyaltyConfig } = useWallet();
     const { dispatchedOrders, updateStatus } = useDeliveryOrders();
     const [order, setOrder] = useState(null);
 
@@ -40,11 +38,6 @@ const DeliveryCompletion = () => {
         // Update status to Delivered in backend
         await updateStatus(order._id, 'Delivered');
         localStorage.removeItem('activeDeliveryId');
-
-        // Award points based on admin configuration
-        const rate = loyaltyConfig?.awardRate || 5;
-        const points = Math.max(10, Math.floor(((order.totalAmount || 0) * rate) / 100));
-        addLoyaltyPoints(points);
 
         setIsSuccess(true);
         setTimeout(() => {
