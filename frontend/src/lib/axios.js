@@ -11,10 +11,28 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
     let token = null;
 
-    // Intelligent Token Selection based on URL or Context
-    const path = window.location.pathname.toLowerCase();
+    const requestUrl = config.url.toLowerCase();
+    const currentPath = window.location.pathname.toLowerCase();
 
-    if (path.includes('/masteradmin')) {
+    // Determine context based on URL or current page
+    const isAdminRequest = requestUrl.includes('/masteradmin') || requestUrl.includes('/admin') || requestUrl.includes('/procurement');
+    const isFranchiseRequest = requestUrl.includes('/franchise');
+    const isVendorRequest = requestUrl.includes('/vendor');
+    const isDeliveryRequest = requestUrl.includes('/delivery');
+
+    const isAdminContext = currentPath.includes('/masteradmin');
+    const isFranchiseContext = currentPath.includes('/franchise');
+    const isVendorContext = currentPath.includes('/vendor');
+    const isDeliveryContext = currentPath.includes('/delivery');
+
+    // Unified path for selection logic
+    const path = isAdminRequest || isFranchiseRequest || isVendorRequest || isDeliveryRequest
+        ? requestUrl
+        : currentPath;
+
+    const isAdminPath = path.includes('/masteradmin') || path.includes('/procurement') || path.includes('/admin');
+
+    if (isAdminPath) {
         token = localStorage.getItem('masterAdminToken');
     } else if (path.includes('/franchise')) {
         token = localStorage.getItem('franchiseToken');
@@ -38,22 +56,24 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            const path = window.location.pathname;
-            if (path.includes('/masteradmin')) {
+            const currentPath = window.location.pathname.toLowerCase();
+
+            // Only wipe token if we are actually in that section of the app
+            if (currentPath.startsWith('/masteradmin') && !currentPath.includes('/login')) {
                 localStorage.removeItem('masterAdminToken');
-            } else if (path.includes('/franchise')) {
+                localStorage.removeItem('masterAdminData');
+                // Optional: redirect to login if session is truly dead
+                // window.location.href = '/masteradmin/login';
+            } else if (currentPath.startsWith('/franchise')) {
                 localStorage.removeItem('franchiseToken');
-            } else if (path.includes('/vendor')) {
+                localStorage.removeItem('franchiseData');
+            } else if (currentPath.startsWith('/vendor')) {
                 localStorage.removeItem('vendorToken');
-            } else if (path.includes('/delivery')) {
+                localStorage.removeItem('vendorData');
+            } else if (currentPath.startsWith('/delivery')) {
                 localStorage.removeItem('deliveryToken');
                 localStorage.removeItem('deliveryData');
-            } else {
-                localStorage.removeItem('userToken');
             }
-            // Avoid window.location.href redirect here to prevent infinite refresh loops
-            // if a component's useEffect/mount logic immediately triggers another request.
-            // Let the module-specific auth wrappers handle the navigation.
         }
         return Promise.reject(error);
     }

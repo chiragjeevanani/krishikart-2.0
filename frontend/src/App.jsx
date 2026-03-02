@@ -105,11 +105,6 @@ const DeliveryProviders = () => (
   </DeliveryAuthProvider>
 );
 
-const MasterAdminProviders = () => (
-  <MasterAdminAuthProvider>
-    <Outlet />
-  </MasterAdminAuthProvider>
-);
 
 function App() {
   return (
@@ -173,9 +168,7 @@ function App() {
             </Route>
           </Route>
 
-          <Route element={<MasterAdminProviders />}>
-            {masterAdminRoutes}
-          </Route>
+          {masterAdminRoutes}
           {vendorRoutes}
           <Route element={<DeliveryProviders />}>
             {deliveryRoutes}

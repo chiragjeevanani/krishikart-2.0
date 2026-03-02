@@ -25,8 +25,9 @@ export default function LoginScreen() {
         try {
             const response = await api.post('/masteradmin/login', { email, password });
 
-            // Use auth context to store token and user data
-            loginSuccess(response.data.result, response.data.result.token);
+            // The backend returns { token, result: { ...user details } } inside response.data.result
+            const { token, result: adminData } = response.data.result;
+            loginSuccess(adminData, token);
             navigate('/masteradmin/dashboard');
         } catch (error) {
             console.error(error);

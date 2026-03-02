@@ -1,38 +1,44 @@
+import React, { lazy } from 'react';
 import { Route, Navigate, Outlet } from 'react-router-dom';
+import { ShieldCheck } from 'lucide-react';
 import MasterAdminLayout from '../components/layout/MasterAdminLayout';
-import DashboardScreen from '../pages/DashboardScreen';
+import { useMasterAdminAuth, MasterAdminAuthProvider } from '../contexts/MasterAdminAuthContext';
+
+// Public Screens
 import LoginScreen from '../pages/LoginScreen';
 import ForgotPasswordScreen from '../pages/ForgotPasswordScreen';
-import OrdersScreen from '../pages/OrdersScreen';
-import VendorAssignmentScreen from '../pages/VendorAssignmentScreen';
-import FranchiseManagementScreen from '../pages/FranchiseManagementScreen';
-import VendorManagementScreen from '../pages/VendorManagementScreen';
-import DeliveryMonitoringScreen from '../pages/DeliveryMonitoringScreen';
-import TakeawayMonitoringScreen from '../pages/TakeawayMonitoringScreen';
-import AnalyticsScreen from '../pages/AnalyticsScreen';
-import SettingsScreen from '../pages/SettingsScreen';
-import DeliveryConstraintsScreen from '../pages/DeliveryConstraintsScreen';
-import VendorReportsScreen from '../pages/VendorReportsScreen';
 
-// New Phase 2 & 3 Screens
-import CreditManagementScreen from '../pages/CreditManagementScreen';
-import LedgerSystemScreen from '../pages/LedgerSystemScreen';
-import CommissionControlScreen from '../pages/CommissionControlScreen';
-import FranchiseStockMonitoringScreen from '../pages/FranchiseStockMonitoringScreen';
-import PurchaseManagerScreen from '../pages/PurchaseManagerScreen';
-import OnboardingApprovalScreen from '../pages/OnboardingApprovalScreen';
-import VendorTurnoverScreen from '../pages/VendorTurnoverScreen';
-import AddProductScreen from '../pages/AddProductScreen';
-import EditProductScreen from '../pages/EditProductScreen';
-import ManageProductScreen from '../pages/ManageProductScreen';
-import CategoryManagementScreen from '../pages/CategoryManagementScreen';
-import SubcategoryManagementScreen from '../pages/SubcategoryManagementScreen';
-import LoyaltyControlScreen from '../pages/LoyaltyControlScreen';
-import VendorQuotationScreen from '../pages/VendorQuotationScreen';
-import ReturnsScreen from '../pages/ReturnsScreen';
-import FranchisePayoutsScreen from '../pages/FranchisePayoutsScreen';
-import CodRemittanceScreen from '../pages/CodRemittanceScreen';
-import { useMasterAdminAuth } from '../contexts/MasterAdminAuthContext';
+// Lazy loaded screens
+const Dashboard = lazy(() => import('../pages/DashboardScreen'));
+const TeamManagement = lazy(() => import('../pages/TeamManagementScreen'));
+const Orders = lazy(() => import('../pages/OrdersScreen'));
+const VendorAssignment = lazy(() => import('../pages/VendorAssignmentScreen'));
+const FranchiseManagement = lazy(() => import('../pages/FranchiseManagementScreen'));
+const VendorManagement = lazy(() => import('../pages/VendorManagementScreen'));
+const DeliveryMonitoring = lazy(() => import('../pages/DeliveryMonitoringScreen'));
+const TakeawayMonitoring = lazy(() => import('../pages/TakeawayMonitoringScreen')); // Not used in new routes, but keeping for now
+const Analytics = lazy(() => import('../pages/AnalyticsScreen'));
+const AdminSettings = lazy(() => import('../pages/SettingsScreen'));
+const DeliveryConstraints = lazy(() => import('../pages/DeliveryConstraintsScreen'));
+const VendorReports = lazy(() => import('../pages/VendorReportsScreen'));
+const CreditManagement = lazy(() => import('../pages/CreditManagementScreen'));
+const LedgerSystem = lazy(() => import('../pages/LedgerSystemScreen')); // Not used in new routes, but keeping for now
+const CommissionControl = lazy(() => import('../pages/CommissionControlScreen')); // Not used in new routes, but keeping for now
+const FranchiseStockMonitoring = lazy(() => import('../pages/FranchiseStockMonitoringScreen'));
+const PurchaseManager = lazy(() => import('../pages/PurchaseManagerScreen')); // Not used in new routes, but keeping for now
+const OnboardingApproval = lazy(() => import('../pages/OnboardingApprovalScreen'));
+const VendorTurnover = lazy(() => import('../pages/VendorTurnoverScreen'));
+const AddProduct = lazy(() => import('../pages/AddProductScreen'));
+const EditProduct = lazy(() => import('../pages/EditProductScreen'));
+const ManageProducts = lazy(() => import('../pages/ManageProductScreen'));
+const CategoryManagement = lazy(() => import('../pages/CategoryManagementScreen'));
+const SubcategoryManagement = lazy(() => import('../pages/SubcategoryManagementScreen'));
+const LoyaltyControl = lazy(() => import('../pages/LoyaltyControlScreen'));
+const VendorQuotation = lazy(() => import('../pages/VendorQuotationScreen'));
+const Returns = lazy(() => import('../pages/ReturnsScreen'));
+const FranchisePayouts = lazy(() => import('../pages/FranchisePayoutsScreen'));
+const CodRemittance = lazy(() => import('../pages/CodRemittanceScreen'));
+
 
 const AdminRootRedirect = () => {
     const { isAuthenticated, loading } = useMasterAdminAuth();
@@ -44,7 +50,7 @@ const AdminRootRedirect = () => {
     return isAuthenticated ? <Navigate to="dashboard" replace /> : <Navigate to="login" replace />;
 };
 
-const ProtectedAdminRoute = () => {
+const ProtectedAdminRoute = ({ children }) => {
     const { isAuthenticated, loading } = useMasterAdminAuth();
 
     if (loading) {
@@ -59,58 +65,169 @@ const ProtectedAdminRoute = () => {
         return <Navigate to="/masteradmin/login" replace />;
     }
 
+    return children ? children : <Outlet />;
+};
+
+const AccessDenied = () => (
+    <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
+        <div className="w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center mb-6 border border-red-100 shadow-sm">
+            <ShieldCheck className="text-red-500 w-12 h-12" />
+        </div>
+        <h2 className="text-2xl font-black text-slate-900 mb-2">Access Restricted</h2>
+        <p className="max-w-md text-slate-500 font-medium mb-8">
+            Your identity has been verified, but your clearance level does not grant access to this terminal.
+            Contact the system administrator to update your credentials.
+        </p>
+        <button
+            onClick={() => window.location.href = '/masteradmin/login'}
+            className="bg-slate-900 text-white px-8 py-3 rounded-2xl font-black text-sm hover:bg-slate-800 transition-all active:scale-95"
+        >
+            Return to Login
+        </button>
+    </div>
+);
+
+const PermissionRoute = ({ permissionKey }) => {
+    const { hasPermission, loading, isAuthenticated } = useMasterAdminAuth();
+
+    if (loading) return (
+        <div className="h-screen w-full flex items-center justify-center bg-slate-50">
+            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+    );
+
+    if (!isAuthenticated) {
+        return <Navigate to="/masteradmin/login" replace />;
+    }
+
+    if (!hasPermission(permissionKey)) {
+        return <AccessDenied />;
+    }
+
     return <Outlet />;
 };
 
+const MasterAdminWrapper = () => (
+    <MasterAdminAuthProvider>
+        <Outlet />
+    </MasterAdminAuthProvider>
+);
+
 export const masterAdminRoutes = (
-    <Route path="/masteradmin">
-        {/* Public Admin Routes */}
+    <Route path="/masteradmin" element={<MasterAdminWrapper />}>
+        {/* Root Redirect to Dashboard or Login */}
         <Route index element={<AdminRootRedirect />} />
+
+        {/* Public Routes - No Auth Required */}
         <Route path="login" element={<LoginScreen />} />
         <Route path="forgot-password" element={<ForgotPasswordScreen />} />
 
-        {/* Protected Admin Routes */}
+        {/* Protected System Environment */}
         <Route element={<ProtectedAdminRoute />}>
             <Route element={<MasterAdminLayout />}>
-                <Route index element={<Navigate to="dashboard" replace />} />
-                <Route path="dashboard" element={<DashboardScreen />} />
-                <Route path="orders" element={<OrdersScreen />} />
-                <Route path="assignment" element={<VendorAssignmentScreen />} />
-                <Route path="franchises" element={<FranchiseManagementScreen />} />
-                <Route path="vendors" element={<VendorManagementScreen />} />
-                <Route path="vendor-economics" element={<VendorTurnoverScreen />} />
-                <Route path="delivery" element={<DeliveryMonitoringScreen />} />
-                <Route path="returns" element={<ReturnsScreen />} />
-                <Route path="kiosk" element={<TakeawayMonitoringScreen />} />
-                <Route path="analytics" element={<AnalyticsScreen />} />
-                <Route path="settings" element={<SettingsScreen />} />
+                {/* Default Landing inside the system */}
+                <Route path="dashboard" element={<PermissionRoute permissionKey="dashboard" />}>
+                    <Route index element={<Dashboard />} />
+                </Route>
 
-                {/* Financial Routes */}
-                <Route path="credit" element={<CreditManagementScreen />} />
-                <Route path="ledger" element={<LedgerSystemScreen />} />
-                <Route path="commission" element={<CommissionControlScreen />} />
-                <Route path="franchise-payouts" element={<FranchisePayoutsScreen />} />
-                <Route path="cod-remittance" element={<CodRemittanceScreen />} />
-                <Route path="loyalty" element={<LoyaltyControlScreen />} />
-                <Route path="delivery-constraints" element={<DeliveryConstraintsScreen />} />
+                <Route path="team" element={<PermissionRoute permissionKey="superadmin" />}>
+                    <Route index element={<TeamManagement />} />
+                </Route>
 
-                {/* Inventory & Supply Routes */}
-                <Route path="stock-monitoring" element={<FranchiseStockMonitoringScreen />} />
-                <Route path="purchase" element={<PurchaseManagerScreen />} />
+                {/* Operations & Logistics */}
+                <Route path="orders" element={<PermissionRoute permissionKey="orders" />}>
+                    <Route index element={<Orders />} />
+                </Route>
+                <Route path="assignment" element={<PermissionRoute permissionKey="assignment" />}>
+                    <Route index element={<VendorAssignment />} />
+                </Route>
+                <Route path="delivery" element={<PermissionRoute permissionKey="delivery" />}>
+                    <Route index element={<DeliveryMonitoring />} />
+                </Route>
+                <Route path="returns" element={<PermissionRoute permissionKey="returns" />}>
+                    <Route index element={<Returns />} />
+                </Route>
+                <Route path="kiosk" element={<PermissionRoute permissionKey="kiosk" />}>
+                    <Route index element={<TakeawayMonitoring />} />
+                </Route>
 
-                {/* Admin Approval Routes */}
-                <Route path="approvals" element={<OnboardingApprovalScreen />} />
-                <Route path="quotations" element={<VendorQuotationScreen />} />
-                <Route path="vendor-reports" element={<VendorReportsScreen />} />
+                {/* Economic Matrix */}
+                <Route path="credit" element={<PermissionRoute permissionKey="credit" />}>
+                    <Route index element={<CreditManagement />} />
+                </Route>
+                <Route path="ledger" element={<PermissionRoute permissionKey="ledger" />}>
+                    <Route index element={<LedgerSystem />} />
+                </Route>
+                <Route path="commission" element={<PermissionRoute permissionKey="commission" />}>
+                    <Route index element={<CommissionControl />} />
+                </Route>
+                <Route path="franchise-payouts" element={<PermissionRoute permissionKey="franchise-payouts" />}>
+                    <Route index element={<FranchisePayouts />} />
+                </Route>
+                <Route path="cod-remittance" element={<PermissionRoute permissionKey="cod-remittance" />}>
+                    <Route index element={<CodRemittance />} />
+                </Route>
+                <Route path="loyalty" element={<PermissionRoute permissionKey="loyalty" />}>
+                    <Route index element={<LoyaltyControl />} />
+                </Route>
+                <Route path="delivery-constraints" element={<PermissionRoute permissionKey="delivery-constraints" />}>
+                    <Route index element={<DeliveryConstraints />} />
+                </Route>
 
-                {/* Catalog Management Routes */}
-                <Route path="products" element={<Navigate to="manage" replace />} />
-                <Route path="products/add" element={<AddProductScreen />} />
-                <Route path="products/edit/:id" element={<EditProductScreen />} />
-                <Route path="products/manage" element={<ManageProductScreen />} />
-                <Route path="categories" element={<Navigate to="manage" replace />} />
-                <Route path="categories/manage" element={<CategoryManagementScreen />} />
-                <Route path="subcategories/manage" element={<SubcategoryManagementScreen />} />
+                {/* Inventory Spectrum */}
+                <Route path="stock-monitoring" element={<PermissionRoute permissionKey="stock-monitoring" />}>
+                    <Route index element={<FranchiseStockMonitoring />} />
+                </Route>
+                <Route path="purchase" element={<PermissionRoute permissionKey="purchase" />}>
+                    <Route index element={<PurchaseManager />} />
+                </Route>
+
+                {/* Clearance & Lifecycle */}
+                <Route path="approvals" element={<PermissionRoute permissionKey="approvals" />}>
+                    <Route index element={<OnboardingApproval />} />
+                </Route>
+                <Route path="quotations" element={<PermissionRoute permissionKey="quotations" />}>
+                    <Route index element={<VendorQuotation />} />
+                </Route>
+                <Route path="vendor-reports" element={<PermissionRoute permissionKey="vendor-reports" />}>
+                    <Route index element={<VendorReports />} />
+                </Route>
+                <Route path="vendor-economics" element={<PermissionRoute permissionKey="vendor-economics" />}>
+                    <Route index element={<VendorTurnover />} />
+                </Route>
+
+                {/* Node Management */}
+                <Route path="franchises" element={<PermissionRoute permissionKey="franchises" />}>
+                    <Route index element={<FranchiseManagement />} />
+                </Route>
+                <Route path="vendors" element={<PermissionRoute permissionKey="vendors" />}>
+                    <Route index element={<VendorManagement />} />
+                </Route>
+
+                {/* Product Catalog Ledger */}
+                <Route path="products" element={<PermissionRoute permissionKey="products" />}>
+                    <Route index element={<Navigate to="manage" replace />} />
+                    <Route path="add" element={<AddProduct />} />
+                    <Route path="edit/:id" element={<EditProduct />} />
+                    <Route path="manage" element={<ManageProducts />} />
+                </Route>
+
+                <Route path="categories" element={<PermissionRoute permissionKey="categories" />}>
+                    <Route index element={<Navigate to="manage" replace />} />
+                    <Route path="manage" element={<CategoryManagement />} />
+                </Route>
+
+                <Route path="subcategories/manage" element={<PermissionRoute permissionKey="categories" />}>
+                    <Route index element={<SubcategoryManagement />} />
+                </Route>
+
+                {/* Analytics & Configuration */}
+                <Route path="analytics" element={<PermissionRoute permissionKey="analytics" />}>
+                    <Route index element={<Analytics />} />
+                </Route>
+                <Route path="settings" element={<PermissionRoute permissionKey="settings" />}>
+                    <Route index element={<AdminSettings />} />
+                </Route>
             </Route>
         </Route>
     </Route>

@@ -1,4 +1,5 @@
 import MasterAdmin from "../models/masteradmin.js";
+import SubAdmin from "../models/subAdmin.js";
 import handleResponse from "../utils/helper.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -33,7 +34,7 @@ export const createMasterAdmin = async (req, res) => {
       mobile: mobile || "+91 80000 00001",
       operationalZone: operationalZone || "ASIA-SOUTH-IND-01",
       password: hashedPassword,
-      role: "masteradmin",
+      role: "superadmin",
       status: "active",
     });
 
@@ -58,10 +59,14 @@ export const loginMasterAdmin = async (req, res) => {
     const trimmedEmail = email.trim().toLowerCase();
     console.log(`[MasterAdmin Login] Attempt for: ${trimmedEmail}`);
 
-    const admin = await MasterAdmin.findOne({ email: trimmedEmail });
+    let admin = await MasterAdmin.findOne({ email: trimmedEmail });
+    if (!admin) {
+      admin = await SubAdmin.findOne({ email: trimmedEmail });
+    }
+
     if (!admin) {
       console.log(`[MasterAdmin Login] User not found: ${trimmedEmail}`);
-      return handleResponse(res, 404, "MasterAdmin not found");
+      return handleResponse(res, 404, "Admin not found");
     }
 
     if (admin.status === "blocked")
@@ -75,8 +80,13 @@ export const loginMasterAdmin = async (req, res) => {
 
     return handleResponse(res, 200, "Login successful", {
       token,
-      id: admin._id,
-      email: admin.email,
+      result: {
+        id: admin._id,
+        email: admin.email,
+        fullName: admin.fullName,
+        role: admin.role,
+        permissions: admin.permissions || [],
+      }
     });
   } catch (err) {
     return handleResponse(res, 500, "Server error");
@@ -85,7 +95,15 @@ export const loginMasterAdmin = async (req, res) => {
 
 /* ================= GET ME ================= */
 export const getMasterAdminMe = async (req, res) => {
-  return handleResponse(res, 200, "MasterAdmin profile", req.masteradmin);
+  const admin = req.masteradmin;
+
+  return handleResponse(res, 200, "MasterAdmin profile", {
+    id: admin._id,
+    email: admin.email,
+    fullName: admin.fullName,
+    role: admin.role,
+    permissions: admin.permissions || [],
+  });
 };
 
 /* ================= UPDATE PROFILE ================= */
@@ -162,6 +180,97 @@ export const forgotMasterAdminPassword = async (req, res) => {
 
     return handleResponse(res, 200, "OTP sent to email");
   } catch (err) {
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+/**
+ * SUB-ADMIN CRUD (SUPERADMIN ONLY)
+ */
+
+export const createSubAdmin = async (req, res) => {
+  try {
+    const { email, password, fullName, mobile, permissions } = req.body;
+
+    if (!email || !password || !fullName) {
+      return handleResponse(res, 400, "Required fields missing");
+    }
+
+    const existingMaster = await MasterAdmin.findOne({ email });
+    const existingSub = await SubAdmin.findOne({ email });
+
+    if (existingMaster || existingSub) {
+      return handleResponse(res, 400, "Email already in use");
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const subAdmin = new SubAdmin({
+      email: email.trim().toLowerCase(),
+      password: hashedPassword,
+      fullName,
+      mobile,
+      role: "subadmin",
+      status: "active",
+      permissions: permissions || [],
+      createdBy: req.masteradmin._id
+    });
+
+    await subAdmin.save();
+
+    return handleResponse(res, 201, "Sub-admin created successfully", {
+      id: subAdmin._id,
+      email: subAdmin.email,
+      fullName: subAdmin.fullName
+    });
+  } catch (error) {
+    console.error(error);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+export const listSubAdmins = async (req, res) => {
+  try {
+    const subAdmins = await SubAdmin.find().select("-password").sort({ createdAt: -1 });
+    return handleResponse(res, 200, "Sub-admins list fetched", subAdmins);
+  } catch (error) {
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+export const updateSubAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { email, password, fullName, mobile, permissions, status } = req.body;
+
+    const subAdmin = await SubAdmin.findById(id);
+    if (!subAdmin) return handleResponse(res, 404, "Sub-admin not found");
+
+    if (email) subAdmin.email = email;
+    if (fullName) subAdmin.fullName = fullName;
+    if (mobile) subAdmin.mobile = mobile;
+    if (permissions) subAdmin.permissions = permissions;
+    if (status) subAdmin.status = status;
+
+    if (password) {
+      subAdmin.password = await bcrypt.hash(password, 10);
+    }
+
+    await subAdmin.save();
+
+    return handleResponse(res, 200, "Sub-admin updated successfully");
+  } catch (error) {
+    console.error(error);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+export const deleteSubAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await SubAdmin.findByIdAndDelete(id);
+    return handleResponse(res, 200, "Sub-admin deleted successfully");
+  } catch (error) {
     return handleResponse(res, 500, "Server error");
   }
 };

@@ -7,6 +7,10 @@ import {
   resetMasterAdminPassword,
   updateMasterAdminProfile,
   changeMasterAdminPassword,
+  createSubAdmin,
+  listSubAdmins,
+  updateSubAdmin,
+  deleteSubAdmin,
 } from "../controllers/masteradmin.auth.js";
 import {
   createVendorByAdmin,
@@ -36,7 +40,7 @@ import {
   getLoyaltyConfigHistory
 } from "../controllers/masteradmin.controller.js";
 
-import { protectMasterAdmin } from "../middlewares/masteradmin.auth.js";
+import { protectMasterAdmin, requirePermission } from "../middlewares/masteradmin.auth.js";
 import upload from "../middlewares/upload.js";
 
 const router = express.Router();
@@ -50,49 +54,55 @@ router.post("/forgot-password", forgotMasterAdminPassword);
 router.post("/reset-password", resetMasterAdminPassword);
 
 /* 🏪 Vendor Management */
-router.get("/vendors", protectMasterAdmin, getAllVendors);
+router.get("/vendors", protectMasterAdmin, requirePermission("vendors"), getAllVendors);
 router.post("/vendors", protectMasterAdmin, upload.fields([
   { name: "profilePicture", maxCount: 1 },
   { name: "aadharFile", maxCount: 1 },
   { name: "panFile", maxCount: 1 },
   { name: "shopProofFile", maxCount: 1 }
 ]), createVendorByAdmin);
-router.get("/vendors/:id", protectMasterAdmin, getVendorDetails);
-router.put("/vendors/:id/status", protectMasterAdmin, updateVendorStatus);
-router.put("/vendors/:id/products", protectMasterAdmin, assignProductsToVendor);
+router.get("/vendors/:id", protectMasterAdmin, requirePermission("vendors"), getVendorDetails);
+router.put("/vendors/:id/status", protectMasterAdmin, requirePermission("vendors"), updateVendorStatus);
+router.put("/vendors/:id/products", protectMasterAdmin, requirePermission("products"), assignProductsToVendor);
 
 /* 🏪 Franchise Management */
-router.get("/franchises", protectMasterAdmin, getAllFranchises);
+router.get("/franchises", protectMasterAdmin, requirePermission("franchises"), getAllFranchises);
 router.post("/franchises", protectMasterAdmin, upload.fields([
   { name: "aadhaarImage", maxCount: 1 },
   { name: "panImage", maxCount: 1 }
 ]), createFranchiseByAdmin);
-router.get("/franchises/kyc/pending", protectMasterAdmin, getPendingKYCFranchises);
-router.get("/franchises/:id", protectMasterAdmin, getFranchiseDetails);
-router.put("/franchises/:id/status", protectMasterAdmin, updateFranchiseStatus);
-router.put("/franchises/:id/kyc-review", protectMasterAdmin, reviewFranchiseKYC);
+router.get("/franchises/kyc/pending", protectMasterAdmin, requirePermission("approvals"), getPendingKYCFranchises);
+router.get("/franchises/:id", protectMasterAdmin, requirePermission("franchises"), getFranchiseDetails);
+router.put("/franchises/:id/status", protectMasterAdmin, requirePermission("franchises"), updateFranchiseStatus);
+router.put("/franchises/:id/kyc-review", protectMasterAdmin, requirePermission("approvals"), reviewFranchiseKYC);
 
 /* 👥 Customer Management */
-router.get("/customers", protectMasterAdmin, getAllCustomers);
-router.get("/customers/:id", protectMasterAdmin, getCustomerDetails);
-router.put("/customers/:id/credit", protectMasterAdmin, updateCustomerCredit);
+router.get("/customers", protectMasterAdmin, requirePermission("credit"), getAllCustomers);
+router.get("/customers/:id", protectMasterAdmin, requirePermission("credit"), getCustomerDetails);
+router.put("/customers/:id/credit", protectMasterAdmin, requirePermission("credit"), updateCustomerCredit);
 
 /* 📊 Inventory Monitoring */
-router.get("/inventory/monitoring", protectMasterAdmin, getGlobalInventoryMonitoring);
-router.get("/inventory/franchise/:id", protectMasterAdmin, getFranchiseInventoryDetails);
+router.get("/inventory/monitoring", protectMasterAdmin, requirePermission("stock-monitoring"), getGlobalInventoryMonitoring);
+router.get("/inventory/franchise/:id", protectMasterAdmin, requirePermission("stock-monitoring"), getFranchiseInventoryDetails);
 
 /* 💰 Commission Management */
-router.get("/franchise/:id/commissions", protectMasterAdmin, getFranchiseCommissions);
-router.post("/commissions/update", protectMasterAdmin, updateFranchiseCommission);
+router.get("/franchise/:id/commissions", protectMasterAdmin, requirePermission("commission"), getFranchiseCommissions);
+router.post("/commissions/update", protectMasterAdmin, requirePermission("commission"), updateFranchiseCommission);
 router.get("/franchise-payouts", protectMasterAdmin, getFranchisePayoutsSummary);
 router.get("/cod/remittances", protectMasterAdmin, getCodRemittances);
 router.put("/cod/remittances/:remittanceId/review", protectMasterAdmin, reviewCodRemittance);
 
 /* ⚙️ System Settings */
-router.get("/settings", protectMasterAdmin, getGlobalSettings);
-router.post("/settings/update", protectMasterAdmin, updateGlobalSetting);
+router.get("/settings", protectMasterAdmin, requirePermission("settings"), getGlobalSettings);
+router.post("/settings/update", protectMasterAdmin, requirePermission("settings"), updateGlobalSetting);
 router.get("/loyalty/history", protectMasterAdmin, getLoyaltyConfigHistory);
 router.get("/public-settings", getGlobalSettings); // Public route for user app
+/* 👥 Sub-Admin Management (SuperAdmin Only) */
+router.get("/subadmins", protectMasterAdmin, listSubAdmins);
+router.post("/subadmins", protectMasterAdmin, createSubAdmin);
+router.put("/subadmins/:id", protectMasterAdmin, updateSubAdmin);
+router.delete("/subadmins/:id", protectMasterAdmin, deleteSubAdmin);
+
 router.get("/returns", protectMasterAdmin, getAllReturnRequests);
 
 export default router;

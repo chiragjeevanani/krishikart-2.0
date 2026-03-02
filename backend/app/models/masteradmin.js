@@ -41,7 +41,8 @@ const masterAdminSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      default: "masteradmin",
+      enum: ["superadmin", "subadmin"],
+      default: "superadmin",
     },
   },
   { timestamps: true }
