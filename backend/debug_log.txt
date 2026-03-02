@@ -4206,3 +4206,7 @@ Found: 34 orders
 =======
 Found: 31 orders
 >>>>>>> 17ed5cf4cf9fb8f0433997d0713549e3c3623961
+
+[2026-02-28T12:30:23.442Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (indore)
+Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
+Found: 34 orders
