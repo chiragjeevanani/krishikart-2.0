@@ -9,6 +9,7 @@ import User from "../models/user.js";
 import Franchise from "../models/franchise.js";
 import GlobalSetting from "../models/globalSetting.js";
 import Inventory from "../models/inventory.js";
+import Coupon from "../models/coupon.js";
 import { geocodeAddress, getDistance } from "../utils/geo.js";
 
 /**
@@ -113,17 +114,67 @@ export const createOrder = async (req, res) => {
       subtotal += itemSubtotal;
     }
 
-    // 4. Calculate Delivery Fee and Tax
-    const deliveryFee =
-      subtotal >= parseFloat(constraints.freeMov)
-        ? 0
-        : parseFloat(constraints.baseFee);
-    const platformFee = 0; // Explicitly removed
+    // 4. Handle Coupon Validation and Discounts
+    let discountAmount = 0;
+    let finalDeliveryFee = subtotal >= parseFloat(constraints.freeMov) ? 0 : parseFloat(constraints.baseFee);
+    let appliedCouponCode = "";
+
+    if (req.body.couponCode) {
+      try {
+        const coupon = await Coupon.findOne({
+          code: req.body.couponCode.toUpperCase(),
+          status: "active"
+        });
+
+        if (coupon) {
+          const now = new Date();
+          let isValid = true;
+
+          // 1. Date Check
+          if (coupon.startDate && now < coupon.startDate) isValid = false;
+          if (coupon.endDate && now > coupon.endDate) isValid = false;
+
+          // 2. Usage Limit Check
+          if (coupon.usageLimit && coupon.timesUsed >= coupon.usageLimit) isValid = false;
+
+          // 3. Min Order Value Check
+          if (subtotal < coupon.minOrderValue) isValid = false;
+
+          // 4. User Usage Limit
+          const userUsage = await Order.countDocuments({
+            userId,
+            couponCode: coupon.code,
+            orderStatus: { $ne: 'Cancelled' }
+          });
+          if (userUsage >= coupon.usageLimitPerUser) isValid = false;
+
+          if (isValid) {
+            if (coupon.type === 'free_delivery') {
+              finalDeliveryFee = 0;
+            } else if (['percentage', 'bulk_discount', 'category_based', 'new_partner', 'min_order_value', 'monthly_volume'].includes(coupon.type)) {
+              discountAmount = (subtotal * coupon.value) / 100;
+              if (coupon.maxDiscount > 0 && discountAmount > coupon.maxDiscount) discountAmount = coupon.maxDiscount;
+            } else if (coupon.type === 'fixed') {
+              discountAmount = coupon.value;
+            }
+
+            appliedCouponCode = coupon.code;
+            discountAmount = Number(discountAmount.toFixed(2));
+
+            // Increment usage
+            coupon.timesUsed += 1;
+            await coupon.save();
+          }
+        }
+      } catch (err) {
+        console.error("Coupon processing error in createOrder:", err);
+      }
+    }
 
     // Dynamic Tax applied to the entire order (Subtotal + Fees)
     const taxRate = parseFloat(constraints.tax || 0) / 100;
-    const tax = Number(((subtotal + deliveryFee) * taxRate).toFixed(2));
-    const totalAmount = Number((subtotal + deliveryFee + tax).toFixed(2));
+    const tax = Number(((subtotal + finalDeliveryFee) * taxRate).toFixed(2));
+    const totalAmount = Number((subtotal + finalDeliveryFee + tax - discountAmount).toFixed(2));
 
     // 5. Handle Payments (Wallet/Credit)
     if (paymentMethod === "Wallet") {
@@ -137,7 +188,7 @@ export const createOrder = async (req, res) => {
         type: "Paid",
         amount: totalAmount,
         status: "Success",
-        note: "Order paid via wallet",
+        note: `Order paid via wallet ${appliedCouponCode ? '(Coupon: ' + appliedCouponCode + ')' : ''}`,
         createdAt: new Date(),
       });
     } else if (paymentMethod === "Credit") {
@@ -152,7 +203,7 @@ export const createOrder = async (req, res) => {
         type: "Credit Used",
         amount: totalAmount,
         status: "Success",
-        note: "Order paid via business credit",
+        note: `Order paid via business credit ${appliedCouponCode ? '(Coupon: ' + appliedCouponCode + ')' : ''}`,
         createdAt: new Date(),
       });
     }
@@ -172,11 +223,12 @@ export const createOrder = async (req, res) => {
       franchiseId: assignedFranchiseId,
       items: orderItems,
       subtotal,
-      deliveryFee,
-      platformFee, // Note: Order model might need this field if tracking separately
+      deliveryFee: finalDeliveryFee,
       tax,
       totalAmount,
       paymentMethod,
+      couponCode: appliedCouponCode,
+      discountAmount: discountAmount,
       paymentStatus:
         paymentMethod === "Wallet" || paymentMethod === "Credit"
           ? "Completed"

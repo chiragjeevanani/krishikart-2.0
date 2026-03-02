@@ -28,6 +28,9 @@ import CreditInfoScreen from './modules/user/pages/CreditInfoScreen'
 import BusinessRegistrationScreen from './modules/user/pages/BusinessRegistrationScreen'
 import { WishlistProvider } from './modules/user/contexts/WishlistContext'
 import { LocationProvider } from './modules/user/contexts/LocationContext'
+import { UserAuthProvider } from './modules/user/contexts/UserAuthContext'
+import UserAuthGuard from './modules/user/components/auth/UserAuthGuard'
+import FranchiseAuthGuard from './modules/franchise/components/auth/FranchiseAuthGuard'
 
 import { FranchiseAuthProvider } from './modules/franchise/contexts/FranchiseAuthContext'
 import { FranchiseOrdersProvider } from './modules/franchise/contexts/FranchiseOrdersContext'
@@ -68,17 +71,19 @@ import { DeliveryOrderProvider } from './modules/delivery/contexts/DeliveryOrder
 import { Toaster } from 'sonner'
 
 const UserProviders = ({ children }) => (
-  <LocationProvider>
-    <OrderProvider>
-      <CartProvider>
-        <WishlistProvider>
-          <WalletProvider>
-            {children}
-          </WalletProvider>
-        </WishlistProvider>
-      </CartProvider>
-    </OrderProvider>
-  </LocationProvider>
+  <UserAuthProvider>
+    <LocationProvider>
+      <OrderProvider>
+        <CartProvider>
+          <WishlistProvider>
+            <WalletProvider>
+              {children}
+            </WalletProvider>
+          </WishlistProvider>
+        </CartProvider>
+      </OrderProvider>
+    </LocationProvider>
+  </UserAuthProvider>
 );
 
 const FranchiseProviders = ({ children }) => (
@@ -105,11 +110,6 @@ const DeliveryProviders = () => (
   </DeliveryAuthProvider>
 );
 
-const MasterAdminProviders = () => (
-  <MasterAdminAuthProvider>
-    <Outlet />
-  </MasterAdminAuthProvider>
-);
 
 function App() {
   return (
@@ -126,29 +126,31 @@ function App() {
           <Route path="/login" element={<UserProviders><LoginScreen /></UserProviders>} />
 
           {/* User Module */}
-          <Route element={<UserProviders><AppLayout /></UserProviders>}>
-            <Route path="/home" element={<HomeScreen />} />
-            <Route path="/categories" element={<CategoriesScreen />} />
-            <Route path="/products/:category" element={<ProductListScreen />} />
-            <Route path="/product/:id" element={<ProductDetailScreen />} />
-            <Route path="/cart" element={<CartScreen />} />
-            <Route path="/checkout" element={<CheckoutScreen />} />
-            <Route path="/profile" element={<ProfileScreen />} />
-            <Route path="/orders" element={<OrdersScreen />} />
-            <Route path="/edit-profile" element={<EditProfileScreen />} />
-            <Route path="/address-book" element={<AddressBookScreen />} />
-            <Route path="/track-order/:id" element={<OrderTrackingScreen />} />
-            <Route path="/order-summary/:id" element={<OrderSummaryScreen />} />
-            <Route path="/order-detail/:id" element={<OrderDetailScreen />} />
-            <Route path="/wallet" element={<WalletScreen />} />
-            <Route path="/credit-info" element={<CreditInfoScreen />} />
-            <Route path="/notifications" element={<NotificationsScreen />} />
-            <Route path="/favorites" element={<FavoritesScreen />} />
-            <Route path="/wishlist" element={<WishlistScreen />} />
-            <Route path="/verification" element={<VerificationScreen />} />
-            <Route path="/help-support" element={<HelpSupportScreen />} />
-            <Route path="/business-registration" element={<BusinessRegistrationScreen />} />
-            <Route path="/about" element={<AboutScreen />} />
+          <Route element={<UserProviders><UserAuthGuard /></UserProviders>}>
+            <Route element={<AppLayout />}>
+              <Route path="/home" element={<HomeScreen />} />
+              <Route path="/categories" element={<CategoriesScreen />} />
+              <Route path="/products/:category" element={<ProductListScreen />} />
+              <Route path="/product/:id" element={<ProductDetailScreen />} />
+              <Route path="/cart" element={<CartScreen />} />
+              <Route path="/checkout" element={<CheckoutScreen />} />
+              <Route path="/profile" element={<ProfileScreen />} />
+              <Route path="/orders" element={<OrdersScreen />} />
+              <Route path="/edit-profile" element={<EditProfileScreen />} />
+              <Route path="/address-book" element={<AddressBookScreen />} />
+              <Route path="/track-order/:id" element={<OrderTrackingScreen />} />
+              <Route path="/order-summary/:id" element={<OrderSummaryScreen />} />
+              <Route path="/order-detail/:id" element={<OrderDetailScreen />} />
+              <Route path="/wallet" element={<WalletScreen />} />
+              <Route path="/credit-info" element={<CreditInfoScreen />} />
+              <Route path="/notifications" element={<NotificationsScreen />} />
+              <Route path="/favorites" element={<FavoritesScreen />} />
+              <Route path="/wishlist" element={<WishlistScreen />} />
+              <Route path="/verification" element={<VerificationScreen />} />
+              <Route path="/help-support" element={<HelpSupportScreen />} />
+              <Route path="/business-registration" element={<BusinessRegistrationScreen />} />
+              <Route path="/about" element={<AboutScreen />} />
+            </Route>
           </Route>
 
           {/* Franchise Module */}
@@ -156,26 +158,26 @@ function App() {
             <Route index element={<Navigate to="login" replace />} />
             <Route path="login" element={<FranchiseAuthProvider><FranchiseLogin /></FranchiseAuthProvider>} />
             <Route path="signup" element={<FranchiseAuthProvider><FranchiseSignup /></FranchiseAuthProvider>} />
-            <Route element={<FranchiseProviders><FranchiseLayout /></FranchiseProviders>}>
-              <Route path="dashboard" element={<FranchiseDashboard />} />
-              <Route path="orders" element={<FranchiseOrders />} />
-              <Route path="orders/:id" element={<OrderDetail />} />
-              <Route path="inventory" element={<FranchiseInventory />} />
-              <Route path="receiving" element={<ReceivingScreen />} />
-              <Route path="dispatch" element={<FranchiseDelivery />} />
-              <Route path="cash" element={<CODCashScreen />} />
-              <Route path="pos" element={<POSWeighingScreen />} />
-              <Route path="procurement" element={<ProcurementScreen />} />
-              <Route path="returns" element={<FranchiseReturns />} />
-              <Route path="profile" element={<FranchiseProfile />} />
-              <Route path="payment-settings" element={<FranchisePaymentSettings />} />
-              <Route path="documentation" element={<DocumentationScreen />} />
+            <Route element={<FranchiseProviders><FranchiseAuthGuard /></FranchiseProviders>}>
+              <Route element={<FranchiseLayout />}>
+                <Route path="dashboard" element={<FranchiseDashboard />} />
+                <Route path="orders" element={<FranchiseOrders />} />
+                <Route path="orders/:id" element={<OrderDetail />} />
+                <Route path="inventory" element={<FranchiseInventory />} />
+                <Route path="receiving" element={<ReceivingScreen />} />
+                <Route path="dispatch" element={<FranchiseDelivery />} />
+                <Route path="cash" element={<CODCashScreen />} />
+                <Route path="pos" element={<POSWeighingScreen />} />
+                <Route path="procurement" element={<ProcurementScreen />} />
+                <Route path="returns" element={<FranchiseReturns />} />
+                <Route path="profile" element={<FranchiseProfile />} />
+                <Route path="payment-settings" element={<FranchisePaymentSettings />} />
+                <Route path="documentation" element={<DocumentationScreen />} />
+              </Route>
             </Route>
           </Route>
 
-          <Route element={<MasterAdminProviders />}>
-            {masterAdminRoutes}
-          </Route>
+          {masterAdminRoutes}
           {vendorRoutes}
           <Route element={<DeliveryProviders />}>
             {deliveryRoutes}

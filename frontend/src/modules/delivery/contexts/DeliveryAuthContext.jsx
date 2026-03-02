@@ -28,6 +28,14 @@ export function DeliveryAuthProvider({ children }) {
             setLoading(false);
         };
         loadUser();
+
+        const handleStorageChange = (e) => {
+            if (e.key === 'deliveryToken' && !e.newValue) {
+                logout();
+            }
+        };
+        window.addEventListener('storage', handleStorageChange);
+        return () => window.removeEventListener('storage', handleStorageChange);
     }, []);
 
     const loginSuccess = (data, token) => {

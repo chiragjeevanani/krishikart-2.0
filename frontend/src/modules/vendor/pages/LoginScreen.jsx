@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Sprout, Mail, Lock, Loader2, ArrowRight } from 'lucide-react';
 
-import api from '../../../lib/axios';
+import api from '@/lib/axios';
+import { useVendorAuth } from '@/modules/vendor/contexts/VendorAuthContext';
 
 export default function LoginScreen() {
+    const { loginSuccess } = useVendorAuth();
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [email, setEmail] = useState('');
@@ -19,13 +21,11 @@ export default function LoginScreen() {
 
             // Store token and vendor data
             if (response.data.result && response.data.result.token) {
-                localStorage.setItem('vendorToken', response.data.result.token);
-                localStorage.setItem('vendorData', JSON.stringify(response.data.result));
+                loginSuccess(response.data.result, response.data.result.token);
                 navigate('/vendor/dashboard');
             } else if (response.data.token) {
                 // Fallback if structure changes
-                localStorage.setItem('vendorToken', response.data.token);
-                localStorage.setItem('vendorData', JSON.stringify(response.data));
+                loginSuccess(response.data, response.data.token);
                 navigate('/vendor/dashboard');
             } else {
                 throw new Error('Invalid response from server');

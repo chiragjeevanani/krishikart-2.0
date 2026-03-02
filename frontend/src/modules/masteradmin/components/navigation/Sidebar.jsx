@@ -33,7 +33,8 @@ import {
     Clock,
     CheckCircle2,
     FileText,
-    Undo2
+    Undo2,
+    Ticket
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
@@ -42,7 +43,7 @@ import { useMasterAdminAuth } from '../../contexts/MasterAdminAuthContext';
 
 export default function Sidebar({ isCollapsed, setIsCollapsed }) {
     const navigate = useNavigate();
-    const { logout } = useMasterAdminAuth();
+    const { logout, hasPermission, isSuperAdmin } = useMasterAdminAuth();
     const location = useLocation();
     const [expandedMenu, setExpandedMenu] = useState(null);
 
@@ -66,29 +67,30 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
     const navItems = [
         {
             group: 'Operations', items: [
-                { icon: LayoutDashboard, label: 'Dashboard', path: '/masteradmin/dashboard' },
-                { icon: ShoppingBag, label: 'Orders', path: '/masteradmin/orders' },
-                { icon: UserCheck, label: 'Assign Vendors', path: '/masteradmin/assignment' },
-                { icon: Truck, label: 'Delivery Tracking', path: '/masteradmin/delivery' },
-                { icon: Undo2, label: 'Returns', path: '/masteradmin/returns' },
+                { icon: LayoutDashboard, label: 'Dashboard', path: '/masteradmin/dashboard', permissionKey: 'dashboard' },
+                { icon: ShoppingBag, label: 'Orders', path: '/masteradmin/orders', permissionKey: 'orders' },
+                { icon: UserCheck, label: 'Assign Vendors', path: '/masteradmin/assignment', permissionKey: 'assignment' },
+                { icon: Truck, label: 'Delivery Tracking', path: '/masteradmin/delivery', permissionKey: 'delivery' },
+                { icon: Undo2, label: 'Returns', path: '/masteradmin/returns', permissionKey: 'returns' },
             ]
         },
         {
             group: 'Finance', items: [
-                { icon: CreditCard, label: 'Credit Management', path: '/masteradmin/credit' },
-                { icon: Landmark, label: 'Franchise Payouts', path: '/masteradmin/franchise-payouts' },
-                { icon: HandCoins, label: 'COD Remittance', path: '/masteradmin/cod-remittance' },
-                { icon: Star, label: 'Loyalty Engine', path: '/masteradmin/loyalty' },
-                { icon: Truck, label: 'Delivery Constraints', path: '/masteradmin/delivery-constraints' },
+                { icon: CreditCard, label: 'Credit Management', path: '/masteradmin/credit', permissionKey: 'credit' },
+                { icon: Landmark, label: 'Franchise Payouts', path: '/masteradmin/franchise-payouts', permissionKey: 'franchise-payouts' },
+                { icon: HandCoins, label: 'COD Remittance', path: '/masteradmin/cod-remittance', permissionKey: 'cod-remittance' },
+                { icon: Star, label: 'Loyalty Engine', path: '/masteradmin/loyalty', permissionKey: 'loyalty' },
+                { icon: Ticket, label: 'Coupons', path: '/masteradmin/coupons', permissionKey: 'coupons' },
+                { icon: Truck, label: 'Delivery Constraints', path: '/masteradmin/delivery-constraints', permissionKey: 'delivery-constraints' },
             ]
         },
         {
             group: 'Network', items: [
-                { icon: Store, label: 'Franchises', path: '/masteradmin/franchises' },
-                { icon: Users, label: 'Vendors', path: '/masteradmin/vendors' },
-                { icon: FileText, label: 'Vendor Invoices', path: '/masteradmin/vendor-reports' },
-                { icon: Monitor, label: 'Stock Levels', path: '/masteradmin/stock-monitoring' },
-                { icon: Star, label: 'Vendor Quotations', path: '/masteradmin/quotations' },
+                { icon: Store, label: 'Franchises', path: '/masteradmin/franchises', permissionKey: 'franchises' },
+                { icon: Users, label: 'Vendors', path: '/masteradmin/vendors', permissionKey: 'vendors' },
+                { icon: FileText, label: 'Vendor Invoices', path: '/masteradmin/vendor-reports', permissionKey: 'vendor-reports' },
+                { icon: Monitor, label: 'Stock Levels', path: '/masteradmin/stock-monitoring', permissionKey: 'stock-monitoring' },
+                { icon: Star, label: 'Vendor Quotations', path: '/masteradmin/quotations', permissionKey: 'quotations' },
             ]
         },
         {
@@ -97,6 +99,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                     icon: Package,
                     label: 'Product',
                     path: '/masteradmin/products',
+                    permissionKey: 'products',
                     submenu: [
                         { label: 'Add Product', path: '/masteradmin/products/add', icon: PlusCircle },
                         { label: 'Manage Product', path: '/masteradmin/products/manage', icon: List }
@@ -106,6 +109,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                     icon: Tags,
                     label: 'Category',
                     path: '/masteradmin/categories',
+                    permissionKey: 'categories',
                     submenu: [
                         { label: 'Manage Category', path: '/masteradmin/categories/manage', icon: List },
                         { label: 'Manage Subcategory', path: '/masteradmin/subcategories/manage', icon: List }
@@ -119,16 +123,18 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                     icon: ClipboardCheck,
                     label: 'Approvals',
                     path: '/masteradmin/approvals',
+                    permissionKey: 'approvals',
                     submenu: [
                         { label: 'Vendor Documents', path: '/masteradmin/approvals?type=vendor', icon: Users },
                         { label: 'Franchise Documents', path: '/masteradmin/approvals?type=franchise', icon: Building },
                     ]
                 },
-                { icon: BarChart3, label: 'Analytics', path: '/masteradmin/analytics' },
+                { icon: Briefcase, label: 'Team Management', path: '/masteradmin/team', permissionKey: 'superadmin' },
                 {
                     icon: Settings,
                     label: 'Settings',
                     path: '/masteradmin/settings',
+                    permissionKey: 'settings',
                     submenu: [
                         { label: 'My Profile', path: '/masteradmin/settings?section=profile', icon: UserCircle },
                     ]
@@ -136,6 +142,14 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
             ]
         }
     ];
+
+    const filteredNavItems = navItems.map(group => ({
+        ...group,
+        items: group.items.filter(item => {
+            if (item.permissionKey === 'superadmin') return isSuperAdmin;
+            return hasPermission(item.permissionKey);
+        })
+    })).filter(group => group.items.length > 0);
 
     return (
         <aside className={cn(
@@ -165,7 +179,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
 
             {/* Nav Selection Engine */}
             <nav className="flex-1 px-3 py-6 space-y-8 overflow-y-auto no-scrollbar">
-                {navItems.map((group) => (
+                {filteredNavItems.map((group) => (
                     <div key={group.group} className="space-y-1.5">
                         {!isCollapsed && (
                             <div className="px-3 mb-2">

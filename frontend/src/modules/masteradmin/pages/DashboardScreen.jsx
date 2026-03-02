@@ -40,6 +40,7 @@ import {
     Bar
 } from 'recharts';
 import mockDashboard from '../data/mockDashboard.json';
+import api from '@/lib/axios';
 import { cn } from '@/lib/utils';
 
 // Enterprise Components
@@ -54,12 +55,32 @@ export default function DashboardScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [showMetrics, setShowMetrics] = useState(true);
     const [settlementSearch, setSettlementSearch] = useState('');
-    const { kpis, orderFlow, revenueFlow, recentSettlements } = mockDashboard;
+    const [dashboardData, setDashboardData] = useState({
+        kpis: [],
+        orderFlow: [],
+        revenueFlow: [],
+        recentSettlements: []
+    });
+
+    const fetchDashboardStats = async () => {
+        try {
+            setIsLoading(true);
+            const response = await api.get('/masteradmin/dashboard/stats');
+            if (response.data.success && response.data.result) {
+                setDashboardData(response.data.result);
+            }
+        } catch (error) {
+            console.error('Failed to fetch dashboard stats:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 800);
-        return () => clearTimeout(timer);
+        fetchDashboardStats();
     }, []);
+
+    const { kpis, orderFlow, revenueFlow, recentSettlements } = dashboardData;
 
     const settlementColumns = [
         {
@@ -152,8 +173,11 @@ export default function DashboardScreen() {
                             <button className="px-3 py-1 text-[9px] font-bold bg-white text-slate-900 shadow-sm rounded-sm uppercase tracking-widest">Live</button>
                             <button className="px-3 py-1 text-[9px] font-bold text-slate-400 hover:text-slate-900 uppercase tracking-widest transition-colors">History</button>
                         </div>
-                        <button className="p-1.5 border border-slate-200 rounded-sm hover:bg-slate-50 text-slate-400 transition-colors">
-                            <RefreshCw size={14} />
+                        <button
+                            onClick={fetchDashboardStats}
+                            className="p-1.5 border border-slate-200 rounded-sm hover:bg-slate-50 text-slate-400 transition-colors"
+                        >
+                            <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
                         </button>
                         <button className="bg-slate-900 text-white px-3 py-1.5 rounded-sm text-[11px] font-bold flex items-center gap-2 hover:bg-slate-800 transition-colors shadow-sm">
                             <Download size={13} />
@@ -295,7 +319,7 @@ export default function DashboardScreen() {
                             </div>
                             <div className="h-3 w-px bg-slate-200" />
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest underline decoration-slate-200 underline-offset-4 cursor-help">
-                                Total Amount: <span className="text-slate-900 tabular-nums">₹892,500.00</span>
+                                Total Amount: <span className="text-slate-900 tabular-nums">₹{recentSettlements?.reduce((acc, s) => acc + s.amount, 0).toLocaleString()}.00</span>
                             </span>
                         </div>
                         <div className="flex items-center gap-1">

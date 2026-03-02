@@ -46,20 +46,9 @@ export default function MasterAdminLayout() {
                             <TopBar />
 
                             <main className="flex-1 overflow-y-auto overflow-x-hidden relative">
-                                <AnimatePresence mode="wait" initial={false}>
-                                    <motion.div
-                                        key={location.pathname}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -10 }}
-                                        transition={{ duration: 0.15 }}
-                                        className="min-h-full"
-                                    >
-                                        <Suspense fallback={<div className="h-full w-full flex items-center justify-center p-20"><div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
-                                            <Outlet />
-                                        </Suspense>
-                                    </motion.div>
-                                </AnimatePresence>
+                                <Suspense fallback={<div className="h-full w-full flex items-center justify-center p-20"><div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+                                    <Outlet />
+                                </Suspense>
                             </main>
                         </div>
                     </div>

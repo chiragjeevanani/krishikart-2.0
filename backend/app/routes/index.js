@@ -9,6 +9,7 @@ import orderRoutes from "../../app/routes/order.js";
 import paymentRoutes from "../../app/routes/payment.js";
 import procurementRoutes from "../../app/routes/procurement.routes.js";
 import geoRoute from "../../app/routes/geo.js";
+import couponRoutes from "../../app/routes/coupon.js";
 
 const setupRoutes = (app) => {
     app.use("/user", userRoute);
@@ -23,5 +24,6 @@ const setupRoutes = (app) => {
     app.use("/payment", paymentRoutes);
     app.use("/procurement", procurementRoutes);
     app.use("/geo", geoRoute);
+    app.use("/coupons", couponRoutes);
 }
 export default setupRoutes;

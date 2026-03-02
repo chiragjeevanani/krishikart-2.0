@@ -8,7 +8,10 @@ import api from '../../../lib/axios'
 import { useCart } from '../contexts/CartContext'
 import { useWishlist } from '../contexts/WishlistContext'
 
+import { useUserAuth } from '../contexts/UserAuthContext'
+
 export default function LoginScreen() {
+    const { loginSuccess } = useUserAuth()
     const { fetchCart } = useCart()
     const { fetchWishlist } = useWishlist()
     const [step, setStep] = useState('phone') // phone, otp
@@ -39,8 +42,7 @@ export default function LoginScreen() {
                 try {
                     const response = await api.post('/user/verify-otp', { mobile: phone, otp: otpValue });
 
-                    localStorage.setItem('userToken', response.data.result.token);
-                    localStorage.setItem('userData', JSON.stringify(response.data.result.user));
+                    loginSuccess(response.data.result.user, response.data.result.token);
                     window.dispatchEvent(new Event('userDataUpdated'));
 
                     // Sync onboarding state from backend for returning users

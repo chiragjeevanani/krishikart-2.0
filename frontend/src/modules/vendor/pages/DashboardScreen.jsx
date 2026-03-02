@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { useOrders } from '@/modules/user/contexts/OrderContext';
 import MetricCard from '../components/cards/MetricCard';
 import DataGrid from '../components/tables/DataGrid';
+import api from '@/lib/axios';
 
 export default function DashboardScreen() {
     const navigate = useNavigate();

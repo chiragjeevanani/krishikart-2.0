@@ -16,14 +16,10 @@ export function FranchiseAuthProvider({ children }) {
             if (token) {
                 try {
                     const { data } = await api.get('/franchise/me');
-                    // Data might be wrapped in result or direct? 
-                    // Controller: return handleResponse(res, 200, "Franchise profile", req.franchise);
-                    // So data.result is the franchise.
                     setFranchise(data.result);
                     localStorage.setItem('franchiseData', JSON.stringify(data.result));
                 } catch (error) {
                     console.error("Failed to load franchise profile", error);
-                    // If 401, maybe logout?
                     if (error.response?.status === 401) {
                         logout();
                     }
@@ -32,6 +28,14 @@ export function FranchiseAuthProvider({ children }) {
             setLoading(false);
         };
         loadUser();
+
+        const handleStorageChange = (e) => {
+            if (e.key === 'franchiseToken' && !e.newValue) {
+                logout();
+            }
+        };
+        window.addEventListener('storage', handleStorageChange);
+        return () => window.removeEventListener('storage', handleStorageChange);
     }, []);
 
     const login = async (mobile, otp) => {

@@ -33,6 +33,7 @@ import {
     CartesianGrid
 } from 'recharts';
 import mockAnalytics from '../data/mockAnalytics.json';
+import api from '@/lib/axios';
 import { cn } from '@/lib/utils';
 
 // Enterprise Components
@@ -46,12 +47,31 @@ const COLORS = ['#475569', '#64748b', '#94a3b8', '#cbd5e1', '#0284c7'];
 
 export default function AnalyticsScreen() {
     const [isLoading, setIsLoading] = useState(true);
-    const { revenueGrowth, regionalPerformance, categoryDistribution } = mockAnalytics;
+    const [analyticsData, setAnalyticsData] = useState({
+        revenueGrowth: [],
+        regionalPerformance: [],
+        categoryDistribution: []
+    });
+
+    const fetchAnalyticsStats = async () => {
+        try {
+            setIsLoading(true);
+            const response = await api.get('/masteradmin/analytics/stats');
+            if (response.data.success && response.data.result) {
+                setAnalyticsData(response.data.result);
+            }
+        } catch (error) {
+            console.error('Failed to fetch analytics stats:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 700);
-        return () => clearTimeout(timer);
+        fetchAnalyticsStats();
     }, []);
+
+    const { revenueGrowth, regionalPerformance, categoryDistribution } = analyticsData;
 
     const revenueColumns = [
         { header: 'Reporting Period', key: 'month', render: (val) => <span className="font-bold text-slate-900">{val} 2026</span> },
@@ -85,7 +105,7 @@ export default function AnalyticsScreen() {
 
     const regionalColumns = [
         { header: 'Market Region', key: 'region', render: (val) => <span className="font-bold text-slate-900">{val}</span> },
-        { header: 'Node Count', key: 'nodes', render: () => <span className="text-slate-600 font-medium">312</span> },
+        { header: 'Node Count', key: 'nodes', render: (val) => <span className="text-slate-600 font-medium">{val || 1}</span> },
         {
             header: 'SLA Efficiency', key: 'efficiency', align: 'right', render: (val) => (
                 <div className="flex items-center justify-end gap-3">
@@ -102,7 +122,7 @@ export default function AnalyticsScreen() {
                 </div>
             )
         },
-        { header: 'Market Share', key: 'share', align: 'right', render: () => <span className="text-slate-400 font-bold">24.2%</span> }
+        { header: 'Market Share', key: 'share', align: 'right', render: (val) => <span className="text-slate-400 font-bold">{val || 0}%</span> }
     ];
 
     if (isLoading) {
@@ -149,26 +169,26 @@ export default function AnalyticsScreen() {
             <div className="bg-white border-b border-slate-200 grid grid-cols-1 lg:grid-cols-3">
                 <MetricRow
                     label="Aggregate Revenue"
-                    value="₹4.28M"
-                    change={18.2}
+                    value={analyticsData.kpis?.revenue?.value || '₹0.00'}
+                    change={analyticsData.kpis?.revenue?.change || 0}
                     trend="up"
                     icon={IndianRupee}
                     sparklineData={[30, 35, 32, 38, 42, 45, 48].map(v => ({ value: v }))}
                 />
                 <MetricRow
                     label="Network Capacity"
-                    value="1,248 Nodes"
-                    change={5.4}
+                    value={analyticsData.kpis?.nodes?.value || '0 Nodes'}
+                    change={analyticsData.kpis?.nodes?.change || 0}
                     trend="up"
                     icon={Users}
                     sparklineData={[1100, 1150, 1180, 1200, 1220, 1240, 1248].map(v => ({ value: v }))}
                 />
                 <MetricRow
                     label="Operational Uptime"
-                    value="98.2%"
-                    change={0.2}
+                    value={analyticsData.kpis?.uptime?.value || '98.2%'}
+                    change={analyticsData.kpis?.uptime?.change || 0}
                     trend="up"
-                    icon={Target}
+                    icon={Activity}
                     sparklineData={[97.8, 98.0, 97.9, 98.1, 98.2, 98.1, 98.2].map(v => ({ value: v }))}
                 />
             </div>

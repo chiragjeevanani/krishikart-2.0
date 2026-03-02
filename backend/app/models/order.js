@@ -247,7 +247,15 @@ const orderSchema = new mongoose.Schema({
         vehicleType: String
     },
     razorpayOrderId: String,
-    razorpayPaymentId: String
+    razorpayPaymentId: String,
+    couponCode: {
+        type: String,
+        default: ''
+    },
+    discountAmount: {
+        type: Number,
+        default: 0
+    }
 }, {
     timestamps: true
 });

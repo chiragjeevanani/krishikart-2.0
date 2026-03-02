@@ -13,7 +13,10 @@ import {
     X,
     Edit3,
     CreditCard,
-    QrCode
+    QrCode,
+    Ticket,
+    CheckCircle2,
+    Percent
 } from 'lucide-react'
 import PageTransition from '../components/layout/PageTransition'
 import { Button } from '@/components/ui/button'
@@ -36,6 +39,13 @@ export default function CheckoutScreen() {
     const [selectedMethod, setSelectedMethod] = useState('upi')
     const [isPlacingOrder, setIsPlacingOrder] = useState(false)
     const [isEditingAddress, setIsEditingAddress] = useState(false)
+
+    // Coupon States
+    const [couponCode, setCouponCode] = useState('')
+    const [appliedCoupon, setAppliedCoupon] = useState(null)
+    const [availableCoupons, setAvailableCoupons] = useState([])
+    const [isValidatingCoupon, setIsValidatingCoupon] = useState(false)
+    const [showCouponList, setShowCouponList] = useState(false)
 
     const [user, setUser] = useState(null)
     const [deliveryAddress, setDeliveryAddress] = useState('')
@@ -102,6 +112,7 @@ export default function CheckoutScreen() {
 
     useEffect(() => {
         fetchProfile()
+        fetchAvailableCoupons()
     }, [])
 
     const fetchProfile = async () => {
@@ -123,14 +134,49 @@ export default function CheckoutScreen() {
         }
     }
 
-    const deliveryFee = cartTotal >= parseFloat(deliveryConstraints.freeMov) ? 0 : parseFloat(deliveryConstraints.baseFee)
+    const fetchAvailableCoupons = async () => {
+        try {
+            const response = await api.get('/coupons/visible');
+            if (response.data.success) {
+                // Backend array response is in 'results'
+                setAvailableCoupons(response.data.results || response.data.result || []);
+            }
+        } catch (error) {
+            console.error('Failed to fetch coupons:', error);
+        }
+    };
+
+    const handleApplyCoupon = async () => {
+        if (!couponCode) return
+        setIsValidatingCoupon(true)
+        try {
+            const response = await api.post('/coupons/validate', {
+                code: couponCode,
+                cartValue: cartTotal
+            })
+            if (response.data.success) {
+                setAppliedCoupon(response.data.result)
+                toast.success("Coupon applied!")
+                setShowCouponList(false)
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Invalid coupon")
+            setAppliedCoupon(null)
+        } finally {
+            setIsValidatingCoupon(false)
+        }
+    }
+
+    const discountAmount = appliedCoupon ? (appliedCoupon.discount || 0) : 0
+    const actualDeliveryFee = cartTotal >= parseFloat(deliveryConstraints.freeMov) ? 0 : parseFloat(deliveryConstraints.baseFee)
+    const finalDeliveryFee = (appliedCoupon?.type === 'free_delivery') ? 0 : actualDeliveryFee
 
     // Dynamic Tax calculation matching backend logic (Entire Order)
     const taxRateString = deliveryConstraints.tax || '0'
     const taxRate = parseFloat(taxRateString) / 100
-    const tax = parseFloat(((cartTotal + deliveryFee) * taxRate).toFixed(2))
+    const tax = parseFloat(((cartTotal + finalDeliveryFee) * taxRate).toFixed(2))
 
-    const total = parseFloat((cartTotal + deliveryFee + tax).toFixed(2))
+    const total = parseFloat((cartTotal + finalDeliveryFee + tax - discountAmount).toFixed(2))
     const hasStructuredAddress = !!(addressDetails.flat && addressDetails.floor && addressDetails.colony && addressDetails.landmark && addressDetails.city && addressDetails.state)
     const displayAddress = hasStructuredAddress
         ? `Flat: ${addressDetails.flat}, Floor: ${addressDetails.floor}, ${addressDetails.colony}, ${addressDetails.landmark}, ${addressDetails.city}, ${addressDetails.state}`
@@ -267,7 +313,9 @@ export default function CheckoutScreen() {
         const orderData = {
             shippingAddress: fullAddress,
             paymentMethod: methodMap[selectedMethod],
-            deliveryShift: deliveryShift
+            deliveryShift: deliveryShift,
+            couponCode: appliedCoupon?.code || '',
+            discountAmount: discountAmount
         }
 
         // Online Payment Flow (Razorpay)
@@ -423,6 +471,119 @@ export default function CheckoutScreen() {
 
                             <div className="h-4"></div>
 
+                            {/* Promo Code */}
+                            <section>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest md:normal-case md:tracking-normal md:text-slate-900 md:text-base">Apply Coupon</h2>
+                                    {availableCoupons.length > 0 && (
+                                        <button
+                                            onClick={() => setShowCouponList(prev => !prev)}
+                                            className="text-primary text-[11px] font-bold uppercase"
+                                        >
+                                            {showCouponList ? 'Hide Offers' : 'View Offers'}
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="bg-white rounded-4xl md:rounded-xl p-4 border border-slate-100 shadow-sm space-y-4">
+                                    <div className="flex gap-2">
+                                        <div className="relative flex-1">
+                                            <Ticket className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                            <input
+                                                type="text"
+                                                value={couponCode}
+                                                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                                                placeholder="Enter Code"
+                                                className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-4 py-3 text-sm font-bold focus:outline-none focus:border-primary transition-all uppercase"
+                                            />
+                                        </div>
+                                        <Button
+                                            onClick={handleApplyCoupon}
+                                            disabled={isValidatingCoupon || !couponCode}
+                                            className="rounded-xl px-6 bg-slate-900 hover:bg-slate-800 text-white font-bold"
+                                        >
+                                            {isValidatingCoupon ? <Loader2 size={16} className="animate-spin" /> : 'Apply'}
+                                        </Button>
+                                    </div>
+
+                                    {appliedCoupon && (
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.95 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            className="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100 flex items-start justify-between group"
+                                        >
+                                            <div className="flex gap-3">
+                                                <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+                                                    <CheckCircle2 size={24} />
+                                                </div>
+                                                <div className="space-y-0.5">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm font-black text-slate-900 uppercase">'{appliedCoupon.code}' Applied!</span>
+                                                        <span className="px-1.5 py-0.5 bg-emerald-600 text-white text-[9px] font-black rounded-sm uppercase tracking-widest">
+                                                            Save ₹{appliedCoupon.discount}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-[11px] font-bold text-emerald-700 leading-tight">
+                                                        {appliedCoupon.message || appliedCoupon.title || "Discount applied successfully!"}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => { setAppliedCoupon(null); setCouponCode(''); }}
+                                                className="w-8 h-8 rounded-full hover:bg-emerald-100 flex items-center justify-center text-emerald-600 transition-all"
+                                            >
+                                                <X size={16} />
+                                            </button>
+                                        </motion.div>
+                                    )}
+
+                                    <AnimatePresence>
+                                        {showCouponList && availableCoupons.length > 0 && (
+                                            <motion.div
+                                                initial={{ opacity: 0, height: 0 }}
+                                                animate={{ opacity: 1, height: 'auto' }}
+                                                exit={{ opacity: 0, height: 0 }}
+                                                className="pt-2 space-y-3 overflow-hidden"
+                                            >
+                                                <div className="h-px bg-slate-100 my-2" />
+                                                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-0.5">Exclusive Offers for You</h4>
+                                                <div className="space-y-3 max-h-64 overflow-y-auto pr-1 no-scrollbar">
+                                                    {availableCoupons.map((coupon) => (
+                                                        <div
+                                                            key={coupon._id}
+                                                            onClick={() => { setCouponCode(coupon.code); }}
+                                                            className="p-4 rounded-2xl border border-dashed border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/30 cursor-pointer transition-all flex items-center justify-between group relative overflow-hidden"
+                                                        >
+                                                            <div className="flex items-center gap-4 relative z-10">
+                                                                <div className="w-11 h-11 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 border border-slate-100 group-hover:bg-emerald-600 group-hover:text-white group-hover:border-emerald-600 transition-all duration-300">
+                                                                    <Percent size={20} />
+                                                                </div>
+                                                                <div className="space-y-0.5">
+                                                                    <div className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
+                                                                        {coupon.code}
+                                                                        {coupon.isFirstTimeUserOnly && (
+                                                                            <span className="text-[8px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full font-black uppercase">NEW USER</span>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="text-[10px] text-emerald-600 font-bold uppercase tracking-tight">{coupon.title}</div>
+                                                                    {coupon.description && (
+                                                                        <div className="text-[10px] text-slate-400 font-bold lowercase italic leading-none mt-1 line-clamp-1">{coupon.description}</div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <button className="text-[10px] font-black text-emerald-600 uppercase tracking-widest px-3 py-1.5 rounded-lg border border-emerald-100 bg-white shadow-sm group-hover:bg-emerald-600 group-hover:text-white group-hover:border-emerald-600 transition-all">
+                                                                Use Now
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            </section>
+
+                            <div className="h-8"></div>
+
                             {/* Payment Method */}
                             <section>
                                 <div className="flex items-center justify-between mb-4">
@@ -492,14 +653,20 @@ export default function CheckoutScreen() {
                                     </div>
                                     <div className="flex justify-between items-center text-sm font-medium text-slate-500">
                                         <span>Delivery Fee</span>
-                                        <span className={deliveryFee === 0 ? "text-green-600 font-bold" : ""}>
-                                            {deliveryFee === 0 ? 'FREE' : `₹${deliveryFee}`}
+                                        <span className={finalDeliveryFee === 0 ? "text-green-600 font-bold" : ""}>
+                                            {finalDeliveryFee === 0 ? 'FREE' : `₹${finalDeliveryFee}`}
                                         </span>
                                     </div>
                                     <div className="flex justify-between items-center text-sm font-medium text-slate-500">
                                         <span>Taxes & Charges ({taxRateString}%)</span>
                                         <span title={`GST applied to total order amount`}>₹{tax}</span>
                                     </div>
+                                    {discountAmount > 0 && (
+                                        <div className="flex justify-between items-center text-sm font-bold text-emerald-600">
+                                            <span>Coupon Discount</span>
+                                            <span>- ₹{discountAmount}</span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 space-y-2">

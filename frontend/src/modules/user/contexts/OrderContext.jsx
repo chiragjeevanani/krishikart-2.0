@@ -74,13 +74,14 @@ export function OrderProvider({ children }) {
             if (order?._id) joinOrderRoom(order._id);
         });
     }, [orders]);
-
     const placeOrder = async (orderData) => {
         try {
             const response = await api.post('/orders/place', {
                 shippingAddress: orderData.shippingAddress,
                 paymentMethod: orderData.paymentMethod,
                 deliveryShift: orderData.deliveryShift,
+                couponCode: orderData.couponCode || '',
+                discountAmount: orderData.discountAmount || 0,
             });
 
             if (response.data.success) {
