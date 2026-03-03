@@ -66,22 +66,34 @@ export default function OrderCard({ order, onAction }) {
                 </div>
 
                 {/* Actions */}
-                <div className="mt-6 flex gap-3">
-                    {order.status === 'new' && (
-                        <>
+                <div className="mt-6 flex flex-col gap-3">
+                    {/* Accept Action */}
+                    {(order.status === 'placed' || order.status === 'assigned' || order.status === 'new') && (
+                        <button
+                            onClick={() => onAction?.(order.id, 'accept')}
+                            className="w-full h-12 bg-slate-900 text-white rounded-[18px] font-black uppercase text-[10px] tracking-widest hover:bg-slate-800 active:scale-95 transition-all shadow-lg"
+                        >
+                            Accept Order
+                        </button>
+                    )}
+
+                    {/* Conditional Action post-acceptance */}
+                    {order.status === 'accepted' && (
+                        order.items.some(i => i.isShortage) ? (
+                            <button
+                                onClick={() => onAction?.(order.id, 'procure')}
+                                className="w-full h-12 bg-amber-500 text-white rounded-[18px] font-black uppercase text-[10px] tracking-widest hover:bg-amber-600 active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2"
+                            >
+                                <Info size={16} /> Request Procurement
+                            </button>
+                        ) : (
                             <button
                                 onClick={() => onAction?.(order.id, 'preparing')}
-                                className="flex-1 h-12 bg-primary text-white rounded-[18px] font-black uppercase text-[10px] tracking-widest hover:bg-primary/90 active:scale-95 transition-all shadow-lg shadow-primary/20"
+                                className="w-full h-12 bg-emerald-600 text-white rounded-[18px] font-black uppercase text-[10px] tracking-widest hover:bg-emerald-700 active:scale-95 transition-all shadow-lg shadow-emerald-900/10"
                             >
-                                Accept Order
+                                Mark Packed
                             </button>
-                            <button
-                                onClick={() => onAction?.(order.id, 'cancelled')}
-                                className="w-12 h-12 rounded-[18px] bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 active:scale-95 transition-all"
-                            >
-                                <XCircle size={20} />
-                            </button>
-                        </>
+                        )
                     )}
 
                     {order.status === 'preparing' && (

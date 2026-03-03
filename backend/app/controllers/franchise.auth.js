@@ -1,11 +1,11 @@
 import Franchise from "../models/franchise.js";
 import OTP from "../models/otp.js";
-import handleResponse from "../utils/helper.js";
-import { geocodeAddress } from "../utils/geo.js";
+import { handleResponse } from "../utils/helper.js";
 import { generateOTP, hashOTP, verifyHashedOTP } from "../utils/otpHelper.js";
 import { sendSMS } from "../utils/smsService.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import { latLngToCell, gridDisk } from 'h3-js';
 
 /* 🔐 TOKEN */
 const generateToken = (id) =>
@@ -16,7 +16,7 @@ const generateToken = (id) =>
 /* ================= REGISTER ================= */
 export const registerFranchise = async (req, res) => {
     try {
-        const { franchiseName, ownerName, mobile, city, area, state } = req.body;
+        const { franchiseName, ownerName, mobile, city, area, state, location } = req.body;
 
         if (!franchiseName || !ownerName || !mobile || !city || !state) {
             return handleResponse(res, 400, "All fields are required");
@@ -31,8 +31,16 @@ export const registerFranchise = async (req, res) => {
             return handleResponse(res, 409, "Franchise already registered");
 
         if (!franchise) {
-            // Geocode the city to get lat/lng
-            const coords = await geocodeAddress(city);
+            let coords = [0, 0];
+            let initialHexagons = [];
+            if (location && location.lat && location.lng) {
+                coords = [location.lng, location.lat];
+
+                // Get center hexagon at resolution 8 (~0.73 km2 area)
+                const centerHex = latLngToCell(location.lat, location.lng, 8);
+                // Get 1 ring (center + 6 neighbors = 7 hexagons)
+                initialHexagons = gridDisk(centerHex, 1);
+            }
 
             franchise = await Franchise.create({
                 franchiseName,
@@ -41,7 +49,11 @@ export const registerFranchise = async (req, res) => {
                 city,
                 area,
                 state,
-                location: coords || { lat: null, lng: null }
+                location: {
+                    type: 'Point',
+                    coordinates: coords
+                },
+                serviceHexagons: initialHexagons
             });
         }
 
@@ -191,6 +203,7 @@ export const verifyFranchiseOTP = async (req, res) => {
             // Invalidate any existing OTP
             await OTP.deleteOne({ mobile, role: "franchise" });
 
+            console.log(`[Franchise Login] DEV MODE Success for ${mobile}`);
             return handleResponse(res, 200, "Login successful (DEV MODE)", {
                 ...franchiseObj,
                 token
@@ -237,6 +250,8 @@ export const verifyFranchiseOTP = async (req, res) => {
         delete franchiseObj.password;
         delete franchiseObj.otp;
 
+        console.log(`[Franchise Login] Success for ${mobile}, Token generated: ${token.substring(0, 10)}...`);
+
         return handleResponse(res, 200, "Login successful", {
             ...franchiseObj,
             token,
@@ -282,21 +297,16 @@ export const updateFranchiseProfile = async (req, res) => {
             const lng = Number(location.lng);
 
             if (!isNaN(lat) && !isNaN(lng)) {
-                franchise.location = { lat, lng };
+                franchise.location = {
+                    type: 'Point',
+                    coordinates: [lng, lat] // [longitude, latitude]
+                };
             }
         }
 
         if (city && city !== franchise.city) {
             franchise.city = city;
-            // Re-geocode if city changed and no direct location was provided in this update
-            if (!location) {
-                try {
-                    const coords = await geocodeAddress(city);
-                    if (coords) franchise.location = coords;
-                } catch (geoErr) {
-                    console.warn("Geocoding failed:", geoErr);
-                }
-            }
+            // Removed backend geocoding here as it's now handled by frontend
         }
 
         await franchise.save();

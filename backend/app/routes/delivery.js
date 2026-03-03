@@ -16,7 +16,11 @@ import {
   getAllDeliveryPartners,
   getMyCodSummary,
   submitCodRemittance,
+  createCodRazorpayOrder,
+  verifyCodUpiPayment,
   getMyCodRemittances,
+  updateAvailability,
+  saveFCMToken
 } from "../controllers/delivery.controller.js";
 
 const router = express.Router();
@@ -37,5 +41,9 @@ router.get("/partners", protectFranchise, getAllDeliveryPartners);
 router.get("/cod/summary", protectDelivery, getMyCodSummary);
 router.get("/cod/remittances", protectDelivery, getMyCodRemittances);
 router.post("/cod/remittance", protectDelivery, submitCodRemittance);
+router.post("/cod/razorpay-order", protectDelivery, createCodRazorpayOrder);
+router.post("/cod/verify-upi", protectDelivery, verifyCodUpiPayment);
+router.put("/availability", protectDelivery, updateAvailability);
+router.post("/fcm-token", protectDelivery, saveFCMToken);
 
 export default router;

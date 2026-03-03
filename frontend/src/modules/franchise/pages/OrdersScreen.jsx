@@ -18,7 +18,8 @@ import {
     ArrowDownRight,
     MoreHorizontal,
     IndianRupee,
-    RefreshCw
+    RefreshCw,
+    Info
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useFranchiseOrders } from '../contexts/FranchiseOrdersContext';
@@ -76,38 +77,36 @@ export default function OrdersScreen() {
         const order = allOrders.find(o => o.id === orderId);
         if (!order) return;
 
+        if (newStatus === 'accept') {
+            setProcessingOrderId(orderId);
+            await acceptOrder(orderId);
+            setProcessingOrderId(null);
+            return;
+        }
+
+        if (newStatus === 'procure') {
+            setProcessingOrderId(orderId);
+            await updateOrderStatus(orderId, 'procuring');
+            setProcessingOrderId(null);
+            navigate('/franchise/procurement');
+            toast.info("Stock shortage reported. Opening procurement screen...");
+            return;
+        }
+
         if (newStatus === 'Packed' && !extraData.numberOfPackages) {
             setSelectedOrderForPacking(orderId);
             setIsPackageModalOpen(true);
             return;
         }
 
-        if (newStatus === 'Dispatched' || newStatus === 'Packed') {
-            const itemsToValidate = order.items.map(i => ({
-                id: i.id || i.productId,
-                qty: i.quantity || i.qty,
-                name: i.name
-            }));
-
-            const insufficient = itemsToValidate.filter(i => {
-                const stockItem = inventory.find(s =>
-                    (s.productId?.toString() === i.id?.toString()) ||
-                    (s.id?.toString() === i.id?.toString())
-                );
-                return !stockItem || Number(stockItem.currentStock) < Number(i.qty);
-            });
-
-            if (insufficient.length > 0) {
-                toast.error(`Insufficient stock for: ${insufficient.map(i => i.name || 'Unknown Item').join(', ')}. Please procure more stock.`);
-                return;
-            }
-        }
+        // Logic for marking packed (preparing or ready)
+        const mappedStatus = (newStatus === 'preparing' || newStatus === 'ready') ? 'Packed' : newStatus;
 
         setProcessingOrderId(orderId);
-        await updateOrderStatus(orderId, newStatus, extraData);
+        await updateOrderStatus(orderId, mappedStatus, extraData);
         setProcessingOrderId(null);
 
-        if (newStatus === 'Dispatched' || newStatus === 'Packed') {
+        if (mappedStatus === 'Packed') {
             refreshInventory();
         }
     };
@@ -143,7 +142,7 @@ export default function OrdersScreen() {
         const status = (order.status || '').toLowerCase();
 
         if (activeTab === 'new') {
-            matchesTab = ['placed', 'pending', 'new', 'procuring'].includes(status);
+            matchesTab = ['placed', 'pending', 'new', 'procuring', 'assigned', 'accepted'].includes(status);
         } else if (activeTab === 'ready') {
             matchesTab = ['packed', 'dispatched', 'ready'].includes(status);
         } else if (activeTab === 'completed') {
@@ -224,24 +223,32 @@ export default function OrdersScreen() {
                         </div>
                     )}
                     {activeTab === 'new' && (
-                        <>
-                            {!row.franchiseId ? (
+                        (row.status === 'placed' || row.status === 'assigned' || row.status === 'new') ? (
+                            <button
+                                onClick={() => handleAction(row.id, 'accept')}
+                                disabled={processingOrderId === row.id}
+                                className="p-1.5 px-3 text-[10px] font-black uppercase text-slate-900 border-2 border-slate-900 rounded-sm hover:bg-slate-900 hover:text-white transition-all disabled:opacity-50"
+                            >
+                                Accept Order
+                            </button>
+                        ) : row.status === 'accepted' && (
+                            row.items.some(i => i.isShortage) ? (
                                 <button
-                                    onClick={() => acceptOrder(row.id)}
-                                    className="p-1.5 px-3 text-xs font-bold uppercase text-blue-600 border border-blue-600 rounded-sm hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                                    onClick={() => handleAction(row.id, 'procure')}
+                                    className="p-1.5 px-3 text-[10px] font-black uppercase text-amber-600 border-2 border-amber-600 rounded-sm hover:bg-amber-600 hover:text-white transition-all flex items-center gap-1.5"
                                 >
-                                    Accept Order
+                                    <Info size={12} /> Request Procurement
                                 </button>
                             ) : (
                                 <button
                                     onClick={() => handleAction(row.id, 'Packed')}
                                     disabled={processingOrderId === row.id}
-                                    className="p-1.5 px-3 text-xs font-bold uppercase text-emerald-600 border border-emerald-600 rounded-sm hover:bg-emerald-600 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="p-1.5 px-3 text-[10px] font-black uppercase text-emerald-600 border-2 border-emerald-600 rounded-sm hover:bg-emerald-600 hover:text-white transition-all disabled:opacity-50 shadow-sm"
                                 >
                                     Mark Packed
                                 </button>
-                            )}
-                        </>
+                            )
+                        )
                     )}
                     {activeTab === 'ready' && row.status === 'packed' && (
                         <button

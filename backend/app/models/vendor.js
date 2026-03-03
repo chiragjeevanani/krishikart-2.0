@@ -100,6 +100,10 @@ const vendorSchema = new mongoose.Schema(
 
     resetPasswordToken: String,
     resetPasswordExpires: Date,
+    fcmTokens: {
+      type: [String],
+      default: []
+    }
   },
   { timestamps: true }
 );

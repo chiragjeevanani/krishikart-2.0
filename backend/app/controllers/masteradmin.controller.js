@@ -253,6 +253,32 @@ export const updateFranchiseStatus = async (req, res) => {
     }
 };
 
+export const updateFranchiseServiceArea = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { serviceHexagons } = req.body;
+
+        if (!Array.isArray(serviceHexagons)) {
+            return handleResponse(res, 400, "serviceHexagons must be an array of strings");
+        }
+
+        const franchise = await Franchise.findByIdAndUpdate(
+            id,
+            { serviceHexagons },
+            { new: true }
+        ).select("-password");
+
+        if (!franchise) {
+            return handleResponse(res, 404, "Franchise not found");
+        }
+
+        return handleResponse(res, 200, "Service area updated successfully", franchise);
+    } catch (err) {
+        console.error("Update service area error:", err);
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
 export const getFranchiseDetails = async (req, res) => {
     try {
         const { id } = req.params;
@@ -309,7 +335,7 @@ export const reviewFranchiseKYC = async (req, res) => {
 
 export const createFranchiseByAdmin = async (req, res) => {
     try {
-        const { franchiseName, ownerName, mobile, city, area, state, email } = req.body;
+        const { franchiseName, ownerName, mobile, city, area, state, email, location } = req.body;
 
         if (!franchiseName || !ownerName || !mobile || !city || !state) {
             return handleResponse(res, 400, "franchiseName, ownerName, mobile, city and state are required");
@@ -325,11 +351,8 @@ export const createFranchiseByAdmin = async (req, res) => {
         }
 
         let coords = { lat: null, lng: null };
-        try {
-            const geocoded = await geocodeAddress(city);
-            if (geocoded) coords = geocoded;
-        } catch (geoErr) {
-            console.warn("Franchise geocode failed:", geoErr?.message || geoErr);
+        if (location && location.lat && location.lng) {
+            coords = location;
         }
 
         const franchiseData = {
@@ -930,6 +953,12 @@ export const getAdminDashboardStats = async (req, res) => {
             {
                 label: "Deliveries In-Progress",
                 value: deliveriesInProgress.toLocaleString(),
+                change: 0,
+                trend: "neutral"
+            },
+            {
+                label: "Active Franchises",
+                value: activeFranchises.toLocaleString(),
                 change: 0,
                 trend: "neutral"
             }

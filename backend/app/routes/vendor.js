@@ -7,6 +7,7 @@ import {
     forgotVendorPassword,
     resetVendorPassword,
     changeVendorPassword,
+    saveFCMToken
 } from "../controllers/vendor.auth.js";
 import {
     getVendorInventory,
@@ -38,6 +39,7 @@ router.put("/update", protectVendor, upload.fields([
 router.post("/forgot-password", forgotVendorPassword);
 router.post("/reset-password", resetVendorPassword);
 router.post("/change-password", protectVendor, changeVendorPassword);
+router.post("/fcm-token", protectVendor, saveFCMToken);
 
 /* 📦 Inventory Management */
 router.get("/inventory", protectVendor, getVendorInventory);

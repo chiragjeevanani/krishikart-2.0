@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import BottomNav from '../navigation/BottomNav';
 import Sidebar from '../navigation/Sidebar';
 import { useState, Suspense } from 'react';
+import NewOrderAlert from '../modals/NewOrderAlert';
 
 export default function FranchiseLayout() {
     const [isCollapsed, setIsCollapsed] = useState(false);
@@ -10,6 +11,28 @@ export default function FranchiseLayout() {
 
     // Pages where we might want to hide navigation (e.g., login)
     const hideNav = location.pathname.includes('/login');
+
+    // Global Audio Unlocker (Modern Browser requirement)
+    useState(() => {
+        const unlockAudio = () => {
+            const context = new (window.AudioContext || window.webkitAudioContext)();
+            if (context.state === 'suspended') {
+                context.resume();
+            }
+            // Also play a silent buffer
+            const buffer = context.createBuffer(1, 1, 22050);
+            const source = context.createBufferSource();
+            source.buffer = buffer;
+            source.connect(context.destination);
+            source.start(0);
+
+            console.log("Audio logic unlocked via user interaction");
+            window.removeEventListener('click', unlockAudio);
+            window.removeEventListener('touchstart', unlockAudio);
+        };
+        window.addEventListener('click', unlockAudio);
+        window.addEventListener('touchstart', unlockAudio);
+    });
 
     return (
         <div className="fixed inset-0 flex overflow-hidden bg-[#f8fafd] text-slate-900 font-sans selection:bg-emerald-100">
@@ -45,6 +68,7 @@ export default function FranchiseLayout() {
                     </div>
                 )}
             </main>
+            <NewOrderAlert />
         </div>
     );
 }

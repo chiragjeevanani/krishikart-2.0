@@ -23,6 +23,21 @@ export const initSocket = (server) => {
             console.log(`Socket ${socket.id} joined admin_delivery_tracking`);
         });
 
+        socket.on("join_franchise_room", (franchiseId) => {
+            socket.join(`franchise_${franchiseId}`);
+            console.log(`Socket ${socket.id} joined franchise_${franchiseId}`);
+        });
+
+        socket.on("join_delivery_room", (deliveryId) => {
+            socket.join(`delivery_${deliveryId}`);
+            console.log(`Socket ${socket.id} joined delivery_${deliveryId}`);
+        });
+
+        socket.on("join_vendor_room", (vendorId) => {
+            socket.join(`vendor_${vendorId}`);
+            console.log(`Socket ${socket.id} joined vendor_${vendorId}`);
+        });
+
         socket.on("disconnect", () => {
             console.log("Client disconnected:", socket.id);
         });
@@ -47,5 +62,23 @@ export const emitToAdmin = (event, data) => {
 export const emitToOrderRoom = (orderId, event, data) => {
     if (io) {
         io.to(`order_${orderId}`).emit(event, data);
+    }
+};
+
+export const emitToFranchise = (franchiseId, event, data) => {
+    if (io) {
+        io.to(`franchise_${franchiseId}`).emit(event, data);
+    }
+};
+
+export const emitToDelivery = (deliveryId, event, data) => {
+    if (io) {
+        io.to(`delivery_${deliveryId}`).emit(event, data);
+    }
+};
+
+export const emitToVendor = (vendorId, event, data) => {
+    if (io) {
+        io.to(`vendor_${vendorId}`).emit(event, data);
     }
 };

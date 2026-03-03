@@ -156,13 +156,13 @@ export default function DispatchHistoryScreen() {
 
                                     <div className="flex items-end justify-between pt-4 border-t border-slate-50 mt-2">
                                         <div className="flex flex-col gap-2 overflow-hidden mr-4">
-                                            {dispatch.items?.slice(0, 3).map((item, i) => (
+                                            {dispatch.items?.filter(item => (item.dispatchedQuantity || item.quantity) > 0).slice(0, 3).map((item, i) => (
                                                 <div key={i} className="flex items-center gap-2">
                                                     <div className="w-5 h-5 rounded bg-slate-50 flex items-center justify-center shrink-0 border border-slate-100">
                                                         <Package size={10} className="text-slate-400" />
                                                     </div>
                                                     <span className="text-[10px] font-black text-slate-700 truncate">{item.name}</span>
-                                                    <span className="text-[9px] font-bold text-slate-400 shrink-0 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">{item.quantity} * {item.unit}</span>
+                                                    <span className="text-[9px] font-bold text-slate-400 shrink-0 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">{item.dispatchedQuantity || item.quantity} * {item.unit}</span>
                                                 </div>
                                             ))}
                                             {dispatch.items?.length > 3 && (

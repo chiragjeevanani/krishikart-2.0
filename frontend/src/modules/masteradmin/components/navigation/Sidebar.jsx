@@ -86,7 +86,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
         },
         {
             group: 'Network', items: [
-                { icon: Store, label: 'Franchises', path: '/masteradmin/franchises', permissionKey: 'franchises' },
+                { icon: Store, label: 'Franchise Management', path: '/masteradmin/franchises', permissionKey: 'franchises' },
                 { icon: Users, label: 'Vendors', path: '/masteradmin/vendors', permissionKey: 'vendors' },
                 { icon: FileText, label: 'Vendor Invoices', path: '/masteradmin/vendor-reports', permissionKey: 'vendor-reports' },
                 { icon: Monitor, label: 'Stock Levels', path: '/masteradmin/stock-monitoring', permissionKey: 'stock-monitoring' },

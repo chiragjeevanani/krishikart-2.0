@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '@/lib/axios';
+import { useFCM } from '@/hooks/useFCM';
 
 const DeliveryAuthContext = createContext();
 
@@ -9,6 +10,9 @@ export function DeliveryAuthProvider({ children }) {
         return saved ? JSON.parse(saved) : null;
     });
     const [loading, setLoading] = useState(true);
+
+    // Register FCM Token
+    useFCM(!!delivery, 'delivery');
 
     useEffect(() => {
         const loadUser = async () => {

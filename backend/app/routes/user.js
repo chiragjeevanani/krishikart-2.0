@@ -10,7 +10,8 @@ import {
     changeUserPassword,
     createWalletRechargeOrder,
     verifyWalletRecharge,
-    redeemLoyaltyPoints
+    redeemLoyaltyPoints,
+    saveFCMToken
 } from "../controllers/user.auth.js";
 import {
     getCart,
@@ -47,6 +48,7 @@ router.delete("/cart/remove/:productId", protect, removeFromCart);
 router.get("/wishlist", protect, getWishlist);
 router.post("/wishlist/toggle", protect, toggleWishlist);
 router.delete("/wishlist/remove/:productId", protect, removeFromWishlist);
+router.post("/fcm-token", protect, saveFCMToken);
 
 
 export default router;

@@ -2,7 +2,8 @@ import fs from "fs";
 import mongoose from "mongoose";
 import Order from "../models/order.js";
 import { handleResponse } from "../utils/helper.js";
-import { emitToAdmin, emitToOrderRoom } from "../lib/socket.js";
+import { emitToAdmin, emitToOrderRoom, emitToDelivery } from "../lib/socket.js";
+import { sendNotificationToUser } from "../utils/pushNotificationHelper.js";
 import Product from "../models/product.js";
 import Cart from "../models/cart.js";
 import User from "../models/user.js";
@@ -11,6 +12,7 @@ import GlobalSetting from "../models/globalSetting.js";
 import Inventory from "../models/inventory.js";
 import Coupon from "../models/coupon.js";
 import { geocodeAddress, getDistance } from "../utils/geo.js";
+import { assignOrderToFranchise, assignDeliveryToOrder } from "../utils/assignment.js";
 
 /**
  * Helper to calculate price based on quantity and bulk pricing rules
@@ -56,7 +58,7 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 export const createOrder = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { shippingAddress, paymentMethod, deliveryShift } = req.body;
+    const { shippingAddress, shippingLocation, paymentMethod, deliveryShift } = req.body;
 
     if (!shippingAddress || !paymentMethod || !deliveryShift) {
       return handleResponse(
@@ -208,19 +210,18 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    // 6. Coordinates for Order (Optional)
-    let assignedFranchiseId = null;
+    // 6. Coordinates for Order
     let userCoords = null;
-    try {
-      userCoords = await geocodeAddress(shippingAddress);
-    } catch (geoErr) {
-      console.error("Geocoding error:", geoErr);
+    if (shippingLocation && shippingLocation.lat && shippingLocation.lng) {
+      userCoords = {
+        type: 'Point',
+        coordinates: [shippingLocation.lng, shippingLocation.lat] // GeoJSON: [longitude, latitude]
+      };
     }
 
     // 7. Create Order
     const order = new Order({
       userId,
-      franchiseId: assignedFranchiseId,
       items: orderItems,
       subtotal,
       deliveryFee: finalDeliveryFee,
@@ -242,7 +243,14 @@ export const createOrder = async (req, res) => {
     await order.save();
     await user.save();
 
-    // 5. Clear Cart
+    // 8. Auto-assign Nearest Franchise
+    try {
+      await assignOrderToFranchise(order._id);
+    } catch (assignErr) {
+      console.error("[CreateOrder] Auto-assignment failed:", assignErr);
+    }
+
+    // 9. Clear Cart
     cart.items = [];
     await cart.save();
 
@@ -500,6 +508,26 @@ export const assignReturnPickupDelivery = async (req, res) => {
     request.status = "pickup_assigned";
 
     await order.save();
+
+    // Send Real-time Notification
+    emitToDelivery(deliveryPartnerId, 'new_task', {
+      orderId: order._id,
+      requestIndex,
+      type: 'RETURN',
+      message: `New return pickup task assigned: #${order._id.toString().slice(-6)}`
+    });
+
+    // Send Push Notification
+    sendNotificationToUser(deliveryPartnerId, {
+      title: "New Return Pickup Task",
+      body: `You have been assigned a new return pickup task for order #${order._id.toString().slice(-6)}.`,
+      data: {
+        type: "return_pickup",
+        orderId: order._id.toString(),
+        link: "/delivery/returns"
+      }
+    }, 'delivery');
+
     return handleResponse(res, 200, "Pickup assigned to delivery partner", order);
   } catch (error) {
     console.error("Assign return pickup error:", error);
@@ -658,10 +686,11 @@ export const updateOrderStatus = async (req, res) => {
     const currentStatus = order.orderStatus;
     const allowedStatuses = [
       "Placed",
+      "Assigned",
+      "Accepted",
       "Packed",
-      "Dispatched",
+      "Out for Delivery",
       "Delivered",
-      "Received",
       "Cancelled",
     ];
 
@@ -680,21 +709,30 @@ export const updateOrderStatus = async (req, res) => {
     const isUser = !!req.user && !isMasterAdmin && !isDelivery;
 
     // Transitions logic (Master Admin can bypass)
+    // We normalize to ensure case-insensitivity during check
     const statusFlow = {
-      Placed: ["Packed", "Cancelled"],
-      Packed: ["Dispatched", "Cancelled"],
-      Dispatched: ["Delivered", "Cancelled"],
-      Delivered: ["Received"],
-      Received: [],
-      Cancelled: [],
+      placed: ["assigned", "accepted", "packed", "cancelled"],
+      assigned: ["accepted", "packed", "cancelled"],
+      accepted: ["packed", "procuring", "cancelled"],
+      procuring: ["packed", "cancelled"],
+      packed: ["ready", "dispatched", "out for delivery", "cancelled"],
+      ready: ["dispatched", "out for delivery", "cancelled"],
+      dispatched: ["delivered", "cancelled"],
+      "out for delivery": ["delivered", "cancelled"],
+      delivered: [],
+      cancelled: [],
     };
+
+    const normalizedCurrent = (currentStatus || "").toLowerCase();
+    const normalizedNew = (status || "").toLowerCase();
 
     if (
       !isMasterAdmin &&
       status !== "Cancelled" &&
-      (!statusFlow[currentStatus] ||
-        !statusFlow[currentStatus].includes(status))
+      (!statusFlow[normalizedCurrent] ||
+        !statusFlow[normalizedCurrent].includes(normalizedNew))
     ) {
+      console.warn(`[TRANSITION_ERROR] ${currentStatus} -> ${status} (Normalized: ${normalizedCurrent} -> ${normalizedNew})`);
       return handleResponse(
         res,
         400,
@@ -704,12 +742,25 @@ export const updateOrderStatus = async (req, res) => {
 
     // Authorization checks
     if (!isMasterAdmin) {
-      if (['Packed', 'Dispatched'].includes(status) && !isFranchise) {
-        return handleResponse(res, 403, "Only franchise can update to Packed/Dispatched");
+      if (isFranchise) {
+        // If order has a franchise assigned, verify it's the current one
+        if (order.franchiseId && order.franchiseId.toString() !== req.franchise._id.toString()) {
+          return handleResponse(res, 403, "This order is assigned to another franchise");
+        }
+        // If unassigned but franchise is acting on it, claim ownership
+        if (!order.franchiseId) {
+          order.franchiseId = req.franchise._id;
+        }
+
+        if (['Packed', 'Out for Delivery'].includes(status) && !isFranchise) {
+          return handleResponse(res, 403, "Only franchise can update to Packed/Out for Delivery");
+        }
       }
+
       if (status === 'Delivered' && !isDelivery && !isFranchise) {
-        return handleResponse(res, 403, "Only delivery partner can update to Delivered");
+        return handleResponse(res, 403, "Only delivery partner or franchise can update to Delivered");
       }
+
       // Delivery Specific: Check if this order is assigned to this partner
       if (isDelivery && status === 'Delivered') {
         const partnerId = req.delivery?._id || req.user?.id;
@@ -722,11 +773,6 @@ export const updateOrderStatus = async (req, res) => {
         if (order.userId.toString() !== req.user.id.toString()) {
           return handleResponse(res, 403, "You can only update your own orders");
         }
-        if (status === 'Received' && !isUser) {
-          return handleResponse(res, 403, "Only user can update to Received");
-        }
-      } else if (status === 'Received') {
-        return handleResponse(res, 403, "Only user can update to Received");
       }
     }
 
@@ -787,15 +833,14 @@ export const updateOrderStatus = async (req, res) => {
       }
     }
 
-    // Auto-complete payment for COD/others if order is Received/Delivered
-    if (["Received", "Delivered"].includes(status)) {
+    // Auto-complete payment for COD/others if order is Delivered
+    if (status === "Delivered") {
       if (order.paymentStatus === "Pending") {
         order.paymentStatus = "Completed";
       }
     }
-
-    // Award loyalty points once when order is confirmed received.
-    if (status === "Received") {
+    // Award loyalty points once when order is confirmed Delivered.
+    if (status === "Delivered") {
       try {
         const user = await User.findById(order.userId);
         if (user) {
@@ -833,8 +878,8 @@ export const updateOrderStatus = async (req, res) => {
       }
     }
 
-    // Generate Bilty when order is dispatched
-    if (status === "Dispatched") {
+    // Generate Bilty when order is out for delivery
+    if (status === "Out for Delivery") {
       try {
         const fullOrder = await Order.findById(order._id)
           .populate("userId", "fullName mobile legalEntityName address")
@@ -852,7 +897,7 @@ export const updateOrderStatus = async (req, res) => {
             quantity: item.quantity,
             unit: item.unit
           })),
-          totalWeight: `${order.items.reduce((acc, i) => acc + (i.quantity || 0), 0)} Units`, // Using total units as weight since weight isn't explicitly tracked per item here
+          totalWeight: `${order.items.reduce((acc, i) => acc + (i.quantity || 0), 0)} Units`,
           fromFranchise: fullOrder.franchiseId?.franchiseName || "KrishiKart Franchise",
           toCustomer: fullOrder.userId?.legalEntityName || fullOrder.userId?.fullName || "Valued Customer",
           toAddress: order.shippingAddress || fullOrder.userId?.address || "Delivery Address",
@@ -888,8 +933,8 @@ export const updateOrderStatus = async (req, res) => {
       }
     }
 
-    // Return stock if status changed to Cancelled from Packed/Dispatched/Delivered/Received
-    if (status === "Cancelled" && (currentStatus === "Packed" || currentStatus === "Dispatched" || currentStatus === "Delivered" || currentStatus === "Received") && isFranchise) {
+    // Return stock if status changed to Cancelled from Packed/Out for Delivery/Delivered
+    if (status === "Cancelled" && (["Packed", "Out for Delivery", "Delivered"].includes(currentStatus)) && isFranchise) {
       try {
         const franchiseId = req.franchise._id;
         const inventory = await Inventory.findOne({ franchiseId });
@@ -1151,7 +1196,7 @@ export const getFranchiseOrderById = async (req, res) => {
   }
 };
 
-// Accept broadcast order (assign to franchise)
+// Accept assigned order (Franchise acknowledgment)
 export const acceptFranchiseOrder = async (req, res) => {
   try {
     const { id } = req.params;
@@ -1163,20 +1208,24 @@ export const acceptFranchiseOrder = async (req, res) => {
       return handleResponse(res, 404, "Order not found");
     }
 
-    // Only allow accepting if unassigned OR already assigned to this franchise (acknowledgment)
-    if (
-      order.franchiseId &&
-      order.franchiseId.toString() !== franchiseId.toString()
-    ) {
-      return handleResponse(
-        res,
-        400,
-        "Order already accepted by another franchise",
-      );
+    // Allow status transition from Assigned OR Placed/pending (for open pool orders)
+    const validStates = ['Assigned', 'Placed', 'pending', 'new'];
+    if (!validStates.includes(order.orderStatus)) {
+      return handleResponse(res, 400, "Order is not in a valid state for acceptance");
     }
 
-    // Assign franchise and keep status as Placed
-    order.franchiseId = franchiseId;
+    // If it's already assigned to someone else
+    if (order.franchiseId && order.franchiseId.toString() !== franchiseId.toString()) {
+      return handleResponse(res, 403, "This order is already assigned to another franchise");
+    }
+
+    // If it's an open order (franchiseId is null), claim it
+    if (!order.franchiseId) {
+      order.franchiseId = franchiseId;
+    }
+
+    // Change status to Accepted
+    order.orderStatus = 'Accepted';
 
     // INVENTORY CHECK: Flag shortages for Admin Procurement
     const inventory = await Inventory.findOne({ franchiseId });
@@ -1199,17 +1248,19 @@ export const acceptFranchiseOrder = async (req, res) => {
     }
 
     order.statusHistory.push({
-      status: order.orderStatus,
+      status: 'Accepted',
       updatedAt: new Date(),
       updatedBy: 'franchise'
     });
+
     await order.save();
 
-    console.log(`✅ Order ${id} accepted by franchise ${franchiseId}`);
+    // Trigger Delivery Assignment logic
+    assignDeliveryToOrder(order._id);
 
     return handleResponse(res, 200, "Order accepted successfully", order);
   } catch (error) {
-    console.error('Accept order error:', error);
+    console.error("Accept order error:", error);
     return handleResponse(res, 500, "Server error");
   }
 };
@@ -1255,6 +1306,24 @@ export const assignDeliveryPartner = async (req, res) => {
     console.log(
       `🚚 Order ${id} dispatched by franchise ${franchiseId} via partner ${deliveryPartnerId}`,
     );
+
+    // Send Real-time Notification
+    emitToDelivery(deliveryPartnerId, 'new_task', {
+      orderId: order._id,
+      type: 'DELIVERY',
+      message: `New delivery task assigned: #${order._id.toString().slice(-6)}`
+    });
+
+    // Send Push Notification
+    sendNotificationToUser(deliveryPartnerId, {
+      title: "New Delivery Task",
+      body: `You have been assigned a new delivery task for order #${order._id.toString().slice(-6)}.`,
+      data: {
+        type: "delivery",
+        orderId: order._id.toString(),
+        link: "/delivery/assignments"
+      }
+    }, 'delivery');
 
     return handleResponse(res, 200, "Order dispatched successfully", order);
   } catch (error) {

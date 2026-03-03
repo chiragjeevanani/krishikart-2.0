@@ -191,7 +191,7 @@ const orderSchema = new mongoose.Schema({
     },
     orderStatus: {
         type: String,
-        enum: ['Placed', 'Procuring', 'Packed', 'Dispatched', 'Delivered', 'Received', 'Cancelled'],
+        enum: ['Placed', 'Assigned', 'Accepted', 'Packed', 'Procuring', 'Ready', 'Dispatched', 'Out for Delivery', 'Delivered', 'Cancelled'],
         default: 'Placed'
     },
     statusHistory: [
@@ -206,11 +206,25 @@ const orderSchema = new mongoose.Schema({
         required: true
     },
     shippingLocation: {
-        lat: Number,
-        lng: Number,
+        type: {
+            type: String,
+            enum: ['Point'],
+            default: 'Point'
+        },
+        coordinates: {
+            type: [Number], // [longitude, latitude]
+            default: [0, 0]
+        },
         city: String,
         area: String
     },
+    assignmentAttempts: [
+        {
+            franchiseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Franchise' },
+            attemptedAt: { type: Date, default: Date.now },
+            reason: { type: String, enum: ['unresponsive', 'rejected'], default: 'unresponsive' }
+        }
+    ],
     deliveryShift: {
         type: String,
         required: true
@@ -259,6 +273,8 @@ const orderSchema = new mongoose.Schema({
 }, {
     timestamps: true
 });
+
+orderSchema.index({ shippingLocation: "2dsphere" });
 
 const Order = mongoose.model('Order', orderSchema);
 

@@ -7,7 +7,7 @@ import api from '@/lib/axios';
 import { useVendorAuth } from '@/modules/vendor/contexts/VendorAuthContext';
 
 export default function LoginScreen() {
-    const { loginSuccess } = useVendorAuth();
+    const { loginSuccess, logout } = useVendorAuth();
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [email, setEmail] = useState('');
@@ -18,21 +18,31 @@ export default function LoginScreen() {
         setIsLoading(true);
         try {
             const response = await api.post('/vendor/login', { email, password });
+            console.log('[Vendor Login Response]:', response.data);
 
-            // Store token and vendor data
-            if (response.data.result && response.data.result.token) {
-                loginSuccess(response.data.result, response.data.result.token);
-                navigate('/vendor/dashboard');
-            } else if (response.data.token) {
-                // Fallback if structure changes
-                loginSuccess(response.data, response.data.token);
-                navigate('/vendor/dashboard');
+            const result = response.data.result;
+            if (result && result.token) {
+                const { token, ...vendorData } = result;
+
+                // Explicitly save to storage BEFORE navigation
+                localStorage.setItem('vendorToken', token);
+                localStorage.setItem('vendorData', JSON.stringify(vendorData));
+
+                console.log('[Vendor Login Success] Storage Updated. Token:', token.substring(0, 10) + '...');
+
+                loginSuccess(vendorData, token);
+
+                // Small delay to ensure storage event propagates if needed (though sync)
+                setTimeout(() => {
+                    navigate('/vendor/dashboard');
+                }, 100);
             } else {
-                throw new Error('Invalid response from server');
+                throw new Error('Response missing authentication token');
             }
         } catch (error) {
-            console.error(error);
-            alert(error.response?.data?.message || 'Login failed');
+            console.error('[Vendor Login Error]:', error);
+            const errorMsg = error.response?.data?.message || error.message || 'Authentication failed';
+            alert(`Vendor Login Error: ${errorMsg}`);
         } finally {
             setIsLoading(false);
         }

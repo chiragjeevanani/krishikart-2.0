@@ -116,7 +116,7 @@ export const verifyPayment = async (req, res) => {
         console.log("Signature verified successfully");
 
         // 2. Original Order Logic (Create the order in DB after payment)
-        const { shippingAddress, paymentMethod, deliveryShift } = orderData;
+        const { shippingAddress, shippingLocation, paymentMethod, deliveryShift } = orderData;
 
         // Get User Cart
         console.log("Fetching user cart for userId:", userId);
@@ -171,11 +171,15 @@ export const verifyPayment = async (req, res) => {
 
         // 2.5 Auto Franchise Assignment
         let assignedFranchiseId = null;
-        let userCoords = null;
+        let geoJsonCoords = null;
         console.log('Attempting auto-franchise assignment...');
         try {
-            userCoords = await geocodeAddress(shippingAddress);
-            if (userCoords) {
+            if (shippingLocation && shippingLocation.lat && shippingLocation.lng) {
+                geoJsonCoords = {
+                    type: 'Point',
+                    coordinates: [shippingLocation.lng, shippingLocation.lat]
+                };
+
                 const activeFranchises = await Franchise.find({
                     status: 'active',
                     'location.lat': { $ne: null },
@@ -184,13 +188,16 @@ export const verifyPayment = async (req, res) => {
 
                 let minDistance = Infinity;
                 for (const franchise of activeFranchises) {
-                    const dist = getDistance(
-                        userCoords.lat, userCoords.lng,
-                        franchise.location.lat, franchise.location.lng
-                    );
-                    if (dist < minDistance) {
-                        minDistance = dist;
-                        assignedFranchiseId = franchise._id;
+                    // Check if coordinates exist before getting distance
+                    if (franchise.location?.lat && franchise.location?.lng) {
+                        const dist = getDistance(
+                            shippingLocation.lat, shippingLocation.lng,
+                            franchise.location.lat, franchise.location.lng
+                        );
+                        if (dist < minDistance) {
+                            minDistance = dist;
+                            assignedFranchiseId = franchise._id;
+                        }
                     }
                 }
             }
@@ -217,9 +224,9 @@ export const verifyPayment = async (req, res) => {
             totalAmount,
             paymentMethod,
             paymentStatus: 'Completed',
-            orderStatus: 'Placed',
+            orderStatus: assignedFranchiseId ? 'Accepted' : 'Placed',
             shippingAddress,
-            shippingLocation: userCoords,
+            shippingLocation: geoJsonCoords,
             deliveryShift,
             razorpayOrderId: razorpay_order_id,
             razorpayPaymentId: razorpay_payment_id

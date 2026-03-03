@@ -6,6 +6,8 @@ import User from "../models/user.js";
 import Order from "../models/order.js";
 import Inventory from "../models/inventory.js";
 import handleResponse from "../utils/helper.js";
+import { emitToVendor } from "../lib/socket.js";
+import { sendNotificationToUser } from "../utils/pushNotificationHelper.js";
 
 // Get vendor assignments (Vendor)
 export const getVendorAssignments = async (req, res) => {
@@ -166,13 +168,78 @@ export const vendorUpdateStatus = async (req, res) => {
 
         // Update items if provided
         if (itemUpdates && Array.isArray(itemUpdates)) {
-            itemUpdates.forEach(update => {
-                const item = request.items.find(i => i.productId?.toString() === update.productId?.toString());
-                if (item) {
-                    item.dispatchedQuantity = update.dispatchedQuantity ?? item.quantity;
+            const residualItems = [];
+            const dispatchedItems = [];
+
+            request.items.forEach(item => {
+                const update = itemUpdates.find(u => u.productId?.toString() === item.productId?.toString());
+                if (update) {
+                    const dispatchedQty = update.dispatchedQuantity || 0;
+                    const requestedQty = item.quantity;
+
+                    if (dispatchedQty > 0) {
+                        // Item is being sent (fully or partially)
+                        const remainingQty = requestedQty - dispatchedQty;
+
+                        // Current request gets the dispatched part
+                        item.quantity = dispatchedQty;
+                        item.dispatchedQuantity = dispatchedQty;
+                        dispatchedItems.push(item);
+
+                        // If partial, remaining goes to residual
+                        if (remainingQty > 0) {
+                            residualItems.push({
+                                ...item.toObject(),
+                                _id: undefined, // Let mongoose generate a new ID for the sub-document
+                                quantity: remainingQty,
+                                dispatchedQuantity: 0
+                            });
+                        }
+                    } else {
+                        // Not sent at all
+                        residualItems.push({
+                            ...item.toObject(),
+                            _id: undefined,
+                            dispatchedQuantity: 0
+                        });
+                    }
+                } else {
+                    // Not in updates? Treat as residual
+                    residualItems.push({
+                        ...item.toObject(),
+                        _id: undefined,
+                        dispatchedQuantity: 0
+                    });
                 }
             });
-            // Recalculate total amount if partial
+
+            // If we have residual items and we are moving to ready_for_pickup, split the request
+            if (residualItems.length > 0 && status === 'ready_for_pickup') {
+                const newRequest = new ProcurementRequest({
+                    franchiseId: request.franchiseId,
+                    items: residualItems,
+                    status: 'approved', // Keep it approved so it shows in Active Dispatch
+                    assignedVendorId: request.assignedVendorId,
+                    adminId: request.adminId,
+                    orderId: request.orderId,
+                    totalEstimatedAmount: residualItems.reduce((acc, i) => acc + ((i.price || 0) * (i.quantity || 0)), 0),
+                    totalQuotedAmount: residualItems.reduce((acc, i) => acc + ((i.quotedPrice || i.price || 0) * (i.quantity || 0)), 0)
+                });
+                await newRequest.save();
+
+                // Lock current request items to only what was dispatched
+                request.items = request.items.filter(i => (i.dispatchedQuantity || 0) > 0);
+            } else if (status !== 'ready_for_pickup') {
+                // For non-dispatch statuses (like 'preparing'), just update quantities without splitting
+                itemUpdates.forEach(update => {
+                    const item = request.items.find(i => i.productId?.toString() === update.productId?.toString());
+                    if (item) {
+                        item.dispatchedQuantity = update.dispatchedQuantity ?? item.quantity;
+                    }
+                });
+            }
+
+            // Recalculate total amount for current request
             request.totalQuotedAmount = request.items.reduce((acc, i) => acc + ((i.quotedPrice || i.price || 0) * (i.dispatchedQuantity || i.quantity || 0)), 0);
         }
 
@@ -265,25 +332,83 @@ export const createProcurementRequest = async (req, res) => {
 export const adminUpdateProcurementRequest = async (req, res) => {
     try {
         const { requestId } = req.params;
-        const { status, vendorId, adminId } = req.body;
+        const { status, vendorId, adminId, itemId } = req.body;
 
-        console.log(`Admin updating request ${requestId}. Status: ${status}, Vendor: ${vendorId}`);
+        console.log(`Admin updating request ${requestId}. Status: ${status}, Vendor: ${vendorId}, item: ${itemId}`);
 
         const request = await ProcurementRequest.findById(requestId);
         if (!request) {
             return handleResponse(res, 404, "Procurement request not found");
         }
 
-        if (status) request.status = status;
-        if (vendorId) request.assignedVendorId = vendorId;
-        if (adminId) request.adminId = adminId;
+        let requestToAssign = request;
 
-        await request.save();
-        console.log(`Request ${requestId} saved. Assigned Vendor: ${request.assignedVendorId}`);
+        if (itemId && request.items.length > 1) {
+            // Find the item index
+            const itemIndex = request.items.findIndex(i =>
+                (i.productId && i.productId.toString() === itemId.toString()) ||
+                (i._id && i._id.toString() === itemId.toString()) ||
+                (i.id && i.id.toString() === itemId.toString())
+            );
+
+            if (itemIndex > -1) {
+                const itemToSplit = request.items[itemIndex];
+
+                // Remove from original
+                request.items.splice(itemIndex, 1);
+                request.totalEstimatedAmount = request.items.reduce((acc, i) => acc + ((i.price || 0) * i.quantity), 0);
+                await request.save(); // Save original with remaining items
+
+                // Create new request for this vendor
+                const newRequest = new ProcurementRequest({
+                    franchiseId: request.franchiseId,
+                    orderId: request.orderId,
+                    items: [itemToSplit],
+                    totalEstimatedAmount: (itemToSplit.price || 0) * itemToSplit.quantity,
+                    status: status || 'assigned',
+                    assignedVendorId: vendorId,
+                    adminId: adminId
+                });
+                await newRequest.save();
+                requestToAssign = newRequest;
+                console.log(`Splitted request ${requestId}. New Request ${newRequest._id} Assigned Vendor: ${newRequest.assignedVendorId}`);
+            } else {
+                // Item not found, fallback to original logic
+                if (status) request.status = status;
+                if (vendorId) request.assignedVendorId = vendorId;
+                if (adminId) request.adminId = adminId;
+                await request.save();
+                console.log(`Request ${requestId} saved. Assigned Vendor: ${request.assignedVendorId}`);
+            }
+        } else {
+            if (status) request.status = status;
+            if (vendorId) request.assignedVendorId = vendorId;
+            if (adminId) request.adminId = adminId;
+            await request.save();
+            console.log(`Request ${requestId} saved. Assigned Vendor: ${request.assignedVendorId}`);
+        }
+
+        // Notify Vendor
+        if (requestToAssign.assignedVendorId) {
+            emitToVendor(requestToAssign.assignedVendorId, "new_assignment", {
+                requestId: requestToAssign._id,
+                message: "You have a new procurement assignment!"
+            });
+            // Push Notification
+            sendNotificationToUser(requestToAssign.assignedVendorId.toString(), {
+                title: "New Procurement Assignment",
+                body: "You have received a new procurement request from the Master Admin.",
+                data: {
+                    type: "assignment",
+                    requestId: requestToAssign._id.toString(),
+                    link: `/vendor/orders/${requestToAssign._id}`
+                }
+            }, 'vendor');
+        }
 
         // Update Order if exists
-        if (request.orderId) {
-            await Order.findByIdAndUpdate(request.orderId, {
+        if (requestToAssign.orderId) {
+            await Order.findByIdAndUpdate(requestToAssign.orderId, {
                 orderStatus: 'Procuring',
                 $push: {
                     statusHistory: {
@@ -296,7 +421,7 @@ export const adminUpdateProcurementRequest = async (req, res) => {
             });
         }
 
-        return handleResponse(res, 200, "Procurement request updated successfully", request);
+        return handleResponse(res, 200, "Procurement request updated successfully", requestToAssign);
     } catch (error) {
         console.error("Update procurement request error:", error);
         return handleResponse(res, 500, "Server error");
@@ -630,11 +755,18 @@ export const createProcurementFromOrder = async (req, res) => {
                 if (!item.productId) return null;
 
                 const prodIdStr = item.productId.toString();
-                const rawQty = customQuantities ? customQuantities[prodIdStr] : undefined;
-                const parsedQty = rawQty !== undefined && rawQty !== null && rawQty !== ''
-                    ? Number(rawQty)
-                    : Number(item.shortageQty || 0);
-                const quantity = Number.isFinite(parsedQty) ? parsedQty : Number(item.shortageQty || 0);
+
+                let quantity = 0;
+                if (customQuantities) {
+                    // Procurement mode with specific quantities
+                    const rawQty = customQuantities[prodIdStr];
+                    quantity = rawQty !== undefined && rawQty !== null && rawQty !== ''
+                        ? Number(rawQty)
+                        : 0; // If not in customQuantities, it was explicitly excluded by Admin
+                } else {
+                    // Full bundle mode without custom quantities array
+                    quantity = Number(item.shortageQty || 0);
+                }
 
                 return {
                     productId: prodIdStr,
@@ -663,6 +795,24 @@ export const createProcurementFromOrder = async (req, res) => {
         });
 
         await procurementRequest.save();
+
+        // Notify Vendor
+        if (vendorId) {
+            emitToVendor(vendorId, "new_assignment", {
+                requestId: procurementRequest._id,
+                message: "You have a new procurement assignment from an order!"
+            });
+            // Push Notification
+            sendNotificationToUser(vendorId.toString(), {
+                title: "New Procurement Assignment",
+                body: "You have received a new procurement request triggered by an order.",
+                data: {
+                    type: "assignment",
+                    requestId: procurementRequest._id.toString(),
+                    link: `/vendor/orders/${procurementRequest._id}`
+                }
+            }, 'vendor');
+        }
 
         // Update order to indicate procurement has started
         order.orderStatus = 'Procuring';

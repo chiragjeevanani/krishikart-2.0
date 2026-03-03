@@ -111,8 +111,11 @@ export default function VendorAssignmentScreen() {
         }
     }, [selectedOrder]);
 
+    const [selectedItemToAssign, setSelectedItemToAssign] = useState(null);
+
     const handleAssignProduct = (item) => {
         const productId = item.productId || item.id;
+        setSelectedItemToAssign(item);
         fetchVendorsForOrder(selectedOrder, productId, item.name);
         setShowVendorList(true);
     };
@@ -122,17 +125,31 @@ export default function VendorAssignmentScreen() {
         try {
             const response = await api.put(`/procurement/admin/${selectedOrder.id}/status`, {
                 status: 'assigned',
-                vendorId: vendor.id
+                vendorId: vendor.id,
+                itemId: selectedItemToAssign ? (selectedItemToAssign.productId || selectedItemToAssign._id || selectedItemToAssign.id) : undefined
             });
 
             if (response.data.success) {
                 setAssignmentSuccess(true);
-                // Remove from local list
-                setPendingRequests(prev => prev.filter(r => r.id !== selectedOrder.id));
+                // Remove the assigned item from the local state
+                if (selectedItemToAssign && selectedOrder.items.length > 1) {
+                    const originalProductId = selectedItemToAssign.productId || selectedItemToAssign._id || selectedItemToAssign.id;
+                    const remainingItems = selectedOrder.items.filter(i =>
+                        (i.productId || i._id || i.id) !== originalProductId
+                    );
+                    setSelectedOrder(prev => ({ ...prev, items: remainingItems }));
+                    setPendingRequests(prev => prev.map(r => r.id === selectedOrder.id ? { ...r, items: remainingItems } : r));
+                } else {
+                    // Remove the whole order from local list if it's fully assigned
+                    setPendingRequests(prev => prev.filter(r => r.id !== selectedOrder.id));
+                    setTimeout(() => {
+                        setSelectedOrder(null);
+                    }, 2000);
+                }
 
                 setTimeout(() => {
                     setAssignmentSuccess(false);
-                    setSelectedOrder(null);
+                    setShowVendorList(false); // go back to order details or close if null
                 }, 2000);
             }
         } catch (error) {

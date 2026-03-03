@@ -89,17 +89,45 @@ const franchiseSchema = new mongoose.Schema(
       default: null, // URL to the franchise's UPI/Payment QR code
     },
     location: {
-      lat: {
-        type: Number,
-        default: null
+      type: {
+        type: String,
+        enum: ['Point'],
+        default: 'Point'
       },
-      lng: {
-        type: Number,
-        default: null
+      coordinates: {
+        type: [Number], // [longitude, latitude]
+        required: true,
+        default: [0, 0]
       }
+    },
+    serviceHexagons: {
+      type: [String],
+      default: []
+    },
+    isActive: {
+      type: Boolean,
+      default: true
+    },
+    isOnline: {
+      type: Boolean,
+      default: true
+    },
+    capacityAvailable: {
+      type: Boolean,
+      default: true
+    },
+    workingHours: {
+      start: { type: String, default: "09:00" },
+      end: { type: String, default: "21:00" }
+    },
+    fcmTokens: {
+      type: [String],
+      default: []
     }
   },
   { timestamps: true }
 );
+
+franchiseSchema.index({ location: "2dsphere" });
 
 export default mongoose.model("Franchise", franchiseSchema);

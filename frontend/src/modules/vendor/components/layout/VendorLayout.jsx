@@ -3,8 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import BottomNav from '../navigation/BottomNav';
 import Sidebar from '../navigation/Sidebar';
 import { Suspense } from 'react';
+import NewAssignmentAlert from '../modals/NewAssignmentAlert';
+import { useVendorAuth } from '../../contexts/VendorAuthContext';
 
 export default function VendorLayout() {
+    const { isAlertOpen, setIsAlertOpen, newAssignmentData } = useVendorAuth();
     const location = useLocation();
     const isAuthPage = location.pathname === '/vendor/login' ||
         location.pathname === '/vendor/signup' ||
@@ -72,6 +75,12 @@ export default function VendorLayout() {
                     <BottomNav />
                 </div>
             )}
+
+            <NewAssignmentAlert
+                isOpen={isAlertOpen}
+                onClose={() => setIsAlertOpen(false)}
+                data={newAssignmentData}
+            />
         </div>
     );
 }

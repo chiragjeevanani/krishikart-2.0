@@ -116,12 +116,20 @@ export const loginVendor = async (req, res) => {
 
         const token = generateToken(vendor._id);
 
+        console.log(`[Vendor Login] Success for ${email}`);
         return handleResponse(res, 200, "Login successful", {
             token,
             id: vendor._id,
             email: vendor.email,
+            fullName: vendor.fullName,
+            mobile: vendor.mobile,
+            farmLocation: vendor.farmLocation,
+            profilePicture: vendor.profilePicture,
+            status: vendor.status,
+            role: "vendor"
         });
     } catch (err) {
+        console.error("[Vendor Login Error]:", err);
         return handleResponse(res, 500, "Server error");
     }
 };
@@ -293,5 +301,38 @@ export const resetVendorPassword = async (req, res) => {
     } catch (err) {
         console.error(err);
         return handleResponse(res, 500, "Server error");
+    }
+};
+
+/**
+ * @desc Save Vendor FCM Token
+ * @route POST /vendor/fcm-token
+ * @access Private (Vendor)
+ */
+export const saveFCMToken = async (req, res) => {
+    try {
+        const { token } = req.body;
+        const vendorId = req.vendor._id;
+
+        if (!token) return handleResponse(res, 400, "FCM Token is required");
+
+        const vendor = await Vendor.findById(vendorId);
+        if (!vendor) return handleResponse(res, 404, "Vendor not found");
+
+        if (!vendor.fcmTokens) vendor.fcmTokens = [];
+
+        if (!vendor.fcmTokens.includes(token)) {
+            vendor.fcmTokens.push(token);
+            // Limit to 10 tokens to prevent bloat
+            if (vendor.fcmTokens.length > 10) {
+                vendor.fcmTokens = vendor.fcmTokens.slice(-10);
+            }
+            await vendor.save();
+        }
+
+        return handleResponse(res, 200, "FCM token saved successfully");
+    } catch (err) {
+        console.error("Save Vendor FCM Token Error:", err);
+        return handleResponse(res, 500, "Internal server error");
     }
 };

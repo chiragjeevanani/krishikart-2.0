@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useFranchiseAuth } from '../contexts/FranchiseAuthContext';
 import api from '../../../lib/axios';
+import { geocodeAddressFrontend } from '@/lib/geo';
 
 export default function SignupScreen() {
     const navigate = useNavigate();
@@ -38,13 +39,22 @@ export default function SignupScreen() {
         if (formData.mobile.length === 10 && formData.franchiseName && formData.ownerName) {
             setIsLoading(true);
             try {
+                let coords = null;
+                try {
+                    coords = await geocodeAddressFrontend(`${formData.city}, ${formData.state}`);
+                } catch (geoErr) {
+                    console.warn("Frontend registration geocode failed", geoErr);
+                }
+
                 await api.post('/franchise/register', {
                     franchiseName: formData.franchiseName,
                     ownerName: formData.ownerName,
                     mobile: formData.mobile,
                     area: formData.area,
                     city: formData.city,
-                    state: formData.state
+                    state: formData.state,
+                    email: formData.email,
+                    location: coords
                 });
                 setMode('otp');
             } catch (error) {
@@ -85,11 +95,8 @@ export default function SignupScreen() {
         try {
             const response = await api.post('/franchise/verify-otp', { mobile: formData.mobile, otp: otpValue });
 
-            localStorage.setItem('franchiseToken', response.data.result.token);
-            localStorage.setItem('franchiseData', JSON.stringify(response.data.result));
-
-            loginSuccess(response.data.result);
-
+            const { token, ...franchiseData } = response.data.result;
+            loginSuccess(franchiseData, token);
             navigate('/franchise/dashboard');
         } catch (error) {
             console.error(error);

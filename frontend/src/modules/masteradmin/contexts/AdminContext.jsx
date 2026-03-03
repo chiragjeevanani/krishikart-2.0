@@ -134,6 +134,21 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
+    const updateFranchiseServiceArea = async (id, serviceHexagons) => {
+        try {
+            const response = await api.put(`/masteradmin/franchises/${id}/service-area`, { serviceHexagons });
+            if (response.data.success) {
+                toast.success('Service area updated successfully');
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Update service area error:', error);
+            toast.error(error.response?.data?.message || 'Update failed');
+            return false;
+        }
+    };
+
     return (
         <AdminContext.Provider value={{
             vendors,
@@ -146,7 +161,8 @@ export const AdminProvider = ({ children }) => {
             fetchProducts,
             assignProductsToVendor,
             createVendorByAdmin,
-            createFranchiseByAdmin
+            createFranchiseByAdmin,
+            updateFranchiseServiceArea
         }}>
             {children}
         </AdminContext.Provider>

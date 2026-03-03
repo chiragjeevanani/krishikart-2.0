@@ -1,30 +1,32 @@
 import axios from 'axios';
 
 /**
- * Geocodes an address or city using Nominatim (OpenStreetMap)
+ * Geocodes an address or city using Google Geocoding API
  * @param {string} query The address or city to geocode
  * @returns {Promise<{lat: number, lng: number} | null>}
  */
 export const geocodeAddress = async (query) => {
     try {
+        const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+        if (!apiKey) {
+            console.error('GOOGLE_MAPS_API_KEY is missing in .env');
+            return null;
+        }
+
         const response = await axios.get(
-            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`,
-            {
-                headers: {
-                    'User-Agent': 'KrishiKart-App/1.0'
-                }
-            }
+            `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${apiKey}`
         );
 
         const data = response.data;
 
-        if (data && data.length > 0) {
-            const { lat, lon } = data[0];
+        if (data.status === 'OK' && data.results && data.results.length > 0) {
+            const { lat, lng } = data.results[0].geometry.location;
             return {
                 lat: parseFloat(lat),
-                lng: parseFloat(lon)
+                lng: parseFloat(lng)
             };
         }
+        console.warn('Geocoding status:', data.status);
         return null;
     } catch (error) {
         console.error('Geocoding error:', error.message);

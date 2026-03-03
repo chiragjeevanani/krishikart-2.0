@@ -30,18 +30,39 @@ api.interceptors.request.use((config) => {
         ? requestUrl
         : currentPath;
 
-    const isAdminPath = path.includes('/masteradmin') || path.includes('/procurement') || path.includes('/admin');
-
-    if (isAdminPath) {
+    // Priority 1: Current browser context (Strictly bind tokens to the portal the user is visiting)
+    if (currentPath.startsWith('/masteradmin')) {
         token = localStorage.getItem('masterAdminToken');
-    } else if (path.includes('/franchise')) {
-        token = localStorage.getItem('franchiseToken');
-    } else if (path.includes('/vendor')) {
+    } else if (currentPath.startsWith('/vendor')) {
         token = localStorage.getItem('vendorToken');
-    } else if (path.includes('/delivery')) {
+    } else if (currentPath.startsWith('/franchise')) {
+        token = localStorage.getItem('franchiseToken');
+    } else if (currentPath.startsWith('/delivery')) {
         token = localStorage.getItem('deliveryToken');
-    } else {
-        token = localStorage.getItem('userToken');
+    } else if (currentPath.includes('/procurement')) { // Added procurement context
+        token = localStorage.getItem('masterAdminToken'); // Procurement uses admin token
+    }
+
+    // Priority 2: Request URL (Fallback for neutral pages or cross-module components on neutral pages)
+    if (!token) {
+        // Only use cross-module tokens if we AREN'T in a conflicting module context
+        if (isAdminRequest) {
+            token = localStorage.getItem('masterAdminToken');
+        } else if (isVendorRequest) {
+            token = localStorage.getItem('vendorToken');
+        } else if (isFranchiseRequest) {
+            token = localStorage.getItem('franchiseToken');
+        } else if (isDeliveryRequest) {
+            token = localStorage.getItem('deliveryToken');
+        } else {
+            token = localStorage.getItem('userToken');
+        }
+    }
+
+    // EXTRA SECURITY: Never send a Master Admin token to a Vendor-specific dashboard path
+    if (token && currentPath.startsWith('/vendor') && token === localStorage.getItem('masterAdminToken') && !isAdminRequest) {
+        console.warn('[Security Guard] Blocking Admin token leakage into Vendor context');
+        token = localStorage.getItem('vendorToken');
     }
 
     if (token) {

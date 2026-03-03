@@ -64,17 +64,13 @@ export default function LoginScreen() {
             const response = await api.post('/franchise/verify-otp', { mobile, otp: otpValue });
             // The context login function might need updating or we handle storage manually here to match other modules
             // Assuming context handles state update if we pass data, but let's do manual storage for consistency
-            localStorage.setItem('franchiseToken', response.data.result.token);
-            localStorage.setItem('franchiseData', JSON.stringify(response.data.result));
-
-            // If context has a login method that updates state, ideally use it. 
-            // Manual storage done above, now update context state
-            loginSuccess(response.data.result);
-
+            const { token, ...franchiseData } = response.data.result;
+            loginSuccess(franchiseData, token);
             navigate('/franchise/dashboard');
         } catch (error) {
-            console.error(error);
-            alert(error.response?.data?.message || 'Login failed');
+            console.error('[Franchise Login Error]:', error);
+            const errorMsg = error.response?.data?.message || error.message || 'Login failed';
+            alert(`Login Error: ${errorMsg}`);
         } finally {
             setIsLoading(false);
         }

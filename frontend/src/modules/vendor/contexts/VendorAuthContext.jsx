@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '@/lib/axios';
+import { getSocket, joinVendorRoom } from '@/lib/socket';
+import { useFCM } from '@/hooks/useFCM';
 
 const VendorAuthContext = createContext();
 
@@ -7,10 +9,7 @@ export function VendorAuthProvider({ children }) {
     const [vendor, setVendor] = useState(() => {
         const savedData = localStorage.getItem('vendorData');
         const savedToken = localStorage.getItem('vendorToken');
-
-        // Only consider authenticated if we have both data and token
         if (!savedToken) return null;
-
         try {
             return savedData ? JSON.parse(savedData) : null;
         } catch (e) {
@@ -18,6 +17,30 @@ export function VendorAuthProvider({ children }) {
         }
     });
     const [loading, setLoading] = useState(true);
+
+    // Alert State
+    const [isAlertOpen, setIsAlertOpen] = useState(false);
+    const [newAssignmentData, setNewAssignmentData] = useState(null);
+
+    // Register FCM Token
+    useFCM(!!vendor, 'vendor');
+
+    const playNotificationSound = () => {
+        try {
+            const soundUrl = 'https://cdn.pixabay.com/audio/2022/01/18/audio_03d9715a0c.mp3'; // Chime/Bell sound
+            const audio = new Audio(soundUrl);
+            audio.volume = 1.0;
+            audio.play().catch(() => {
+                const playOnClick = () => {
+                    audio.play().catch(() => { });
+                    document.removeEventListener('click', playOnClick);
+                };
+                document.addEventListener('click', playOnClick);
+            });
+        } catch (err) {
+            console.error('Audio failure:', err);
+        }
+    };
 
     useEffect(() => {
         const loadVendor = async () => {
@@ -49,6 +72,24 @@ export function VendorAuthProvider({ children }) {
         return () => window.removeEventListener('storage', handleStorageChange);
     }, []);
 
+    // Socket Setup
+    useEffect(() => {
+        if (vendor?._id) {
+            joinVendorRoom(vendor._id);
+            const socket = getSocket();
+
+            const handleNewAssignment = (data) => {
+                console.log('New assignment received:', data);
+                setNewAssignmentData(data);
+                setIsAlertOpen(true);
+                playNotificationSound();
+            };
+
+            socket.on('new_assignment', handleNewAssignment);
+            return () => socket.off('new_assignment', handleNewAssignment);
+        }
+    }, [vendor]);
+
     const loginSuccess = (data, token) => {
         setVendor(data);
         localStorage.setItem('vendorToken', token);
@@ -59,6 +100,7 @@ export function VendorAuthProvider({ children }) {
         setVendor(null);
         localStorage.removeItem('vendorToken');
         localStorage.removeItem('vendorData');
+        window.location.href = '/vendor/login';
     };
 
     return (
@@ -67,7 +109,10 @@ export function VendorAuthProvider({ children }) {
             loginSuccess,
             logout,
             isAuthenticated: !!vendor,
-            loading
+            loading,
+            isAlertOpen,
+            setIsAlertOpen,
+            newAssignmentData
         }}>
             {loading ? (
                 <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-50">

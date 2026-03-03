@@ -575,3 +575,33 @@ export const redeemLoyaltyPoints = async (req, res) => {
   }
 };
 
+/**
+ * @desc Save User FCM Token
+ * @route POST /user/fcm-token
+ * @access Private (User)
+ */
+export const saveFCMToken = async (req, res) => {
+  try {
+    const { token } = req.body;
+    const userId = req.user.id;
+
+    if (!token) return handleResponse(res, 400, "FCM Token is required");
+
+    const user = await User.findById(userId);
+    if (!user.fcmTokens) user.fcmTokens = [];
+
+    if (!user.fcmTokens.includes(token)) {
+      user.fcmTokens.push(token);
+      if (user.fcmTokens.length > 10) {
+        user.fcmTokens = user.fcmTokens.slice(-10);
+      }
+      await user.save();
+    }
+
+    return handleResponse(res, 200, "FCM token saved successfully");
+  } catch (err) {
+    console.error("Save User FCM Token Error:", err);
+    return handleResponse(res, 500, "Internal server error");
+  }
+};
+

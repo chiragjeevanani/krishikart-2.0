@@ -2,6 +2,9 @@ import Delivery from "../models/delivery.js";
 import Order from "../models/order.js";
 import DeliveryCodRemittance from "../models/deliveryCodRemittance.js";
 import { handleResponse } from "../utils/helper.js";
+import razorpay from "../utils/razorpay.js";
+import crypto from "crypto";
+import mongoose from "mongoose";
 
 /**
  * @desc Get All Active Delivery Partners
@@ -129,6 +132,91 @@ export const submitCodRemittance = async (req, res) => {
     }
 };
 
+export const createCodRazorpayOrder = async (req, res) => {
+    try {
+        const { amount } = req.body;
+        if (!amount) return handleResponse(res, 400, "Amount is required");
+
+        const options = {
+            amount: Math.round(amount * 100),
+            currency: "INR",
+            receipt: `remit_dlv_${req.delivery._id}_${Date.now()}`,
+        };
+
+        const order = await razorpay.orders.create(options);
+        return handleResponse(res, 200, "Razorpay order created", order);
+    } catch (error) {
+        console.error("Razorpay create remit order error:", error);
+        return handleResponse(res, 500, "Payment initialization failed");
+    }
+};
+
+export const verifyCodUpiPayment = async (req, res) => {
+    try {
+        const {
+            razorpay_order_id,
+            razorpay_payment_id,
+            razorpay_signature,
+            orderIds,
+            note
+        } = req.body;
+
+        const deliveryId = req.delivery._id.toString();
+
+        // 1. Verify Signature
+        const sign = razorpay_order_id + "|" + razorpay_payment_id;
+        const expectedSign = crypto
+            .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+            .update(sign.toString())
+            .digest("hex");
+
+        if (razorpay_signature !== expectedSign) {
+            return handleResponse(res, 400, "Invalid payment signature");
+        }
+
+        // 2. Fetch Orders to get exact amount
+        const orders = await Order.find({
+            _id: { $in: orderIds },
+            "codTracking.collectedByDeliveryId": deliveryId,
+            "codTracking.remittanceStatus": "pending"
+        });
+
+        if (!orders.length) {
+            return handleResponse(res, 400, "No valid orders found for remittance");
+        }
+
+        const amount = orders.reduce((sum, o) => sum + Number(o.codTracking?.collectedAmount || o.totalAmount || 0), 0);
+
+        // 3. Create Remittance
+        const remittance = await DeliveryCodRemittance.create({
+            deliveryPartnerId: deliveryId,
+            orderIds: orders.map((o) => o._id),
+            amount: Number(amount.toFixed(2)),
+            paymentMethod: "upi",
+            referenceNo: razorpay_payment_id,
+            note: String(note || ""),
+            status: "verified" // Since it's digital prepaid to admin, we can auto-verify or mark as submitted
+        });
+
+        // 4. Update Orders
+        await Order.updateMany(
+            { _id: { $in: orders.map((o) => o._id) } },
+            {
+                $set: {
+                    "codTracking.remittanceStatus": "verified",
+                    "codTracking.remittanceId": remittance._id,
+                    "codTracking.remittedAt": new Date()
+                }
+            }
+        );
+
+        return handleResponse(res, 201, "UPI Remittance successful and verified", remittance);
+    } catch (error) {
+        console.error("Verify UPI Remittance error:", error);
+        return handleResponse(res, 500, "Verification failed");
+    }
+};
+
 export const getMyCodRemittances = async (req, res) => {
     try {
         const deliveryId = req.delivery?._id;
@@ -141,6 +229,68 @@ export const getMyCodRemittances = async (req, res) => {
         return handleResponse(res, 200, "COD remittance history fetched", remittances);
     } catch (err) {
         console.error("Get COD remittance history error:", err);
+        return handleResponse(res, 500, "Internal server error");
+    }
+};
+
+/**
+ * @desc Update Delivery Availability and Location
+ * @route PUT /delivery/availability
+ * @access Private (Delivery)
+ */
+export const updateAvailability = async (req, res) => {
+    try {
+        const { isOnline, lat, lng } = req.body;
+        const deliveryId = req.delivery._id;
+
+        const updateData = {};
+        if (typeof isOnline === 'boolean') updateData.isOnline = isOnline;
+        if (lat !== undefined && lng !== undefined) {
+            updateData.location = {
+                type: 'Point',
+                coordinates: [lng, lat]
+            };
+        }
+
+        const delivery = await Delivery.findByIdAndUpdate(
+            deliveryId,
+            { $set: updateData },
+            { new: true }
+        );
+
+        return handleResponse(res, 200, "Availability updated successfully", delivery);
+    } catch (err) {
+        console.error("Update Availability Error:", err);
+        return handleResponse(res, 500, "Internal server error");
+    }
+};
+
+/**
+ * @desc Save Delivery FCM Token
+ * @route POST /delivery/fcm-token
+ * @access Private (Delivery)
+ */
+export const saveFCMToken = async (req, res) => {
+    try {
+        const { token } = req.body;
+        const deliveryId = req.delivery._id;
+
+        if (!token) return handleResponse(res, 400, "FCM Token is required");
+
+        const delivery = await Delivery.findById(deliveryId);
+        if (!delivery.fcmTokens) delivery.fcmTokens = [];
+
+        if (!delivery.fcmTokens.includes(token)) {
+            delivery.fcmTokens.push(token);
+            if (delivery.fcmTokens.length > 10) {
+                delivery.fcmTokens = delivery.fcmTokens.slice(-10);
+            }
+            await delivery.save();
+        }
+
+        return handleResponse(res, 200, "FCM token saved successfully");
+    } catch (err) {
+        console.error("Save FCM Token Error:", err);
         return handleResponse(res, 500, "Internal server error");
     }
 };

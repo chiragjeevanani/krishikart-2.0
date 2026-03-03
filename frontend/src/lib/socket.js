@@ -38,3 +38,15 @@ export const joinOrderRoom = (orderId) => {
     const s = getSocket();
     s.emit("join_order_room", orderId);
 };
+export const joinFranchiseRoom = (franchiseId) => {
+    const s = getSocket();
+    s.emit("join_franchise_room", franchiseId);
+};
+export const joinDeliveryRoom = (deliveryId) => {
+    const s = getSocket();
+    s.emit("join_delivery_room", deliveryId);
+};
+export const joinVendorRoom = (vendorId) => {
+    const s = getSocket();
+    s.emit("join_vendor_room", vendorId);
+};

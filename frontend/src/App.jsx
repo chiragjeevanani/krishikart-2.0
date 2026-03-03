@@ -154,11 +154,11 @@ function App() {
           </Route>
 
           {/* Franchise Module */}
-          <Route path="/franchise">
+          <Route path="/franchise" element={<FranchiseProviders><Outlet /></FranchiseProviders>}>
             <Route index element={<Navigate to="login" replace />} />
-            <Route path="login" element={<FranchiseAuthProvider><FranchiseLogin /></FranchiseAuthProvider>} />
-            <Route path="signup" element={<FranchiseAuthProvider><FranchiseSignup /></FranchiseAuthProvider>} />
-            <Route element={<FranchiseProviders><FranchiseAuthGuard /></FranchiseProviders>}>
+            <Route path="login" element={<FranchiseLogin />} />
+            <Route path="signup" element={<FranchiseSignup />} />
+            <Route element={<FranchiseAuthGuard />}>
               <Route element={<FranchiseLayout />}>
                 <Route path="dashboard" element={<FranchiseDashboard />} />
                 <Route path="orders" element={<FranchiseOrders />} />

@@ -130,6 +130,10 @@ const userSchema = new mongoose.Schema(
     onboardingCompleted: {
       type: Boolean,
       default: false,
+    },
+    fcmTokens: {
+      type: [String],
+      default: []
     }
   },
   { timestamps: true }

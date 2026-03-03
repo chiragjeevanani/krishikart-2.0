@@ -1,13 +1,69 @@
 import { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import api from '@/lib/axios';
 import { toast } from 'sonner';
+import { getSocket, joinFranchiseRoom } from '@/lib/socket';
+import { useFranchiseAuth } from '@/modules/franchise/contexts/FranchiseAuthContext'; // Need franchise ID
 
 const FranchiseOrdersContext = createContext();
 
 export function FranchiseOrdersProvider({ children }) {
+    const { franchise } = useFranchiseAuth();
     const [liveOrders, setLiveOrders] = useState([]);
     const [deliveryPartners, setDeliveryPartners] = useState([]);
     const [loading, setLoading] = useState(false);
+
+    // Alert State
+    const [isAlertOpen, setIsAlertOpen] = useState(false);
+    const [newOrderData, setNewOrderData] = useState(null);
+
+    // Play sound helper using AudioContext (100% reliable, no network/CORS issues)
+    const playNotificationSound = () => {
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+            const ctx = new AudioContext();
+
+            const playBeep = (freq, startTime, duration) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, ctx.currentTime + startTime);
+
+                gain.gain.setValueAtTime(0, ctx.currentTime + startTime);
+                gain.gain.linearRampToValueAtTime(1, ctx.currentTime + startTime + 0.05);
+                gain.gain.linearRampToValueAtTime(0, ctx.currentTime + startTime + duration);
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.start(ctx.currentTime + startTime);
+                osc.stop(ctx.currentTime + startTime + duration);
+            };
+
+            // Play a pleasant "Ding-Dong" or "Success" sequence
+            playBeep(880, 0, 0.15); // A5
+            playBeep(1108.73, 0.15, 0.25); // C#6
+
+            // Repeat for emphasis (Alarm style)
+            setTimeout(() => {
+                playBeep(880, 0, 0.15);
+                playBeep(1108.73, 0.15, 0.25);
+            }, 800);
+
+            setTimeout(() => {
+                playBeep(880, 0, 0.15);
+                playBeep(1108.73, 0.15, 0.25);
+            }, 1600);
+
+            // Resume context if browser suspended it
+            if (ctx.state === 'suspended') {
+                ctx.resume();
+            }
+        } catch (err) {
+            console.error('Audio engine failure:', err);
+        }
+    };
 
     const fetchOrders = async () => {
         setLoading(true);
@@ -50,6 +106,27 @@ export function FranchiseOrdersProvider({ children }) {
         return () => clearInterval(pollInterval);
     }, []);
 
+    useEffect(() => {
+        if (!franchise?._id) return;
+
+        const socket = getSocket();
+        joinFranchiseRoom(franchise._id);
+
+        const handleNewOrder = (data) => {
+            console.log('New real-time order received:', data);
+            setNewOrderData(data);
+            setIsAlertOpen(true);
+            playNotificationSound();
+            fetchOrders(); // Immediate refresh
+        };
+
+        socket.on('new_order', handleNewOrder);
+
+        return () => {
+            socket.off('new_order', handleNewOrder);
+        };
+    }, [franchise?._id]);
+
     // Computed combined orders with mapping
     const orders = useMemo(() => {
         return liveOrders.map(o => ({
@@ -67,7 +144,8 @@ export function FranchiseOrdersProvider({ children }) {
                 qty: i.quantity || 0,
                 unit: i.unit || 'units',
                 price: i.price || 0,
-                subtotal: i.subtotal || 0
+                subtotal: i.subtotal || 0,
+                isShortage: i.isShortage || false
             })),
             address: o.userId?.address || o.user?.address || o.shippingAddress || 'Address not provided',
             deliveryTime: "30-45 mins",
@@ -111,8 +189,8 @@ export function FranchiseOrdersProvider({ children }) {
             const response = await api.put(`/orders/franchise/${orderId}/accept`);
             if (response.data.success) {
                 toast.success('Order accepted successfully');
-                setLiveOrders(prev => prev.map(o => o._id === orderId ? { ...o, franchiseId: "assigned", orderStatus: 'Placed' } : o));
-                fetchOrders(); // Refresh to get full details
+                setLiveOrders(prev => prev.map(o => o._id === orderId ? { ...o, orderStatus: 'Accepted' } : o));
+                fetchOrders(); // Refresh to get full details from server
             }
         } catch (error) {
             console.error('Accept order error:', error);
@@ -154,6 +232,9 @@ export function FranchiseOrdersProvider({ children }) {
             deliveryPartners,
             stats,
             loading,
+            isAlertOpen,
+            setIsAlertOpen,
+            newOrderData,
             refreshOrders: fetchOrders,
             refreshPartners: fetchDeliveryPartners,
             fetchOrdersByDate: async (date) => {

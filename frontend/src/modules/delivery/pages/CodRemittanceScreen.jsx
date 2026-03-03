@@ -3,9 +3,11 @@ import { ArrowLeft, IndianRupee, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '@/lib/axios';
 import { toast } from 'sonner';
+import { useDeliveryAuth } from '../contexts/DeliveryAuthContext';
 
 export default function CodRemittanceScreen() {
     const navigate = useNavigate();
+    const { delivery } = useDeliveryAuth();
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [pendingOrders, setPendingOrders] = useState([]);
@@ -69,24 +71,93 @@ export default function CodRemittanceScreen() {
         );
     };
 
+    const loadRazorpay = () => {
+        return new Promise((resolve) => {
+            const script = document.createElement('script');
+            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            script.onload = () => resolve(true);
+            script.onerror = () => resolve(false);
+            document.body.appendChild(script);
+        });
+    };
+
     const handleSubmitRemittance = async () => {
         if (!selectedOrderIds.length) {
             toast.error('Select at least one order');
             return;
         }
+
         try {
             setSubmitting(true);
-            const response = await api.post('/delivery/cod/remittance', {
-                orderIds: selectedOrderIds,
-                paymentMethod,
-                referenceNo,
-                note
-            });
-            if (response.data.success) {
-                toast.success('COD remittance submitted');
-                setReferenceNo('');
-                setNote('');
-                await fetchData();
+
+            if (paymentMethod === 'upi') {
+                const isLoaded = await loadRazorpay();
+                if (!isLoaded) {
+                    toast.error('Razorpay SDK failed to load');
+                    return;
+                }
+
+                // 1. Create Razorpay order for the remittance
+                const orderRes = await api.post('/delivery/cod/razorpay-order', {
+                    amount: selectedAmount
+                });
+
+                if (!orderRes.data.success) throw new Error('Order creation failed');
+
+                const { amount, id: rzpOrderId, currency } = orderRes.data.result;
+
+                // 2. Open Razorpay Checkout
+                const options = {
+                    key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+                    amount,
+                    currency,
+                    name: "KrishiKart Admin",
+                    description: `COD Remittance for ${selectedOrderIds.length} orders`,
+                    order_id: rzpOrderId,
+                    handler: async (response) => {
+                        try {
+                            // 3. Verify payment on backend
+                            const verifyRes = await api.post('/delivery/cod/verify-upi', {
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                                orderIds: selectedOrderIds,
+                                note
+                            });
+
+                            if (verifyRes.data.success) {
+                                toast.success('Remittance verified and completed');
+                                setReferenceNo('');
+                                setNote('');
+                                await fetchData();
+                            }
+                        } catch (err) {
+                            toast.error(err.response?.data?.message || 'Verification failed');
+                        }
+                    },
+                    prefill: {
+                        name: delivery?.fullName || '',
+                        contact: delivery?.mobile || ''
+                    },
+                    theme: { color: "#16a34a" }
+                };
+
+                const rzp = new window.Razorpay(options);
+                rzp.open();
+            } else {
+                // Cash Flow (Existing)
+                const response = await api.post('/delivery/cod/remittance', {
+                    orderIds: selectedOrderIds,
+                    paymentMethod,
+                    referenceNo,
+                    note
+                });
+                if (response.data.success) {
+                    toast.success('COD remittance submitted to admin');
+                    setReferenceNo('');
+                    setNote('');
+                    await fetchData();
+                }
             }
         } catch (error) {
             console.error('COD submit error:', error);
@@ -158,17 +229,17 @@ export default function CodRemittanceScreen() {
 
                 <div className="bg-white rounded-2xl border border-slate-200 p-4 space-y-3">
                     <h2 className="text-sm font-bold text-slate-900">Submit to Admin</h2>
-                    <div className="grid grid-cols-3 gap-2">
-                        {['cash', 'upi', 'bank_transfer'].map((method) => (
+                    <div className="grid grid-cols-2 gap-2">
+                        {['cash', 'upi'].map((method) => (
                             <button
                                 key={method}
                                 onClick={() => setPaymentMethod(method)}
-                                className={`py-2 rounded-lg text-xs font-bold border ${paymentMethod === method
-                                        ? 'bg-primary text-white border-primary'
-                                        : 'bg-white text-slate-600 border-slate-300'
+                                className={`py-4 rounded-xl text-[10px] font-black tracking-widest uppercase border transition-all ${paymentMethod === method
+                                    ? 'bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-200'
+                                    : 'bg-white text-slate-500 border-slate-200'
                                     }`}
                             >
-                                {method.replace('_', ' ').toUpperCase()}
+                                {method.replace('_', ' ')}
                             </button>
                         ))}
                     </div>
@@ -176,21 +247,21 @@ export default function CodRemittanceScreen() {
                         value={referenceNo}
                         onChange={(e) => setReferenceNo(e.target.value)}
                         placeholder="Reference no. (optional)"
-                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/20 transition-all"
                     />
                     <textarea
                         value={note}
                         onChange={(e) => setNote(e.target.value)}
                         placeholder="Note (optional)"
-                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm min-h-[72px]"
+                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/20 transition-all min-h-[72px]"
                     />
                     <button
                         disabled={submitting || !selectedOrderIds.length}
                         onClick={handleSubmitRemittance}
-                        className="w-full py-3 rounded-xl bg-primary text-white font-bold disabled:opacity-60 flex items-center justify-center gap-2"
+                        className="w-full h-14 rounded-2xl bg-primary text-white font-black text-[12px] uppercase tracking-[0.2em] disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center gap-3 shadow-[0_20px_40px_-15px_rgba(22,163,74,0.3)] active:scale-95 transition-all"
                     >
-                        {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <IndianRupee className="w-4 h-4" />}
-                        Submit Rs {selectedAmount.toFixed(2)}
+                        {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <IndianRupee className="w-5 h-5" />}
+                        Submit ₹{selectedAmount.toFixed(2)}
                     </button>
                 </div>
 

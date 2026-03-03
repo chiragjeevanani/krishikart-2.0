@@ -21,6 +21,7 @@ import {
   getAllFranchises,
   getFranchiseDetails,
   updateFranchiseStatus,
+  updateFranchiseServiceArea,
   getPendingKYCFranchises,
   reviewFranchiseKYC,
   getAllCustomers,
@@ -76,6 +77,7 @@ router.post("/franchises", protectMasterAdmin, upload.fields([
 router.get("/franchises/kyc/pending", protectMasterAdmin, requirePermission("approvals"), getPendingKYCFranchises);
 router.get("/franchises/:id", protectMasterAdmin, requirePermission("franchises"), getFranchiseDetails);
 router.put("/franchises/:id/status", protectMasterAdmin, requirePermission("franchises"), updateFranchiseStatus);
+router.put("/franchises/:id/service-area", protectMasterAdmin, requirePermission("franchises"), updateFranchiseServiceArea);
 router.put("/franchises/:id/kyc-review", protectMasterAdmin, requirePermission("approvals"), reviewFranchiseKYC);
 
 /* 👥 Customer Management */

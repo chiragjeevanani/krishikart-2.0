@@ -186,3 +186,65 @@ export const resetInventoryStock = async (req, res) => {
         return handleResponse(res, 500, "Internal server error");
     }
 };
+/**
+ * @desc Update Franchise Availability and Location
+ * @route PUT /franchise/availability
+ * @access Private (Franchise)
+ */
+export const updateAvailability = async (req, res) => {
+    try {
+        const { isOnline, lat, lng } = req.body;
+        const franchiseId = req.franchise._id;
+
+        const updateData = {};
+        if (typeof isOnline === 'boolean') updateData.isOnline = isOnline;
+        if (lat !== undefined && lng !== undefined) {
+            updateData.location = {
+                type: 'Point',
+                coordinates: [lng, lat]
+            };
+        }
+
+        const franchise = await Franchise.findByIdAndUpdate(
+            franchiseId,
+            { $set: updateData },
+            { new: true }
+        );
+
+        return handleResponse(res, 200, "Availability updated successfully", franchise);
+    } catch (err) {
+        console.error("Update Availability Error:", err);
+        return handleResponse(res, 500, "Internal server error");
+    }
+};
+
+/**
+ * @desc Save Franchise FCM Token
+ * @route POST /franchise/fcm-token
+ * @access Private (Franchise)
+ */
+export const saveFCMToken = async (req, res) => {
+    try {
+        const { token } = req.body;
+        const franchiseId = req.franchise._id;
+
+        if (!token) return handleResponse(res, 400, "FCM Token is required");
+
+        const franchise = await Franchise.findById(franchiseId);
+        if (!franchise.fcmTokens) franchise.fcmTokens = [];
+
+        if (!franchise.fcmTokens.includes(token)) {
+            franchise.fcmTokens.push(token);
+            // Limit to 10 tokens
+            if (franchise.fcmTokens.length > 10) {
+                franchise.fcmTokens = franchise.fcmTokens.slice(-10);
+            }
+            await franchise.save();
+        }
+
+        return handleResponse(res, 200, "FCM token saved successfully");
+    } catch (err) {
+        console.error("Save FCM Token Error:", err);
+        return handleResponse(res, 500, "Internal server error");
+    }
+};

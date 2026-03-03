@@ -27,6 +27,7 @@ import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import api from '@/lib/axios'
 import { toast } from 'sonner'
+import { geocodeAddressFrontend } from '@/lib/geo'
 
 export default function CheckoutScreen() {
     const navigate = useNavigate()
@@ -310,8 +311,16 @@ export default function CheckoutScreen() {
             toast.error('Could not save address to profile')
         }
 
+        let coords = null;
+        try {
+            coords = await geocodeAddressFrontend(fullAddress);
+        } catch (geoErr) {
+            console.warn("Geocoding failed on frontend:", geoErr);
+        }
+
         const orderData = {
             shippingAddress: fullAddress,
+            shippingLocation: coords,
             paymentMethod: methodMap[selectedMethod],
             deliveryShift: deliveryShift,
             couponCode: appliedCoupon?.code || '',

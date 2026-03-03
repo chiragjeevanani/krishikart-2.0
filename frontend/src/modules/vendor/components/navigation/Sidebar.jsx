@@ -10,6 +10,7 @@ import {
     History
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useVendorAuth } from '../../contexts/VendorAuthContext';
 
 const navItems = [
     { id: 'dashboard', path: '/vendor/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -21,6 +22,7 @@ const navItems = [
 ];
 
 export default function Sidebar() {
+    const { logout } = useVendorAuth();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -59,11 +61,7 @@ export default function Sidebar() {
 
             <div className="pt-6 border-t border-slate-50">
                 <button
-                    onClick={() => {
-                        localStorage.removeItem('vendorToken');
-                        localStorage.removeItem('vendorData');
-                        navigate('/vendor/login');
-                    }}
+                    onClick={logout}
                     className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all group"
                 >
                     <LogOut size={20} className="group-hover:-translate-x-1 transition-transform" />

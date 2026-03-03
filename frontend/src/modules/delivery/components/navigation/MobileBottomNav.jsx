@@ -3,13 +3,28 @@ import { NavLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Home, ClipboardList, MapPin, History, User, Undo2 } from 'lucide-react';
 import { ROUTES } from '../../utils/constants';
+import { useDeliveryOrders } from '../../contexts/DeliveryOrderContext';
 
 const MobileBottomNav = () => {
+    const { dispatchedOrders, returnPickups } = useDeliveryOrders();
+
     const navItems = [
         { icon: Home, label: 'Home', path: ROUTES.DASHBOARD },
-        { icon: ClipboardList, label: 'Requests', path: ROUTES.REQUESTS },
+        {
+            icon: ClipboardList,
+            label: 'Requests',
+            path: ROUTES.REQUESTS,
+            badge: dispatchedOrders.length > 0 ? dispatchedOrders.length : null,
+            badgeColor: 'bg-emerald-500'
+        },
         { icon: MapPin, label: 'Active', path: ROUTES.ACTIVE },
-        { icon: Undo2, label: 'Returns', path: ROUTES.RETURN_PICKUPS },
+        {
+            icon: Undo2,
+            label: 'Returns',
+            path: ROUTES.RETURN_PICKUPS,
+            badge: returnPickups.length > 0 ? returnPickups.length : null,
+            badgeColor: 'bg-orange-500'
+        },
         { icon: History, label: 'History', path: ROUTES.HISTORY },
         { icon: User, label: 'Profile', path: ROUTES.PROFILE },
     ];
@@ -29,9 +44,16 @@ const MobileBottomNav = () => {
                         >
                             {({ isActive }) => (
                                 <>
-                                    <item.icon
-                                        className={`w-5 h-5 mb-1.5 transition-transform duration-300 ${isActive ? 'stroke-[2.5px] scale-110' : 'stroke-[1.5px]'}`}
-                                    />
+                                    <div className="relative">
+                                        <item.icon
+                                            className={`w-5 h-5 mb-1.5 transition-transform duration-300 ${isActive ? 'stroke-[2.5px] scale-110' : 'stroke-[1.5px]'}`}
+                                        />
+                                        {item.badge && (
+                                            <span className={`absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full ${item.badgeColor} text-[8px] font-black text-white ring-2 ring-white animate-bounce`}>
+                                                {item.badge}
+                                            </span>
+                                        )}
+                                    </div>
                                     <span className={`text-[10px] font-bold tracking-tight transition-all duration-300 ${isActive ? 'opacity-100' : 'opacity-70'}`}>
                                         {item.label}
                                     </span>

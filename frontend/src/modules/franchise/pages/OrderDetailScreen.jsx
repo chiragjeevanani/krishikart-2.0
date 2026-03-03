@@ -66,6 +66,7 @@ export default function OrderDetailScreen() {
                         name: i.name,
                         quantity: i.quantity,
                         price: i.price,
+                        isShortage: i.isShortage || false
                     })),
                     createdAt: o.createdAt,
                     time: o.time,
@@ -428,26 +429,50 @@ export default function OrderDetailScreen() {
                         <div className="bg-white border border-slate-200 p-6 rounded-sm space-y-4">
                             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Manage Order</h3>
 
-                            {!order.franchiseId ? (
-                                <>
-                                    <button
-                                        onClick={handleAcceptOrder}
-                                        disabled={isAccepting}
-                                        className="w-full h-12 bg-emerald-600 text-white rounded-sm font-black uppercase text-[10px] tracking-[0.2em] shadow-lg hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {isAccepting ? 'Accepting...' : (<>Accept Order <CheckCircle2 size={14} /></>)}
-                                    </button>
-                                    <button className="w-full h-10 border border-red-200 text-red-600 rounded-sm font-black uppercase text-[9px] tracking-widest hover:bg-red-50 transition-all">
-                                        Reject Order
-                                    </button>
-                                </>
-                            ) : (
-                                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-sm">
-                                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest text-center flex items-center justify-center gap-2">
-                                        <CheckCircle2 size={14} /> Order Accepted
-                                    </p>
-                                </div>
+                            {/* Manual Accept Button */}
+                            {(order.status === 'placed' || order.status === 'assigned' || order.status === 'new' || order.status === 'pending') && (
+                                <button
+                                    onClick={handleAcceptOrder}
+                                    disabled={isAccepting}
+                                    className="w-full h-12 bg-slate-900 text-white rounded-sm font-black uppercase text-[10px] tracking-[0.2em] shadow-lg hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
+                                >
+                                    {isAccepting ? <RefreshCw size={14} className="animate-spin" /> : <ShieldCheck size={14} />}
+                                    Accept Order
+                                </button>
                             )}
+
+                            {/* Post-Acceptance Actions */}
+                            {order.status === 'accepted' && (
+                                order.items.some(i => i.isShortage) ? (
+                                    <div className="space-y-3">
+                                        <div className="p-4 bg-amber-50 border border-amber-200 rounded-sm">
+                                            <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center justify-center gap-2 mb-2">
+                                                <Info size={14} /> Stock Shortage Detected
+                                            </p>
+                                            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-tight text-center leading-relaxed">
+                                                Some items in this order are currently out of stock. Please procure them before packing.
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={async () => {
+                                                await handleUpdateStatus('procuring');
+                                                navigate('/franchise/procurement');
+                                            }}
+                                            className="w-full h-12 bg-amber-500 text-white rounded-sm font-black uppercase text-[10px] tracking-[0.2em] shadow-lg hover:bg-amber-600 transition-all flex items-center justify-center gap-2"
+                                        >
+                                            Request Procurement
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={() => handleUpdateStatus('Packed')}
+                                        className="w-full h-12 bg-emerald-600 text-white rounded-sm font-black uppercase text-[10px] tracking-[0.2em] shadow-lg hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        Proceed to Packing <ArrowRight size={14} />
+                                    </button>
+                                )
+                            )}
+
                             {order.status === 'procuring' && (
                                 <div className="p-4 bg-amber-50 border border-amber-200 rounded-sm">
                                     <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center justify-center gap-2 mb-2">
@@ -458,6 +483,7 @@ export default function OrderDetailScreen() {
                                     </p>
                                 </div>
                             )}
+
                             {order.status === 'dispatched' && order.deliveryPartnerId && (
                                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-sm space-y-3">
                                     <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
@@ -595,3 +621,4 @@ export default function OrderDetailScreen() {
         </div>
     );
 }
+

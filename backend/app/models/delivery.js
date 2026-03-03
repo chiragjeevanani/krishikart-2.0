@@ -41,8 +41,30 @@ const deliverySchema = new mongoose.Schema(
       enum: ["active", "blocked"],
       default: "active",
     },
+    location: {
+      type: {
+        type: String,
+        enum: ['Point'],
+        default: 'Point'
+      },
+      coordinates: {
+        type: [Number], // [longitude, latitude]
+        required: true,
+        default: [0, 0]
+      }
+    },
+    isOnline: {
+      type: Boolean,
+      default: true
+    },
+    fcmTokens: {
+      type: [String],
+      default: []
+    }
   },
   { timestamps: true }
 );
+
+deliverySchema.index({ location: "2dsphere" });
 
 export default mongoose.model("Delivery", deliverySchema);

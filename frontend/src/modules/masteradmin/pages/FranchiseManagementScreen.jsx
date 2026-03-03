@@ -29,6 +29,7 @@ import { useAdmin } from '../contexts/AdminContext';
 import MetricRow from '../components/cards/MetricRow';
 import FilterBar from '../components/tables/FilterBar';
 import FranchiseOnboardingDrawer from '../components/drawers/FranchiseOnboardingDrawer';
+import FranchiseServiceAreaDrawer from '../components/drawers/FranchiseServiceAreaDrawer';
 
 export default function FranchiseManagementScreen() {
     const { createFranchiseByAdmin } = useAdmin();
@@ -38,6 +39,8 @@ export default function FranchiseManagementScreen() {
     const [searchTerm, setSearchTerm] = useState('');
     const [franchises, setFranchises] = useState([]);
     const [isOnboardOpen, setIsOnboardOpen] = useState(false);
+    const [isCoverageOpen, setIsCoverageOpen] = useState(false);
+    const [selectedFranchise, setSelectedFranchise] = useState(null);
 
     const fetchFranchises = async () => {
         try {
@@ -296,6 +299,16 @@ export default function FranchiseManagementScreen() {
                                                                     <ExternalLink size={12} />
                                                                     Network Portal
                                                                 </button>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setSelectedFranchise(franchise);
+                                                                        setIsCoverageOpen(true);
+                                                                    }}
+                                                                    className="bg-white border border-slate-200 text-slate-900 text-[9px] font-black uppercase tracking-widest py-2 rounded-sm hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+                                                                >
+                                                                    <Globe size={12} />
+                                                                    Manage Coverage
+                                                                </button>
                                                                 <button className="bg-white border border-slate-200 text-rose-600 text-[9px] font-black uppercase tracking-widest py-2 rounded-sm hover:bg-rose-50 transition-all flex items-center justify-center gap-2 group">
                                                                     <Power size={12} />
                                                                     Decommission Node
@@ -332,6 +345,15 @@ export default function FranchiseManagementScreen() {
                     if (created) fetchFranchises();
                     return created;
                 }}
+            />
+
+            <FranchiseServiceAreaDrawer
+                isOpen={isCoverageOpen}
+                onClose={() => {
+                    setIsCoverageOpen(false);
+                    fetchFranchises();
+                }}
+                franchise={selectedFranchise}
             />
         </div>
     );

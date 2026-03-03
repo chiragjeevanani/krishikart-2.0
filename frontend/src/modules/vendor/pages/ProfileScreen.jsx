@@ -24,6 +24,7 @@ import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import DocumentUploadCard from '../components/DocumentUploadCard';
 import api from '../../../lib/axios';
+import { useVendorAuth } from '../contexts/VendorAuthContext';
 
 const SettingItem = ({ icon: Icon, label, value, color, onClick }) => (
     <button
@@ -213,6 +214,7 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
 };
 
 export default function ProfileScreen() {
+    const { logout } = useVendorAuth();
     const navigate = useNavigate();
     const [isDarkMode, setIsDarkMode] = useState(false);
     const [vendor, setVendor] = useState(null);
@@ -232,9 +234,7 @@ export default function ProfileScreen() {
         } catch (error) {
             console.error('Failed to fetch profile:', error);
             if (error.response?.status === 401) {
-                localStorage.removeItem('vendorToken');
-                localStorage.removeItem('vendorData');
-                navigate('/vendor/login');
+                logout();
             }
         } finally {
             setLoading(false);
@@ -406,11 +406,7 @@ export default function ProfileScreen() {
 
                 <div className="pt-8 space-y-4">
                     <button
-                        onClick={() => {
-                            localStorage.removeItem('vendorToken');
-                            localStorage.removeItem('vendorData');
-                            navigate('/vendor/login');
-                        }}
+                        onClick={logout}
                         className="w-full bg-white text-red-500 py-6 rounded-[36px] font-black text-sm flex items-center justify-center gap-3 border border-red-50 hover:bg-red-50 transition-all active:scale-[0.98] shadow-sm hover:shadow-red-100/50"
                     >
                         Terminate Session
