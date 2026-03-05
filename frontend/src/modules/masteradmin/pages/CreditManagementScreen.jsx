@@ -66,17 +66,19 @@ export default function CreditManagementScreen() {
     const handleSaveOverride = async (data) => {
         try {
             const response = await api.put(`/masteradmin/customers/${selectedCustomer._id}/credit`, {
-                creditLimit: Number(data.limit)
+                creditLimit: Number(data.limit),
+                usedCredit: data.resetBalance ? 0 : undefined,
+                resetOverdue: data.resetBalance ? true : undefined
             });
 
             if (response.data) {
-                toast.success('Credit limit updated successfully');
+                toast.success(data.resetBalance ? 'Credit balance cleared and limit updated' : 'Credit limit updated successfully');
                 fetchCustomers();
                 setIsModalOpen(false);
             }
         } catch (error) {
             console.error('Error updating credit:', error);
-            toast.error('Failed to update credit limit');
+            toast.error(error.response?.data?.message || 'Failed to update credit');
         }
     };
 
@@ -121,14 +123,57 @@ export default function CreditManagementScreen() {
             render: (val) => <span className="text-xs font-black text-slate-600 tabular-nums">₹{val?.toLocaleString() ?? '0'}</span>
         },
         {
+            header: 'Due Timeline',
+            key: 'creditOverdueDate',
+            render: (val, row) => {
+                const hasOutstanding = (row.usedCredit || 0) > 0;
+                if (!hasOutstanding) {
+                    return (
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest leading-none">All Cleared</span>
+                            <span className="text-[8px] text-slate-300 font-bold mt-1 tracking-tighter italic">N/A</span>
+                        </div>
+                    );
+                }
+
+                if (!val) return <span className="text-[10px] font-bold text-slate-400 italic">No Clock Set</span>;
+
+                const dueDate = new Date(val);
+                const now = new Date();
+                const diffTime = dueDate - now;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                if (diffDays < 0) {
+                    return (
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest leading-none underline decoration-2 underline-offset-2">Critical Delay</span>
+                            <span className="text-[9px] text-rose-400 font-bold mt-1 tracking-tighter">{Math.abs(diffDays)} Days Late</span>
+                        </div>
+                    );
+                }
+
+                return (
+                    <div className="flex flex-col">
+                        <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest leading-none">Payment Pending</span>
+                        <span className="text-[9px] text-amber-500 font-bold mt-1 tracking-tighter">Due in {diffDays} Days</span>
+                    </div>
+                );
+            }
+        },
+        {
             header: 'Risk Profile',
             key: 'status',
             render: (_, row) => {
                 const percentage = ((row.usedCredit || 0) / (row.creditLimit || 1)) * 100;
+                const isOverdue = row.usedCredit > 0 && row.creditOverdueDate && new Date() > new Date(row.creditOverdueDate);
+
                 let status = "Stabilized";
                 let styles = "bg-emerald-50 text-emerald-600 border-emerald-100";
 
-                if (percentage > 90) {
+                if (isOverdue) {
+                    status = "Default / Account Locked";
+                    styles = "bg-red-500 text-white border-red-600 shadow-sm";
+                } else if (percentage > 90) {
                     status = "Critical Exposure";
                     styles = "bg-rose-50 text-rose-600 border-rose-100";
                 } else if (percentage > 70) {

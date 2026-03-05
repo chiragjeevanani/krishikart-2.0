@@ -207,6 +207,65 @@ export function WalletProvider({ children }) {
         }
     };
 
+    const repayCredit = async () => {
+        try {
+            const sdkLoaded = await loadRazorpay();
+            if (!sdkLoaded) {
+                return { success: false, message: 'Razorpay SDK failed to load' };
+            }
+
+            const createRes = await api.post('/user/wallet/repay-credit/create-order');
+            if (!createRes.data?.success || !createRes.data?.result?.id) {
+                return { success: false, message: createRes.data?.message || 'Failed to initialize payment' };
+            }
+            const order = createRes.data.result;
+
+            let prefill = {};
+            try {
+                const meRes = await api.get('/user/me');
+                const me = meRes.data?.result || {};
+                prefill = {
+                    name: me.fullName || '',
+                    email: me.email || '',
+                    contact: me.mobile || ''
+                };
+            } catch (err) { }
+
+            return await new Promise((resolve) => {
+                const paymentObject = new window.Razorpay({
+                    key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+                    amount: order.amount,
+                    currency: order.currency || 'INR',
+                    name: 'KrishiKart',
+                    description: 'KK Credit Repayment',
+                    order_id: order.id,
+                    prefill,
+                    theme: { color: '#ef4444' },
+                    handler: async (response) => {
+                        try {
+                            const verifyRes = await api.post('/user/wallet/repay-credit/verify', response);
+                            if (verifyRes.data?.success) {
+                                syncWalletFromUser(verifyRes.data.result || {});
+                                resolve({ success: true, message: 'Credit balance cleared!' });
+                                window.location.reload(); // Hard reload to clear blocks
+                                return;
+                            }
+                            resolve({ success: false, message: 'Payment verification failed' });
+                        } catch (err) {
+                            resolve({ success: false, message: 'Payment verification failed' });
+                        }
+                    },
+                    modal: {
+                        ondismiss: () => resolve({ success: false, message: 'Payment cancelled' })
+                    }
+                });
+                paymentObject.open();
+            });
+        } catch (error) {
+            return { success: false, message: error?.response?.data?.message || 'Repayment failed' };
+        }
+    };
+
     const payWithWallet = (amount) => {
         if (balance >= amount) {
             const newTxn = {
@@ -230,6 +289,7 @@ export function WalletProvider({ children }) {
             balance,
             transactions,
             addMoney,
+            repayCredit,
             payWithWallet,
             creditLimit,
             creditUsed,

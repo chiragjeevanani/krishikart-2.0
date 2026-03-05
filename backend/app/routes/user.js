@@ -10,9 +10,12 @@ import {
     changeUserPassword,
     createWalletRechargeOrder,
     verifyWalletRecharge,
+    createCreditRepaymentOrder,
+    verifyCreditRepayment,
     redeemLoyaltyPoints,
     saveFCMToken,
-    testPushByToken
+    testPushByToken,
+    makeOverdueTest
 } from "../controllers/user.auth.js";
 import {
     getCart,
@@ -37,6 +40,8 @@ router.post("/change-password", protect, changeUserPassword);
 router.post("/wallet/recharge", protect, createWalletRechargeOrder); // backward-compatible alias
 router.post("/wallet/recharge/create-order", protect, createWalletRechargeOrder);
 router.post("/wallet/recharge/verify", protect, verifyWalletRecharge);
+router.post("/wallet/repay-credit/create-order", protect, createCreditRepaymentOrder);
+router.post("/wallet/repay-credit/verify", protect, verifyCreditRepayment);
 router.post("/wallet/redeem-loyalty", protect, redeemLoyaltyPoints);
 
 // Cart Routes
@@ -51,6 +56,6 @@ router.post("/wishlist/toggle", protect, toggleWishlist);
 router.delete("/wishlist/remove/:productId", protect, removeFromWishlist);
 router.post("/fcm-token", protect, saveFCMToken);
 router.post("/test-notification", protect, testPushByToken);
-
+router.get("/test/make-overdue", protect, makeOverdueTest);
 
 export default router;

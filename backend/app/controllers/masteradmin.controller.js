@@ -447,15 +447,31 @@ export const getCustomerDetails = async (req, res) => {
 export const updateCustomerCredit = async (req, res) => {
     try {
         const { id } = req.params;
-        const { creditLimit } = req.body;
+        const { creditLimit, usedCredit, resetOverdue } = req.body;
 
-        if (typeof creditLimit !== "number" || creditLimit < 0) {
-            return handleResponse(res, 400, "Invalid credit limit");
+        const updateData = {};
+        if (typeof creditLimit === "number" && creditLimit >= 0) {
+            updateData.creditLimit = creditLimit;
+        }
+
+        if (typeof usedCredit === "number" && usedCredit >= 0) {
+            updateData.usedCredit = usedCredit;
+            if (usedCredit === 0) {
+                updateData.creditOverdueDate = null;
+            }
+        }
+
+        if (resetOverdue) {
+            updateData.creditOverdueDate = null;
+        }
+
+        if (Object.keys(updateData).length === 0) {
+            return handleResponse(res, 400, "Provide valid fields to update");
         }
 
         const customer = await User.findByIdAndUpdate(
             id,
-            { creditLimit },
+            updateData,
             { new: true }
         ).select("-password -otp -otpExpiresAt");
 
@@ -463,7 +479,7 @@ export const updateCustomerCredit = async (req, res) => {
             return handleResponse(res, 404, "Customer not found");
         }
 
-        return handleResponse(res, 200, "Customer credit limit updated successfully", customer);
+        return handleResponse(res, 200, "Customer credit updated successfully", customer);
     } catch (err) {
         console.error(err);
         return handleResponse(res, 500, "Server error");

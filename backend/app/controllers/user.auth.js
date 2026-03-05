@@ -523,6 +523,121 @@ export const verifyWalletRecharge = async (req, res) => {
   }
 };
 
+/**
+ * CREDIT REPAYMENT
+ */
+export const createCreditRepaymentOrder = async (req, res) => {
+  try {
+    const userId = req.user?.id || req.user?._id?.toString();
+    const user = await User.findById(userId);
+    if (!user) return handleResponse(res, 404, "User not found");
+
+    const amount = Number(user.usedCredit || 0);
+    if (amount <= 0) {
+      return handleResponse(res, 400, "No outstanding credit balance to pay.");
+    }
+
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+      return handleResponse(res, 500, "Razorpay is not configured");
+    }
+
+    const receipt = `crd_${String(userId).slice(-6)}_${Date.now().toString(36)}`;
+
+    const order = await razorpay.orders.create({
+      amount: Math.round(amount * 100),
+      currency: "INR",
+      receipt,
+      notes: {
+        type: "credit_repayment",
+        userId: userId.toString(),
+      },
+    });
+
+    await WalletRecharge.create({
+      userId,
+      amount: Number(amount.toFixed(2)),
+      currency: "INR",
+      type: "credit_repayment",
+      status: "created",
+      razorpayOrderId: order.id,
+    });
+
+    return handleResponse(res, 200, "Credit repayment order created", {
+      id: order.id,
+      amount: order.amount,
+      currency: order.currency,
+    });
+  } catch (error) {
+    console.error("Create credit repayment order error:", error);
+    return handleResponse(res, 500, "Failed to initialize payment");
+  }
+};
+
+export const verifyCreditRepayment = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+    const sign = `${razorpay_order_id}|${razorpay_payment_id}`;
+    const expectedSign = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(sign)
+      .digest("hex");
+
+    if (razorpay_signature !== expectedSign) {
+      return handleResponse(res, 400, "Invalid payment signature");
+    }
+
+    const recharge = await WalletRecharge.findOne({
+      userId,
+      razorpayOrderId: razorpay_order_id,
+      type: "credit_repayment"
+    });
+
+    if (!recharge) {
+      return handleResponse(res, 404, "Payment record not found");
+    }
+
+    if (recharge.status === "paid") {
+      const existingUser = await User.findById(userId);
+      return handleResponse(res, 200, "Payment already processed", existingUser);
+    }
+
+    const user = await User.findById(userId);
+    if (!user) return handleResponse(res, 404, "User not found");
+
+    const paidAmount = recharge.amount;
+    user.usedCredit = Math.max(0, user.usedCredit - paidAmount);
+
+    // If credit is fully cleared, reset overdue date
+    if (user.usedCredit === 0) {
+      user.creditOverdueDate = null;
+    }
+
+    user.walletTransactions = user.walletTransactions || [];
+    user.walletTransactions.unshift({
+      txnId: `CRD-PAY-${Date.now()}`,
+      type: "Paid", // Or add "Credit Repayment" to enum. I'll use "Paid" for consistency with existing walletTransactions enum or check schema
+      amount: paidAmount,
+      status: "Success",
+      note: "KK Credit repayment via Razorpay",
+      createdAt: new Date(),
+    });
+
+    recharge.status = "paid";
+    recharge.razorpayPaymentId = razorpay_payment_id;
+    recharge.paidAt = new Date();
+
+    await recharge.save();
+    await user.save();
+
+    return handleResponse(res, 200, "Credit balance cleared successfully", user);
+  } catch (error) {
+    console.error("Credit repayment verify error:", error);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
 export const redeemLoyaltyPoints = async (req, res) => {
   try {
     const userId = req.user?.id || req.user?._id?.toString();
@@ -673,6 +788,29 @@ export const testPushByToken = async (req, res) => {
       code: error.code,
       error_message: error.message
     });
+  }
+};
+
+/**
+ * FOR TESTING ONLY: Manually make account overdue
+ */
+export const makeOverdueTest = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId);
+    if (!user) return handleResponse(res, 404, "User not found");
+
+    user.usedCredit = 500;
+    // Set due date to 8 days ago
+    const overdueDate = new Date();
+    overdueDate.setDate(overdueDate.getDate() - 8);
+    user.creditOverdueDate = overdueDate;
+
+    await user.save();
+    return handleResponse(res, 200, "Success! Your account is now OVERDUE by 8 days. Refresh your app to see the lock screen.");
+  } catch (error) {
+    console.error(error);
+    return handleResponse(res, 500, "Test failed");
   }
 };
 

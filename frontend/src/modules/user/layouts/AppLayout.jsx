@@ -1,13 +1,21 @@
 import { Outlet, useLocation } from 'react-router-dom'
-import { useEffect } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import BottomNav from '../components/layout/BottomNav'
 import DesktopNavbar from '../components/layout/DesktopNavbar'
 import Breadcrumbs from '../components/layout/Breadcrumbs'
 import DesktopFooter from '../components/layout/DesktopFooter'
+import { useUserAuth } from '../contexts/UserAuthContext'
+import CreditOverdueModal from '../components/modals/CreditOverdueModal'
 
 export default function AppLayout() {
     const location = useLocation()
+    const { user } = useUserAuth()
+
+    const isCreditOverdue = useMemo(() => {
+        if (!user || !user.usedCredit || user.usedCredit <= 0 || !user.creditOverdueDate) return false;
+        return new Date() > new Date(user.creditOverdueDate);
+    }, [user])
 
     // Scroll to top on route change
     useEffect(() => {
@@ -63,6 +71,13 @@ export default function AppLayout() {
                     <BottomNav />
                 </div>
             )}
+
+            {/* Strict Credit Overdue Modal */}
+            <CreditOverdueModal
+                isOpen={isCreditOverdue}
+                usedCredit={user?.usedCredit || 0}
+                dueDate={user?.creditOverdueDate}
+            />
         </div>
     )
 }

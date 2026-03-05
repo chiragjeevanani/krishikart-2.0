@@ -1,12 +1,16 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Save, AlertCircle, IndianRupee } from 'lucide-react';
+import { X, Save, AlertCircle, IndianRupee, ShieldCheck, Check } from 'lucide-react';
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 
 export default function CreditOverrideModal({ isOpen, onClose, customer, onSave }) {
     const [limit, setLimit] = useState(customer?.creditLimit || 0);
     const [reason, setReason] = useState('');
+    const [resetBalance, setResetBalance] = useState(false);
 
     if (!isOpen) return null;
+
+    const hasOutstanding = (customer?.usedCredit || 0) > 0;
 
     return (
         <AnimatePresence>
@@ -69,6 +73,39 @@ export default function CreditOverrideModal({ isOpen, onClose, customer, onSave 
                                 />
                             </div>
 
+                            {hasOutstanding && (
+                                <div
+                                    onClick={() => setResetBalance(!resetBalance)}
+                                    className={cn(
+                                        "p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between group",
+                                        resetBalance
+                                            ? "bg-emerald-50 border-emerald-500 shadow-md shadow-emerald-100"
+                                            : "bg-slate-50 border-transparent hover:border-slate-200"
+                                    )}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className={cn(
+                                            "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
+                                            resetBalance ? "bg-emerald-500 text-white" : "bg-white text-slate-400 group-hover:text-slate-900"
+                                        )}>
+                                            <ShieldCheck size={20} />
+                                        </div>
+                                        <div>
+                                            <p className={cn("text-xs font-black uppercase tracking-tight", resetBalance ? "text-emerald-700" : "text-slate-900")}>
+                                                Mark as Fully Paid
+                                            </p>
+                                            <p className="text-[10px] font-medium text-slate-400">Clear ₹{customer.usedCredit.toLocaleString()} balance</p>
+                                        </div>
+                                    </div>
+                                    <div className={cn(
+                                        "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
+                                        resetBalance ? "bg-emerald-500 border-emerald-500" : "border-slate-200"
+                                    )}>
+                                        {resetBalance && <Check size={14} className="text-white" />}
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex gap-3">
                                 <AlertCircle size={20} className="text-amber-500 shrink-0" />
                                 <p className="text-[11px] font-bold text-amber-700 leading-relaxed">
@@ -85,7 +122,7 @@ export default function CreditOverrideModal({ isOpen, onClose, customer, onSave 
                                 Cancel
                             </button>
                             <button
-                                onClick={() => onSave({ limit, reason })}
+                                onClick={() => onSave({ limit, reason, resetBalance })}
                                 className="py-4 bg-primary text-white rounded-2xl font-black text-sm flex items-center justify-center gap-2 hover:bg-emerald-600 transition-all shadow-lg shadow-primary/20 uppercase tracking-tight"
                             >
                                 <Save size={18} />

@@ -179,6 +179,11 @@ export const createOrder = async (req, res) => {
     const totalAmount = Number((subtotal + finalDeliveryFee + tax - discountAmount).toFixed(2));
 
     // 5. Handle Payments (Wallet/Credit)
+    // BLOCK IF PREVIOUS CREDIT OVERDUE (STRICT 7 DAYS CHECK)
+    if (user.usedCredit > 0 && user.creditOverdueDate && new Date() > new Date(user.creditOverdueDate)) {
+      return handleResponse(res, 403, "Payment Overdue: Please clear your KK Credit balance to continue shopping.");
+    }
+
     if (paymentMethod === "Wallet") {
       if (user.walletBalance < totalAmount) {
         return handleResponse(res, 400, "Insufficient wallet balance");
@@ -198,6 +203,15 @@ export const createOrder = async (req, res) => {
       if (availableCredit < totalAmount) {
         return handleResponse(res, 400, "Insufficient credit limit");
       }
+
+      // If this is the first time using credit in current cycle, set the 7-day clock
+      if (user.usedCredit === 0) {
+        // Set to exactly 7 days from now
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 7);
+        user.creditOverdueDate = dueDate;
+      }
+
       user.usedCredit += totalAmount;
       user.walletTransactions = user.walletTransactions || [];
       user.walletTransactions.unshift({

@@ -103,6 +103,10 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0
     },
+    creditOverdueDate: {
+      type: Date,
+      default: null
+    },
 
     walletTransactions: {
       type: [walletTransactionSchema],

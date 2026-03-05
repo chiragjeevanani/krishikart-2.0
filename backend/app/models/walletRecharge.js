@@ -17,6 +17,11 @@ const walletRechargeSchema = new mongoose.Schema(
       type: String,
       default: "INR",
     },
+    type: {
+      type: String,
+      enum: ["wallet", "credit_repayment"],
+      default: "wallet"
+    },
     status: {
       type: String,
       enum: ["created", "paid", "failed"],
