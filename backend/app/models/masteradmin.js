@@ -44,6 +44,10 @@ const masterAdminSchema = new mongoose.Schema(
       enum: ["superadmin", "subadmin"],
       default: "superadmin",
     },
+    fcmTokens: {
+      type: [String],
+      default: []
+    }
   },
   { timestamps: true }
 );

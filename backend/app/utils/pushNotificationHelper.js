@@ -23,7 +23,12 @@ export const sendNotificationToUser = async (userId, payload, userType = 'user')
             recipient = await Vendor.findById(userId);
         }
 
-        if (!recipient || !recipient.fcmTokens || recipient.fcmTokens.length === 0) {
+        const allTokens = [
+            ...(recipient.fcmTokens || []),
+            ...(recipient.mobile_fcm || [])
+        ];
+
+        if (allTokens.length === 0) {
             console.log(`No FCM tokens found for ${userType} ${userId}`);
             return;
         }
@@ -34,7 +39,7 @@ export const sendNotificationToUser = async (userId, payload, userType = 'user')
                 body: payload.body,
             },
             data: payload.data || {},
-            tokens: recipient.fcmTokens,
+            tokens: allTokens,
         };
 
         const response = await admin.messaging().sendEachForMulticast(message);
@@ -49,8 +54,9 @@ export const sendNotificationToUser = async (userId, payload, userType = 'user')
             });
             console.log('Failed tokens:', failedTokens);
 
-            // Optional: Remove failed tokens from database
-            recipient.fcmTokens = recipient.fcmTokens.filter(t => !failedTokens.includes(t));
+            // Remove failed tokens from both database arrays
+            recipient.fcmTokens = (recipient.fcmTokens || []).filter(t => !failedTokens.includes(t));
+            recipient.mobile_fcm = (recipient.mobile_fcm || []).filter(t => !failedTokens.includes(t));
             await recipient.save();
         }
 

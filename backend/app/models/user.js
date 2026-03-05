@@ -134,6 +134,10 @@ const userSchema = new mongoose.Schema(
     fcmTokens: {
       type: [String],
       default: []
+    },
+    mobile_fcm: {
+      type: [String],
+      default: []
     }
   },
   { timestamps: true }

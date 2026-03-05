@@ -11,9 +11,8 @@ import {
     ArrowUpRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import mockData from '../data/mockVendorStats.json';
 import { cn } from '@/lib/utils';
-import { useOrders } from '@/modules/user/contexts/OrderContext';
+import { Bell } from 'lucide-react';
 import MetricCard from '../components/cards/MetricCard';
 import DataGrid from '../components/tables/DataGrid';
 import api from '@/lib/axios';
@@ -22,33 +21,81 @@ export default function DashboardScreen() {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(true);
     const [activeDispatches, setActiveDispatches] = useState([]);
-    const { stats, performance } = mockData;
-    const { orders: contextOrders } = useOrders();
+    const [dashboardStats, setDashboardStats] = useState({
+        activeOps: 0,
+        pendingSettlement: 0,
+        totalTurnover: 0,
+        inventory: {
+            stockQuantity: 0,
+            availableProduce: 0
+        },
+        performance: {
+            fulfillmentRate: 0,
+            avgPrepTime: "0h",
+            archiveVol: 0,
+            yieldDelta: 0
+        }
+    });
 
-    const totalTurnover = contextOrders
-        .filter(o => o.fulfillmentType === 'requires_procurement' && o.status === 'completed')
-        .reduce((sum, o) => sum + (o.procurementTotal || 0), 0) + performance.monthlyRevenue;
+    const [sendingPush, setSendingPush] = useState(false);
+
+    const handleTestPush = async () => {
+        setSendingPush(true);
+        let token = localStorage.getItem(`fcm_token_vendor`);
+
+        if (!token) {
+            const { requestFCMToken } = await import('@/lib/firebase');
+            token = await requestFCMToken();
+            if (token) {
+                localStorage.setItem(`fcm_token_vendor`, token);
+                await api.post(`/vendor/fcm-token`, { token });
+            }
+        }
+
+        if (!token) {
+            alert("No FCM token found. Please allow notifications in your browser.");
+            setSendingPush(false);
+            return;
+        }
+
+        try {
+            await api.post('/vendor/test-notification', {
+                fcm_token: token,
+                plateform: 'Vendor Web Dashboard'
+            });
+            alert("Test notification triggered!");
+        } catch (error) {
+            console.error(error);
+            alert("Failed to send test push");
+        } finally {
+            setSendingPush(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchDashboardData = async () => {
             try {
-                const response = await api.get('/procurement/vendor/active-dispatch');
-                if (response.data.success) {
-                    setActiveDispatches(response.data.results);
+                const [dispatchRes, statsRes] = await Promise.all([
+                    api.get('/procurement/vendor/active-dispatch'),
+                    api.get('/procurement/vendor/dashboard-stats')
+                ]);
+
+                if (dispatchRes.data.success) {
+                    setActiveDispatches(dispatchRes.data.results);
+                }
+                if (statsRes.data.success) {
+                    setDashboardStats(statsRes.data.result || statsRes.data.results || {});
                 }
             } catch (error) {
-                console.error("Failed to fetch active dispatches", error);
+                console.error("Failed to fetch dashboard data", error);
             } finally {
                 setIsLoading(false);
             }
         };
-        fetchData();
+        fetchDashboardData();
     }, []);
 
-    const liveActiveOrders = activeDispatches.length;
-
-    const pendingSettlement = activeDispatches
-        .reduce((sum, o) => sum + (o.totalQuotedAmount || 0), 0);
+    const { activeOps = 0, pendingSettlement = 0, totalTurnover = 0, performance = {}, inventory = {} } = dashboardStats || {};
 
     const dispatchColumns = [
         {
@@ -100,17 +147,27 @@ export default function DashboardScreen() {
                     <h1 className="text-2xl font-black text-slate-900 tracking-tight">Procurement Pulse</h1>
                     <div className="flex items-center gap-2 mt-1">
                         <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Operational Status: Active</p>
-                        {liveActiveOrders > 0 && (
+                        {activeOps > 0 && (
                             <span className="flex items-center gap-1.5 px-3 py-0.5 bg-primary/10 text-primary rounded-full text-[9px] font-black uppercase tracking-widest animate-pulse border border-primary/20">
                                 <div className="w-1 h-1 rounded-full bg-primary" />
-                                {liveActiveOrders} Live Ops
+                                {activeOps} Live Ops
                             </span>
                         )}
                     </div>
                 </div>
-                <button className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-slate-200 hover:scale-105 transition-all">
-                    <PlusCircle size={24} />
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={handleTestPush}
+                        disabled={sendingPush}
+                        className="h-12 px-6 bg-white border border-slate-200 text-slate-900 rounded-2xl flex items-center justify-center gap-2 shadow-xl shadow-slate-100 hover:bg-slate-50 transition-all font-black text-[10px] uppercase tracking-widest disabled:opacity-50"
+                    >
+                        <Bell size={18} className={sendingPush ? "animate-pulse text-indigo-500" : "text-indigo-500"} />
+                        {sendingPush ? 'Testing...' : 'Test Push'}
+                    </button>
+                    <button className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-slate-200 hover:scale-105 transition-all">
+                        <PlusCircle size={24} />
+                    </button>
+                </div>
             </header>
 
             {/* Quick Stats Grid */}
@@ -132,10 +189,10 @@ export default function DashboardScreen() {
                 />
                 <MetricCard
                     label="Yield Delta"
-                    value="₹4,200"
+                    value={`₹${(performance.yieldDelta || 0).toLocaleString()}`}
                     icon={TrendingUp}
                     color="red"
-                    trend={{ value: 3.4, positive: false }}
+                    trend={{ value: 3.4, positive: performance.yieldDelta > 0 }}
                     index={2}
                 />
                 <MetricCard
@@ -189,7 +246,7 @@ export default function DashboardScreen() {
                             </div>
                             <div>
                                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Archive Vol</p>
-                                <p className="text-3xl font-black tabular-nums">{stats.completedDeliveries}</p>
+                                <p className="text-3xl font-black tabular-nums">{performance.archiveVol}</p>
                                 <p className="text-[9px] text-emerald-400 font-black mt-2 uppercase tracking-wide">Ready for Settlement</p>
                             </div>
                         </div>

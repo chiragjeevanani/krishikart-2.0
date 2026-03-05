@@ -32,6 +32,7 @@ import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useFranchiseAuth } from '../contexts/FranchiseAuthContext';
 import { toast } from 'sonner';
+import api from '@/lib/axios';
 
 // Enterprise Components
 import MetricRow from '../components/cards/MetricRow';
@@ -48,6 +49,46 @@ export default function DashboardScreen() {
     const { purchaseOrders } = useGRN();
     const { summary: codSummary } = useCOD();
     const [showKYCModal, setShowKYCModal] = useState(false);
+    const [sendingPush, setSendingPush] = useState(false);
+
+    const handleTestPush = async () => {
+        setSendingPush(true);
+        let token = localStorage.getItem(`fcm_token_franchise`);
+
+        if (!token) {
+            toast.info("Requesting FCM token...");
+            const { requestFCMToken } = await import('@/lib/firebase');
+            token = await requestFCMToken();
+            if (token) {
+                localStorage.setItem(`fcm_token_franchise`, token);
+                await api.post(`/franchise/fcm-token`, { token });
+            }
+        }
+
+        if (!token) {
+            toast.error("No FCM token found. Please allow notifications in your browser.");
+            setSendingPush(false);
+            return;
+        }
+
+        try {
+            const response = await api.post('/franchise/test-notification', {
+                fcm_token: token,
+                plateform: 'Web Dashboard'
+            });
+
+            if (response.data.success) {
+                toast.success("Test notification triggered!");
+            } else {
+                toast.error(response.data.message || "Failed to trigger");
+            }
+        } catch (error) {
+            console.error("Test Push Error:", error);
+            toast.error(error.response?.data?.message || "Internal server error");
+        } finally {
+            setSendingPush(false);
+        }
+    };
 
     useEffect(() => {
         if (franchise && !franchise.isVerified) {
@@ -158,6 +199,14 @@ export default function DashboardScreen() {
                             }}
                             className="p-1.5 border border-slate-200 rounded-sm hover:bg-slate-50 text-slate-400">
                             <RefreshCw size={14} />
+                        </button>
+                        <button
+                            onClick={handleTestPush}
+                            disabled={sendingPush}
+                            className="bg-white border border-slate-200 text-slate-700 px-3 py-1.5 rounded-sm text-[11px] font-bold flex items-center gap-2 hover:bg-slate-50 transition-colors shadow-sm uppercase tracking-widest disabled:opacity-50"
+                        >
+                            <Bell size={14} className={sendingPush ? "animate-pulse text-purple-500" : "text-purple-500"} />
+                            {sendingPush ? 'Testing...' : 'Test Push'}
                         </button>
                         <button className="bg-slate-900 text-white px-3 py-1.5 rounded-sm text-[11px] font-bold flex items-center gap-2 hover:bg-slate-800 transition-colors shadow-sm uppercase tracking-widest">
                             <Monitor size={14} />

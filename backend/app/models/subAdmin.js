@@ -44,6 +44,10 @@ const subAdminSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "MasterAdmin",
         },
+        fcmTokens: {
+            type: [String],
+            default: []
+        }
     },
     { timestamps: true }
 );

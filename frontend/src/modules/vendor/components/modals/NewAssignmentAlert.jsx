@@ -55,18 +55,7 @@ export default function NewAssignmentAlert({ isOpen, onClose, data }) {
                                 </span>
                             </div>
                         </div>
-
                         <div className="space-y-4">
-                            <button
-                                onClick={() => {
-                                    onClose();
-                                    window.location.href = `/vendor/orders/${data.requestId}`;
-                                }}
-                                className="w-full bg-slate-900 hover:bg-slate-800 text-white py-6 rounded-2xl font-black text-xl flex items-center justify-center gap-3 transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-2xl shadow-slate-200"
-                            >
-                                VIEW ASSIGNMENT <ArrowRight size={24} />
-                            </button>
-
                             <button
                                 onClick={onClose}
                                 className="w-full bg-white text-slate-400 py-4 rounded-2xl font-bold hover:text-slate-600 transition-colors"

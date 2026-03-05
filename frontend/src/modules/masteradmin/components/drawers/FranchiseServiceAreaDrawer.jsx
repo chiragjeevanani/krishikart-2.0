@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, Save, Loader2, Map as MapIcon, Layers, Info, MousePointer2, Eraser, Search, Target, Activity } from 'lucide-react';
-import { GoogleMap, useJsApiLoader, Polygon, Marker } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Polygon, Marker, Autocomplete } from '@react-google-maps/api';
 import { latLngToCell, gridDisk, cellToBoundary } from 'h3-js';
 import { useAdmin } from '../../contexts/AdminContext';
 import { cn } from '@/lib/utils';
@@ -9,10 +9,12 @@ import { toast } from 'sonner';
 
 const mapContainerStyle = {
     width: '100%',
-    height: '100%'
+    height: '100%',
+    borderRadius: '0px'
 };
 
-const libraries = ['places'];
+const LIBRARIES = ['places'];
+const DEFAULT_CENTER = { lat: 22.7196, lng: 75.8577 }; // Indore, India
 
 export default function FranchiseServiceAreaDrawer({ isOpen, onClose, franchise }) {
     const { updateFranchiseServiceArea } = useAdmin();
@@ -21,30 +23,49 @@ export default function FranchiseServiceAreaDrawer({ isOpen, onClose, franchise 
     const [gridHexagons, setGridHexagons] = useState([]);
     const [drawMode, setDrawMode] = useState('add'); // 'add', 'remove', 'none'
     const [isDragging, setIsDragging] = useState(false);
+    const [searchBox, setSearchBox] = useState(null);
 
     const mapRef = useRef(null);
 
     const { isLoaded, loadError } = useJsApiLoader({
-        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-        libraries
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
+        libraries: LIBRARIES
     });
 
-    // Initialize selected hexagons from franchise data
+    // Memoize center to prevent unnecessary re-renders
+    const center = useMemo(() => {
+        if (franchise?.location?.coordinates && franchise.location.coordinates[0] !== 0) {
+            return {
+                lat: franchise.location.coordinates[1],
+                lng: franchise.location.coordinates[0]
+            };
+        }
+        return DEFAULT_CENTER;
+    }, [franchise]);
+
+    // Initialize selected hexagons and grid
     useEffect(() => {
+        if (!isOpen) return;
+
         if (franchise?.serviceHexagons) {
             setSelectedHexagons(franchise.serviceHexagons);
         } else {
             setSelectedHexagons([]);
         }
 
-        // Generate a grid of hexagons around the franchise location for selection
-        if (franchise?.location?.coordinates) {
-            const [lng, lat] = franchise.location.coordinates;
-            const centerHex = latLngToCell(lat, lng, 8);
+        // Generate a grid of hexagons around the center
+        const lat = franchise?.location?.coordinates?.[1] || DEFAULT_CENTER.lat;
+        const lng = franchise?.location?.coordinates?.[0] || DEFAULT_CENTER.lng;
 
-            // Get 10 rings out (~8-10km-ish radius) to give plenty of drawing room
-            const ringHexes = gridDisk(centerHex, 10);
+        try {
+            const centerHex = latLngToCell(lat, lng, 8);
+            const ringHexes = gridDisk(centerHex, 12); // Slightly larger grid for better coverage
             setGridHexagons(ringHexes);
+        } catch (err) {
+            console.error("Failed to generate H3 grid:", err);
+            // Fallback to Indore if coordinates are invalid
+            const fallbackHex = latLngToCell(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng, 8);
+            setGridHexagons(gridDisk(fallbackHex, 12));
         }
     }, [franchise, isOpen]);
 
@@ -63,19 +84,23 @@ export default function FranchiseServiceAreaDrawer({ isOpen, onClose, franchise 
         if (!franchise?._id) return;
 
         setIsSubmitting(true);
-        const success = await updateFranchiseServiceArea(franchise._id, selectedHexagons);
-        setIsSubmitting(false);
-
-        if (success) {
-            toast.success("Service area updated successfully");
-            onClose();
+        try {
+            const success = await updateFranchiseServiceArea(franchise._id, selectedHexagons);
+            if (success) {
+                toast.success("Service area updated successfully");
+                onClose();
+            }
+        } catch (error) {
+            console.error("Save error:", error);
+            toast.error("Failed to save service area");
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
     const onMapLoad = useCallback((map) => {
         mapRef.current = map;
     }, []);
-
 
     const handleMouseMove = (e) => {
         if (!isDragging || drawMode === 'none') return;
@@ -106,18 +131,51 @@ export default function FranchiseServiceAreaDrawer({ isOpen, onClose, franchise 
         setIsDragging(false);
     };
 
+    const onAutocompleteLoad = (autocomplete) => {
+        setSearchBox(autocomplete);
+    };
+
+    const onPlaceChanged = () => {
+        if (searchBox !== null) {
+            const place = searchBox.getPlace();
+            if (place.geometry && place.geometry.location) {
+                const newLat = place.geometry.location.lat();
+                const newLng = place.geometry.location.lng();
+
+                if (mapRef.current) {
+                    mapRef.current.panTo({ lat: newLat, lng: newLng });
+                    mapRef.current.setZoom(14);
+                }
+
+                // Regenerate grid around new location if needed
+                const newCenterHex = latLngToCell(newLat, newLng, 8);
+                const newRingHexes = gridDisk(newCenterHex, 12);
+                setGridHexagons(prev => Array.from(new Set([...prev, ...newRingHexes])));
+            }
+        }
+    };
+
     if (!isOpen || !franchise) return null;
 
-    if (loadError) return <div className="p-4 text-center text-rose-500 font-bold uppercase tracking-widest">Error loading Google Maps</div>;
-    if (!isLoaded) return (
-        <div className="fixed inset-0 z-[110] bg-white flex items-center justify-center">
-            <Loader2 className="animate-spin text-slate-900" size={48} />
+    if (loadError) return (
+        <div className="fixed inset-0 z-[120] bg-white flex flex-col items-center justify-center p-6 text-center">
+            <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mb-4">
+                <X size={32} />
+            </div>
+            <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Map Engine Failure</h2>
+            <p className="text-sm text-slate-500 mt-2 max-w-xs">Verify Google Maps API Key and internet connectivity. Geolocation services are temporarily offline.</p>
+            <button onClick={onClose} className="mt-8 px-6 py-2 bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest rounded-sm">Return to Dashboard</button>
         </div>
     );
 
-    const center = franchise.location?.coordinates
-        ? { lat: franchise.location.coordinates[1], lng: franchise.location.coordinates[0] }
-        : { lat: 20.5937, lng: 78.9629 }; // Default India center
+    if (!isLoaded) return (
+        <div className="fixed inset-0 z-[120] bg-white/80 backdrop-blur-md flex items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+                <Loader2 className="animate-spin text-slate-900" size={40} />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Initializing Grid Matrix...</span>
+            </div>
+        </div>
+    );
 
     return (
         <AnimatePresence>
@@ -127,7 +185,7 @@ export default function FranchiseServiceAreaDrawer({ isOpen, onClose, franchise 
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     onClick={onClose}
-                    className="absolute inset-0 bg-slate-900/40"
+                    className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
                     style={{ pointerEvents: isDragging ? 'none' : 'auto' }}
                 />
 
@@ -135,45 +193,57 @@ export default function FranchiseServiceAreaDrawer({ isOpen, onClose, franchise 
                     initial={{ x: '100%' }}
                     animate={{ x: 0 }}
                     exit={{ x: '100%' }}
-                    transition={{ type: 'spring', damping: 24, stiffness: 190 }}
-                    className="relative w-full max-w-4xl bg-white h-full shadow-2xl flex flex-col"
+                    transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                    className="relative w-full max-w-5xl bg-white h-full shadow-2xl flex flex-col border-l border-slate-200"
                 >
                     {/* Header */}
-                    <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-white z-10 transition-all duration-300">
+                    <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-white z-10">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 bg-slate-900 text-white rounded-sm shadow-lg shadow-slate-200">
-                                <Layers size={18} />
+                            <div className="p-2.5 bg-slate-900 text-white rounded-sm shadow-xl shadow-slate-200">
+                                <Layers size={20} />
                             </div>
                             <div>
-                                <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Geospatial Distribution</h3>
-                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{franchise.franchiseName} · Network Node Coverage</p>
+                                <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight leading-none">Territory Coverage</h3>
+                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1.5">{franchise.franchiseName} · Regional Grid Selection</p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
                             <button
                                 onClick={() => {
-                                    if (mapRef.current) mapRef.current.panTo(center);
+                                    if (mapRef.current) {
+                                        mapRef.current.panTo(center);
+                                        mapRef.current.setZoom(13);
+                                    }
                                 }}
-                                className="p-2 rounded-sm border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors"
-                                title="Center on Node"
+                                className="p-2.5 rounded-sm border border-slate-200 hover:bg-slate-50 text-slate-600 transition-all hover:border-slate-400"
+                                title="Recenter on Base"
                             >
-                                <Target size={18} />
+                                <Target size={20} />
                             </button>
-                            <button onClick={onClose} className="p-2 rounded-sm border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors">
-                                <X size={18} />
+                            <button onClick={onClose} className="p-2.5 rounded-sm border border-slate-200 hover:bg-slate-50 text-slate-500 transition-all">
+                                <X size={20} />
                             </button>
                         </div>
                     </div>
 
-                    {/* Search Field */}
-                    <div className="px-6 py-2 bg-white border-b border-slate-100">
+                    {/* Search Field with Autocomplete */}
+                    <div className="px-6 py-3 bg-white border-b border-slate-100 relative z-20">
                         <div className="relative group">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" size={14} />
-                            <input
-                                type="text"
-                                placeholder="Service area expansion coordinates..."
-                                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-sm text-[11px] font-bold uppercase tracking-wider focus:outline-none focus:ring-1 focus:ring-slate-900 focus:bg-white transition-all"
-                            />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" size={16} />
+                            <Autocomplete
+                                onLoad={onAutocompleteLoad}
+                                onPlaceChanged={onPlaceChanged}
+                                options={{
+                                    componentRestrictions: { country: "in" },
+                                    types: ["geocode", "establishment"]
+                                }}
+                            >
+                                <input
+                                    type="text"
+                                    placeholder="Search region, locality or landmark to expand grid..."
+                                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-sm text-[11px] font-bold uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:bg-white focus:border-slate-900 transition-all"
+                                />
+                            </Autocomplete>
                         </div>
                     </div>
 
@@ -183,57 +253,53 @@ export default function FranchiseServiceAreaDrawer({ isOpen, onClose, franchise 
                             <button
                                 onClick={() => setDrawMode('add')}
                                 className={cn(
-                                    "flex items-center gap-2 px-3 py-1.5 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all",
-                                    drawMode === 'add' ? "bg-slate-900 text-white shadow-md shadow-slate-200" : "text-slate-500 hover:bg-slate-50"
+                                    "flex items-center gap-2 px-4 py-2 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all",
+                                    drawMode === 'add' ? "bg-slate-900 text-white shadow-lg shadow-slate-200" : "text-slate-500 hover:bg-slate-50"
                                 )}
                             >
-                                <MousePointer2 size={13} />
+                                <MousePointer2 size={14} />
                                 Painter
                             </button>
                             <button
                                 onClick={() => setDrawMode('remove')}
                                 className={cn(
-                                    "flex items-center gap-2 px-3 py-1.5 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all",
-                                    drawMode === 'remove' ? "bg-rose-600 text-white shadow-md shadow-rose-100" : "text-slate-500 hover:bg-slate-50"
+                                    "flex items-center gap-2 px-4 py-2 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all",
+                                    drawMode === 'remove' ? "bg-rose-600 text-white shadow-lg shadow-rose-100" : "text-slate-500 hover:bg-slate-50"
                                 )}
                             >
-                                <Eraser size={13} />
+                                <Eraser size={14} />
                                 Eraser
                             </button>
                             <button
                                 onClick={() => setDrawMode('none')}
                                 className={cn(
-                                    "flex items-center gap-2 px-3 py-1.5 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all",
+                                    "flex items-center gap-2 px-4 py-2 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all",
                                     drawMode === 'none' ? "bg-slate-200 text-slate-900" : "text-slate-500 hover:bg-slate-50"
                                 )}
                             >
-                                <MapIcon size={13} />
+                                <MapIcon size={14} />
                                 Pan Only
                             </button>
                         </div>
 
                         <div className="flex items-center gap-3">
                             <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-4">
-                                <span className="flex items-center gap-1">
-                                    <span className="w-2 h-2 rounded-full bg-slate-900 border border-white shadow-sm" />
+                                <span className="flex items-center gap-1.5">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-slate-900 border border-white shadow-sm" />
                                     {selectedHexagons.length} Active
                                 </span>
-                                <span className="flex items-center gap-1">
-                                    <span className="w-2 h-2 rounded-full bg-slate-300 border border-white shadow-sm" />
-                                    {gridHexagons.length - selectedHexagons.length} Inactive
-                                </span>
+                                <button
+                                    onClick={() => setSelectedHexagons([])}
+                                    className="text-[10px] font-black text-rose-500 uppercase tracking-widest hover:bg-rose-50 px-3 py-1.5 rounded-sm transition-all border border-transparent hover:border-rose-100"
+                                >
+                                    Clear Grid
+                                </button>
                             </div>
-                            <button
-                                onClick={() => setSelectedHexagons([])}
-                                className="text-[10px] font-black text-rose-500 uppercase tracking-widest hover:underline px-2"
-                            >
-                                Clear All
-                            </button>
                         </div>
                     </div>
 
                     {/* Map Container */}
-                    <div className="flex-1 w-full bg-slate-100 relative overflow-hidden group">
+                    <div className="flex-1 w-full bg-slate-200 relative overflow-hidden group">
                         <GoogleMap
                             mapContainerStyle={mapContainerStyle}
                             center={center}
@@ -245,14 +311,21 @@ export default function FranchiseServiceAreaDrawer({ isOpen, onClose, franchise 
                             options={{
                                 disableDefaultUI: false,
                                 zoomControl: true,
-                                mapTypeControl: false,
+                                mapTypeControl: true,
                                 streetViewControl: false,
+                                scaleControl: true,
+                                rotateControl: false,
                                 fullscreenControl: false,
                                 draggable: drawMode === 'none' || !isDragging,
+                                mapTypeId: 'roadmap',
                                 styles: [
                                     {
                                         "featureType": "poi",
                                         "stylers": [{ "visibility": "off" }]
+                                    },
+                                    {
+                                        "featureType": "transit",
+                                        "stylers": [{ "visibility": "simplified" }]
                                     }
                                 ]
                             }}
@@ -260,22 +333,11 @@ export default function FranchiseServiceAreaDrawer({ isOpen, onClose, franchise 
                             {/* Center Marker */}
                             <Marker
                                 position={center}
-                                options={{
-                                    icon: {
-                                        path: 'M -10,0 A 10,10 0 1,0 10,0 A 10,10 0 1,0 -10,0',
-                                        fillColor: '#ef4444',
-                                        fillOpacity: 1,
-                                        strokeWeight: 2,
-                                        strokeColor: '#FFFFFF',
-                                        scale: 1,
-                                    },
-                                    label: {
-                                        text: "BASE",
-                                        color: "white",
-                                        fontSize: "8px",
-                                        fontWeight: "black"
-                                    }
+                                icon={{
+                                    url: "https://maps.google.com/mapfiles/ms/icons/red-pushpin.png",
+                                    scaledSize: new window.google.maps.Size(32, 32)
                                 }}
+                                title="Franchise Hub"
                             />
 
                             {/* Hexagon Grid */}
@@ -292,9 +354,9 @@ export default function FranchiseServiceAreaDrawer({ isOpen, onClose, franchise 
                                             if (drawMode === 'none') toggleHexagon(hexId);
                                         }}
                                         options={{
-                                            fillColor: isSelected ? '#0f172a' : '#94a3b8',
+                                            fillColor: isSelected ? '#0f172a' : '#ffffff',
                                             fillOpacity: isSelected ? 0.6 : 0.05,
-                                            strokeColor: isSelected ? '#0f172a' : '#cbd5e1',
+                                            strokeColor: isSelected ? '#0f172a' : '#94a3b8',
                                             strokeOpacity: 0.8,
                                             strokeWeight: isSelected ? 2 : 0.5,
                                             clickable: true,
@@ -307,41 +369,45 @@ export default function FranchiseServiceAreaDrawer({ isOpen, onClose, franchise 
 
                         {/* Floating Interaction Tip */}
                         <div className="absolute top-6 left-6 z-10 pointer-events-none">
-                            <div className="bg-slate-900/90 backdrop-blur-md text-white px-4 py-2 rounded-sm border border-slate-700 shadow-2xl flex items-center gap-3">
-                                <div className="p-1 bg-white/20 rounded-full animate-pulse">
-                                    <Info size={12} />
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="bg-slate-900/90 backdrop-blur-md text-white px-4 py-2.5 rounded-sm border border-white/10 shadow-2xl flex items-center gap-3"
+                            >
+                                <div className="p-1.5 bg-white/20 rounded-full animate-pulse">
+                                    <Info size={14} />
                                 </div>
-                                <span className="text-[10px] font-bold uppercase tracking-widest leading-none">
-                                    {drawMode === 'add' ? 'Press & Drag to Paint Area' :
-                                        drawMode === 'remove' ? 'Press & Drag to Erase Area' :
-                                            'Pan Map to Explore Nodes'}
+                                <span className="text-[10px] font-black uppercase tracking-widest leading-none">
+                                    {drawMode === 'add' ? 'Click & Drag to Paint Territory' :
+                                        drawMode === 'remove' ? 'Click & Drag to Expunge Territory' :
+                                            'Drag Map to Inspect Periphery'}
                                 </span>
-                            </div>
+                            </motion.div>
                         </div>
 
                         {/* Stats Legend */}
-                        <div className="absolute bottom-6 left-6 z-10 bg-white/95 backdrop-blur-sm border border-slate-200 p-4 rounded-sm shadow-2xl min-w-[240px]">
-                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center justify-between border-b border-slate-100 pb-2">
-                                Distribution Metrics
+                        <div className="absolute bottom-10 left-6 z-10 bg-white/95 backdrop-blur-md border border-slate-200 p-5 rounded-sm shadow-2xl min-w-[260px]">
+                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center justify-between border-b border-slate-100 pb-2.5">
+                                Coverage Analytics
                                 <Activity size={12} className="text-emerald-500" />
                             </h4>
-                            <div className="space-y-3">
+                            <div className="space-y-3.5">
                                 <div className="flex justify-between items-center text-[11px]">
-                                    <span className="text-slate-500 font-bold uppercase tracking-tighter">Active Cells</span>
-                                    <span className="px-2 py-0.5 bg-slate-100 font-black text-slate-900 rounded-sm tabular-nums">
+                                    <span className="text-slate-500 font-bold uppercase tracking-tighter">Active Matrix Cells</span>
+                                    <span className="px-2.5 py-1 bg-slate-900 text-white font-black rounded-sm tabular-nums">
                                         {selectedHexagons.length}
                                     </span>
                                 </div>
                                 <div className="flex justify-between items-center text-[11px]">
-                                    <span className="text-slate-500 font-bold uppercase tracking-tighter">Effective Radius</span>
+                                    <span className="text-slate-500 font-bold uppercase tracking-tighter">Effective Reach</span>
                                     <span className="font-black text-slate-900 tabular-nums">
-                                        {Math.sqrt(selectedHexagons.length * 0.73 / Math.PI).toFixed(2)} km
+                                        {Math.sqrt(selectedHexagons.length * 0.73 / Math.PI).toFixed(2)} KM
                                     </span>
                                 </div>
                                 <div className="flex justify-between items-center text-[11px]">
-                                    <span className="text-slate-500 font-bold uppercase tracking-tighter">Total Area</span>
-                                    <span className="font-black text-slate-900 tabular-nums">
-                                        {((selectedHexagons?.length || 0) * 0.73).toFixed(2)} km²
+                                    <span className="text-slate-500 font-bold uppercase tracking-tighter">Square Area</span>
+                                    <span className="font-black text-slate-900 tabular-nums uppercase">
+                                        {((selectedHexagons?.length || 0) * 0.73).toFixed(2)} SQ KM
                                     </span>
                                 </div>
                             </div>
@@ -350,31 +416,31 @@ export default function FranchiseServiceAreaDrawer({ isOpen, onClose, franchise 
 
                     {/* Footer */}
                     <div className="px-6 py-5 border-t border-slate-200 flex items-center justify-between bg-white z-10">
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-6">
                             <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 bg-slate-900 opacity-60 rounded-sm border border-slate-900 shadow-sm" />
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">In Network</span>
+                                <div className="w-3.5 h-3.5 bg-slate-900/60 rounded-sm border border-slate-900 shadow-sm" />
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Selected Region</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 bg-emerald-500 rounded-sm border border-emerald-400 shadow-sm" />
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Optimized</span>
+                                <div className="w-3.5 h-3.5 bg-slate-100 rounded-sm border border-slate-300 shadow-sm" />
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Available Grid</span>
                             </div>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-4">
                             <button
                                 onClick={onClose}
                                 type="button"
-                                className="px-5 py-2.5 text-[10px] font-black uppercase tracking-widest border border-slate-200 rounded-sm hover:bg-slate-50 transition-all text-slate-600"
+                                className="px-6 py-3 text-[10px] font-black uppercase tracking-widest border border-slate-200 rounded-sm hover:bg-slate-50 transition-all text-slate-600 hover:border-slate-400"
                             >
-                                Discard Changes
+                                Discard Matrix
                             </button>
                             <button
                                 onClick={handleSave}
                                 disabled={isSubmitting}
-                                className="px-6 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-sm bg-slate-900 text-white disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center gap-3 shadow-xl shadow-slate-200 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                className="px-8 py-3 text-[10px] font-black uppercase tracking-widest rounded-sm bg-slate-900 text-white disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center gap-3 shadow-2xl shadow-slate-200 hover:scale-[1.02] active:scale-[0.98] transition-all"
                             >
-                                {isSubmitting ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
-                                Commit Infrastructure
+                                {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                                Synchronize Territory
                             </button>
                         </div>
                     </div>

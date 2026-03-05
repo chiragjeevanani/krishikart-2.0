@@ -16,7 +16,8 @@ import {
   resetInventoryStock,
   getActiveFranchises,
   updateAvailability,
-  saveFCMToken
+  saveFCMToken,
+  testPushByToken
 } from "../controllers/franchise.controller.js";
 import {
   createPOSSale,
@@ -49,8 +50,9 @@ router.get("/active-stores", getActiveFranchises);
 router.post("/pos/sale", protectFranchise, createPOSSale);
 router.get("/pos/history", protectFranchise, getPOSHistory);
 router.put("/qr-code", protectFranchise, upload.single('qrCode'), updateStoreQRCode);
-router.put("/availability", protectFranchise, updateAvailability);
+router.post("/availability", protectFranchise, updateAvailability);
 router.post("/fcm-token", protectFranchise, saveFCMToken);
+router.post("/test-notification", protectFranchise, testPushByToken);
 router.post("/inventory/reset", protectFranchise, resetInventoryStock);
 
 export default router;

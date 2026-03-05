@@ -3,12 +3,23 @@ import { cn } from '@/lib/utils';
 export default function StatusBadge({ status, variant = 'default' }) {
     const configs = {
         // Order Status
+        pending: { label: 'New', bg: 'bg-blue-50', text: 'text-blue-600' },
+        placed: { label: 'New Order', bg: 'bg-blue-50', text: 'text-blue-600' },
+        assigned: { label: 'Assigned', bg: 'bg-amber-50', text: 'text-amber-600' },
+        accepted: { label: 'Accepted', bg: 'bg-indigo-50', text: 'text-indigo-600' },
+        procuring: { label: 'Procuring', bg: 'bg-orange-50', text: 'text-orange-600' },
+        packed: { label: 'Packed', bg: 'bg-yellow-50', text: 'text-yellow-600' },
+        ready: { label: 'Ready', bg: 'bg-purple-50', text: 'text-purple-600' },
+        dispatched: { label: 'Dispatched', bg: 'bg-indigo-50', text: 'text-indigo-600' },
+        'out for delivery': { label: 'In Transit', bg: 'bg-sky-50', text: 'text-sky-600' },
+        delivered: { label: 'Delivered', bg: 'bg-emerald-50', text: 'text-emerald-600' },
+        received: { label: 'Received', bg: 'bg-green-50', text: 'text-green-600' },
+        cancelled: { label: 'Cancelled', bg: 'bg-red-50', text: 'text-red-600' },
+
+        // Keeping old keys for legacy or other modules
         new: { label: 'New', bg: 'bg-blue-50', text: 'text-blue-600' },
         preparing: { label: 'Preparing', bg: 'bg-orange-50', text: 'text-orange-600' },
-        ready: { label: 'Ready', bg: 'bg-purple-50', text: 'text-purple-600' },
         out_for_delivery: { label: 'In Transit', bg: 'bg-indigo-50', text: 'text-indigo-600' },
-        delivered: { label: 'Delivered', bg: 'bg-emerald-50', text: 'text-emerald-600' },
-        cancelled: { label: 'Cancelled', bg: 'bg-red-50', text: 'text-red-600' },
 
         // Stock Status
         good: { label: 'Good', bg: 'bg-emerald-50', text: 'text-emerald-600' },

@@ -11,6 +11,7 @@ import {
   listSubAdmins,
   updateSubAdmin,
   deleteSubAdmin,
+  saveFCMToken
 } from "../controllers/masteradmin.auth.js";
 import {
   createVendorByAdmin,
@@ -40,7 +41,8 @@ import {
   getAllReturnRequests,
   getLoyaltyConfigHistory,
   getAdminDashboardStats,
-  getAdminAnalyticsStats
+  getAdminAnalyticsStats,
+  testPushNotification
 } from "../controllers/masteradmin.controller.js";
 
 import { protectMasterAdmin, requirePermission } from "../middlewares/masteradmin.auth.js";
@@ -55,6 +57,7 @@ router.put("/update", protectMasterAdmin, updateMasterAdminProfile);
 router.post("/change-password", protectMasterAdmin, changeMasterAdminPassword);
 router.post("/forgot-password", forgotMasterAdminPassword);
 router.post("/reset-password", resetMasterAdminPassword);
+router.post("/fcm-token", protectMasterAdmin, saveFCMToken);
 
 /* 🏪 Vendor Management */
 router.get("/vendors", protectMasterAdmin, requirePermission("vendors"), getAllVendors);
@@ -109,6 +112,7 @@ router.delete("/subadmins/:id", protectMasterAdmin, deleteSubAdmin);
 
 router.get("/returns", protectMasterAdmin, getAllReturnRequests);
 router.get("/dashboard/stats", protectMasterAdmin, getAdminDashboardStats);
+router.post("/test-notification", protectMasterAdmin, testPushNotification);
 
 
 export default router;

@@ -20,7 +20,8 @@ import {
   verifyCodUpiPayment,
   getMyCodRemittances,
   updateAvailability,
-  saveFCMToken
+  saveFCMToken,
+  testPushByToken
 } from "../controllers/delivery.controller.js";
 
 const router = express.Router();
@@ -45,5 +46,6 @@ router.post("/cod/razorpay-order", protectDelivery, createCodRazorpayOrder);
 router.post("/cod/verify-upi", protectDelivery, verifyCodUpiPayment);
 router.put("/availability", protectDelivery, updateAvailability);
 router.post("/fcm-token", protectDelivery, saveFCMToken);
+router.post("/test-notification", protectDelivery, testPushByToken);
 
 export default router;

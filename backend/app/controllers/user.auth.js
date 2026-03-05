@@ -8,6 +8,7 @@ import { sendSMS } from "../utils/smsService.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import admin from "../services/firebaseAdmin.js";
 import razorpay from "../utils/razorpay.js";
 
 
@@ -582,26 +583,96 @@ export const redeemLoyaltyPoints = async (req, res) => {
  */
 export const saveFCMToken = async (req, res) => {
   try {
-    const { token } = req.body;
+    const { token, fcm_token, plateform, platform } = req.body;
     const userId = req.user.id;
+    const finalToken = fcm_token || token;
+    const finalPlatform = plateform || platform || 'web';
 
-    if (!token) return handleResponse(res, 400, "FCM Token is required");
+    console.log(`[FCM-User] Incoming token for User ${userId} [Platform: ${finalPlatform}]:`, finalToken);
+
+    if (!finalToken) return handleResponse(res, 400, "FCM Token is required");
 
     const user = await User.findById(userId);
+    if (!user) return handleResponse(res, 404, "User not found");
     if (!user.fcmTokens) user.fcmTokens = [];
+    if (!user.mobile_fcm) user.mobile_fcm = [];
 
-    if (!user.fcmTokens.includes(token)) {
-      user.fcmTokens.push(token);
-      if (user.fcmTokens.length > 10) {
-        user.fcmTokens = user.fcmTokens.slice(-10);
+    // Web goes to fcmTokens, everything else (android, ios, mobile) goes to mobile_fcm
+    const isWeb = finalPlatform.toLowerCase() === 'web';
+    const targetArrayName = isWeb ? 'fcmTokens' : 'mobile_fcm';
+    const targetArray = user[targetArrayName];
+
+    console.log(`[FCM-User] Targeted array for Platform "${finalPlatform}": ${targetArrayName}`);
+
+    if (!targetArray.includes(finalToken)) {
+      console.log(`[FCM-User] Registering new unique token for User ${userId} in ${targetArrayName}`);
+      targetArray.push(finalToken);
+      if (targetArray.length > 10) {
+        console.log(`[FCM-User] Token limit (10) reached for ${targetArrayName} of User ${userId}. Slicing older tokens.`);
+        user[targetArrayName] = targetArray.slice(-10);
       }
       await user.save();
+    } else {
+      console.log(`[FCM-User] Token already exists in ${targetArrayName} for User ${userId}.`);
     }
 
     return handleResponse(res, 200, "FCM token saved successfully");
   } catch (err) {
     console.error("Save User FCM Token Error:", err);
     return handleResponse(res, 500, "Internal server error");
+  }
+};
+
+/**
+ * @desc Test Push Notification by Token (Mobile Developer Helper)
+ * @route POST /user/test-notification
+ * @access Private (User)
+ */
+export const testPushByToken = async (req, res) => {
+  try {
+    const { fcm_token, plateform } = req.body;
+    if (!fcm_token) return handleResponse(res, 400, "fcm_token is required");
+
+    console.log(`[FCM-Test-User] Sending test ping to ${plateform || 'mobile'}:`, fcm_token);
+
+    const message = {
+      notification: {
+        title: "KrishiKart User App Test",
+        body: `Success! Your ${plateform || 'device'} is correctly integrated with KrishiKart FCM.`
+      },
+      token: fcm_token
+    };
+
+    const bodyToken = fcm_token || token;
+    const response = await admin.messaging().send(message);
+    return handleResponse(res, 200, "Test notification sent successfully!", response);
+  } catch (error) {
+    console.error("Test Notification Error:", error);
+
+    // Specific handling for stale/invalid tokens
+    if (error.code === 'messaging/registration-token-not-registered') {
+      const userId = req.user?.id;
+      if (userId) {
+        await User.findByIdAndUpdate(userId, {
+          $pull: {
+            fcmTokens: bodyToken,
+            mobile_fcm: bodyToken
+          }
+        });
+        console.log(`[FCM-User-Cleanup] Removed stale token from all possible fields for User ${userId}: ${bodyToken}`);
+      }
+
+      return handleResponse(res, 410, "FCM Token is no longer valid (NotRegistered). Please generate a fresh token from the mobile app.", {
+        code: error.code,
+        error_message: error.message,
+        suggestion: "Refresh the token on the mobile device and try again."
+      });
+    }
+
+    return handleResponse(res, 500, "Failed to send test notification", {
+      code: error.code,
+      error_message: error.message
+    });
   }
 };
 

@@ -48,9 +48,10 @@ export default function OrderDetailScreen() {
         }
         if (['delivered', 'received'].includes(s)) return 'bg-emerald-500 text-white';
         if (s === 'cancelled') return 'bg-rose-500 text-white';
-        if (s === 'placed') return 'bg-amber-500 text-white';
-        if (s === 'packed') return 'bg-blue-500 text-white';
-        if (s === 'dispatched') return 'bg-orange-500 text-white';
+        if (['placed', 'pending'].includes(s)) return 'bg-amber-500 text-white';
+        if (['packed', 'ready'].includes(s)) return 'bg-blue-500 text-white';
+        if (['dispatched', 'out for delivery', 'out_for_delivery'].includes(s)) return 'bg-orange-500 text-white';
+        if (['accepted', 'procuring'].includes(s)) return 'bg-indigo-500 text-white';
         return 'bg-slate-500 text-white';
     }
 

@@ -304,3 +304,53 @@ export const resetMasterAdminPassword = async (req, res) => {
     return handleResponse(res, 500, "Server error");
   }
 };
+/**
+ * @desc Save Master Admin & Sub Admin FCM Token
+ * @route POST /masteradmin/fcm-token
+ * @access Private (Admin/SubAdmin)
+ */
+export const saveFCMToken = async (req, res) => {
+  try {
+    const { token, fcm_token, plateform, platform } = req.body;
+    const adminId = req.masteradmin?._id;
+    const role = req.masteradmin?.role;
+    const finalToken = fcm_token || token;
+    const finalPlatform = plateform || platform || 'web';
+
+    console.log(`[FCM-Admin] Request for ${role} (${adminId}):`, {
+      token: finalToken,
+      platform: finalPlatform
+    });
+
+    if (!finalToken) return handleResponse(res, 400, "FCM Token is required");
+    if (!adminId) return handleResponse(res, 401, "Admin context missing");
+
+    let admin = await MasterAdmin.findById(adminId);
+    if (!admin) {
+      admin = await SubAdmin.findById(adminId);
+    }
+
+    if (!admin) return handleResponse(res, 404, "Admin profile not found");
+
+    if (!admin.fcmTokens) admin.fcmTokens = [];
+
+    if (!admin.fcmTokens.includes(finalToken)) {
+      console.log(`[FCM-Admin] Registering new token for ${adminId}`);
+      admin.fcmTokens.push(finalToken);
+
+      // Limit to last 10 tokens
+      if (admin.fcmTokens.length > 10) {
+        admin.fcmTokens = admin.fcmTokens.slice(-10);
+      }
+
+      await admin.save();
+    } else {
+      console.log(`[FCM-Admin] Token already registered for ${adminId}`);
+    }
+
+    return handleResponse(res, 200, "FCM token saved successfully");
+  } catch (err) {
+    console.error("Save Admin FCM Token Error:", err);
+    return handleResponse(res, 500, "Internal server error", { error: err.message });
+  }
+};

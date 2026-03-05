@@ -10,6 +10,7 @@ import {
     getVendorActiveDispatch,
     vendorUpdateStatus,
     getVendorReports,
+    getVendorDashboardStats,
     franchiseConfirmReceipt,
     createProcurementFromOrder
 } from "../controllers/procurement.controller.js";
@@ -27,6 +28,7 @@ router.put("/franchise/:requestId/receive", protectFranchise, franchiseConfirmRe
 // Vendor Routes (View Assignment)
 router.get("/vendor/my-assignments", protectVendor, getVendorAssignments);
 router.get("/vendor/active-dispatch", protectVendor, getVendorActiveDispatch);
+router.get("/vendor/dashboard-stats", protectVendor, getVendorDashboardStats);
 router.get("/vendor/:requestId", protectVendor, getVendorProcurementById);
 router.post("/vendor/:requestId/quote", protectVendor, vendorSubmitQuotation);
 router.put("/vendor/:requestId/status", protectVendor, vendorUpdateStatus);

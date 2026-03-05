@@ -5,8 +5,9 @@ import Franchise from "../models/franchise.js";
 import User from "../models/user.js";
 import Order from "../models/order.js";
 import Inventory from "../models/inventory.js";
+import VendorInventory from "../models/vendorInventory.js";
 import handleResponse from "../utils/helper.js";
-import { emitToVendor } from "../lib/socket.js";
+import { emitToVendor, emitToAdmin, emitToFranchise } from "../lib/socket.js";
 import { sendNotificationToUser } from "../utils/pushNotificationHelper.js";
 
 // Get vendor assignments (Vendor)
@@ -121,6 +122,12 @@ export const vendorSubmitQuotation = async (req, res) => {
         request.totalQuotedAmount = totalQuoted;
         request.status = 'quoted';
         await request.save();
+
+        // Socket Notifications
+        emitToAdmin('procurement_quote_received', {
+            requestId: request._id,
+            message: `A new quote from vendor for procurement #${request._id.toString().slice(-6)}`
+        });
 
         // Update Order if exists
         if (request.orderId) {
@@ -265,6 +272,20 @@ export const vendorUpdateStatus = async (req, res) => {
         }
 
         await request.save();
+
+        // Socket Notifications
+        emitToAdmin('procurement_status_updated', {
+            requestId: request._id,
+            status: status,
+            message: `Procurement #${request._id.toString().slice(-6)} moved to ${status.replace('_', ' ')}`
+        });
+        if (request.franchiseId) {
+            emitToFranchise(request.franchiseId, 'procurement_cycle_update', {
+                requestId: request._id,
+                status: status,
+                message: `Vendor updated procurement #${request._id.toString().slice(-6)} status: ${status.replace('_', ' ')}`
+            });
+        }
 
         // Update Order if exists
         if (request.orderId) {
@@ -599,6 +620,15 @@ export const franchiseConfirmReceipt = async (req, res) => {
 
         await request.save();
 
+        // Socket Notification to Vendor
+        if (request.assignedVendorId) {
+            emitToVendor(request.assignedVendorId, 'items_received_by_franchise', {
+                requestId: request._id,
+                status: 'completed',
+                message: `Franchise confirmed receipt for request #${request._id.toString().slice(-6)}`
+            });
+        }
+
         // Update Franchise Inventory
         try {
             let inventory = await Inventory.findOne({ franchiseId });
@@ -828,5 +858,69 @@ export const createProcurementFromOrder = async (req, res) => {
     } catch (error) {
         console.error("Create procurement from order error:", error);
         return handleResponse(res, 500, "Server error: " + error.message);
+    }
+};
+
+// Get Vendor Dashboard Stats (Vendor)
+export const getVendorDashboardStats = async (req, res) => {
+    try {
+        const vendorId = req.vendor._id.toString();
+
+        // 1. Fetch all requests for this vendor
+        const allRequests = await ProcurementRequest.find({
+            assignedVendorId: vendorId
+        }).lean();
+
+        // 2. Fetch inventory for this vendor
+        const inventory = await VendorInventory.findOne({ vendorId }).lean();
+        const stockQuantity = inventory?.items?.reduce((sum, item) => sum + (item.currentStock || 0), 0) || 0;
+        const availableProduce = inventory?.items?.filter(item => item.available).length || 0;
+
+        // 3. Calculate Active Ops (approved, preparing, ready_for_pickup)
+        const activeOps = allRequests.filter(r =>
+            ['approved', 'preparing', 'ready_for_pickup'].includes(r.status)
+        ).length;
+
+        // 4. Calculate Escrow Settlement (Sum of totalQuotedAmount for ready_for_pickup or completed but not settled)
+        // For now, let's say ready_for_pickup and completed are part of settlement
+        const pendingSettlement = allRequests
+            .filter(r => ['ready_for_pickup', 'completed'].includes(r.status))
+            .reduce((sum, r) => sum + (r.totalQuotedAmount || 0), 0);
+
+        // 5. Calculate Metric Turnover (Total completed revenue)
+        const totalTurnover = allRequests
+            .filter(r => r.status === 'completed')
+            .reduce((sum, r) => sum + (r.totalQuotedAmount || 0), 0);
+
+        // 6. Performance Metrics
+        const completedCount = allRequests.filter(r => r.status === 'completed').length;
+        const totalAssigned = allRequests.length;
+        const fulfillmentRate = totalAssigned > 0 ? Math.round((completedCount / totalAssigned) * 100) : 0;
+
+        // 7. Archive Vol
+        const archiveVol = completedCount;
+
+        // 8. Yield Delta (Revenue this month vs last month - simplified mock for now)
+        const yieldDelta = 4200; // Mocking for now, could be calculated if we had more history
+
+        return handleResponse(res, 200, "Vendor dashboard stats fetched", {
+            activeOps,
+            pendingSettlement,
+            totalTurnover,
+            inventory: {
+                stockQuantity,
+                availableProduce
+            },
+            performance: {
+                fulfillmentRate,
+                avgPrepTime: "1.2 Days", // Mock
+                archiveVol,
+                yieldDelta
+            }
+        });
+
+    } catch (error) {
+        console.error("Get vendor dashboard stats error:", error);
+        return handleResponse(res, 500, "Server error");
     }
 };

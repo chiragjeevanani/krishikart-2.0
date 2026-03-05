@@ -25,7 +25,8 @@ import {
     BarChart3,
     Terminal,
     Cpu,
-    Store
+    Store,
+    Bell
 } from 'lucide-react';
 import {
     LineChart,
@@ -43,6 +44,7 @@ import {
 import mockDashboard from '../data/mockDashboard.json';
 import api from '@/lib/axios';
 import { cn } from '@/lib/utils';
+import { getSocket, joinAdminDeliveryTracking } from '@/lib/socket';
 
 // Enterprise Components
 import MetricRow from '../components/cards/MetricRow';
@@ -63,6 +65,45 @@ export default function DashboardScreen() {
         recentSettlements: []
     });
 
+    const [sendingPush, setSendingPush] = useState(false);
+
+    const handleTestPush = async () => {
+        setSendingPush(true);
+        let token = localStorage.getItem(`fcm_token_masteradmin`);
+
+        if (!token) {
+            const { requestFCMToken } = await import('@/lib/firebase');
+            token = await requestFCMToken();
+            if (token) {
+                localStorage.setItem(`fcm_token_masteradmin`, token);
+                await api.post(`/masteradmin/fcm-token`, { token });
+            }
+        }
+
+        if (!token) {
+            alert("No FCM token found. Please allow notifications in your browser.");
+            setSendingPush(false);
+            return;
+        }
+
+        try {
+            const adminData = JSON.parse(localStorage.getItem('masterAdminData'));
+            await api.post('/masteradmin/test-notification', {
+                targetId: adminData?.id || adminData?._id,
+                userType: 'masteradmin',
+                title: 'KrishiKart System Ping',
+                body: 'Your Master Admin session is correctly linked to FCM push notifications.',
+                data: { portal: 'masteradmin', type: 'system_test' }
+            });
+            alert("Test notification triggered!");
+        } catch (error) {
+            console.error(error);
+            alert("Failed to send test push: " + (error.response?.data?.message || error.message));
+        } finally {
+            setSendingPush(false);
+        }
+    };
+
     const fetchDashboardStats = async () => {
         try {
             setIsLoading(true);
@@ -79,6 +120,27 @@ export default function DashboardScreen() {
 
     useEffect(() => {
         fetchDashboardStats();
+
+        // Socket Integration
+        const socket = getSocket();
+        joinAdminDeliveryTracking();
+
+        const handleUpdate = () => {
+            console.log("Refreshing dashboard stats due to socket event");
+            fetchDashboardStats();
+        };
+
+        socket.on('new_order_placed', handleUpdate);
+        socket.on('order_status_updated', handleUpdate);
+        socket.on('procurement_quote_received', handleUpdate);
+        socket.on('procurement_status_updated', handleUpdate);
+
+        return () => {
+            socket.off('new_order_placed', handleUpdate);
+            socket.off('order_status_updated', handleUpdate);
+            socket.off('procurement_quote_received', handleUpdate);
+            socket.off('procurement_status_updated', handleUpdate);
+        };
     }, []);
 
     const { kpis, orderFlow, revenueFlow, recentSettlements } = dashboardData;
@@ -179,6 +241,14 @@ export default function DashboardScreen() {
                             className="p-1.5 border border-slate-200 rounded-sm hover:bg-slate-50 text-slate-400 transition-colors"
                         >
                             <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
+                        </button>
+                        <button
+                            onClick={handleTestPush}
+                            disabled={sendingPush}
+                            className="bg-white border border-slate-200 text-slate-700 px-3 py-1.5 rounded-sm text-[11px] font-bold flex items-center gap-2 hover:bg-slate-50 transition-colors shadow-sm uppercase tracking-widest disabled:opacity-50"
+                        >
+                            <Bell size={13} className={sendingPush ? "animate-pulse text-indigo-500" : "text-indigo-500"} />
+                            {sendingPush ? '...' : 'Test Push'}
                         </button>
                         <button className="bg-slate-900 text-white px-3 py-1.5 rounded-sm text-[11px] font-bold flex items-center gap-2 hover:bg-slate-800 transition-colors shadow-sm">
                             <Download size={13} />

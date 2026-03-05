@@ -5,6 +5,7 @@ import { handleResponse } from "../utils/helper.js";
 import razorpay from "../utils/razorpay.js";
 import crypto from "crypto";
 import mongoose from "mongoose";
+import admin from "../services/firebaseAdmin.js";
 
 /**
  * @desc Get All Active Delivery Partners
@@ -272,25 +273,76 @@ export const updateAvailability = async (req, res) => {
  */
 export const saveFCMToken = async (req, res) => {
     try {
-        const { token } = req.body;
+        const { token, fcm_token, plateform, platform } = req.body;
         const deliveryId = req.delivery._id;
+        const finalToken = fcm_token || token;
+        const finalPlatform = plateform || platform || 'web';
 
-        if (!token) return handleResponse(res, 400, "FCM Token is required");
+        console.log(`[FCM-Delivery] Incoming token for Delivery ${deliveryId} [Platform: ${finalPlatform}]:`, finalToken);
+
+        if (!finalToken) return handleResponse(res, 400, "FCM Token is required");
 
         const delivery = await Delivery.findById(deliveryId);
+        if (!delivery) return handleResponse(res, 404, "Delivery partner not found");
         if (!delivery.fcmTokens) delivery.fcmTokens = [];
 
-        if (!delivery.fcmTokens.includes(token)) {
-            delivery.fcmTokens.push(token);
+        if (!delivery.fcmTokens.includes(finalToken)) {
+            console.log(`[FCM-Delivery] Registering new unique token for Delivery ${deliveryId}`);
+            delivery.fcmTokens.push(finalToken);
             if (delivery.fcmTokens.length > 10) {
+                console.log(`[FCM-Delivery] Token limit (10) reached for Delivery ${deliveryId}. Slicing older tokens.`);
                 delivery.fcmTokens = delivery.fcmTokens.slice(-10);
             }
             await delivery.save();
+        }
+        else {
+            console.log(`[FCM-Delivery] Token already exists for Delivery ${deliveryId}.`);
         }
 
         return handleResponse(res, 200, "FCM token saved successfully");
     } catch (err) {
         console.error("Save FCM Token Error:", err);
         return handleResponse(res, 500, "Internal server error");
+    }
+};
+
+/**
+ * @desc Test Push Notification (Delivery App Helper)
+ * @route POST /delivery/test-notification
+ * @access Private (Delivery)
+ */
+export const testPushByToken = async (req, res) => {
+    try {
+        const { fcm_token, fcmToken, plateform, platform } = req.body;
+        const targetToken = fcm_token || fcmToken;
+        const targetPlatform = plateform || platform || 'device';
+
+        if (!targetToken) return handleResponse(res, 400, "fcm_token is required");
+
+        const message = {
+            notification: {
+                title: "KrishiKart Delivery Test",
+                body: `Success! Your ${targetPlatform} is correctly integrated with KrishiKart FCM.`
+            },
+            token: targetToken
+        };
+
+        const response = await admin.messaging().send(message);
+        return handleResponse(res, 200, "Test notification sent successfully!", response);
+    } catch (error) {
+        console.error("Test Notification Error:", error);
+
+        if (error.code === 'messaging/registration-token-not-registered') {
+            const deliveryId = req.delivery?._id;
+            if (deliveryId) {
+                await Delivery.findByIdAndUpdate(deliveryId, { $pull: { fcmTokens: targetToken } });
+            }
+            return handleResponse(res, 410, "FCM Token invalid.", { code: error.code });
+        }
+
+        return handleResponse(res, 500, "Failed to send test notification", {
+            code: error.code,
+            error_message: error.message
+        });
     }
 };

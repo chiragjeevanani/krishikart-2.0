@@ -1,3 +1,4 @@
+import express from "express";
 import userRoute from "../../app/routes/user.js";
 import deliveryRoutes from "../../app/routes/delivery.js";
 import masteradminRoutes from "../../app/routes/masteradmin.js";
@@ -12,18 +13,22 @@ import geoRoute from "../../app/routes/geo.js";
 import couponRoutes from "../../app/routes/coupon.js";
 
 const setupRoutes = (app) => {
-    app.use("/user", userRoute);
-    app.use("/delivery", deliveryRoutes);
-    app.use("/masteradmin", masteradminRoutes);
-    app.use("/vendor", vendorRoutes);
-    app.use("/franchise", franchiseRoutes);
-    app.use("/catalog", catalogRoutes);
-    app.use("/products", productRoutes);
-    app.use("/products", productRoutes);
-    app.use("/orders", orderRoutes);
-    app.use("/payment", paymentRoutes);
-    app.use("/procurement", procurementRoutes);
-    app.use("/geo", geoRoute);
-    app.use("/coupons", couponRoutes);
+    const apiRouter = express.Router();
+
+    apiRouter.use("/user", userRoute);
+    apiRouter.use("/delivery", deliveryRoutes);
+    apiRouter.use("/masteradmin", masteradminRoutes);
+    apiRouter.use("/vendor", vendorRoutes);
+    apiRouter.use("/franchise", franchiseRoutes);
+    apiRouter.use("/catalog", catalogRoutes);
+    apiRouter.use("/products", productRoutes);
+    apiRouter.use("/orders", orderRoutes);
+    apiRouter.use("/payment", paymentRoutes);
+    apiRouter.use("/procurement", procurementRoutes);
+    apiRouter.use("/geo", geoRoute);
+    apiRouter.use("/coupons", couponRoutes);
+
+    // Apply all routes under /api
+    app.use("/api", apiRouter);
 }
 export default setupRoutes;

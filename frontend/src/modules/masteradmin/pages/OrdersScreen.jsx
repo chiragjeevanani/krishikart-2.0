@@ -29,6 +29,7 @@ import OrdersTable from '../components/tables/OrdersTable';
 import mockVendors from '../data/mockVendors.json';
 import { useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { getSocket, joinAdminDeliveryTracking } from '@/lib/socket';
 
 import OrderDetailModal from '../components/modals/OrderDetailModal';
 import { exportToCSV } from '@/lib/exportToCSV';
@@ -72,8 +73,8 @@ export default function OrdersScreen() {
         exportToCSV('Orders_Report', columns, data);
     };
 
-    const fetchAllOrders = async () => {
-        setIsLoading(true);
+    const fetchAllOrders = async (silent = false) => {
+        if (!silent) setIsLoading(true);
         try {
             const response = await api.get('/orders/admin/all');
             if (response.data.success) {
@@ -81,14 +82,45 @@ export default function OrdersScreen() {
             }
         } catch (error) {
             console.error('Fetch all orders error:', error);
-            toast.error('Failed to load orders');
+            if (!silent) toast.error('Failed to load orders');
         } finally {
-            setIsLoading(false);
+            if (!silent) setIsLoading(false);
         }
     };
 
     useEffect(() => {
         fetchAllOrders();
+
+        // Socket Integration
+        const socket = getSocket();
+        joinAdminDeliveryTracking();
+
+        socket.on('new_order_placed', (data) => {
+            console.log("New order received via socket:", data);
+            toast.info(data.message || "A new order has been placed!", {
+                description: `Order ID: #${data.orderId.slice(-6)}`
+            });
+            // Auto refresh list
+            fetchAllOrders(true);
+        });
+
+        socket.on('order_status_updated', (updatedOrder) => {
+            console.log("Order status updated via socket:", updatedOrder);
+            setAllOrders(prev => {
+                const index = prev.findIndex(o => o._id === updatedOrder._id);
+                if (index !== -1) {
+                    const newOrders = [...prev];
+                    newOrders[index] = updatedOrder;
+                    return newOrders;
+                }
+                return [updatedOrder, ...prev];
+            });
+        });
+
+        return () => {
+            socket.off('new_order_placed');
+            socket.off('order_status_updated');
+        };
     }, []);
 
     const handleOrderAction = async (orderId, newStatus, additionalData = {}) => {

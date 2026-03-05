@@ -122,7 +122,8 @@ export const assignOrderToFranchise = async (orderId) => {
                 body: `Order #${order._id.toString().slice(-6)} has been assigned to you. Prepare for packing!`,
                 data: {
                     type: 'new_order',
-                    orderId: order._id.toString()
+                    orderId: order._id.toString(),
+                    link: `/franchise/orders/${order._id}`
                 }
             }, 'franchise');
 
@@ -206,7 +207,8 @@ export const assignDeliveryToOrder = async (orderId) => {
                 body: `You have a new delivery assignment for order #${order._id.toString().slice(-6)}.`,
                 data: {
                     type: 'new_delivery',
-                    orderId: order._id.toString()
+                    orderId: order._id.toString(),
+                    link: `/delivery/assignments/${order._id}`
                 }
             }, 'delivery');
 

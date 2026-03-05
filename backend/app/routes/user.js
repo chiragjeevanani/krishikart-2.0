@@ -11,7 +11,8 @@ import {
     createWalletRechargeOrder,
     verifyWalletRecharge,
     redeemLoyaltyPoints,
-    saveFCMToken
+    saveFCMToken,
+    testPushByToken
 } from "../controllers/user.auth.js";
 import {
     getCart,
@@ -49,6 +50,7 @@ router.get("/wishlist", protect, getWishlist);
 router.post("/wishlist/toggle", protect, toggleWishlist);
 router.delete("/wishlist/remove/:productId", protect, removeFromWishlist);
 router.post("/fcm-token", protect, saveFCMToken);
+router.post("/test-notification", protect, testPushByToken);
 
 
 export default router;

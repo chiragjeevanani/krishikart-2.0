@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '@/lib/axios';
+import { useFCM } from '@/hooks/useFCM';
 
 const MasterAdminAuthContext = createContext();
 
@@ -16,6 +17,9 @@ export function MasterAdminAuthProvider({ children }) {
         }
     });
     const [loading, setLoading] = useState(true);
+
+    // Register FCM Token
+    useFCM(!!admin, 'masteradmin');
 
     useEffect(() => {
         const loadAdmin = async () => {

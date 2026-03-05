@@ -13,6 +13,7 @@ import handleResponse from "../utils/helper.js";
 import bcrypt from "bcryptjs";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import { geocodeAddress } from "../utils/geo.js";
+import { sendNotificationToUser } from "../utils/pushNotificationHelper.js";
 
 /* ================= VENDOR MANAGEMENT ================= */
 
@@ -350,9 +351,23 @@ export const createFranchiseByAdmin = async (req, res) => {
             return handleResponse(res, 409, "Franchise with this mobile already exists");
         }
 
-        let coords = { lat: null, lng: null };
+        // Initialize GeoJSON location
+        let locationData = {
+            type: 'Point',
+            coordinates: [0, 0] // [lng, lat]
+        };
+
+        // If coordinates provided, use them
         if (location && location.lat && location.lng) {
-            coords = location;
+            locationData.coordinates = [parseFloat(location.lng), parseFloat(location.lat)];
+        }
+        // Otherwise, attempt to geocode the city and state
+        else {
+            const query = `${city}, ${state}, India`;
+            const geocoded = await geocodeAddress(query);
+            if (geocoded) {
+                locationData.coordinates = [geocoded.lng, geocoded.lat];
+            }
         }
 
         const franchiseData = {
@@ -363,7 +378,7 @@ export const createFranchiseByAdmin = async (req, res) => {
             area: area ? String(area).trim() : null,
             state: String(state).trim(),
             email: email ? String(email).toLowerCase().trim() : undefined,
-            location: coords,
+            location: locationData,
             isVerified: true,
             status: "active",
             kyc: {
@@ -1150,6 +1165,35 @@ export const getAdminAnalyticsStats = async (req, res) => {
         });
     } catch (err) {
         console.error("Get admin analytics stats error:", err);
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
+/* ================= TEST PUSH NOTIFICATIONS ================= */
+
+export const testPushNotification = async (req, res) => {
+    try {
+        const { targetId, userType, title, body, data } = req.body;
+
+        if (!targetId || !userType || !title || !body) {
+            return handleResponse(res, 400, "targetId, userType, title and body are required");
+        }
+
+        const validTypes = ['user', 'franchise', 'delivery', 'vendor', 'masteradmin', 'subadmin'];
+        if (!validTypes.includes(userType)) {
+            return handleResponse(res, 400, `Invalid userType. Must be one of: ${validTypes.join(', ')}`);
+        }
+
+        const payload = { title, body, data: data || {} };
+        const result = await sendNotificationToUser(targetId, payload, userType);
+
+        if (!result) {
+            return handleResponse(res, 404, `Failed to send. User not found or has no FCM tokens.`);
+        }
+
+        return handleResponse(res, 200, "Test notification sent successfully", result);
+    } catch (err) {
+        console.error("Test Push Notification Error:", err);
         return handleResponse(res, 500, "Server error");
     }
 };

@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import { sendSMS } from "../utils/smsService.js";
+import admin from "../services/firebaseAdmin.js";
 import crypto from "crypto";
 
 /* 🔐 TOKEN */
@@ -311,28 +312,77 @@ export const resetVendorPassword = async (req, res) => {
  */
 export const saveFCMToken = async (req, res) => {
     try {
-        const { token } = req.body;
-        const vendorId = req.vendor._id;
+        const { token, fcm_token, plateform, platform } = req.body;
+        const vendorId = req.vendor?._id;
+        const finalToken = fcm_token || token;
+        const finalPlatform = plateform || platform || 'web';
 
-        if (!token) return handleResponse(res, 400, "FCM Token is required");
+        console.log(`[FCM-Vendor] Incoming token for Vendor ${vendorId} [Platform: ${finalPlatform}]:`, finalToken);
+
+        if (!finalToken) return handleResponse(res, 400, "FCM Token is required");
 
         const vendor = await Vendor.findById(vendorId);
         if (!vendor) return handleResponse(res, 404, "Vendor not found");
 
         if (!vendor.fcmTokens) vendor.fcmTokens = [];
 
-        if (!vendor.fcmTokens.includes(token)) {
-            vendor.fcmTokens.push(token);
+        if (!vendor.fcmTokens.includes(finalToken)) {
+            console.log(`[FCM-Vendor] Registering new unique token for Vendor ${vendorId}`);
+            vendor.fcmTokens.push(finalToken);
             // Limit to 10 tokens to prevent bloat
             if (vendor.fcmTokens.length > 10) {
+                console.log(`[FCM-Vendor] Token limit (10) reached for Vendor ${vendorId}. Slicing older tokens.`);
                 vendor.fcmTokens = vendor.fcmTokens.slice(-10);
             }
             await vendor.save();
+        } else {
+            console.log(`[FCM-Vendor] Token already exists for Vendor ${vendorId}.`);
         }
 
         return handleResponse(res, 200, "FCM token saved successfully");
     } catch (err) {
         console.error("Save Vendor FCM Token Error:", err);
         return handleResponse(res, 500, "Internal server error");
+    }
+};
+
+/**
+ * @desc Test Push Notification by Token (Vendor App Developer Helper)
+ * @route POST /vendor/test-notification
+ * @access Private (Vendor)
+ */
+export const testPushByToken = async (req, res) => {
+    try {
+        const { fcm_token, plateform } = req.body;
+        if (!fcm_token) return handleResponse(res, 400, "fcm_token is required");
+
+        console.log(`[FCM-Test-Vendor] Sending test ping to ${plateform || 'mobile'}:`, fcm_token);
+
+        const message = {
+            notification: {
+                title: "KrishiKart Vendor Test",
+                body: `Success! Your ${plateform || 'device'} is correctly integrated with KrishiKart FCM.`
+            },
+            token: fcm_token
+        };
+
+        const response = await admin.messaging().send(message);
+        return handleResponse(res, 200, "Test notification sent successfully!", response);
+    } catch (error) {
+        console.error("Test Notification Error:", error);
+
+        if (error.code === 'messaging/registration-token-not-registered') {
+            const vendorId = req.vendor?._id;
+            if (vendorId) {
+                await Vendor.findByIdAndUpdate(vendorId, { $pull: { fcmTokens: fcm_token } });
+                console.log(`[FCM-Vendor-Cleanup] Removed stale token for Vendor ${vendorId}: ${fcm_token}`);
+            }
+            return handleResponse(res, 410, "FCM Token is no longer valid.", { code: error.code });
+        }
+
+        return handleResponse(res, 500, "Failed to send test notification", {
+            code: error.code,
+            error_message: error.message
+        });
     }
 };

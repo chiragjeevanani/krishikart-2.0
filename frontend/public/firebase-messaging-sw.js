@@ -1,5 +1,5 @@
-importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js');
 
 firebase.initializeApp({
     apiKey: "AIzaSyDdzURk5KJykQwmtUdOg-Lbdj4HjUT9G8g",
@@ -15,13 +15,27 @@ const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
     console.log('[firebase-messaging-sw.js] Received background message ', payload);
-    const notificationTitle = payload.notification.title;
+    const notificationTitle = payload.notification?.title || 'KrishiKart Update';
     const notificationOptions = {
-        body: payload.notification.body,
-        icon: '/favicon.png'
+        body: payload.notification?.body || 'New update available',
+        icon: '/favicon.png',
+        tag: 'krishikart-notification',
+        data: payload.data || {},
+        badge: '/favicon.png',
+        vibrate: [200, 100, 200]
     };
 
-    self.registration.showNotification(notificationTitle, notificationOptions);
+    return self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+self.addEventListener('install', (event) => {
+    console.log('[firebase-messaging-sw.js] Installed');
+    self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+    console.log('[firebase-messaging-sw.js] Activated');
+    event.waitUntil(clients.claim());
 });
 
 // Handle notification click

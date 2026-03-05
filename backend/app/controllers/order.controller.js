@@ -2,7 +2,7 @@ import fs from "fs";
 import mongoose from "mongoose";
 import Order from "../models/order.js";
 import { handleResponse } from "../utils/helper.js";
-import { emitToAdmin, emitToOrderRoom, emitToDelivery } from "../lib/socket.js";
+import { emitToAdmin, emitToOrderRoom, emitToDelivery, emitToFranchise } from "../lib/socket.js";
 import { sendNotificationToUser } from "../utils/pushNotificationHelper.js";
 import Product from "../models/product.js";
 import Cart from "../models/cart.js";
@@ -253,6 +253,14 @@ export const createOrder = async (req, res) => {
     // 9. Clear Cart
     cart.items = [];
     await cart.save();
+
+    // 10. Real-time Notification to Admin
+    emitToAdmin('new_order_placed', {
+      orderId: order._id,
+      customerName: user.fullName,
+      amount: totalAmount,
+      message: `New order placed by ${user.fullName}: ₹${totalAmount}`
+    });
 
     return handleResponse(res, 201, "Order placed successfully", order);
   } catch (error) {
@@ -668,6 +676,23 @@ export const updateReturnPickupStatus = async (req, res) => {
     }
 
     await order.save();
+
+    // Socket Notifications
+    emitToOrderRoom(order._id, "return_pickup_status_updated", {
+      orderId: order._id,
+      requestIndex: Number(requestIndex),
+      status: status,
+      message: `Return pickup is now ${status.replace('_', ' ')}`
+    });
+
+    if (order.franchiseId) {
+      emitToFranchise(order.franchiseId, "return_status_changed", {
+        orderId: order._id,
+        requestIndex: Number(requestIndex),
+        status: status
+      });
+    }
+
     return handleResponse(res, 200, "Return pickup status updated", order);
   } catch (error) {
     console.error("Update return pickup status error:", error);
@@ -689,9 +714,14 @@ export const updateOrderStatus = async (req, res) => {
       "Assigned",
       "Accepted",
       "Packed",
+      "Procuring",
+      "Ready",
+      "Dispatched",
       "Out for Delivery",
       "Delivered",
+      "Received",
       "Cancelled",
+      "pending"
     ];
 
     console.log(
@@ -711,15 +741,17 @@ export const updateOrderStatus = async (req, res) => {
     // Transitions logic (Master Admin can bypass)
     // We normalize to ensure case-insensitivity during check
     const statusFlow = {
-      placed: ["assigned", "accepted", "packed", "cancelled"],
-      assigned: ["accepted", "packed", "cancelled"],
+      placed: ["assigned", "accepted", "packed", "cancelled", "procuring"],
+      pending: ["assigned", "accepted", "packed", "cancelled", "procuring"], // Treated like placed
+      assigned: ["accepted", "packed", "cancelled", "procuring"],
       accepted: ["packed", "procuring", "cancelled"],
-      procuring: ["packed", "cancelled"],
+      procuring: ["packed", "cancelled", "accepted"],
       packed: ["ready", "dispatched", "out for delivery", "cancelled"],
       ready: ["dispatched", "out for delivery", "cancelled"],
-      dispatched: ["delivered", "cancelled"],
-      "out for delivery": ["delivered", "cancelled"],
-      delivered: [],
+      dispatched: ["delivered", "received", "cancelled"],
+      "out for delivery": ["delivered", "received", "cancelled"],
+      delivered: ["received"],
+      received: [],
       cancelled: [],
     };
 
@@ -993,6 +1025,14 @@ export const updateOrderStatus = async (req, res) => {
       status: status,
       updatedAt: new Date(),
     });
+
+    if (order.franchiseId) {
+      emitToFranchise(order.franchiseId, "order_status_changed", {
+        orderId: order._id,
+        status: status,
+        updatedAt: new Date(),
+      });
+    }
 
     return handleResponse(res, 200, `Order status updated to ${status}`, order);
   } catch (error) {
@@ -1321,7 +1361,7 @@ export const assignDeliveryPartner = async (req, res) => {
       data: {
         type: "delivery",
         orderId: order._id.toString(),
-        link: "/delivery/assignments"
+        link: `/delivery/assignments/${order._id}`
       }
     }, 'delivery');
 
