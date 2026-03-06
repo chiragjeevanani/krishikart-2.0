@@ -1,18 +1,10 @@
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Printer, Download, FileText, CheckCircle2, Truck, Calendar, User, Loader2 } from 'lucide-react';
+import { X, FileText, CheckCircle2, Truck, Package, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import html2pdf from 'html2pdf.js';
 
-export default function DocumentViewer({ isOpen, onClose, data, type = 'DC', autoDownload = false }) {
+export default function DocumentViewer({ isOpen, onClose, data, type = 'DC' }) {
     const reportRef = useRef();
-    const [isGenerating, setIsGenerating] = React.useState(false);
-
-    React.useEffect(() => {
-        if (isOpen && autoDownload && !isGenerating) {
-            handleDownload();
-        }
-    }, [isOpen, autoDownload]);
 
     if (!data) return null;
 
@@ -23,30 +15,6 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC', aut
     const accentColor = isInvoice ? 'text-primary' : (isDC ? 'text-indigo-600' : (isBilty ? 'text-amber-600' : 'text-emerald-600'));
     const accentBg = isInvoice ? 'bg-primary/10' : (isDC ? 'bg-indigo-50' : (isBilty ? 'bg-amber-50' : 'bg-emerald-50'));
     const accentBorder = isInvoice ? 'border-primary/20' : (isDC ? 'border-indigo-100' : (isBilty ? 'border-amber-100' : 'border-emerald-100'));
-
-    const handleDownload = async () => {
-        if (!reportRef.current) return;
-        setIsGenerating(true);
-        try {
-            const element = reportRef.current;
-            const opt = {
-                margin: 10,
-                filename: `${type}_${data.biltyNumber || data.invoiceNumber || data.id}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-            await html2pdf().set(opt).from(element).save();
-        } catch (error) {
-            console.error('PDF generation failed:', error);
-        } finally {
-            setIsGenerating(false);
-        }
-    };
-
-    const handlePrint = () => {
-        window.print();
-    };
 
     return (
         <AnimatePresence>
@@ -76,25 +44,12 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC', aut
                                         {isInvoice ? 'Tax Invoice' : (isDC ? 'Delivery Challan' : (isBilty ? 'Bilty / Consignment Note' : 'Goods Received Note'))}
                                     </h2>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                        ID: {data.biltyNumber || data.invoiceNumber || data.id} • {data.date || (data.generatedAt ? new Date(data.generatedAt).toLocaleDateString() : new Date().toLocaleDateString())}
+                                        ID: {data.biltyNumber || data.invoiceNumber || data.id} • {data.date || (data.invoiceDate || data.generatedAt ? new Date(data.invoiceDate || data.generatedAt).toLocaleDateString() : new Date().toLocaleDateString())}
                                     </p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
-                                <button
-                                    onClick={handlePrint}
-                                    className="p-3 text-slate-400 hover:text-slate-900 transition-colors"
-                                >
-                                    <Printer size={20} />
-                                </button>
-                                <button
-                                    disabled={isGenerating}
-                                    onClick={handleDownload}
-                                    className="p-3 text-slate-400 hover:text-slate-900 transition-colors disabled:opacity-50"
-                                >
-                                    {isGenerating ? <Loader2 className="animate-spin" size={20} /> : <Download size={20} />}
-                                </button>
-                                <button onClick={onClose} className="p-3 text-slate-400 hover:text-red-500 transition-colors ml-2">
+                                <button onClick={onClose} className="p-3 text-slate-400 hover:text-red-500 transition-colors">
                                     <X size={20} />
                                 </button>
                             </div>
@@ -118,7 +73,7 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC', aut
                                 <div className="text-right space-y-1">
                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Document Issued</p>
                                     <p className="text-sm font-black text-slate-900 uppercase tracking-tight">
-                                        {data.date || (data.generatedAt ? new Date(data.generatedAt).toLocaleDateString() : new Date().toLocaleDateString())}
+                                        {data.date || (data.invoiceDate || data.generatedAt ? new Date(data.invoiceDate || data.generatedAt).toLocaleDateString() : new Date().toLocaleDateString())}
                                     </p>
                                     <div className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black mt-4 uppercase border", accentBg, accentColor, accentBorder)}>
                                         {isInvoice ? 'Invoice Finalized' : (isDC ? 'Dispatched' : (isBilty ? 'Bilty Generated' : 'Audited & Received'))}
@@ -212,7 +167,7 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC', aut
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-50">
-                                            {data.items.map((item, idx) => (
+                                            {(data.items || []).map((item, idx) => (
                                                 <tr key={idx} className="hover:bg-slate-50/50 border-b border-slate-50 last:border-0">
                                                     <td className="px-6 py-4 font-black text-slate-900 text-xs tracking-tight uppercase">{item.name}</td>
                                                     <td className="px-6 py-4 text-center font-black text-slate-900 tabular-nums">
@@ -273,14 +228,14 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC', aut
                                     <div className="space-y-4">
                                         <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Subtotal</span>
-                                            <span className="text-sm font-black text-slate-900">₹{data.items.reduce((acc, item) => acc + ((item.quantity || item.qty) * (item.quotedPrice || item.price || 0)), 0).toLocaleString()}</span>
+                                            <span className="text-sm font-black text-slate-900">₹{(data.items || []).reduce((acc, item) => acc + ((item.quantity || item.qty) * (item.quotedPrice || item.price || 0)), 0).toLocaleString()}</span>
                                         </div>
                                         <div className="flex justify-between items-center pt-2">
                                             <span className="text-xs font-black text-slate-900 uppercase tracking-widest">
                                                 Grand Total
                                             </span>
                                             <span className="text-xl font-black text-primary tabular-nums tracking-tighter">
-                                                ₹{data.items.reduce((acc, item) => acc + ((item.quantity || item.qty) * (item.quotedPrice || item.price || 0)), 0).toLocaleString()}
+                                                ₹{(data.items || []).reduce((acc, item) => acc + ((item.quantity || item.qty) * (item.quotedPrice || item.price || 0)), 0).toLocaleString()}
                                             </span>
                                         </div>
                                     </div>

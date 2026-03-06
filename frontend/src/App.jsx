@@ -129,6 +129,7 @@ function App() {
           <Route element={<UserProviders><UserAuthGuard /></UserProviders>}>
             <Route element={<AppLayout />}>
               <Route path="/home" element={<HomeScreen />} />
+              <Route path="/offers" element={<HomeScreen />} />
               <Route path="/categories" element={<CategoriesScreen />} />
               <Route path="/products/:category" element={<ProductListScreen />} />
               <Route path="/product/:id" element={<ProductDetailScreen />} />

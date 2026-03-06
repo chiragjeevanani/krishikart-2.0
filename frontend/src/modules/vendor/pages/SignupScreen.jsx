@@ -13,7 +13,8 @@ export default function SignupScreen() {
         email: '',
         mobile: '',
         password: '',
-        farmLocation: '',
+        farmCity: '',
+        farmState: '',
         fssaiLicense: '',
         bankAccountHolderName: '',
         bankAccountNumber: '',
@@ -35,12 +36,23 @@ export default function SignupScreen() {
         if (files) {
             setFormData({ ...formData, [name]: files[0] });
         } else {
-            setFormData({ ...formData, [name]: value });
+            if (name === 'farmCity') {
+                setFormData({ ...formData, [name]: value.replace(/[^A-Za-z\s]/g, '') });
+            } else if (name === 'farmState') {
+                setFormData({ ...formData, [name]: value.replace(/[^A-Za-z\s]/g, '') });
+            } else {
+                setFormData({ ...formData, [name]: value });
+            }
         }
     };
 
     const handleSignup = async (e) => {
         e.preventDefault();
+        const city = (formData.farmCity || '').trim();
+        const state = (formData.farmState || '').trim();
+        if (!city || !state) {
+            return;
+        }
         setIsLoading(true);
 
         const data = new FormData();
@@ -48,7 +60,7 @@ export default function SignupScreen() {
         data.append('email', formData.email);
         data.append('mobile', formData.mobile);
         data.append('password', formData.password);
-        data.append('farmLocation', formData.farmLocation);
+        data.append('farmLocation', `${city}, ${state}`);
         data.append('fssaiLicense', formData.fssaiLicense);
 
         const bankDetails = {
@@ -179,18 +191,37 @@ export default function SignupScreen() {
                                 </div>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Farm / Business Location</label>
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">City</label>
                                 <div className="relative group">
                                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">
                                         <MapPin size={14} />
                                     </div>
                                     <input
-                                        name="farmLocation"
+                                        name="farmCity"
                                         type="text"
                                         required
-                                        value={formData.farmLocation}
+                                        value={formData.farmCity}
                                         onChange={handleChange}
-                                        placeholder="City, State"
+                                        placeholder="e.g. Indore"
+                                        maxLength={50}
+                                        className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-10 pr-4 outline-none text-xs font-bold focus:ring-4 focus:ring-primary/5 transition-all text-slate-900"
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">State</label>
+                                <div className="relative group">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">
+                                        <MapPin size={14} />
+                                    </div>
+                                    <input
+                                        name="farmState"
+                                        type="text"
+                                        required
+                                        value={formData.farmState}
+                                        onChange={handleChange}
+                                        placeholder="e.g. Madhya Pradesh"
+                                        maxLength={50}
                                         className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-10 pr-4 outline-none text-xs font-bold focus:ring-4 focus:ring-primary/5 transition-all text-slate-900"
                                     />
                                 </div>

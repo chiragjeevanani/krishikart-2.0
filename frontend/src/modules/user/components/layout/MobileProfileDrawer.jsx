@@ -183,7 +183,7 @@ export default function MobileProfileDrawer() {
                                         <div className="bg-white rounded-[24px] overflow-hidden border border-slate-100 shadow-sm">
                                             <MenuItem
                                                 icon={Wallet}
-                                                label="KrishiKart wallet"
+                                                label="Kisaan Kart wallet"
                                                 path="/wallet"
                                                 badge={`₹${balance.toLocaleString()}`}
                                                 isFirst
@@ -192,7 +192,7 @@ export default function MobileProfileDrawer() {
                                             {creditLimit > 0 && (
                                                 <MenuItem
                                                     icon={CreditCard}
-                                                    label="KrishiKart Credit"
+                                                    label="Kisaan Kart Credit"
                                                     path="/credit-info"
                                                     badge={`₹${availableCredit.toLocaleString()}`}
                                                     isLast

@@ -126,6 +126,7 @@
 }
 
 @import "leaflet/dist/leaflet.css";
+
 :root {
     font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
     -webkit-tap-highlight-color: transparent;
@@ -203,6 +204,7 @@ body {
     }
 
     input[type=number] {
+        appearance: textfield;
         -moz-appearance: textfield;
     }
 }

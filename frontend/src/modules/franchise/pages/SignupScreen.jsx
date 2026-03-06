@@ -31,6 +31,9 @@ export default function SignupScreen() {
     const otpRefs = [useRef(), useRef(), useRef(), useRef(), useRef(), useRef()];
 
     const handleChange = (field, value) => {
+        if (field === 'state') {
+            value = value.replace(/[^A-Za-z\s]/g, '');
+        }
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
@@ -272,6 +275,7 @@ export default function SignupScreen() {
                                                 value={formData.state}
                                                 onChange={(e) => handleChange('state', e.target.value)}
                                                 placeholder="e.g. Madhya Pradesh"
+                                                maxLength={50}
                                                 className="w-full h-12 pl-12 pr-4 bg-slate-50 border border-slate-200 rounded-sm outline-none text-xs font-black text-slate-900 placeholder:text-slate-300 focus:bg-white focus:border-slate-900 transition-all font-sans"
                                             />
                                         </div>

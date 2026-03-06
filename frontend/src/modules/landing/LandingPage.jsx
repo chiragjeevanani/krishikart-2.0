@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
     Sprout, Search, ChevronLeft, ChevronRight, ArrowUpRight, ChevronDown,
@@ -94,6 +94,7 @@ const faqs = [
 
 /* ─────────────────────── COMPONENT ─────────────────────── */
 export default function LandingPage() {
+    const location = useLocation();
     const [scrolled, setScrolled] = useState(false);
     const [heroIdx, setHeroIdx] = useState(0);
     const [categories, setCategories] = useState(fallbackCategories);
@@ -106,6 +107,17 @@ export default function LandingPage() {
         window.addEventListener('scroll', onScroll);
         return () => window.removeEventListener('scroll', onScroll);
     }, []);
+
+    // Scroll to section when landing with hash (e.g. /#about, /#categories)
+    useEffect(() => {
+        const hash = location.hash?.slice(1);
+        if (hash) {
+            const el = document.getElementById(hash);
+            if (el) {
+                setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+            }
+        }
+    }, [location.hash]);
 
     // Hero auto-play
     useEffect(() => {
@@ -580,10 +592,10 @@ export default function LandingPage() {
                     </div>
                     <div className="lp-footer-column">
                         <h4>Know More</h4>
-                        <a href="#quality">Quality</a>
-                        <a href="#categories">Categories</a>
-                        <a href="#delivery">Delivery</a>
-                        <a href="#faq">FAQ</a>
+                        <a href="/#about">Quality</a>
+                        <a href="/#categories">Categories</a>
+                        <a href="/#delivery">Delivery</a>
+                        <a href="/#faq">FAQ</a>
                         <Link to="/about">About us</Link>
                     </div>
                     <div className="lp-footer-column">

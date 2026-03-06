@@ -7,13 +7,10 @@ export default function Footer() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16 border-b border-white/10 pb-16">
                 <div className="flex flex-col gap-6">
                     <Link to="/" className="flex items-center gap-2 text-2xl font-black">
-                        <div className="bg-landing-primary-light p-1.5 rounded-xl">
-                            <Sprout className="text-white" size={24} />
-                        </div>
-                        <span>KrishiKart</span>
+                        <img src="/logo.png" alt="Kisaan Kart" className="h-[72px] scale-[1.3] w-auto object-contain origin-left brightness-0 invert opacity-90" />
                     </Link>
                     <p className="text-white/60 font-medium leading-relaxed">
-                        KrishiKart is India’s most trusted agricultural marketplace, connecting farmers directly with businesses for a sustainable future.
+                        Kisaan Kart is India’s most trusted agricultural marketplace, connecting farmers directly with businesses for a sustainable future.
                     </p>
                     <div className="flex gap-4">
                         <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-landing-primary-light transition-colors"><Instagram size={20} /></a>
@@ -26,9 +23,9 @@ export default function Footer() {
                 <div>
                     <h4 className="text-lg font-bold mb-8 uppercase tracking-widest text-landing-primary-light">Quick Links</h4>
                     <ul className="flex flex-col gap-4 text-white/60 font-semibold">
-                        <li><a href="#about" className="hover:text-white transition-colors">About Us</a></li>
-                        <li><a href="#categories" className="hover:text-white transition-colors">Categories</a></li>
-                        <li><a href="#how-it-works" className="hover:text-white transition-colors">How it Works</a></li>
+                        <li><a href="/#about" className="hover:text-white transition-colors">About Us</a></li>
+                        <li><a href="/#categories" className="hover:text-white transition-colors">Categories</a></li>
+                        <li><a href="/#how-it-works" className="hover:text-white transition-colors">How it Works</a></li>
                         <li><Link to="/about" className="hover:text-white transition-colors">Sustainability</Link></li>
                         <li><Link to="/help-support" className="hover:text-white transition-colors">Contact Support</Link></li>
                     </ul>
@@ -61,7 +58,7 @@ export default function Footer() {
             </div>
 
             <div className="text-center text-white/30 text-sm font-bold uppercase tracking-[0.2em]">
-                &copy; {new Date().getFullYear()} KrishiKart Agriculture Private Limited. All Rights Reserved.
+                &copy; {new Date().getFullYear()} Kisaan Kart. All Rights Reserved.
             </div>
         </footer>
     );

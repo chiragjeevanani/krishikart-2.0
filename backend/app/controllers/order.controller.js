@@ -1217,14 +1217,15 @@ export const getFranchiseOrders = async (req, res) => {
   }
 };
 
-// Get franchise order by ID
+// Get franchise order by ID (same eligibility as list: assigned to this franchise OR open-pool order in their city)
 export const getFranchiseOrderById = async (req, res) => {
   try {
     const { id } = req.params;
     const franchiseId = req.franchise._id;
+    const franchiseCity = req.franchise.city || "";
 
     const order = await Order.findById(id)
-      .populate("userId", "fullName mobile address")
+      .populate("userId", "fullName mobile address legalEntityName")
       .populate(
         "deliveryPartnerId",
         "fullName mobile vehicleNumber vehicleType",
@@ -1238,8 +1239,19 @@ export const getFranchiseOrderById = async (req, res) => {
       return handleResponse(res, 404, "Order not found");
     }
 
-    // Allow only if assigned to this franchise
-    if (!order.franchiseId || order.franchiseId.toString() !== franchiseId.toString()) {
+    const assignedToThisFranchise =
+      order.franchiseId && order.franchiseId.toString() === franchiseId.toString();
+
+    const openPoolEligible =
+      !order.franchiseId &&
+      ["Placed", "pending", "new"].includes(order.orderStatus) &&
+      franchiseCity &&
+      (
+        (order.shippingLocation?.city && new RegExp(franchiseCity, "i").test(order.shippingLocation.city)) ||
+        (order.shippingAddress && new RegExp(franchiseCity, "i").test(order.shippingAddress))
+      );
+
+    if (!assignedToThisFranchise && !openPoolEligible) {
       return handleResponse(res, 403, "Not authorized to view this order");
     }
 

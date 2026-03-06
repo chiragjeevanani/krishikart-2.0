@@ -146,7 +146,7 @@ export default function DashboardScreen() {
             align: 'right',
             render: (_, row) => (
                 <button
-                    onClick={() => navigate(`/franchise/orders/${row.id}`)}
+                    onClick={() => (row?.id && navigate(`/franchise/orders/${row.id}`))}
                     className="p-1 px-2 text-[9px] font-black uppercase text-slate-900 border border-slate-900 rounded-sm hover:bg-slate-900 hover:text-white transition-all"
                 >
                     View Details

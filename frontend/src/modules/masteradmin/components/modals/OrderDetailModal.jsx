@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     X,
@@ -30,6 +30,7 @@ import html2pdf from 'html2pdf.js';
 const OrderDetailModal = ({ isOpen, onClose, orderId, onProcure }) => {
     const [order, setOrder] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+    const printableRef = useRef(null);
 
     useEffect(() => {
         if (isOpen && orderId) {
@@ -67,22 +68,66 @@ const OrderDetailModal = ({ isOpen, onClose, orderId, onProcure }) => {
         }
     };
 
-    const handleDownloadInvoice = () => {
+    const handleDownloadInvoice = async () => {
         if (!order) return;
 
-        const element = document.getElementById('printable-order-content');
+        const element = printableRef.current || document.getElementById('printable-order-content');
+        if (!element) {
+            toast.error('Invoice content not ready. Please try again.');
+            return;
+        }
+
         const opt = {
             margin: [10, 10],
             filename: `Invoice_${order._id.slice(-8)}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+            image: { type: 'jpeg', quality: 0.95 },
+            html2canvas: {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                logging: false,
+                windowWidth: element.scrollWidth,
+                windowHeight: element.scrollHeight
+            },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        toast.promise(html2pdf().set(opt).from(element).save(), {
+        const pdfPromise = (async () => {
+            try {
+                const worker = html2pdf().set(opt).from(element);
+                await worker.save();
+            } catch (err) {
+                console.error('Invoice PDF error:', err);
+                try {
+                    const fallback = document.createElement('div');
+                    fallback.style.padding = '20px';
+                    fallback.style.fontFamily = 'sans-serif';
+                    fallback.style.fontSize = '12px';
+                    fallback.innerHTML = `
+                        <h2>Order #${order._id?.slice(-8) || 'N/A'}</h2>
+                        <p><strong>Customer:</strong> ${order.userId?.fullName || 'Guest'}</p>
+                        <p><strong>Contact:</strong> ${order.userId?.mobile || 'N/A'}</p>
+                        <p><strong>Address:</strong> ${order.shippingAddress || 'N/A'}</p>
+                        <p><strong>Subtotal:</strong> ₹${(order.subtotal ?? 0).toLocaleString()}</p>
+                        <p><strong>Delivery:</strong> ₹${(order.deliveryFee ?? 0).toLocaleString()}</p>
+                        <p><strong>Tax:</strong> ₹${(order.tax ?? 0).toLocaleString()}</p>
+                        <p><strong>Total:</strong> ₹${(order.totalAmount ?? 0).toLocaleString()}</p>
+                        <p><em>Generated on ${new Date().toLocaleString()}</em></p>
+                    `;
+                    document.body.appendChild(fallback);
+                    await html2pdf().set({ ...opt, filename: `Invoice_${order._id?.slice(-8)}.pdf` }).from(fallback).save();
+                    document.body.removeChild(fallback);
+                } catch (fallbackErr) {
+                    console.error('Fallback PDF error:', fallbackErr);
+                    throw new Error('Could not generate invoice. Try again or check the console.');
+                }
+            }
+        })();
+
+        toast.promise(pdfPromise, {
             loading: 'Generating PDF invoice...',
             success: 'Invoice downloaded successfully',
-            error: 'Failed to generate invoice'
+            error: (err) => err?.message || 'Failed to generate invoice'
         });
     };
 
@@ -203,7 +248,7 @@ const OrderDetailModal = ({ isOpen, onClose, orderId, onProcure }) => {
                                     </div>
                                 </div>
                             ) : order ? (
-                                <div className="space-y-6" id="printable-order-content">
+                                <div ref={printableRef} className="space-y-6" id="printable-order-content">
 
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                         {/* Left Column - Order Items */}
@@ -245,7 +290,7 @@ const OrderDetailModal = ({ isOpen, onClose, orderId, onProcure }) => {
                                                             </div>
                                                             <div className="text-right">
                                                                 <div className="text-[11px] font-black text-slate-900 tabular-nums">
-                                                                    ₹{(item.price * item.quantity).toLocaleString()}
+                                                                    ₹{((Number(item.price) || 0) * (Number(item.quantity) || 0)).toLocaleString()}
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -266,22 +311,22 @@ const OrderDetailModal = ({ isOpen, onClose, orderId, onProcure }) => {
                                                     )}
                                                     <div className="flex items-center justify-between text-slate-400 text-[10px] font-black uppercase tracking-widest">
                                                         <span>Subtotal</span>
-                                                        <span className="tabular-nums">₹{order.subtotal?.toLocaleString()}</span>
+                                                        <span className="tabular-nums">₹{(Number(order.subtotal) || 0).toLocaleString()}</span>
                                                     </div>
                                                     <div className="flex items-center justify-between text-slate-400 text-[10px] font-black uppercase tracking-widest">
                                                         <span>Delivery Fee</span>
-                                                        <span className="tabular-nums">₹{order.deliveryFee?.toLocaleString() || '0'}</span>
+                                                        <span className="tabular-nums">₹{(Number(order.deliveryFee) || 0).toLocaleString()}</span>
                                                     </div>
-                                                    {order.tax > 0 && (
+                                                    {(Number(order.tax) || 0) > 0 && (
                                                         <div className="flex items-center justify-between text-slate-400 text-[10px] font-black uppercase tracking-widest">
                                                             <span>Tax</span>
-                                                            <span className="tabular-nums">₹{order.tax?.toLocaleString()}</span>
+                                                            <span className="tabular-nums">₹{(Number(order.tax) || 0).toLocaleString()}</span>
                                                         </div>
                                                     )}
                                                     <div className="h-px bg-slate-800 my-1" />
                                                     <div className="flex items-center justify-between">
                                                         <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Total</span>
-                                                        <span className="text-xl font-black text-white tracking-tighter tabular-nums">₹{order.totalAmount?.toLocaleString()}</span>
+                                                        <span className="text-xl font-black text-white tracking-tighter tabular-nums">₹{(Number(order.totalAmount) || 0).toLocaleString()}</span>
                                                     </div>
                                                 </div>
                                             </div>

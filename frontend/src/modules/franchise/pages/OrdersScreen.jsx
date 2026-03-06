@@ -56,7 +56,7 @@ export default function OrdersScreen() {
     const [processingOrderId, setProcessingOrderId] = useState(null);
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
     const [isPackageModalOpen, setIsPackageModalOpen] = useState(false);
-    const [packageCount, setPackageCount] = useState(1);
+    const [packageCount, setPackageCount] = useState(0);
     const [selectedOrderForDispatch, setSelectedOrderForDispatch] = useState(null);
     const [selectedOrderForPacking, setSelectedOrderForPacking] = useState(null);
     const [isAssigning, setIsAssigning] = useState(false);
@@ -116,7 +116,7 @@ export default function OrdersScreen() {
         await handleAction(selectedOrderForPacking, 'Packed', { numberOfPackages: packageCount });
         setIsPackageModalOpen(false);
         setSelectedOrderForPacking(null);
-        setPackageCount(1);
+        setPackageCount(0);
     };
 
     const handleAssignDelivery = async (partnerId) => {
@@ -535,16 +535,20 @@ export default function OrdersScreen() {
                                     <div className="relative group">
                                         <input
                                             type="number"
-                                            min="1"
-                                            value={packageCount}
-                                            onChange={(e) => setPackageCount(parseInt(e.target.value) || 0)}
+                                            min="0"
+                                            value={packageCount === 0 ? '' : packageCount}
+                                            onChange={(e) => {
+                                                const v = e.target.value;
+                                                if (v === '') setPackageCount(0);
+                                                else setPackageCount(Math.max(0, parseInt(v, 10) || 0));
+                                            }}
                                             className="w-full bg-slate-50 border-2 border-slate-100 rounded-sm py-4 px-6 text-3xl font-black text-slate-900 outline-none focus:border-slate-900 transition-all text-center tabular-nums"
                                             placeholder="0"
                                             autoFocus
                                         />
                                         <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-1">
-                                            <button onClick={() => setPackageCount(p => p + 1)} className="p-1 hover:bg-white border border-slate-200 rounded text-slate-400 hover:text-slate-900 shadow-sm transition-all"><ArrowUpRight size={12} /></button>
-                                            <button onClick={() => setPackageCount(p => Math.max(1, p - 1))} className="p-1 hover:bg-white border border-slate-200 rounded text-slate-400 hover:text-slate-900 shadow-sm transition-all"><ArrowDownRight size={12} /></button>
+                                            <button type="button" onClick={() => setPackageCount(p => p + 1)} className="p-1 hover:bg-white border border-slate-200 rounded text-slate-400 hover:text-slate-900 shadow-sm transition-all"><ArrowUpRight size={12} /></button>
+                                            <button type="button" onClick={() => setPackageCount(p => Math.max(0, p - 1))} className="p-1 hover:bg-white border border-slate-200 rounded text-slate-400 hover:text-slate-900 shadow-sm transition-all"><ArrowDownRight size={12} /></button>
                                         </div>
                                     </div>
                                     <p className="text-[9px] font-bold text-slate-400 text-center uppercase tracking-tight leading-relaxed">
@@ -555,6 +559,7 @@ export default function OrdersScreen() {
                                 <button
                                     onClick={handleConfirmPacking}
                                     disabled={packageCount < 1 || processingOrderId === selectedOrderForPacking}
+                                    title={packageCount < 1 ? 'Enter at least 1 package' : ''}
                                     className="w-full h-14 bg-slate-900 text-white rounded-sm font-black uppercase text-[11px] tracking-[0.2em] shadow-lg hover:bg-slate-800 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                                 >
                                     Confirm & Mark Packed

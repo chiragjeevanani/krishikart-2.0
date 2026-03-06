@@ -9,12 +9,7 @@ export default function DesktopFooter() {
                     {/* Brand Column */}
                     <div className="space-y-6">
                         <div className="flex items-center gap-2">
-                            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white">
-                                <Sprout size={24} />
-                            </div>
-                            <span className="text-2xl font-bold tracking-tighter text-slate-900">
-                                Krishi<span className="text-primary">Kart</span>
-                            </span>
+                            <img src="/logo.png" alt="Kisaan Kart" className="h-[80px] scale-[1.3] w-auto object-contain origin-left" />
                         </div>
                         <p className="text-slate-500 text-sm leading-relaxed">
                             Empowering local farmers by connecting them directly with businesses. Freshness delivered to your doorstep.
@@ -41,10 +36,10 @@ export default function DesktopFooter() {
                     <div>
                         <h4 className="text-slate-900 font-bold mb-6">Support</h4>
                         <ul className="space-y-4">
-                            <li><Link to="/help" className="text-slate-500 hover:text-primary text-sm transition-colors">Help Center</Link></li>
-                            <li><Link to="/contact" className="text-slate-500 hover:text-primary text-sm transition-colors">Contact Support</Link></li>
-                            <li><Link to="/faq" className="text-slate-500 hover:text-primary text-sm transition-colors">FAQs</Link></li>
-                            <li><Link to="/returns" className="text-slate-500 hover:text-primary text-sm transition-colors">Return Policy</Link></li>
+                            <li><Link to="/help-support" className="text-slate-500 hover:text-primary text-sm transition-colors">Help Center</Link></li>
+                            <li><Link to="/help-support" className="text-slate-500 hover:text-primary text-sm transition-colors">Contact Support</Link></li>
+                            <li><Link to="/help-support" className="text-slate-500 hover:text-primary text-sm transition-colors">FAQs</Link></li>
+                            <li><Link to="/help-support" className="text-slate-500 hover:text-primary text-sm transition-colors">Return Policy</Link></li>
                         </ul>
                     </div>
 
@@ -52,21 +47,21 @@ export default function DesktopFooter() {
                     <div>
                         <h4 className="text-slate-900 font-bold mb-6">For Business</h4>
                         <ul className="space-y-4">
-                            <li><Link to="/bulk" className="text-slate-500 hover:text-primary text-sm transition-colors">Bulk Pricing</Link></li>
-                            <li><Link to="/supplier" className="text-slate-500 hover:text-primary text-sm transition-colors">Become a Supplier</Link></li>
-                            <li><Link to="/refer" className="text-slate-500 hover:text-primary text-sm transition-colors">Refer a Partner</Link></li>
+                            <li><Link to="/business-registration" className="text-slate-500 hover:text-primary text-sm transition-colors">Bulk Pricing</Link></li>
+                            <li><Link to="/business-registration" className="text-slate-500 hover:text-primary text-sm transition-colors">Become a Supplier</Link></li>
+                            <li><Link to="/business-registration" className="text-slate-500 hover:text-primary text-sm transition-colors">Refer a Partner</Link></li>
                         </ul>
                     </div>
                 </div>
 
                 <div className="mt-20 pt-8 border-t border-slate-50 flex flex-col md:flex-row justify-between items-center gap-4">
                     <p className="text-slate-400 text-xs">
-                        &copy; {new Date().getFullYear()} KrishiKart Private Limited. All rights reserved.
+                        &copy; {new Date().getFullYear()} Kisaan Kart. All rights reserved.
                     </p>
                     <div className="flex gap-8">
-                        <Link to="/privacy" className="text-slate-400 hover:text-slate-600 text-xs">Privacy Policy</Link>
-                        <Link to="/terms" className="text-slate-400 hover:text-slate-600 text-xs">Terms of Service</Link>
-                        <Link to="/security" className="text-slate-400 hover:text-slate-600 text-xs">Security</Link>
+                        <Link to="/help-support" className="text-slate-400 hover:text-slate-600 text-xs">Privacy Policy</Link>
+                        <Link to="/help-support" className="text-slate-400 hover:text-slate-600 text-xs">Terms of Service</Link>
+                        <Link to="/help-support" className="text-slate-400 hover:text-slate-600 text-xs">Security</Link>
                     </div>
                 </div>
             </div>

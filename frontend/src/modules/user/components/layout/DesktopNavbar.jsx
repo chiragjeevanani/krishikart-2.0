@@ -67,8 +67,8 @@ export default function DesktopNavbar() {
                         className="cursor-pointer group"
                     >
                         <div className="flex flex-col leading-none">
-                            <span className="text-[22px] font-black text-slate-900 tracking-tighter">KrishiKart</span>
-                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-0.5">BY KRISHI</span>
+                            <img src="/logo.png" alt="Kisaan Kart" className="h-[64px] scale-[1.4] w-auto object-contain origin-left" />
+
                         </div>
                     </div>
 

@@ -348,9 +348,10 @@ const EditProfileModal = ({ isOpen, onClose, franchiseData, onUpdate }) => {
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">State</label>
                         <input
                             value={formData.state}
-                            onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                            onChange={(e) => setFormData({ ...formData, state: e.target.value.replace(/[^A-Za-z\s]/g, '') })}
                             className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
                             placeholder="e.g. Madhya Pradesh"
+                            maxLength={50}
                         />
                     </div>
 

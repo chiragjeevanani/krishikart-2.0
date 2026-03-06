@@ -57,15 +57,15 @@ export default function OrderDetailScreen() {
                     customer: o.userId?.legalEntityName || o.userId?.fullName || o.user?.legalEntityName || o.user?.fullName || 'Guest Client',
                     mobile: o.userId?.mobile || o.user?.mobile || 'N/A',
                     address: o.shippingAddress || o.userId?.address || 'N/A',
-                    total: o.totalAmount,
-                    subtotal: o.subtotal,
-                    deliveryFee: o.deliveryFee,
-                    tax: o.tax,
+                    total: o.totalAmount ?? o.total ?? 0,
+                    subtotal: o.subtotal ?? 0,
+                    deliveryFee: o.deliveryFee ?? 0,
+                    tax: o.tax ?? 0,
                     status: (o.orderStatus || '').toLowerCase() || 'pending',
                     items: (o.items || []).map(i => ({
-                        name: i.name,
-                        quantity: i.quantity,
-                        price: i.price,
+                        name: i.name || 'Item',
+                        quantity: i.quantity ?? 0,
+                        price: i.price ?? 0,
                         isShortage: i.isShortage || false
                     })),
                     createdAt: o.createdAt,
@@ -94,6 +94,10 @@ export default function OrderDetailScreen() {
     };
 
     useEffect(() => {
+        if (!id || id === 'undefined') {
+            setIsLoading(false);
+            return;
+        }
         fetchOrderDetail();
     }, [id]);
 
@@ -257,7 +261,7 @@ export default function OrderDetailScreen() {
                             </div>
                             <div className="relative z-10 flex flex-col items-end gap-2">
                                 <span className="text-[11px] font-black text-emerald-400 uppercase tracking-widest text-right">Total Amount</span>
-                                <span className="text-4xl font-black tracking-tighter tabular-nums leading-none">₹{order.total.toLocaleString()}</span>
+                                <span className="text-4xl font-black tracking-tighter tabular-nums leading-none">₹{(Number(order.total) || 0).toLocaleString()}</span>
                             </div>
                             {/* Grid Pattern Background */}
                             <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#fff 0.5px, transparent 0.5px)', backgroundSize: '20px 20px' }} />
@@ -345,23 +349,23 @@ export default function OrderDetailScreen() {
                                     <Package className="text-slate-900" size={16} />
                                     <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em]">Order Items</h2>
                                 </div>
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest tabular-nums">{order.items.length} ITEMS</span>
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest tabular-nums">{(order.items || []).length} ITEMS</span>
                             </div>
                             <div className="divide-y divide-slate-100">
-                                {order.items.map((item, idx) => (
+                                {(order.items || []).map((item, idx) => (
                                     <div key={idx} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors group">
                                         <div className="flex items-center gap-4">
                                             <div className="w-8 h-8 rounded-sm bg-slate-50 border border-slate-100 text-[10px] font-black text-slate-400 flex items-center justify-center tabular-nums">
-                                                {item.quantity}×
+                                                {Number(item.quantity) || 0}×
                                             </div>
                                             <span className="text-[11px] font-black text-slate-900 uppercase tracking-tight">{item.name}</span>
                                         </div>
                                         <div className="flex items-center gap-8">
                                             <div className="hidden md:flex flex-col items-end opacity-0 group-hover:opacity-100 transition-all">
                                                 <span className="text-[9px] font-bold text-slate-400 uppercase italic">Price</span>
-                                                <span className="text-[10px] font-black text-slate-900 tabular-nums">₹{item.price.toLocaleString()}</span>
+                                                <span className="text-[10px] font-black text-slate-900 tabular-nums">₹{(Number(item.price) || 0).toLocaleString()}</span>
                                             </div>
-                                            <span className="text-[11px] font-black text-slate-900 tabular-nums">₹{(item.price * item.quantity).toLocaleString()}</span>
+                                            <span className="text-[11px] font-black text-slate-900 tabular-nums">₹{((Number(item.price) || 0) * (Number(item.quantity) || 0)).toLocaleString()}</span>
                                         </div>
                                     </div>
                                 ))}
@@ -389,7 +393,7 @@ export default function OrderDetailScreen() {
                                             {order.paymentMethod} • {order.paymentStatus}
                                         </span>
                                     </div>
-                                    <span className="text-xl font-black text-white tracking-tighter tabular-nums">₹{order.total.toLocaleString()}</span>
+                                    <span className="text-xl font-black text-white tracking-tighter tabular-nums">₹{(Number(order.total) || 0).toLocaleString()}</span>
                                 </div>
                             </div>
                         </div>
@@ -443,7 +447,7 @@ export default function OrderDetailScreen() {
 
                             {/* Post-Acceptance Actions */}
                             {order.status === 'accepted' && (
-                                order.items.some(i => i.isShortage) ? (
+                                (order.items || []).some(i => i.isShortage) ? (
                                     <div className="space-y-3">
                                         <div className="p-4 bg-amber-50 border border-amber-200 rounded-sm">
                                             <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center justify-center gap-2 mb-2">
@@ -507,11 +511,11 @@ export default function OrderDetailScreen() {
                             </button>
                         </div>
 
-                        {order.returnRequests?.length > 0 && (
-                            <div className="bg-white border border-slate-200 p-6 rounded-sm space-y-4">
-                                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Return Requests</h3>
-                                <div className="space-y-4">
-                                    {order.returnRequests.map((request) => (
+{(order.returnRequests?.length ?? 0) > 0 && (
+                                <div className="bg-white border border-slate-200 p-6 rounded-sm space-y-4">
+                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Return Requests</h3>
+                                    <div className="space-y-4">
+                                    {(order.returnRequests || []).map((request) => (
                                         <div key={request.index} className="border border-slate-200 rounded-sm p-4 space-y-3">
                                             <div className="flex items-center justify-between">
                                                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
@@ -538,7 +542,7 @@ export default function OrderDetailScreen() {
                                             </div>
 
                                             <div className="space-y-1">
-                                                {request.items.map((item, idx) => (
+                                                {(request.items || []).map((item, idx) => (
                                                     <div key={idx} className="text-[10px] font-bold text-slate-700 uppercase tracking-wider flex justify-between">
                                                         <span>{item.name}</span>
                                                         <span>{item.quantity} {item.unit}</span>
@@ -616,7 +620,7 @@ export default function OrderDetailScreen() {
                 isOpen={isDocOpen}
                 onClose={() => setIsDocOpen(false)}
                 type={docType}
-                data={docType === 'DC' ? order.deliveryChallan : order.grn}
+                data={docType === 'BILTY' ? order.bilty : docType === 'DC' ? order.deliveryChallan : order.grn}
             />
         </div>
     );

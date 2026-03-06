@@ -48,6 +48,14 @@ export const registerVendor = async (req, res) => {
         if (exists)
             return handleResponse(res, 409, "Vendor already exists");
 
+        if (!farmLocation || typeof farmLocation !== 'string') {
+            return handleResponse(res, 400, "Farm / Business location is required");
+        }
+        const locationTrimmed = farmLocation.trim();
+        if (!/^[A-Za-z\s]+,\s*[A-Za-z\s]+$/.test(locationTrimmed)) {
+            return handleResponse(res, 400, "Business location must be in format: City, State (e.g. Indore, Madhya Pradesh)");
+        }
+
         // Handle File Uploads
         let profilePictureUrl = "";
         let aadharCardUrl = "";
@@ -75,7 +83,7 @@ export const registerVendor = async (req, res) => {
             fullName,
             email,
             mobile,
-            farmLocation,
+            farmLocation: locationTrimmed,
             password: hashedPassword,
             profilePicture: profilePictureUrl,
             fssaiLicense,
@@ -150,7 +158,13 @@ export const updateVendorProfile = async (req, res) => {
 
         if (fullName) vendor.fullName = fullName;
         if (mobile) vendor.mobile = mobile;
-        if (farmLocation) vendor.farmLocation = farmLocation;
+        if (farmLocation !== undefined && farmLocation !== '') {
+            const locationTrimmed = String(farmLocation).trim();
+            if (!/^[A-Za-z\s]+,\s*[A-Za-z\s]+$/.test(locationTrimmed)) {
+                return handleResponse(res, 400, "Business location must be in format: City, State (e.g. Indore, Madhya Pradesh)");
+            }
+            vendor.farmLocation = locationTrimmed;
+        }
         if (fssaiLicense) vendor.fssaiLicense = fssaiLicense;
 
         if (req.body.bankDetails) {

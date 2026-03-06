@@ -22,6 +22,10 @@ export const registerFranchise = async (req, res) => {
             return handleResponse(res, 400, "All fields are required");
         }
 
+        if (!/^[A-Za-z\s]+$/.test(state)) {
+            return handleResponse(res, 400, "State must contain only letters and spaces");
+        }
+
         if (!/^[6-9]\d{9}$/.test(mobile))
             return handleResponse(res, 400, "Invalid mobile number");
 
@@ -288,7 +292,12 @@ export const updateFranchiseProfile = async (req, res) => {
         if (franchiseName) franchise.franchiseName = franchiseName;
         if (ownerName) franchise.ownerName = ownerName;
         if (area) franchise.area = area;
-        if (state) franchise.state = state;
+        if (state !== undefined && state !== "") {
+            if (!/^[A-Za-z\s]+$/.test(state)) {
+                return handleResponse(res, 400, "State must contain only letters and spaces");
+            }
+            franchise.state = state;
+        }
 
         // Handle direct location update (e.g. from GPS)
         // Ensure values are valid numbers before assigning

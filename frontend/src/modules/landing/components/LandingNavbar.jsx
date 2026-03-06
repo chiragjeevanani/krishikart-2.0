@@ -19,10 +19,7 @@ export default function LandingNavbar() {
     return (
         <nav className={`landing-navbar ${isScrolled ? 'scrolled' : ''}`}>
             <Link to="/" className="landing-logo">
-                <div className="bg-primary p-1.5 rounded-xl">
-                    <Sprout className="text-white" size={24} />
-                </div>
-                <span>Krishi<span className="text-primary-light">Kart</span></span>
+                <img src="/logo.png" alt="Kisaan Kart" className="h-[64px] scale-[1.4] w-auto object-contain origin-left" />
             </Link>
 
             <div className="landing-nav-links">
