@@ -46,13 +46,15 @@ export default function FilterBar({
 
             <div className="flex items-center gap-2">
                 {actions}
-                <button
-                    onClick={onRefresh}
-                    className="p-1.5 hover:bg-slate-200 text-slate-500 hover:text-slate-900 rounded transition-colors"
-                    title="Refresh Data"
-                >
-                    <RefreshCw size={14} />
-                </button>
+                {onRefresh && (
+                    <button
+                        onClick={onRefresh}
+                        className="p-1.5 hover:bg-slate-200 text-slate-500 hover:text-slate-900 rounded transition-colors"
+                        title="Refresh Data"
+                    >
+                        <RefreshCw size={14} />
+                    </button>
+                )}
             </div>
         </div>
     );

@@ -316,7 +316,8 @@ export default function FranchiseServiceAreaDrawer({ isOpen, onClose, franchise 
                                 scaleControl: true,
                                 rotateControl: false,
                                 fullscreenControl: false,
-                                draggable: drawMode === 'none' || !isDragging,
+                                draggable: drawMode === 'none',
+                                disableDoubleClickZoom: drawMode !== 'none',
                                 mapTypeId: 'roadmap',
                                 styles: [
                                     {
@@ -359,7 +360,7 @@ export default function FranchiseServiceAreaDrawer({ isOpen, onClose, franchise 
                                             strokeColor: isSelected ? '#0f172a' : '#94a3b8',
                                             strokeOpacity: 0.8,
                                             strokeWeight: isSelected ? 2 : 0.5,
-                                            clickable: true,
+                                            clickable: drawMode === 'none',
                                             zIndex: isSelected ? 10 : 1
                                         }}
                                     />

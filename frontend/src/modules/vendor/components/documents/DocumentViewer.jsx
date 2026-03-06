@@ -72,7 +72,7 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC', aut
                                     <FileText size={20} />
                                 </div>
                                 <div>
-                                    <h2 className="text-lg font-black text-slate-900 tracking-tight">
+                                    <h2 className="text-lg font-black text-slate-900 tracking-tight uppercase">
                                         {isInvoice ? 'Tax Invoice' : (isDC ? 'Delivery Challan' : (isBilty ? 'Bilty / Consignment Note' : 'Goods Received Note'))}
                                     </h2>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
@@ -117,7 +117,7 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC', aut
                                 </div>
                                 <div className="text-right space-y-1">
                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Document Issued</p>
-                                    <p className="text-sm font-black text-slate-900">
+                                    <p className="text-sm font-black text-slate-900 uppercase tracking-tight">
                                         {data.date || (data.generatedAt ? new Date(data.generatedAt).toLocaleDateString() : new Date().toLocaleDateString())}
                                     </p>
                                     <div className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black mt-4 uppercase border", accentBg, accentColor, accentBorder)}>
@@ -155,8 +155,8 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC', aut
                                             {isBilty ? 'Dispatch Node' : 'Source Node (Vendor)'}
                                         </span>
                                     </div>
-                                    <h4 className="text-sm font-black text-slate-900">{data.fromFranchise || data.vendor || 'KrishiKart Partner'}</h4>
-                                    <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-tighter">Verified Processing Terminal</p>
+                                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{data.fromFranchise || data.vendor || 'KrishiKart Partner'}</h4>
+                                    <p className="text-[10px] font-black text-slate-400 mt-1 uppercase tracking-[0.2em] italic">Verified Processing Terminal</p>
                                 </div>
                                 <div className="p-6 bg-slate-50/50 rounded-3xl border border-slate-100">
                                     <div className="flex items-center gap-2 mb-4">
@@ -165,8 +165,8 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC', aut
                                             {isBilty ? 'Consignee (Customer)' : 'Destination Node (Franchise)'}
                                         </span>
                                     </div>
-                                    <h4 className="text-sm font-black text-slate-900">{data.toCustomer || data.franchise || 'Main Center'}</h4>
-                                    <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-tighter">{data.toAddress || data.destNode || 'Franchise Node'}</p>
+                                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{data.toCustomer || data.franchise || 'Main Center'}</h4>
+                                    <p className="text-[10px] font-black text-slate-400 mt-1 uppercase tracking-[0.2em] italic">{data.toAddress || data.destNode || 'Franchise Node'}</p>
                                 </div>
                             </div>
 
@@ -213,17 +213,17 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC', aut
                                         </thead>
                                         <tbody className="divide-y divide-slate-50">
                                             {data.items.map((item, idx) => (
-                                                <tr key={idx} className="text-sm font-bold text-slate-700 hover:bg-slate-50/50">
-                                                    <td className="px-6 py-4">{item.name}</td>
-                                                    <td className="px-6 py-4 text-center font-black text-slate-900">
+                                                <tr key={idx} className="hover:bg-slate-50/50 border-b border-slate-50 last:border-0">
+                                                    <td className="px-6 py-4 font-black text-slate-900 text-xs tracking-tight uppercase">{item.name}</td>
+                                                    <td className="px-6 py-4 text-center font-black text-slate-900 tabular-nums">
                                                         {item.quantity || item.qty} {item.unit}
                                                     </td>
                                                     {(!isBilty) && (
                                                         <>
-                                                            <td className="px-6 py-4 text-right text-slate-400 tabular-nums">
+                                                            <td className="px-6 py-4 text-right text-slate-400 font-black text-[11px] tabular-nums">
                                                                 ₹{item.quotedPrice || item.price || '0.00'}
                                                             </td>
-                                                            <td className="px-6 py-4 text-right font-black text-slate-900 tabular-nums">
+                                                            <td className="px-6 py-4 text-right font-black text-slate-900 text-[13px] tabular-nums tracking-tight">
                                                                 ₹{((item.quantity || item.qty) * (item.quotedPrice || item.price || 0)).toLocaleString()}
                                                             </td>
                                                         </>
@@ -279,7 +279,7 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC', aut
                                             <span className="text-xs font-black text-slate-900 uppercase tracking-widest">
                                                 Grand Total
                                             </span>
-                                            <span className="text-xl font-black text-primary">
+                                            <span className="text-xl font-black text-primary tabular-nums tracking-tighter">
                                                 ₹{data.items.reduce((acc, item) => acc + ((item.quantity || item.qty) * (item.quotedPrice || item.price || 0)), 0).toLocaleString()}
                                             </span>
                                         </div>

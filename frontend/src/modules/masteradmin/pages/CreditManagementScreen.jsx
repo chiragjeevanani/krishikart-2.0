@@ -86,8 +86,9 @@ export default function CreditManagementScreen() {
         {
             header: 'Customer Identifer',
             key: 'fullName',
+            align: 'center',
             render: (val, row) => (
-                <div className="flex flex-col">
+                <div className="flex flex-col items-center">
                     <span className="font-black text-slate-900 text-xs tracking-tight">{val || 'Unnamed Customer'}</span>
                     <span className="text-[9px] text-slate-400 font-bold uppercase tracking-[0.1em] mt-0.5">{row.mobile}</span>
                 </div>
@@ -96,16 +97,18 @@ export default function CreditManagementScreen() {
         {
             header: 'Limit Allocation',
             key: 'creditLimit',
+            align: 'center',
             render: (val) => <span className="text-xs font-black text-slate-900 tabular-nums">₹{val?.toLocaleString() ?? '0'}</span>
         },
         {
             header: 'Current Utilization',
             key: 'utilization',
+            align: 'center',
             render: (_, row) => {
                 const percentage = ((row.usedCredit || 0) / (row.creditLimit || 1)) * 100;
                 return (
-                    <div className="flex items-center gap-3">
-                        <div className="flex-1 min-w-[100px] h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="flex items-center justify-center gap-3">
+                        <div className="flex-1 max-w-[100px] h-1.5 bg-slate-100 rounded-full overflow-hidden">
                             <div
                                 className={cn("h-full transition-all duration-500", percentage > 90 ? "bg-rose-500" : percentage > 70 ? "bg-amber-400" : "bg-emerald-500")}
                                 style={{ width: `${Math.min(percentage, 100)}%` }}
@@ -119,24 +122,25 @@ export default function CreditManagementScreen() {
         {
             header: 'Outstanding',
             key: 'usedCredit',
-            align: 'right',
+            align: 'center',
             render: (val) => <span className="text-xs font-black text-slate-600 tabular-nums">₹{val?.toLocaleString() ?? '0'}</span>
         },
         {
             header: 'Due Timeline',
             key: 'creditOverdueDate',
+            align: 'center',
             render: (val, row) => {
                 const hasOutstanding = (row.usedCredit || 0) > 0;
                 if (!hasOutstanding) {
                     return (
-                        <div className="flex flex-col">
+                        <div className="flex flex-col items-center">
                             <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest leading-none">All Cleared</span>
                             <span className="text-[8px] text-slate-300 font-bold mt-1 tracking-tighter italic">N/A</span>
                         </div>
                     );
                 }
 
-                if (!val) return <span className="text-[10px] font-bold text-slate-400 italic">No Clock Set</span>;
+                if (!val) return <span className="text-[10px] font-bold text-slate-400 italic text-center">No Clock Set</span>;
 
                 const dueDate = new Date(val);
                 const now = new Date();
@@ -145,7 +149,7 @@ export default function CreditManagementScreen() {
 
                 if (diffDays < 0) {
                     return (
-                        <div className="flex flex-col">
+                        <div className="flex flex-col items-center">
                             <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest leading-none underline decoration-2 underline-offset-2">Critical Delay</span>
                             <span className="text-[9px] text-rose-400 font-bold mt-1 tracking-tighter">{Math.abs(diffDays)} Days Late</span>
                         </div>
@@ -153,7 +157,7 @@ export default function CreditManagementScreen() {
                 }
 
                 return (
-                    <div className="flex flex-col">
+                    <div className="flex flex-col items-center">
                         <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest leading-none">Payment Pending</span>
                         <span className="text-[9px] text-amber-500 font-bold mt-1 tracking-tighter">Due in {diffDays} Days</span>
                     </div>
@@ -163,6 +167,7 @@ export default function CreditManagementScreen() {
         {
             header: 'Risk Profile',
             key: 'status',
+            align: 'center',
             render: (_, row) => {
                 const percentage = ((row.usedCredit || 0) / (row.creditLimit || 1)) * 100;
                 const isOverdue = row.usedCredit > 0 && row.creditOverdueDate && new Date() > new Date(row.creditOverdueDate);
@@ -182,8 +187,10 @@ export default function CreditManagementScreen() {
                 }
 
                 return (
-                    <div className={cn("px-2 py-0.5 rounded-sm text-[9px] font-black uppercase tracking-widest border w-fit", styles)}>
-                        {status}
+                    <div className="flex justify-center">
+                        <div className={cn("px-2 py-0.5 rounded-sm text-[9px] font-black uppercase tracking-widest border w-fit", styles)}>
+                            {status}
+                        </div>
                     </div>
                 );
             }
@@ -191,13 +198,10 @@ export default function CreditManagementScreen() {
         {
             header: 'Operations',
             key: 'actions',
-            align: 'right',
+            align: 'center',
             render: (_, row) => (
-                <div className="flex items-center justify-end gap-2">
+                <div className="flex items-center justify-center">
                     <button onClick={() => handleOverride(row)} className="p-1 px-2 text-[9px] font-black uppercase text-slate-900 border border-slate-900 rounded-sm hover:bg-slate-900 hover:text-white transition-all">Override</button>
-                    <button className="p-1.5 bg-slate-50 border border-slate-200 rounded-sm text-slate-400 hover:text-slate-900 transition-colors">
-                        <History size={12} />
-                    </button>
                 </div>
             )
         }
@@ -230,15 +234,12 @@ export default function CreditManagementScreen() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <button className="p-1.5 text-slate-400 hover:text-slate-900 transition-colors border border-slate-200 rounded-sm bg-white">
-                            <Download size={14} />
-                        </button>
                     </div>
                 </div>
             </div>
 
             {/* Credit Performance Corridor */}
-            <div className="bg-white border-b border-slate-200 grid grid-cols-1 md:grid-cols-4">
+            <div className="bg-white border-b border-slate-200 grid grid-cols-1 md:grid-cols-3">
                 <MetricRow
                     label="Total Net Exposure"
                     value={`₹${(customers.reduce((acc, curr) => acc + (curr.usedCredit || 0), 0) / 100000).toFixed(2)}L`}
@@ -246,12 +247,6 @@ export default function CreditManagementScreen() {
                     trend="up"
                     icon={IndianRupee}
                     sparklineData={[3.8, 3.9, 4.1, 4.0, 4.2, 4.25, 4.28].map(v => ({ value: v }))}
-                />
-                <MetricRow
-                    label="Critical Nodes"
-                    value={customers.filter(c => ((c.usedCredit || 0) / (c.creditLimit || 1)) > 0.9).length.toString().padStart(2, '0')}
-                    sub="Over 90% Limit"
-                    icon={AlertCircle}
                 />
                 <MetricRow
                     label="Aggregated Limit"
@@ -271,22 +266,6 @@ export default function CreditManagementScreen() {
             <div className="p-6">
                 <div className="flex flex-col gap-px">
                     {/* Search & Intelligence Controls */}
-                    <div className="flex items-center gap-4 mb-4">
-                        <div className="relative flex-1 group">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" size={14} />
-                            <input
-                                type="text"
-                                placeholder="Filter by Customer Name, Mobile or Risk Parameter..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full bg-white border border-slate-200 rounded-sm py-2 pl-10 pr-4 outline-none text-[11px] font-bold text-slate-900 placeholder:text-slate-400 focus:ring-1 focus:ring-slate-900 transition-all font-sans"
-                            />
-                        </div>
-                        <button className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-sm text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50">
-                            <Filter size={12} />
-                            Multi-Factor Analysis
-                        </button>
-                    </div>
 
                     <div className="bg-white border border-slate-200 rounded-sm overflow-hidden shadow-sm">
                         <DataGrid

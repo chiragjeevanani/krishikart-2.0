@@ -24,16 +24,16 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
-    const fetchPendingFranchises = async () => {
+    const fetchPendingFranchises = async (status) => {
         setIsLoading(true);
         try {
-            const response = await api.get('/masteradmin/franchises/kyc/pending');
+            const response = await api.get('/masteradmin/franchises/kyc/pending', { params: { status } });
             if (response.data.success) {
                 setFranchises(response.data.results || response.data.result || []);
             }
         } catch (error) {
             console.error('Fetch franchises error:', error);
-            toast.error('Failed to fetch pending franchises');
+            toast.error('Failed to fetch franchises');
         } finally {
             setIsLoading(false);
         }

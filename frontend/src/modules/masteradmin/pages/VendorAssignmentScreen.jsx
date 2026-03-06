@@ -303,22 +303,6 @@ export default function VendorAssignmentScreen() {
                         </div>
                     </div>
 
-                    <div className="p-4 bg-white border border-slate-200 rounded-sm">
-                        <div className="flex items-center justify-between mb-3 pb-3 border-b border-slate-50">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">System Status</span>
-                            <span className="text-[10px] font-bold text-emerald-500 tabular-nums">Online</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <span className="text-[9px] font-bold text-slate-400 block uppercase">Server Speed</span>
-                                <span className="text-xs font-black text-slate-900 tabular-nums">Excellent</span>
-                            </div>
-                            <div>
-                                <span className="text-[9px] font-bold text-slate-400 block uppercase">Uptime</span>
-                                <span className="text-xs font-black text-slate-900 tabular-nums">99.9%</span>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
 

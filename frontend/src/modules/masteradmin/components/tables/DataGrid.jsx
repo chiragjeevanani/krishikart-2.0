@@ -40,12 +40,16 @@ export default function DataGrid({
                                     className={cn(
                                         "text-[11px] font-bold text-slate-500 uppercase tracking-wider",
                                         density === 'compact' ? "px-4 py-2" : "px-4 py-3",
-                                        col.align === 'right' ? "text-right" : "text-left",
+                                        col.align === 'right' ? "text-right" : col.align === 'center' ? "text-center" : "text-left",
                                         col.sticky && "sticky left-0 bg-white z-10"
                                     )}
                                     style={{ width: col.width }}
                                 >
-                                    <div className="flex items-center gap-1.5 group cursor-pointer hover:text-slate-900 transition-colors">
+                                    <div className={cn(
+                                        "flex items-center gap-1.5 group cursor-pointer hover:text-slate-900 transition-colors",
+                                        col.align === 'center' && "justify-center",
+                                        col.align === 'right' && "justify-end"
+                                    )}>
                                         {col.header}
                                         {col.sortable && <ArrowUpDown size={10} className="text-slate-300 group-hover:text-slate-500" />}
                                     </div>
@@ -70,7 +74,7 @@ export default function DataGrid({
                                             className={cn(
                                                 "text-sm font-medium text-slate-700 tabular-nums",
                                                 density === 'compact' ? "px-4 py-2" : "px-4 py-3",
-                                                col.align === 'right' ? "text-right" : "text-left",
+                                                col.align === 'right' ? "text-right" : col.align === 'center' ? "text-center" : "text-left",
                                                 col.sticky && "sticky left-0 bg-white group-hover:bg-slate-50/80 z-10"
                                             )}
                                         >

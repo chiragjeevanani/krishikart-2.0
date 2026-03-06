@@ -42,7 +42,8 @@ import {
   getLoyaltyConfigHistory,
   getAdminDashboardStats,
   getAdminAnalyticsStats,
-  testPushNotification
+  testPushNotification,
+  globalSearch
 } from "../controllers/masteradmin.controller.js";
 
 import { protectMasterAdmin, requirePermission } from "../middlewares/masteradmin.auth.js";
@@ -112,6 +113,7 @@ router.delete("/subadmins/:id", protectMasterAdmin, deleteSubAdmin);
 
 router.get("/returns", protectMasterAdmin, getAllReturnRequests);
 router.get("/dashboard/stats", protectMasterAdmin, getAdminDashboardStats);
+router.get("/search", protectMasterAdmin, globalSearch);
 router.post("/test-notification", protectMasterAdmin, testPushNotification);
 
 

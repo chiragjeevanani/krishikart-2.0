@@ -79,13 +79,6 @@ export default function ReturnsScreen() {
                         {rows.length} total return requests
                     </p>
                 </div>
-                <button
-                    onClick={() => fetchReturns(true)}
-                    className="h-9 px-3 border border-slate-200 rounded-sm text-[10px] font-black uppercase tracking-widest text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                >
-                    <RefreshCw size={12} className={cn(refreshing && 'animate-spin')} />
-                    Refresh
-                </button>
             </div>
 
             {loading ? (

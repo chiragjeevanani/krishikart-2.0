@@ -36,8 +36,11 @@ export default function ApprovalCard({ item, type, onApprove, onReject, onViewDo
                         </div>
                     </div>
                 </div>
-                <div className="px-1.5 py-0.5 bg-slate-100 rounded-sm text-[8px] font-black uppercase tracking-widest text-slate-500">
-                    {item.status || 'Pending'}
+                <div className={cn(
+                    "px-1.5 py-0.5 rounded-sm text-[8px] font-black uppercase tracking-widest",
+                    (item.status === 'active' || item.kyc?.status === 'verified') ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"
+                )}>
+                    {isVendor ? item.status : item.kyc?.status || 'Pending'}
                 </div>
             </div>
 
@@ -83,18 +86,20 @@ export default function ApprovalCard({ item, type, onApprove, onReject, onViewDo
 
             <div className="p-2 bg-slate-50 border-t border-slate-100 grid grid-cols-2 gap-2">
                 <button
+                    disabled={item.status === 'blocked' || item.kyc?.status === 'rejected'}
                     onClick={(e) => { e.stopPropagation(); onReject(item); }}
-                    className="py-1.5 bg-white border border-slate-200 text-slate-500 rounded-sm font-bold text-[9px] uppercase tracking-widest hover:bg-rose-50 hover:text-rose-600 hover:border-rose-100 transition-all flex items-center justify-center gap-1.5"
+                    className="py-1.5 bg-white border border-slate-200 text-slate-500 rounded-sm font-bold text-[9px] uppercase tracking-widest hover:bg-rose-50 hover:text-rose-600 hover:border-rose-100 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
                     <XCircle size={12} />
                     Reject
                 </button>
                 <button
+                    disabled={item.status === 'active' || item.kyc?.status === 'verified'}
                     onClick={(e) => { e.stopPropagation(); onApprove(item); }}
-                    className="py-1.5 bg-slate-900 text-white rounded-sm font-bold text-[9px] uppercase tracking-widest hover:bg-slate-800 transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                    className="py-1.5 bg-slate-900 text-white rounded-sm font-bold text-[9px] uppercase tracking-widest hover:bg-slate-800 transition-all flex items-center justify-center gap-1.5 shadow-sm disabled:bg-emerald-500 disabled:opacity-100"
                 >
-                    <CheckCircle2 size={12} className="text-emerald-400" />
-                    Verify
+                    <CheckCircle2 size={12} className={cn((item.status === 'active' || item.kyc?.status === 'verified') ? "text-slate-900" : "text-emerald-400")} />
+                    {(item.status === 'active' || item.kyc?.status === 'verified') ? 'Verified' : 'Verify'}
                 </button>
             </div>
         </motion.div>

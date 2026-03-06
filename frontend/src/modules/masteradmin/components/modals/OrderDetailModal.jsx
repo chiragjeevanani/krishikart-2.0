@@ -25,6 +25,7 @@ import api from '@/lib/axios';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import StatusBadge from '../common/StatusBadge';
+import html2pdf from 'html2pdf.js';
 
 const OrderDetailModal = ({ isOpen, onClose, orderId, onProcure }) => {
     const [order, setOrder] = useState(null);
@@ -63,6 +64,46 @@ const OrderDetailModal = ({ isOpen, onClose, orderId, onProcure }) => {
         } catch (error) {
             console.error('Update status error:', error);
             toast.error('Failed to update status');
+        }
+    };
+
+    const handleDownloadInvoice = () => {
+        if (!order) return;
+
+        const element = document.getElementById('printable-order-content');
+        const opt = {
+            margin: [10, 10],
+            filename: `Invoice_${order._id.slice(-8)}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        toast.promise(html2pdf().set(opt).from(element).save(), {
+            loading: 'Generating PDF invoice...',
+            success: 'Invoice downloaded successfully',
+            error: 'Failed to generate invoice'
+        });
+    };
+
+    const handleShareOrder = async () => {
+        if (!order) return;
+
+        const shareData = {
+            title: `KrishiKart Order #${order._id.slice(-8)}`,
+            text: `Order Details for ${order.userId?.fullName || 'Guest'}. Amount: ₹${order.totalAmount}`,
+            url: window.location.href
+        };
+
+        try {
+            if (navigator.share) {
+                await navigator.share(shareData);
+            } else {
+                await navigator.clipboard.writeText(`Order ID: ${order._id}\nAmount: ₹${order.totalAmount}\nCustomer: ${order.userId?.fullName}`);
+                toast.success('Order details copied to clipboard');
+            }
+        } catch (err) {
+            console.error('Sharing failed:', err);
         }
     };
 
@@ -126,10 +167,17 @@ const OrderDetailModal = ({ isOpen, onClose, orderId, onProcure }) => {
                             <div className="flex items-center gap-3">
                                 {!isLoading && order && (
                                     <>
-                                        <button className="p-2 text-slate-400 hover:text-slate-900 transition-colors border border-slate-200 rounded-sm bg-white">
+                                        <button
+                                            onClick={handleShareOrder}
+                                            className="p-2 text-slate-400 hover:text-slate-900 transition-colors border border-slate-200 rounded-sm bg-white"
+                                            title="Share Order"
+                                        >
                                             <Share2 size={15} />
                                         </button>
-                                        <button className="bg-slate-900 text-white px-4 py-2 rounded-sm text-[11px] font-black flex items-center gap-2 hover:bg-slate-800 transition-all shadow-sm uppercase tracking-[0.1em]">
+                                        <button
+                                            onClick={handleDownloadInvoice}
+                                            className="bg-slate-900 text-white px-4 py-2 rounded-sm text-[11px] font-black flex items-center gap-2 hover:bg-slate-800 transition-all shadow-sm uppercase tracking-[0.1em]"
+                                        >
                                             <Download size={14} />
                                             Invoice
                                         </button>
@@ -155,7 +203,7 @@ const OrderDetailModal = ({ isOpen, onClose, orderId, onProcure }) => {
                                     </div>
                                 </div>
                             ) : order ? (
-                                <div className="space-y-6">
+                                <div className="space-y-6" id="printable-order-content">
 
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                         {/* Left Column - Order Items */}

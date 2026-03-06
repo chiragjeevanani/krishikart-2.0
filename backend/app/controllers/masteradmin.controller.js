@@ -298,8 +298,13 @@ export const getFranchiseDetails = async (req, res) => {
 
 export const getPendingKYCFranchises = async (req, res) => {
     try {
-        const franchises = await Franchise.find({ "kyc.status": "pending" }).select("-password");
-        return handleResponse(res, 200, "Pending KYC franchises fetched", franchises);
+        const { status = "pending" } = req.query;
+        let query = { "kyc.status": status };
+        if (status === "all") {
+            query = { "kyc.status": { $ne: "unsubmitted" } };
+        }
+        const franchises = await Franchise.find(query).select("-password");
+        return handleResponse(res, 200, "KYC franchises fetched", franchises);
     } catch (err) {
         return handleResponse(res, 500, "Server error");
     }
@@ -1210,6 +1215,54 @@ export const testPushNotification = async (req, res) => {
         return handleResponse(res, 200, "Test notification sent successfully", result);
     } catch (err) {
         console.error("Test Push Notification Error:", err);
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
+/* ================= GLOBAL SEARCH ================= */
+
+export const globalSearch = async (req, res) => {
+    try {
+        const { query } = req.query;
+        if (!query || query.length < 2) {
+            return handleResponse(res, 200, "Search results", { products: [], orders: [], vendors: [], franchises: [] });
+        }
+
+        const regex = new RegExp(query, 'i');
+
+        const [products, orders, vendors, franchises] = await Promise.all([
+            Product.find({ name: regex }).limit(5).select('name primaryImage price unit'),
+            Order.find({
+                $or: [
+                    { _id: query.length === 24 ? query : null },
+                    { orderStatus: regex }
+                ]
+            }).limit(5).select('_id orderStatus totalAmount createdAt'),
+            Vendor.find({
+                $or: [
+                    { fullName: regex },
+                    { email: regex },
+                    { mobile: regex }
+                ]
+            }).limit(5).select('fullName email mobile profilePicture'),
+            Franchise.find({
+                $or: [
+                    { franchiseName: regex },
+                    { ownerName: regex },
+                    { mobile: regex },
+                    { city: regex }
+                ]
+            }).limit(5).select('franchiseName ownerName mobile city')
+        ]);
+
+        return handleResponse(res, 200, "Search results fetched", {
+            products,
+            orders: orders.filter(o => o !== null),
+            vendors,
+            franchises
+        });
+    } catch (err) {
+        console.error("Global search error:", err);
         return handleResponse(res, 500, "Server error");
     }
 };

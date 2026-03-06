@@ -2,9 +2,6 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     TrendingUp,
-    ArrowUpRight,
-    ArrowDownRight,
-    Download,
     Filter,
     Calendar,
     ChevronDown,
@@ -25,8 +22,7 @@ import {
     BarChart3,
     Terminal,
     Cpu,
-    Store,
-    Bell
+    Store
 } from 'lucide-react';
 import {
     LineChart,
@@ -65,44 +61,7 @@ export default function DashboardScreen() {
         recentSettlements: []
     });
 
-    const [sendingPush, setSendingPush] = useState(false);
 
-    const handleTestPush = async () => {
-        setSendingPush(true);
-        let token = localStorage.getItem(`fcm_token_masteradmin`);
-
-        if (!token) {
-            const { requestFCMToken } = await import('@/lib/firebase');
-            token = await requestFCMToken();
-            if (token) {
-                localStorage.setItem(`fcm_token_masteradmin`, token);
-                await api.post(`/masteradmin/fcm-token`, { token });
-            }
-        }
-
-        if (!token) {
-            alert("No FCM token found. Please allow notifications in your browser.");
-            setSendingPush(false);
-            return;
-        }
-
-        try {
-            const adminData = JSON.parse(localStorage.getItem('masterAdminData'));
-            await api.post('/masteradmin/test-notification', {
-                targetId: adminData?.id || adminData?._id,
-                userType: 'masteradmin',
-                title: 'KrishiKart System Ping',
-                body: 'Your Master Admin session is correctly linked to FCM push notifications.',
-                data: { portal: 'masteradmin', type: 'system_test' }
-            });
-            alert("Test notification triggered!");
-        } catch (error) {
-            console.error(error);
-            alert("Failed to send test push: " + (error.response?.data?.message || error.message));
-        } finally {
-            setSendingPush(false);
-        }
-    };
 
     const fetchDashboardStats = async () => {
         try {
@@ -232,27 +191,14 @@ export default function DashboardScreen() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <div className="flex items-center bg-slate-100 p-0.5 rounded-sm mr-2">
-                            <button className="px-3 py-1 text-[9px] font-bold bg-white text-slate-900 shadow-sm rounded-sm uppercase tracking-widest">Live</button>
-                            <button className="px-3 py-1 text-[9px] font-bold text-slate-400 hover:text-slate-900 uppercase tracking-widest transition-colors">History</button>
+                        <div className="flex items-center bg-slate-100 p-0.5 rounded-sm mr-2 px-3 py-1 font-bold text-slate-900 shadow-sm uppercase tracking-widest text-[9px]">
+                            Live
                         </div>
                         <button
                             onClick={fetchDashboardStats}
                             className="p-1.5 border border-slate-200 rounded-sm hover:bg-slate-50 text-slate-400 transition-colors"
                         >
                             <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
-                        </button>
-                        <button
-                            onClick={handleTestPush}
-                            disabled={sendingPush}
-                            className="bg-white border border-slate-200 text-slate-700 px-3 py-1.5 rounded-sm text-[11px] font-bold flex items-center gap-2 hover:bg-slate-50 transition-colors shadow-sm uppercase tracking-widest disabled:opacity-50"
-                        >
-                            <Bell size={13} className={sendingPush ? "animate-pulse text-indigo-500" : "text-indigo-500"} />
-                            {sendingPush ? '...' : 'Test Push'}
-                        </button>
-                        <button className="bg-slate-900 text-white px-3 py-1.5 rounded-sm text-[11px] font-bold flex items-center gap-2 hover:bg-slate-800 transition-colors shadow-sm">
-                            <Download size={13} />
-                            Export Data
                         </button>
                     </div>
                 </div>

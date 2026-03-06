@@ -35,10 +35,14 @@ export default function OnboardingApprovalScreen() {
     const [selectedItem, setSelectedItem] = useState(null);
 
     useEffect(() => {
+        const mappedStatus = statusFilter === 'Verified'
+            ? (activeTab === 'vendor' ? 'active' : 'verified')
+            : statusFilter.toLowerCase();
+
         if (activeTab === 'vendor') {
-            fetchVendors(statusFilter.toLowerCase());
+            fetchVendors(mappedStatus);
         } else if (activeTab === 'franchise') {
-            fetchPendingFranchises();
+            fetchPendingFranchises(mappedStatus);
         }
     }, [activeTab, statusFilter]);
 
@@ -141,12 +145,19 @@ export default function OnboardingApprovalScreen() {
             {/* Global Stats Strip */}
             <div className="grid grid-cols-1 md:grid-cols-4 bg-white border-b border-slate-200">
                 <div className="px-6 py-4 border-r border-slate-100">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Queue Status</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{statusFilter} Records</p>
                     <div className="flex items-center gap-2">
                         <span className="text-xl font-black text-slate-900 tabular-nums">
-                            {activeTab === 'vendor' ? vendors?.length : activeTab === 'franchise' ? franchises?.length : 0}
+                            {activeTab === 'vendor' ? (vendors?.length || 0) : activeTab === 'franchise' ? (franchises?.length || 0) : 0}
                         </span>
-                        <div className="px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded-sm text-[9px] font-bold uppercase tracking-wider border border-amber-100">Pending Review</div>
+                        <div className={cn(
+                            "px-1.5 py-0.5 rounded-sm text-[9px] font-bold uppercase tracking-wider border",
+                            statusFilter === 'Pending' ? "bg-amber-50 text-amber-600 border-amber-100" :
+                                statusFilter === 'Verified' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
+                                    "bg-blue-50 text-blue-600 border-blue-100"
+                        )}>
+                            {statusFilter === 'All' ? 'Processed' : statusFilter}
+                        </div>
                     </div>
                 </div>
                 <div className="px-6 py-4 border-r border-slate-100">
@@ -171,10 +182,13 @@ export default function OnboardingApprovalScreen() {
                 onSearch={setSearchTerm}
                 activeFilter={statusFilter}
                 onFilterChange={setStatusFilter}
-                filters={['All', 'Pending', 'Verified']}
+                filters={['Pending', 'Verified']}
                 onRefresh={() => {
-                    if (activeTab === 'vendor') fetchVendors(statusFilter.toLowerCase());
-                    else fetchPendingFranchises();
+                    const mappedStatus = statusFilter === 'Verified'
+                        ? (activeTab === 'vendor' ? 'active' : 'verified')
+                        : statusFilter.toLowerCase();
+                    if (activeTab === 'vendor') fetchVendors(mappedStatus);
+                    else fetchPendingFranchises(mappedStatus);
                 }}
             />
 

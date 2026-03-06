@@ -202,20 +202,7 @@ export default function FranchisePayoutsScreen() {
             </div>
 
             <div className="flex flex-col gap-0 p-px">
-                <FilterBar
-                    onSearch={setSearchTerm}
-                    onRefresh={fetchPayouts}
-                    filters={['All']}
-                    activeFilter="All"
-                    onFilterChange={() => { }}
-                />
-
-                <div className="bg-white border-t border-slate-200">
-                    <div className="px-4 py-3 bg-slate-50/50 border-b border-slate-200 flex items-center justify-between">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest tabular-nums font-sans">
-                            Total Rows: {filteredRows.length}
-                        </span>
-                    </div>
+                <div className="bg-white">
 
                     <DataGrid
                         title="Commission-Based Franchise Payables"
