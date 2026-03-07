@@ -14,7 +14,7 @@ export default function AboutScreen() {
                     <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-600 active:scale-90 transition-transform">
                         <ArrowLeft size={20} />
                     </button>
-                    <h1 className="text-xl font-black text-slate-900 tracking-tight">About KrishiKart</h1>
+                    <h1 className="text-xl font-black text-slate-900 tracking-tight">About Kisaankart</h1>
                 </div>
 
                 <div className="p-6 space-y-8">
@@ -23,7 +23,7 @@ export default function AboutScreen() {
                         <div className="w-24 h-24 bg-primary rounded-[32px] flex items-center justify-center text-white mx-auto mb-6 shadow-xl shadow-green-200 rotate-3 hover:rotate-6 transition-transform">
                             <span className="text-4xl font-black">K</span>
                         </div>
-                        <h2 className="text-2xl font-black text-slate-900 tracking-tight">KrishiKart</h2>
+                        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Kisaankart</h2>
                         <p className="text-sm font-bold text-slate-400 mt-2">Empowering Farmers, Everywhere.</p>
                         <div className="mt-4 inline-block bg-slate-100 text-slate-600 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
                             Version 2.4.0

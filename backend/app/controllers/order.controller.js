@@ -944,7 +944,7 @@ export const updateOrderStatus = async (req, res) => {
             unit: item.unit
           })),
           totalWeight: `${order.items.reduce((acc, i) => acc + (i.quantity || 0), 0)} Units`,
-          fromFranchise: fullOrder.franchiseId?.franchiseName || "KrishiKart Franchise",
+          fromFranchise: fullOrder.franchiseId?.franchiseName || "Kisaankart Franchise",
           toCustomer: fullOrder.userId?.legalEntityName || fullOrder.userId?.fullName || "Valued Customer",
           toAddress: order.shippingAddress || fullOrder.userId?.address || "Delivery Address",
           deliveryPartner: fullOrder.deliveryPartnerId?.fullName || "Not Assigned",
@@ -1428,7 +1428,7 @@ export const getDispatchedOrders = async (req, res) => {
       return {
         id: order._id,
         _id: order._id,
-        franchise: order.franchiseId?.shopName || "KrishiKart Store",
+        franchise: order.franchiseId?.shopName || "Kisaankart Store",
         franchiseAddress: order.franchiseId?.address || "N/A",
         customerName: order.userId?.fullName || "Customer",
         customerAddress: order.shippingAddress,
@@ -1475,7 +1475,7 @@ export const getDeliveryOrderHistory = async (req, res) => {
       return {
         id: order._id,
         customer: order.userId?.fullName || "Customer",
-        franchiseName: order.franchiseId?.shopName || "KrishiKart Store",
+        franchiseName: order.franchiseId?.shopName || "Kisaankart Store",
         franchiseAddress: order.franchiseId?.address || "N/A",
         items: order.items,
         amount: 50, // Earnings

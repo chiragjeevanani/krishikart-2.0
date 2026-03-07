@@ -584,7 +584,7 @@ export default function OrdersScreen() {
                                         <Activity size={16} className="text-emerald-400" />
                                         <span className="text-[10px] font-bold text-white uppercase tracking-widest">Status: Online</span>
                                     </div>
-                                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest pr-2">KrishiKart System</span>
+                                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest pr-2">Kisaankart System</span>
                                 </div>
                             </div>
                         </motion.div>

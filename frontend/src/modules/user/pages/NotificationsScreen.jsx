@@ -25,7 +25,7 @@ const notifications = [
     {
         id: 3,
         title: 'Wallet Top-up Successful',
-        message: '₹500 has been added to your KrishiKart Wallet.',
+        message: '₹500 has been added to your Kisaankart Wallet.',
         time: '1 day ago',
         icon: CheckCircle2,
         color: 'text-blue-500 bg-blue-50',

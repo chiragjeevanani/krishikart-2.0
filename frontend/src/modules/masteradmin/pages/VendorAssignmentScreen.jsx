@@ -526,7 +526,7 @@ export default function VendorAssignmentScreen() {
                         System Status: Active
                     </div>
                 </div>
-                <div className="text-[9px] font-bold uppercase tracking-widest tabular-nums">KrishiKart Assignment v1.0</div>
+                <div className="text-[9px] font-bold uppercase tracking-widest tabular-nums">Kisaankart Assignment v1.0</div>
             </div >
         </div >
     );

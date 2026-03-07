@@ -202,7 +202,7 @@ export default function CheckoutScreen() {
                 key: import.meta.env.VITE_RAZORPAY_KEY_ID,
                 amount: order.amount,
                 currency: order.currency,
-                name: "KrishiKart",
+                name: "Kisaankart",
                 description: "Fresh Harvest Delivery",
                 image: "/logo.png",
                 order_id: order.id,

@@ -5,7 +5,7 @@ const testimonials = [
     {
         name: 'Rajesh Kumar',
         role: 'Farmer, Punjab',
-        quote: 'KrishiKart has completely changed how I sell my produce. I get better rates and timely payments directly in my bank account.'
+        quote: 'Kisaankart has completely changed how I sell my produce. I get better rates and timely payments directly in my bank account.'
     },
     {
         name: 'Amit Sharma',

@@ -85,7 +85,7 @@ export default function LoginScreen() {
                         <Home size={24} />
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-white text-lg font-black tracking-tight leading-none uppercase">KrishiKart</span>
+                        <span className="text-white text-lg font-black tracking-tight leading-none uppercase">Kisaankart</span>
                         <span className="text-[10px] text-slate-500 font-bold tracking-[0.3em] uppercase">Franchise Partner</span>
                     </div>
                 </div>
@@ -250,7 +250,7 @@ export default function LoginScreen() {
                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em]">Secure Connection Active</span>
                         </div>
                         <p className="text-[9px] text-slate-300 font-bold uppercase tracking-widest text-center leading-relaxed">
-                            KrishiKart Partner Security Protocol v2.4.0<br />
+                            Kisaankart Partner Security Protocol v2.4.0<br />
                             By logging in, you agree to our partner terms and compliance.
                         </p>
                     </div>

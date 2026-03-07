@@ -15,7 +15,7 @@ This script allows you to bulk import products and categories from JSON files in
 Ensure your `.env` file has the correct `MONGO_URI` configuration:
 
 ```env
-MONGO_URI=mongodb://localhost:27017/krishikart
+MONGO_URI=mongodb://localhost:27017/kisaankart
 ```
 
 ### Step 2: Run the seeder

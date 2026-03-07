@@ -414,7 +414,7 @@ export default function ProfileScreen() {
                     </button>
 
                     <div className="text-center">
-                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em] leading-none">Powered by KrishiKart Ledger v1.0</p>
+                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em] leading-none">Powered by Kisaankart Ledger v1.0</p>
                         <p className="text-[9px] font-bold text-slate-200 mt-2">DEPLOYMENT_NODE: PROD-MUM-882</p>
                     </div>
                 </div>

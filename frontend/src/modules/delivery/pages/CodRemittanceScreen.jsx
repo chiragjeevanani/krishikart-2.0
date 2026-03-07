@@ -111,7 +111,7 @@ export default function CodRemittanceScreen() {
                     key: import.meta.env.VITE_RAZORPAY_KEY_ID,
                     amount,
                     currency,
-                    name: "KrishiKart Admin",
+                    name: "Kisaankart Admin",
                     description: `COD Remittance for ${selectedOrderIds.length} orders`,
                     order_id: rzpOrderId,
                     handler: async (response) => {

@@ -118,7 +118,7 @@ export default function SignupScreen() {
                         <Home size={24} />
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-white text-lg font-black tracking-tight leading-none uppercase">KrishiKart</span>
+                        <span className="text-white text-lg font-black tracking-tight leading-none uppercase">Kisaankart</span>
                         <span className="text-[10px] text-slate-500 font-bold tracking-[0.3em] uppercase">Franchise Partner</span>
                     </div>
                 </div>

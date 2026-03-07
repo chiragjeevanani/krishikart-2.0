@@ -100,7 +100,7 @@ export default function ForgotPasswordScreen() {
                                         type="email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        placeholder="admin@krishikart.com"
+                                        placeholder="admin@kisaankart.com"
                                         className="w-full bg-slate-50 border border-slate-100 text-slate-900 rounded-2xl py-4 pl-12 pr-4 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium"
                                         required
                                     />
@@ -191,7 +191,7 @@ export default function ForgotPasswordScreen() {
 
                 <div className="mt-12 pt-8 border-t border-slate-50 text-center">
                     <p className="text-[10px] text-slate-300 font-bold uppercase tracking-[0.2em]">
-                        Part of Appzeto KrishiKart Ecosystem
+                        Part of Appzeto Kisaankart Ecosystem
                     </p>
                 </div>
             </motion.div>

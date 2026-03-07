@@ -82,7 +82,7 @@ export default function LoginScreen() {
                         <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-primary shadow-lg border border-white">
                             <Sprout size={24} />
                         </div>
-                        <span className="text-xl font-bold tracking-tight">KrishiKart</span>
+                        <span className="text-xl font-bold tracking-tight">Kisaankart</span>
                     </div>
 
                     <div className="relative z-10">
@@ -227,7 +227,7 @@ export default function LoginScreen() {
                         <div className="flex items-center gap-3 border-t border-slate-100 pt-6">
                             <ShieldCheck className="text-green-500 w-5 h-5" />
                             <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
-                                Your data is protected by industry standard encryption. <br /> Safe and secure login powered by KrishiKart.
+                                Your data is protected by industry standard encryption. <br /> Safe and secure login powered by Kisaankart.
                             </p>
                         </div>
                     </div>

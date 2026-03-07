@@ -34,7 +34,7 @@ export const GRNProvider = ({ children }) => {
         const po = purchaseOrders.find(p => p.poNumber === poNumber) ||
             purchaseOrders.find(p => p.id === poNumber);
 
-        const vendorName = po ? po.vendor : 'KrishiKart Indore';
+        const vendorName = po ? po.vendor : 'Kisaankart Indore';
 
         // 1. Calculate Payment based on reception
         // Handle items mapping for both mock POs and live orders

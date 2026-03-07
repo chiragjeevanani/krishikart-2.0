@@ -432,7 +432,7 @@ export default function EditProfileScreen() {
                                             </button>
                                             <button className="flex items-center gap-3 text-emerald-600 font-black text-sm hover:underline underline-offset-4 decoration-2">
                                                 <Mail size={18} />
-                                                help@krishikart.com
+                                                help@kisaankart.com
                                             </button>
                                         </div>
                                     </div>

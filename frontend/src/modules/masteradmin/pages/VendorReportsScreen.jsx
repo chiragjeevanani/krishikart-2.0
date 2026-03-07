@@ -431,7 +431,7 @@ export default function VendorReportsScreen() {
                         totalWeight: selectedReport.actualWeight,
                         franchise: selectedReport.franchiseId?.shopName,
                         destNode: selectedReport.franchiseId?.cityArea,
-                        vendor: selectedReport.assignedVendorId?.shopName || 'KrishiKart Partner',
+                        vendor: selectedReport.assignedVendorId?.shopName || 'Kisaankart Partner',
                         deductionAmount: calculateDamagedLoss(selectedReport),
                         netSettlement: (selectedReport.totalQuotedAmount || 0) - calculateDamagedLoss(selectedReport)
                     }}

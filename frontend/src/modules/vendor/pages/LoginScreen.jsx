@@ -101,7 +101,7 @@ export default function LoginScreen() {
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                placeholder="vendor@krishikart.com"
+                                placeholder="vendor@kisaankart.com"
                                 className="w-full bg-slate-50 border-none rounded-2xl py-4 pl-14 pr-6 outline-none text-sm font-bold focus:ring-4 focus:ring-primary/5 transition-all text-slate-900"
                             />
                         </div>

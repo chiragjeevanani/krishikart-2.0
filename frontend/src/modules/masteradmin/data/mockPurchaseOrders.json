@@ -5,7 +5,7 @@
             "vendorId": null,
             "vendorName": "Multiple Sources Required",
             "franchiseId": "F-001",
-            "franchiseName": "KrishiKart New Delhi",
+            "franchiseName": "Kisaankart New Delhi",
             "items": [
                 {
                     "productId": "P-101",
@@ -49,7 +49,7 @@
             "vendorId": "V-001",
             "vendorName": "Green Valley Farms",
             "franchiseId": "F-001",
-            "franchiseName": "KrishiKart New Delhi",
+            "franchiseName": "Kisaankart New Delhi",
             "items": [
                 {
                     "productId": "P-123",
@@ -73,7 +73,7 @@
             "vendorId": "V-002",
             "vendorName": "Nature Fresh",
             "franchiseId": "F-002",
-            "franchiseName": "KrishiKart Mumbai",
+            "franchiseName": "Kisaankart Mumbai",
             "items": [
                 {
                     "productId": "P-456",

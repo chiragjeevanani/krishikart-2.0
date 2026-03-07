@@ -2,7 +2,7 @@
     "franchises": [
         {
             "franchiseId": "F-001",
-            "franchiseName": "KrishiKart New Delhi",
+            "franchiseName": "Kisaankart New Delhi",
             "location": "North Zone",
             "manager": "Amit Sharma",
             "stock": [
@@ -32,7 +32,7 @@
         },
         {
             "franchiseId": "F-003",
-            "franchiseName": "KrishiKart Koramangala",
+            "franchiseName": "Kisaankart Koramangala",
             "location": "South Zone",
             "manager": "Rahul Varma",
             "stock": [
@@ -73,7 +73,7 @@
         },
         {
             "franchiseId": "F-004",
-            "franchiseName": "KrishiKart Whitefield",
+            "franchiseName": "Kisaankart Whitefield",
             "location": "South Zone",
             "manager": "Sneha Roy",
             "stock": [
@@ -103,7 +103,7 @@
         },
         {
             "franchiseId": "F-005",
-            "franchiseName": "KrishiKart Indiranagar",
+            "franchiseName": "Kisaankart Indiranagar",
             "location": "South Zone",
             "manager": "Vikram Singh",
             "stock": [

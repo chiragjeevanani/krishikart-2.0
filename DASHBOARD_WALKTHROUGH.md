@@ -1,6 +1,6 @@
 # Dashboard Professionalization Walkthrough
 
-This walkthrough outlines the transformation of the KrishiKart Admin Dashboard from a playful, component-heavy design to an enterprise-grade, professional business intelligence interface.
+This walkthrough outlines the transformation of the Kisaankart Admin Dashboard from a playful, component-heavy design to an enterprise-grade, professional business intelligence interface.
 
 ## Key Enhancements
 

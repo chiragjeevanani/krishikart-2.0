@@ -111,7 +111,7 @@ export default function ApprovalDetailDrawer({ isOpen, onClose, item, type, onAp
                                             <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                                 <Mail size={12} /> Credentials
                                             </div>
-                                            <p className="font-black text-slate-900 truncate">{item.email || 'verification@krishikart.com'}</p>
+                                            <p className="font-black text-slate-900 truncate">{item.email || 'verification@kisaankart.com'}</p>
                                         </div>
                                         {isCredit ? (
                                             <div className="space-y-4 p-4 rounded-3xl bg-slate-900 text-white">

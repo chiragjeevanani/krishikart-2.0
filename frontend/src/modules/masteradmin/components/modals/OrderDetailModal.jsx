@@ -135,7 +135,7 @@ const OrderDetailModal = ({ isOpen, onClose, orderId, onProcure }) => {
         if (!order) return;
 
         const shareData = {
-            title: `KrishiKart Order #${order._id.slice(-8)}`,
+            title: `Kisaankart Order #${order._id.slice(-8)}`,
             text: `Order Details for ${order.userId?.fullName || 'Guest'}. Amount: ₹${order.totalAmount}`,
             url: window.location.href
         };

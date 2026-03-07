@@ -283,8 +283,8 @@ export const testPushByToken = async (req, res) => {
 
         const message = {
             notification: {
-                title: "KrishiKart Notification Test",
-                body: `Success! Your ${plateform || 'device'} is correctly integrated with KrishiKart FCM.`
+                title: "Kisaankart Notification Test",
+                body: `Success! Your ${plateform || 'device'} is correctly integrated with Kisaankart FCM.`
             },
             token: fcm_token
         };

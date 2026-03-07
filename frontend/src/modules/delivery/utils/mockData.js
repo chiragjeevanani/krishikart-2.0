@@ -21,7 +21,7 @@ export const dashboardMetrics = {
 export const deliveryRequests = [
     {
         id: "ORD-5521",
-        franchise: "KrishiKart Franchise - Sector 62",
+        franchise: "Kisaankart Franchise - Sector 62",
         franchiseAddress: "B-23, Hosiery Complex, Phase-II, Noida",
         customerName: "Amit Sharma",
         customerAddress: "Flat 402, Green View Apartments, Sector 45",
@@ -33,7 +33,7 @@ export const deliveryRequests = [
     },
     {
         id: "ORD-5522",
-        franchise: "KrishiKart Franchise - Sector 18",
+        franchise: "Kisaankart Franchise - Sector 18",
         franchiseAddress: "Shop 12, Atta Market, Sector 18, Noida",
         customerName: "Priya Varma",
         customerAddress: "H-15, Golf Course Road, Sector 37",
@@ -45,7 +45,7 @@ export const deliveryRequests = [
     },
     {
         id: "ORD-5523",
-        franchise: "KrishiKart Franchise - Sector 62",
+        franchise: "Kisaankart Franchise - Sector 62",
         franchiseAddress: "B-23, Hosiery Complex, Phase-II, Noida",
         customerName: "Sanjay Gupta",
         customerAddress: "D-44, Indirapuram, Ghaziabad",
@@ -61,7 +61,7 @@ export const activeDelivery = {
     id: "ORD-5520",
     status: "on_the_way",
     pickup: {
-        name: "KrishiKart Franchise - Sector 62",
+        name: "Kisaankart Franchise - Sector 62",
         address: "B-23, Hosiery Complex, Phase-II, Noida",
         lat: 28.6273,
         lng: 77.3725,
@@ -128,7 +128,7 @@ export const b2bAssignments = [
         type: "B2B_LOGISTICS",
         vendorName: "Nature Fresh Farms",
         vendorAddress: "Subzi Mandi, Azadpur, Delhi",
-        franchiseName: "KrishiKart South Delhi",
+        franchiseName: "Kisaankart South Delhi",
         franchiseAddress: "Okhla Phase III, New Delhi",
         items: [
             { name: "Potato - Grade A", qty: "500 kg" },
@@ -144,7 +144,7 @@ export const b2bAssignments = [
         type: "B2B_LOGISTICS",
         vendorName: "Green Valley Organics",
         vendorAddress: "Ghazipur Market, UP Border",
-        franchiseName: "KrishiKart East Delhi",
+        franchiseName: "Kisaankart East Delhi",
         franchiseAddress: "Preet Vihar, New Delhi",
         items: [
             { name: "Organic Spinach", qty: "50 kg" },
