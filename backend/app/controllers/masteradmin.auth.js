@@ -29,7 +29,7 @@ export const createMasterAdmin = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const admin = await MasterAdmin.create({
-      fullName: fullName || "KrishiKart Global Root",
+      fullName: fullName || "Kisaankart Global Root",
       email,
       mobile: mobile || "+91 80000 00001",
       operationalZone: operationalZone || "ASIA-SOUTH-IND-01",

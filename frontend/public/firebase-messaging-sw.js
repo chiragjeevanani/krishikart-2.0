@@ -15,11 +15,11 @@ const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
     console.log('[firebase-messaging-sw.js] Received background message ', payload);
-    const notificationTitle = payload.notification?.title || 'KrishiKart Update';
+    const notificationTitle = payload.notification?.title || 'Kisaankart Update';
     const notificationOptions = {
         body: payload.notification?.body || 'New update available',
         icon: '/favicon.png',
-        tag: 'krishikart-notification',
+        tag: 'kisaankart-notification',
         data: payload.data || {},
         badge: '/favicon.png',
         vibrate: [200, 100, 200]

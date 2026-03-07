@@ -30,7 +30,7 @@ const Category = mongoose.models.Category || mongoose.model('Category', category
 
 async function seedProducts() {
     try {
-        await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/krishikart');
+        await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/kisaankart');
         console.log('Connected to MongoDB');
 
         // 1. Create a default category if none exists

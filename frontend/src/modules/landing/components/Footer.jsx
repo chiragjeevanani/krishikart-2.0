@@ -47,7 +47,7 @@ export default function Footer() {
                     <div className="flex flex-col gap-6 text-white/60 font-semibold">
                         <div className="flex items-center gap-4">
                             <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-landing-primary-light"><Mail size={20} /></div>
-                            <a href="mailto:hello@krishikart.com" className="hover:text-white">hello@krishikart.com</a>
+                            <a href="mailto:hello@kisaankart.com" className="hover:text-white">hello@kisaankart.com</a>
                         </div>
                         <div className="flex items-center gap-4">
                             <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-landing-primary-light"><Phone size={20} /></div>

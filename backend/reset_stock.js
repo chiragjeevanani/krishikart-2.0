@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const MONGO_URI = "mongodb+srv://prachi:7694900512@cluster0.nd3xlri.mongodb.net/krishikart?retryWrites=true&w=majority";
+const MONGO_URI = "mongodb+srv://prachi:7694900512@cluster0.nd3xlri.mongodb.net/kisaankart?retryWrites=true&w=majority";
 
 const inventorySchema = new mongoose.Schema({
     franchiseId: mongoose.Schema.Types.ObjectId,

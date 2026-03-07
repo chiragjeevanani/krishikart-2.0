@@ -44,11 +44,11 @@ export const useFCM = (isAuthenticated, userType) => {
                 if (Notification.permission === 'granted') {
                     try {
                         const registration = await navigator.serviceWorker.ready;
-                        registration.showNotification(payload.notification.title || 'KrishiKart', {
+                        registration.showNotification(payload.notification.title || 'Kisaankart', {
                             body: payload.notification.body || '',
                             icon: '/favicon.png',
                             data: payload.data || {},
-                            tag: 'krishikart-foreground',
+                            tag: 'kisaankart-foreground',
                             badge: '/favicon.png',
                             requireInteraction: true, // IMPORTANT: Keeps it in the Action Center until dismissed
                             renotify: true,

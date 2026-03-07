@@ -64,7 +64,7 @@ export default function ProfileScreen() {
   const walletItems = [
     {
       icon: Wallet,
-      label: "KrishiKart wallet",
+      label: "Kisaankart wallet",
       path: "/wallet",
       badge: <div className="bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-lg flex items-center justify-center">₹{balance || 0}</div>
     }
@@ -73,7 +73,7 @@ export default function ProfileScreen() {
   if (creditLimit > 0) {
     walletItems.push({
       icon: CreditCard,
-      label: "KrishiKart Credit",
+      label: "Kisaankart Credit",
       path: "/credit-info",
       badge: <div className="bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-lg flex items-center justify-center">₹{availableCredit || 0}</div>
     });
@@ -214,7 +214,7 @@ export default function ProfileScreen() {
         </div>
 
         <p className="text-center text-[10px] font-bold text-slate-300 mt-8 mb-6 uppercase tracking-widest">
-          Build 2.4.0 · KrishiKart Global
+          Build 2.4.0 · Kisaankart Global
         </p>
       </div>
 
@@ -255,7 +255,7 @@ export default function ProfileScreen() {
                 className="w-full bg-white rounded-[32px] p-6 flex items-center justify-center gap-3 text-emerald-600 font-black border-2 border-dashed border-emerald-100 hover:bg-emerald-50 transition-all"
               >
                 <Power size={24} />
-                Logout from KrishiKart
+                Logout from Kisaankart
               </button>
             </div>
           </div>

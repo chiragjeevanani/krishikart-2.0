@@ -525,7 +525,7 @@ export default function PackingScreen() {
                     totalWeight: actualWeight,
                     franchise: order.franchiseName,
                     destNode: order.franchiseLocation,
-                    vendor: JSON.parse(localStorage.getItem('vendorData'))?.shopName || 'KrishiKart Partner'
+                    vendor: JSON.parse(localStorage.getItem('vendorData'))?.shopName || 'Kisaankart Partner'
                 }}
             />
         </div>

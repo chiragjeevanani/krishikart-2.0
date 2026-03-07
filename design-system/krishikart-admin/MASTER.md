@@ -6,7 +6,7 @@
 
 ---
 
-**Project:** Krishikart Admin
+**Project:** Kisaankart Admin
 **Generated:** 2026-02-16 15:49:51
 **Category:** E-commerce
 

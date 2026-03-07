@@ -413,7 +413,7 @@ export default function TeamManagementScreen() {
                                                 value={formData.email}
                                                 onChange={e => setFormData({ ...formData, email: e.target.value })}
                                                 className="w-full bg-slate-50 border-none rounded-sm px-4 py-2.5 text-xs font-bold focus:ring-2 focus:ring-slate-900 transition-all"
-                                                placeholder="john@krishikart.com"
+                                                placeholder="john@kisaankart.com"
                                             />
                                         </div>
                                         <div className="space-y-1.5 relative">

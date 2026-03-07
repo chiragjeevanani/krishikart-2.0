@@ -106,7 +106,7 @@ const NewOrderAlert = () => {
                     {/* Footer Info */}
                     <div className="bg-slate-900 py-4 px-8 flex items-center justify-center gap-2">
                         <Package size={14} className="text-emerald-400" />
-                        <span className="text-[10px] font-bold text-white uppercase tracking-[0.3em]">Krishikart Logistic Engine</span>
+                        <span className="text-[10px] font-bold text-white uppercase tracking-[0.3em]">Kisaankart Logistic Engine</span>
                     </div>
                 </motion.div>
             </div>

@@ -238,7 +238,7 @@ export default function SignupScreen() {
                                         required
                                         value={formData.email}
                                         onChange={handleChange}
-                                        placeholder="vendor@krishikart.com"
+                                        placeholder="vendor@kisaankart.com"
                                         className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-10 pr-4 outline-none text-xs font-bold focus:ring-4 focus:ring-primary/5 transition-all text-slate-900"
                                     />
                                 </div>

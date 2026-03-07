@@ -24,7 +24,7 @@ function normalizeMobileNumber(mobile) {
  */
 function buildOtpMessage(otp) {
     // We use 'dhakadsnazzy' as the default fallback to match the provided working reference
-    const appName = process.env.APP_NAME || 'dhakadsnazzy';
+    const appName = process.env.APP_NAME || 'Kisaankart';
     return `Welcome to the ${appName} powered by SMSINDIAHUB. Your OTP for registration is ${otp}`;
 }
 

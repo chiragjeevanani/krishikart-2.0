@@ -75,12 +75,12 @@ export default function WalletScreen() {
                     >
                         <ArrowLeft size={20} />
                     </button>
-                    <h1 className="text-lg font-bold text-slate-900 tracking-tight">KrishiKart Wallet</h1>
+                    <h1 className="text-lg font-bold text-slate-900 tracking-tight">Kisaankart Wallet</h1>
                 </div>
 
                 <div className="max-w-6xl mx-auto px-6 py-8 pb-32">
                     {/* Desktop Page Title */}
-                    <h1 className="hidden lg:block text-2xl font-bold text-slate-900 mb-8 font-sans">KrishiKart Wallet</h1>
+                    <h1 className="hidden lg:block text-2xl font-bold text-slate-900 mb-8 font-sans">Kisaankart Wallet</h1>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                         {/* Main Content Area */}

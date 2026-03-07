@@ -62,7 +62,7 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC' }) {
                                 <div className="space-y-4">
                                     <div className="text-2xl font-black text-slate-900 tracking-tighter flex items-center gap-2">
                                         <div className="w-8 h-8 bg-black rounded-lg" />
-                                        KrishiKart <span className="text-primary font-light">Supply Chain</span>
+                                        Kisaankart <span className="text-primary font-light">Supply Chain</span>
                                     </div>
                                     <div className="text-[10px] font-bold text-slate-400 leading-relaxed uppercase tracking-widest max-w-xs">
                                         Headquarters: B-204, Corporate Hub<br />
@@ -110,7 +110,7 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC' }) {
                                             {isBilty ? 'Dispatch Node' : 'Source Node (Vendor)'}
                                         </span>
                                     </div>
-                                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{data.fromFranchise || data.vendor || 'KrishiKart Partner'}</h4>
+                                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{data.fromFranchise || data.vendor || 'Kisaankart Partner'}</h4>
                                     <p className="text-[10px] font-black text-slate-400 mt-1 uppercase tracking-[0.2em] italic">Verified Processing Terminal</p>
                                 </div>
                                 <div className="p-6 bg-slate-50/50 rounded-3xl border border-slate-100">
@@ -258,7 +258,7 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC' }) {
 
                         {/* Footer Info */}
                         <div className="px-8 py-6 bg-slate-50 border-t border-slate-100 flex justify-between items-center text-[8px] font-black text-slate-400 uppercase tracking-widest shrink-0">
-                            <span>Certified Digital Document • {isBilty ? 'KrishiKart Logistics Manifest v2.0' : 'KrishiKart Supply Chain v2.0'}</span>
+                            <span>Certified Digital Document • {isBilty ? 'Kisaankart Logistics Manifest v2.0' : 'Kisaankart Supply Chain v2.0'}</span>
                             <span>{new Date().toLocaleString()}</span>
                         </div>
                     </motion.div>

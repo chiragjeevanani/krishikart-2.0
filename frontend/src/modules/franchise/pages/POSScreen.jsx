@@ -630,7 +630,7 @@ export default function POSScreen() {
                             {/* Hidden printable receipt structure */}
                             <div id="printable-receipt" className="hidden">
                                 <div className="receipt-header">
-                                    <h2 style={{ margin: '0', fontSize: '18px' }}>KRISHIKART</h2>
+                                    <h2 style={{ margin: '0', fontSize: '18px' }}>KISAANKART</h2>
                                     <p style={{ margin: '5px 0', fontSize: '10px' }}>Franchise POS Terminal</p>
                                     <p style={{ margin: '0', fontSize: '10px' }}>Date: {lastSale?.date}</p>
                                     <p style={{ margin: '0', fontSize: '10px' }}>Receipt #: {lastSale?.saleId}</p>

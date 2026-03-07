@@ -137,7 +137,7 @@ export default function PaymentSettingsScreen() {
 
                         <div className="bg-amber-50 border border-amber-100 p-6 rounded-sm">
                             <p className="text-[10px] font-bold text-amber-900 leading-relaxed uppercase tracking-wider">
-                                Important: Please ensure your QR code is clearly visible and belongs to your business bank account. Krishikart is not responsible for transaction issues due to incorrect QR profiles.
+                                Important: Please ensure your QR code is clearly visible and belongs to your business bank account. Kisaankart is not responsible for transaction issues due to incorrect QR profiles.
                             </p>
                         </div>
                     </div>

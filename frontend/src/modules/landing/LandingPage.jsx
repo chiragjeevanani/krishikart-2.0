@@ -76,19 +76,19 @@ const fallbackCategories = [
 ];
 
 const testimonials = [
-    { name: 'Rajesh Kumar', role: 'Farmer, Punjab', snippet: '...better rates and timely payments directly in my bank account...', quote: 'KrishiKart has completely changed how I sell my produce. I get better rates and timely payments directly in my bank account. The platform is reliable and transparent. My income has grown by 30% since joining.', color: '#2e7d32' },
+    { name: 'Rajesh Kumar', role: 'Farmer, Punjab', snippet: '...better rates and timely payments directly in my bank account...', quote: 'Kisaankart has completely changed how I sell my produce. I get better rates and timely payments directly in my bank account. The platform is reliable and transparent. My income has grown by 30% since joining.', color: '#2e7d32' },
     { name: 'Amit Sharma', role: 'Franchise Owner, Delhi', snippet: '...streamlines everything — from receiving stock to managing orders...', quote: 'Being a franchise partner is rewarding. The platform streamlines everything — from receiving stock to managing orders. Operating efficiency has gone up tremendously. Their tech-enabled platform makes daily operations a breeze.', color: '#1565c0' },
-    { name: 'Priya Singh', role: 'Regular Buyer, Noida', snippet: '...freshness of vegetables is unmatched, like buying from the farm...', quote: 'The freshness of vegetables is unmatched. It feels like getting produce directly from the farm every morning. And the bulk pricing saves us significantly. I have recommended KrishiKart to all my neighbors.', color: '#6a1b9a' },
+    { name: 'Priya Singh', role: 'Regular Buyer, Noida', snippet: '...freshness of vegetables is unmatched, like buying from the farm...', quote: 'The freshness of vegetables is unmatched. It feels like getting produce directly from the farm every morning. And the bulk pricing saves us significantly. I have recommended Kisaankart to all my neighbors.', color: '#6a1b9a' },
     { name: 'Suresh Patel', role: 'Vendor, Gujarat', snippet: '...supply chain has become more structured without the middleman...', quote: 'Since joining as a vendor, my supply chain has become more structured. I can reach more franchises and customers without the middleman hassle. The transparent pricing and consistent demand have stabilized my business.', color: '#e65100' },
-    { name: 'Meena Devi', role: 'Home Chef, Mumbai', snippet: '...consistent quality and timely deliveries to scale my business...', quote: 'I rely on KrishiKart for all my ingredient sourcing. Consistent quality and timely deliveries have allowed me to scale my home food business confidently. The wide product range means I never need to source from multiple vendors.', color: '#00838f' },
-    { name: 'Vikram Reddy', role: 'Restaurant Owner, Bangalore', snippet: '...reliable ingredient supply ensures consistent quality across outlets...', quote: 'KrishiKart has fueled our restaurant growth. Their reliable ingredient supply across our locations ensures consistent quality, which is key to our success. The franchise model means faster deliveries compared to traditional suppliers.', color: '#c62828' },
+    { name: 'Meena Devi', role: 'Home Chef, Mumbai', snippet: '...consistent quality and timely deliveries to scale my business...', quote: 'I rely on Kisaankart for all my ingredient sourcing. Consistent quality and timely deliveries have allowed me to scale my home food business confidently. The wide product range means I never need to source from multiple vendors.', color: '#00838f' },
+    { name: 'Vikram Reddy', role: 'Restaurant Owner, Bangalore', snippet: '...reliable ingredient supply ensures consistent quality across outlets...', quote: 'Kisaankart has fueled our restaurant growth. Their reliable ingredient supply across our locations ensures consistent quality, which is key to our success. The franchise model means faster deliveries compared to traditional suppliers.', color: '#c62828' },
 ];
 
 const faqs = [
-    { q: 'What is KrishiKart?', a: 'KrishiKart is an agricultural marketplace that connects farmers and vendors directly with buyers through a network of local franchise hubs, ensuring fresh produce at fair prices.' },
-    { q: 'How is KrishiKart different from other suppliers?', a: 'We operate through local franchise hubs which means faster delivery, quality-checked produce, and mandi-rate pricing without middlemen.' },
+    { q: 'What is Kisaankart?', a: 'Kisaankart is an agricultural marketplace that connects farmers and vendors directly with buyers through a network of local franchise hubs, ensuring fresh produce at fair prices.' },
+    { q: 'How is Kisaankart different from other suppliers?', a: 'We operate through local franchise hubs which means faster delivery, quality-checked produce, and mandi-rate pricing without middlemen.' },
     { q: 'How can I become a vendor?', a: 'Visit the vendor signup page, fill in your details and documentation. Our team will review and onboard you within 48 hours.' },
-    { q: 'Does KrishiKart deliver to homes?', a: 'Yes! We deliver to both individual consumers and businesses through our franchise delivery network.' },
+    { q: 'Does Kisaankart deliver to homes?', a: 'Yes! We deliver to both individual consumers and businesses through our franchise delivery network.' },
     { q: 'How does the franchise model work?', a: 'Franchises act as local fulfillment hubs. They receive stock from vendors, pack orders, and dispatch them through delivery partners to end customers.' },
 ];
 
@@ -292,7 +292,7 @@ export default function LandingPage() {
                         </div>
                     </div>
 
-                    {/* CENTER — KrishiKart Hub with animated SVG paths + floating thumbnails */}
+                    {/* CENTER — Kisaankart Hub with animated SVG paths + floating thumbnails */}
                     <div className="lp-flow-center">
                         <svg className="lp-flow-svg lp-flow-svg-left" viewBox="-10 -60 420 420" preserveAspectRatio="none">
                             <defs>
@@ -348,7 +348,7 @@ export default function LandingPage() {
                         <div className="lp-flow-hub">
                             <div className="lp-flow-hub-inner">
                                 <Sprout size={28} color="#fff" />
-                                <span>KrishiKart</span>
+                                <span>Kisaankart</span>
                             </div>
                         </div>
 
@@ -581,13 +581,13 @@ export default function LandingPage() {
                 <div className="lp-footer-grid">
                     <div className="lp-footer-company">
                         <h4>Company</h4>
-                        <p><strong>KrishiKart Agriculture Private Limited</strong></p>
+                        <p><strong>Kisaankart Agriculture Private Limited</strong></p>
                         <p style={{ marginTop: 8 }}>Farm-fresh agricultural produce marketplace connecting farmers, vendors, and businesses.</p>
                         <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 8, color: '#aaa', fontSize: 13 }}>
                             <Phone size={14} /> +91 999 999 9999
                         </div>
                         <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8, color: '#aaa', fontSize: 13 }}>
-                            <Mail size={14} /> <a href="mailto:hello@krishikart.com" style={{ color: '#aaa' }}>hello@krishikart.com</a>
+                            <Mail size={14} /> <a href="mailto:hello@kisaankart.com" style={{ color: '#aaa' }}>hello@kisaankart.com</a>
                         </div>
                     </div>
                     <div className="lp-footer-column">
@@ -616,7 +616,7 @@ export default function LandingPage() {
                     </div>
                 </div>
                 <div className="lp-footer-bottom">
-                    Copyright &copy; {new Date().getFullYear()} KrishiKart. All Rights Reserved.
+                    Copyright &copy; {new Date().getFullYear()} Kisaankart. All Rights Reserved.
                 </div>
             </footer>
         </div>

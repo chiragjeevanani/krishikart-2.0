@@ -12,7 +12,7 @@ const masterAdminSchema = new mongoose.Schema(
 
     fullName: {
       type: String,
-      default: "KrishiKart Global Root",
+      default: "Kisaankart Global Root",
     },
 
     mobile: {

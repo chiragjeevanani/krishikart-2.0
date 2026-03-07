@@ -164,7 +164,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                             <span className="text-white font-black text-sm">K</span>
                         </div>
                         <div className="flex flex-col">
-                            <span className="font-black text-[13px] tracking-tight text-slate-900 leading-none">KRISHIKART</span>
+                            <span className="font-black text-[13px] tracking-tight text-slate-900 leading-none">KISAANKART</span>
                             <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Admin Panel</span>
                         </div>
                     </div>

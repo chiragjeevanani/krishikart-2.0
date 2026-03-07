@@ -16,7 +16,7 @@ export default function CTASection() {
                     <div className="relative z-10">
                         <span className="bg-white/20 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-6 inline-block">For Sellers</span>
                         <h2 className="text-4xl font-black mb-4 leading-tight">Sell to thousands of customers</h2>
-                        <p className="text-white/80 mb-8 text-lg">Partner with KrishiKart to supply your fresh produce to a wide network of buyers.</p>
+                        <p className="text-white/80 mb-8 text-lg">Partner with Kisaankart to supply your fresh produce to a wide network of buyers.</p>
                         <Link to="/vendor/signup" className="bg-white text-landing-primary px-8 py-3.5 rounded-full font-bold flex items-center gap-2 w-fit hover:bg-landing-bg transition-colors">
                             Register as a seller <ArrowUpRight size={20} />
                         </Link>

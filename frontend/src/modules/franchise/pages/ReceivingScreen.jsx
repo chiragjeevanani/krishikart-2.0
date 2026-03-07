@@ -146,7 +146,7 @@ const ReceivingScreen = () => {
                     <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-500">
                         {row.vendor?.[0] || 'V'}
                     </div>
-                    <span className="text-[10px] font-black text-slate-700 uppercase">{row.vendor || 'KrishiKart Partner'}</span>
+                    <span className="text-[10px] font-black text-slate-700 uppercase">{row.vendor || 'Kisaankart Partner'}</span>
                 </div>
             )
         },
@@ -274,7 +274,7 @@ const ReceivingScreen = () => {
                                     </button>
                                     <div>
                                         <h2 className="text-sm font-black text-slate-900 uppercase tracking-tight">Audit Session: {selectedPO.invoice?.invoiceNumber || selectedPO._id}</h2>
-                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{selectedPO.vendor || 'KrishiKart Partner'}</p>
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{selectedPO.vendor || 'Kisaankart Partner'}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
@@ -475,7 +475,7 @@ const ReceivingScreen = () => {
                             price: i.price,
                             quotedPrice: i.quotedPrice
                         })),
-                    vendor: selectedPO.vendor || 'KrishiKart Partner',
+                    vendor: selectedPO.vendor || 'Kisaankart Partner',
                     franchise: 'My Franchise Node', // Ideally from context
                     handlingFee: 40
                 } : null}

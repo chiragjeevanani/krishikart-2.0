@@ -7,7 +7,7 @@ dotenv.config({ path: './backend/.env' });
 
 async function checkProducts() {
     try {
-        await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/krishikart');
+        await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/kisaankart');
         console.log('Connected to DB');
 
         const products = await Product.find({}).limit(10);
