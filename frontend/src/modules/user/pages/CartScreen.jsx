@@ -53,8 +53,8 @@ export default function CartScreen() {
     <PageTransition>
       <div className="bg-[#f8fafd] min-h-screen pb-40 md:pb-20">
         {/* Mobile Header */}
-        <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md px-6 py-4 border-b border-slate-100 flex items-center gap-4 md:hidden">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-600">
+        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] border-b border-slate-100/80 shadow-[0_1px_10px_rgba(0,0,0,0.04)] flex items-center gap-4 md:hidden">
+          <button onClick={() => navigate(-1)} className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white border border-slate-100 shadow-sm text-slate-600 active:scale-95 transition-transform">
             <ArrowLeft size={20} />
           </button>
           <h1 className="text-xl font-black text-slate-900 tracking-tight">Your Cart</h1>
@@ -96,10 +96,10 @@ export default function CartScreen() {
 
                       <div className="flex justify-between items-center">
                         <span className="text-lg font-black text-primary md:font-bold">₹{getActivePrice(item) * item.quantity}</span>
-                        <div className="flex items-center gap-3 bg-slate-50 rounded-xl md:rounded-lg p-1 border border-slate-100">
+                        <div className="flex items-center gap-2 bg-slate-50 rounded-xl md:rounded-lg p-1 border border-slate-100">
                           <button
                             onClick={() => updateQuantity(item.id, -1)}
-                            className="w-8 h-8 flex items-center justify-center rounded-lg bg-white shadow-sm text-slate-600 hover:text-primary transition-colors active:scale-90"
+                            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-white shadow-sm text-slate-600 hover:text-primary transition-colors active:scale-90 md:min-h-[32px] md:min-w-[32px] md:w-8 md:h-8"
                           >
                             <Minus size={14} />
                           </button>
@@ -111,7 +111,7 @@ export default function CartScreen() {
                           />
                           <button
                             onClick={() => updateQuantity(item.id, 1)}
-                            className="w-8 h-8 flex items-center justify-center rounded-lg bg-white shadow-sm text-slate-600 hover:text-primary transition-colors active:scale-90"
+                            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-white shadow-sm text-slate-600 hover:text-primary transition-colors active:scale-90 md:min-h-[32px] md:min-w-[32px] md:w-8 md:h-8"
                           >
                             <Plus size={14} />
                           </button>
@@ -171,8 +171,8 @@ export default function CartScreen() {
         </div>
 
         {/* Integrated Sticky Checkout Bar - Mobile Only */}
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:hidden">
-          <div className="flex items-center gap-4 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] px-6">
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-slate-100/80 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] max-w-md mx-auto md:hidden">
+          <div className="flex items-center gap-4 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] px-5">
             <div className="shrink-0 flex flex-col">
               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Total Payable</span>
               <span className="text-[22px] font-black text-slate-900 leading-none tracking-tighter">₹{total}</span>
@@ -180,7 +180,7 @@ export default function CartScreen() {
 
             <Button
               onClick={() => navigate('/checkout')}
-              className="flex-1 h-12 rounded-xl bg-primary hover:bg-primary/90 text-[15px] font-black shadow-lg shadow-green-100 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+              className="flex-1 min-h-[52px] h-12 rounded-2xl bg-primary hover:bg-primary/90 text-[15px] font-black shadow-lg shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
             >
               Checkout <ArrowRight size={18} strokeWidth={3} />
             </Button>

@@ -33,10 +33,10 @@ export default function CategoriesScreen() {
         <PageTransition>
             <div className="bg-white min-h-screen pb-32">
                 {/* Mobile Header */}
-                <div className="sticky top-0 z-30 bg-white px-6 py-5 border-b border-slate-100 flex items-center gap-4 md:hidden">
+                <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-xl px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] border-b border-slate-100/80 shadow-[0_1px_10px_rgba(0,0,0,0.04)] flex items-center gap-4 md:hidden">
                     <button
                         onClick={() => navigate(-1)}
-                        className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-600 active:scale-90 transition-transform"
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white border border-slate-100 shadow-sm text-slate-600 active:scale-95 transition-transform"
                     >
                         <ArrowLeft size={20} />
                     </button>

@@ -160,12 +160,20 @@ body {
     }
 
     .user-app-theme {
-        --color-primary: #10b981;
-        /* Emerald-500 */
+        --color-primary: #16a34a;
+        /* Light green (logo) */
         --color-primary-foreground: #ffffff;
-        --color-accent: #34d399;
-        /* Emerald-400 */
+        --color-accent: #22c55e;
         --color-accent-foreground: #ffffff;
+
+        /* Logo colors: light green + yellow */
+        --color-brand-primary: #16a34a;
+        --color-brand-secondary: #22c55e;
+        --color-brand-subtle: #f0fdf4;
+        --color-brand-dark: #15803d;
+        --color-brand-yellow: #eab308;
+        --color-brand-yellow-subtle: #fefce8;
+        --color-brand-header: #16a34a;
 
         /* Revert to Organic Bubbly Radii for Customer App */
         --radius-sm: 0.125rem;
@@ -176,9 +184,60 @@ body {
         --radius-3xl: 1.5rem;
     }
 
+    /* Mobile-only: warm tinted background (light green + yellow feel) */
+    @media (max-width: 767px) {
+        .user-app-theme {
+            --color-background: #f8fcf8;
+        }
+    }
+
+    /* Mobile: hide vertical scrollbar in user app (keep scrolling) */
+    @media (max-width: 767px) {
+        html:has(.user-app-theme),
+        body:has(.user-app-theme) {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        html:has(.user-app-theme)::-webkit-scrollbar,
+        body:has(.user-app-theme)::-webkit-scrollbar {
+            display: none;
+            width: 0;
+            height: 0;
+        }
+    }
+
     body {
         @apply bg-background text-foreground;
     }
+}
+
+/* Header alive effect (mobile) – full sweep across header */
+@keyframes header-shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+@keyframes header-edge-pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.9; }
+}
+.user-app-theme .header-shimmer {
+    animation: header-shimmer 4s ease-in-out infinite;
+}
+.user-app-theme .header-edge-pulse {
+    animation: header-edge-pulse 2.5s ease-in-out infinite;
+}
+.user-app-theme .header-glow {
+    box-shadow: 0 0 32px rgba(22, 163, 74, 0.35), 0 0 64px rgba(253, 224, 71, 0.2);
+}
+
+/* Bottom nav: slight pop when tab is selected */
+@keyframes bottom-nav-icon-active {
+    0% { transform: scale(1); }
+    55% { transform: scale(1.18); }
+    100% { transform: scale(1); }
+}
+.user-app-theme .bottom-nav-icon-active {
+    animation: bottom-nav-icon-active 0.4s ease-out;
 }
 
 /* Custom Utilities for smooth mobile experience */
@@ -190,6 +249,15 @@ body {
     .no-scrollbar {
         -ms-overflow-style: none;
         scrollbar-width: none;
+    }
+
+    /* Category card flip (mobile) – runs same frame as touch/click */
+    .category-card-flip-target.category-card-flip {
+        animation: category-card-flip 0.5s ease-in-out forwards;
+    }
+    @keyframes category-card-flip {
+        from { transform: rotateY(0deg); }
+        to { transform: rotateY(360deg); }
     }
 
     .safe-bottom {
