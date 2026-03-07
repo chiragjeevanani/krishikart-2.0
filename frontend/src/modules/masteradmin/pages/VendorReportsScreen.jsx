@@ -86,6 +86,49 @@ export default function VendorReportsScreen() {
 
     const filteredReports = getFilteredReports();
 
+    const handleExportAuditLog = () => {
+        const headers = [
+            'Invoice Number',
+            'Invoice Date',
+            'Franchise',
+            'Owner',
+            'Item Count',
+            'Actual Weight (KG)',
+            'Manifest Value (₹)',
+            'Damaged Deduction (₹)',
+            'Net Settlement (₹)',
+            'Status'
+        ];
+        const rows = filteredReports.map((report) => {
+            const totalValue = report.totalQuotedAmount || 0;
+            const damagedLoss = calculateDamagedLoss(report);
+            const netSettlement = totalValue - damagedLoss;
+            return [
+                report.invoice?.invoiceNumber ?? '',
+                report.invoice?.invoiceDate ? new Date(report.invoice.invoiceDate).toLocaleDateString() : '',
+                report.franchiseId?.shopName ?? '',
+                report.franchiseId?.ownerName ?? '',
+                report.items?.length ?? 0,
+                report.actualWeight ?? 0,
+                totalValue.toLocaleString(),
+                damagedLoss.toLocaleString(),
+                netSettlement.toLocaleString(),
+                report.status ?? ''
+            ];
+        });
+        const csvContent = [
+            headers.join(','),
+            ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+        ].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `audit-log-${new Date().toISOString().slice(0, 10)}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+    };
+
     // Pagination Logic
     const totalPages = Math.ceil(filteredReports.length / itemsPerPage);
     const paginatedReports = filteredReports.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -125,7 +168,10 @@ export default function VendorReportsScreen() {
                     </p>
                 </div>
                 <div className="flex gap-3">
-                    <button className="flex items-center gap-2 bg-white border border-slate-200 px-6 py-3 rounded-2xl text-[13px] font-black text-slate-700 hover:bg-slate-50 transition-all shadow-sm active:scale-95">
+                    <button
+                        onClick={handleExportAuditLog}
+                        className="flex items-center gap-2 bg-white border border-slate-200 px-6 py-3 rounded-2xl text-[13px] font-black text-slate-700 hover:bg-slate-50 transition-all shadow-sm active:scale-95"
+                    >
                         <Download size={18} />
                         Export Audit Log
                     </button>
@@ -173,7 +219,7 @@ export default function VendorReportsScreen() {
                         className="w-full pl-14 pr-6 py-4 bg-slate-50 border-2 border-transparent focus:border-primary/10 focus:bg-white rounded-2xl focus:ring-0 text-sm font-bold transition-all"
                         value={searchTerm}
                         onChange={(e) => {
-                            setSearchTerm(e.target.value);
+                            setSearchTerm(e.target.value.trim());
                             setCurrentPage(1);
                         }}
                     />

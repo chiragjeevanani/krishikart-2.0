@@ -200,7 +200,7 @@ export default function VendorManagementScreen() {
             {/* Operational Management */}
             <div className="flex flex-col gap-0 p-px">
                 <FilterBar
-                    onSearch={setSearchTerm}
+                    onSearch={(v) => setSearchTerm(typeof v === 'string' ? v.trim() : v)}
                     activeFilter={statusFilter}
                     onFilterChange={setStatusFilter}
                     onRefresh={() => fetchVendors()}

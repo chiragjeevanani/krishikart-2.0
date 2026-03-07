@@ -67,7 +67,7 @@ const DeliveryHistory = () => {
                         <input
                             type="text"
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(e) => setSearchQuery(e.target.value.trim())}
                             placeholder="Search by customer or store..."
                             className="w-full pl-9 pr-4 py-3 rounded-2xl border border-border bg-muted/20 focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm font-medium"
                         />

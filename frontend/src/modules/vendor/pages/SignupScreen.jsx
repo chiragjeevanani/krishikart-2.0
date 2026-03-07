@@ -38,10 +38,15 @@ export default function SignupScreen() {
         } else {
             if (name === 'farmCity' || name === 'farmState' || name === 'bankName' || name === 'bankAccountHolderName' || name === 'fullName') {
                 setFormData({ ...formData, [name]: value.replace(/[^A-Za-z\s]/g, '') });
-            } else if (name === 'mobile' || name === 'bankAccountNumber' || name === 'fssaiLicense') {
+            } else if (name === 'mobile') {
                 setFormData({ ...formData, [name]: value.replace(/\D/g, '') });
+            } else if (name === 'fssaiLicense') {
+                setFormData({ ...formData, [name]: value.replace(/\D/g, '').slice(0, 14) });
+            } else if (name === 'bankAccountNumber') {
+                setFormData({ ...formData, [name]: value.replace(/\D/g, '').slice(0, 16) });
             } else if (name === 'bankIfscCode') {
-                setFormData({ ...formData, [name]: value.toUpperCase() });
+                const ifsc = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 11);
+                setFormData({ ...formData, [name]: ifsc });
             } else {
                 setFormData({ ...formData, [name]: value });
             }
@@ -53,6 +58,21 @@ export default function SignupScreen() {
         const city = (formData.farmCity || '').trim();
         const state = (formData.farmState || '').trim();
         if (!city || !state) {
+            return;
+        }
+        const accNo = (formData.bankAccountNumber || '').trim();
+        if (accNo.length < 9 || accNo.length > 16) {
+            alert('Account number must be 9 to 16 digits (Indian bank standards).');
+            return;
+        }
+        const ifsc = (formData.bankIfscCode || '').trim();
+        if (ifsc && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) {
+            alert('Invalid IFSC code. Format: 4 letters, then 0, then 6 alphanumeric (e.g. HDFC0001234).');
+            return;
+        }
+        const fssai = (formData.fssaiLicense || '').trim();
+        if (fssai && !/^\d{14}$/.test(fssai)) {
+            alert('FSSAI License must be exactly 14 digits.');
             return;
         }
         setIsLoading(true);
@@ -323,14 +343,15 @@ export default function SignupScreen() {
                                     <input
                                         name="bankAccountNumber"
                                         type="tel"
+                                        inputMode="numeric"
                                         required
                                         value={formData.bankAccountNumber}
                                         onChange={handleChange}
-                                        pattern="\d{11,17}"
-                                        title="Account number must be between 11 and 17 digits"
-                                        minLength={11}
-                                        maxLength={17}
-                                        placeholder="00000000000"
+                                        pattern="\d{9,16}"
+                                        title="Indian bank account: 9 to 16 digits"
+                                        minLength={9}
+                                        maxLength={16}
+                                        placeholder="9–16 digits"
                                         className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-10 pr-4 outline-none text-xs font-bold focus:ring-4 focus:ring-primary/5 transition-all text-slate-900"
                                     />
                                 </div>

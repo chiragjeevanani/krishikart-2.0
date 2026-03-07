@@ -5,7 +5,6 @@ import {
     Settings,
     Bell,
     Shield,
-    Moon,
     LogOut,
     ChevronRight,
     Camera,
@@ -65,11 +64,47 @@ const EditProfileModal = ({ isOpen, onClose, vendorData, onUpdate }) => {
     const [isLoading, setIsLoading] = useState(false);
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        if (name === 'bankAccountNumber') {
+            const digitsOnly = value.replace(/\D/g, '').slice(0, 16);
+            setFormData({ ...formData, [name]: digitsOnly });
+            return;
+        }
+        if (name === 'bankName') {
+            const lettersAndSpacesOnly = value.replace(/[^A-Za-z\s]/g, '');
+            setFormData({ ...formData, [name]: lettersAndSpacesOnly });
+            return;
+        }
+        if (name === 'bankIfscCode') {
+            const ifsc = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 11);
+            setFormData({ ...formData, [name]: ifsc });
+            return;
+        }
+        if (name === 'fssaiLicense') {
+            const digitsOnly = value.replace(/\D/g, '').slice(0, 14);
+            setFormData({ ...formData, [name]: digitsOnly });
+            return;
+        }
+        setFormData({ ...formData, [name]: value });
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const accNo = (formData.bankAccountNumber || '').trim();
+        if (accNo && (accNo.length < 9 || accNo.length > 16)) {
+            alert('Account number must be 9 to 16 digits (Indian bank standards).');
+            return;
+        }
+        const ifsc = (formData.bankIfscCode || '').trim();
+        if (ifsc && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) {
+            alert('Invalid IFSC code. Format: 4 letters, then 0, then 6 alphanumeric (e.g. HDFC0001234).');
+            return;
+        }
+        const fssai = (formData.fssaiLicense || '').trim();
+        if (fssai && !/^\d{14}$/.test(fssai)) {
+            alert('FSSAI License must be exactly 14 digits.');
+            return;
+        }
         setIsLoading(true);
         try {
             const updateData = new FormData();
@@ -104,7 +139,7 @@ const EditProfileModal = ({ isOpen, onClose, vendorData, onUpdate }) => {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                className="bg-white w-full max-w-lg rounded-[32px] p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
+                className="bg-white w-full max-w-lg rounded-[32px] p-6 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar"
             >
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xl font-black text-slate-900">Edit Profile</h2>
@@ -127,7 +162,7 @@ const EditProfileModal = ({ isOpen, onClose, vendorData, onUpdate }) => {
                     </div>
                     <div className="space-y-1">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">FSSAI License</label>
-                        <input name="fssaiLicense" value={formData.fssaiLicense} onChange={handleChange} className="w-full bg-slate-50 rounded-xl p-3 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20" />
+                        <input name="fssaiLicense" type="tel" inputMode="numeric" value={formData.fssaiLicense} onChange={handleChange} maxLength={14} placeholder="14-digit number" pattern="[0-9]*" title="Exactly 14 digits only" className="w-full bg-slate-50 rounded-xl p-3 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20" />
                     </div>
 
                     <div className="pt-4 border-t border-slate-100">
@@ -135,7 +170,7 @@ const EditProfileModal = ({ isOpen, onClose, vendorData, onUpdate }) => {
                         <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1">
                                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Bank Name</label>
-                                <input name="bankName" value={formData.bankName} onChange={handleChange} className="w-full bg-slate-50 rounded-xl p-3 text-xs font-bold outline-none focus:ring-2 focus:ring-primary/20" />
+                                <input name="bankName" value={formData.bankName} onChange={handleChange} placeholder="Letters only" className="w-full bg-slate-50 rounded-xl p-3 text-xs font-bold outline-none focus:ring-2 focus:ring-primary/20" pattern="[A-Za-z\s]*" title="Letters and spaces only" />
                             </div>
                             <div className="space-y-1">
                                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Account Name</label>
@@ -143,11 +178,21 @@ const EditProfileModal = ({ isOpen, onClose, vendorData, onUpdate }) => {
                             </div>
                             <div className="space-y-1">
                                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Account No.</label>
-                                <input name="bankAccountNumber" value={formData.bankAccountNumber} onChange={handleChange} className="w-full bg-slate-50 rounded-xl p-3 text-xs font-bold outline-none focus:ring-2 focus:ring-primary/20" />
+                                <input
+                                    name="bankAccountNumber"
+                                    type="tel"
+                                    inputMode="numeric"
+                                    value={formData.bankAccountNumber}
+                                    onChange={handleChange}
+                                    maxLength={16}
+                                    placeholder="9–16 digits"
+                                    className="w-full bg-slate-50 rounded-xl p-3 text-xs font-bold outline-none focus:ring-2 focus:ring-primary/20"
+                                    title="Indian bank account: 9 to 16 digits"
+                                />
                             </div>
                             <div className="space-y-1">
                                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">IFSC</label>
-                                <input name="bankIfscCode" value={formData.bankIfscCode} onChange={handleChange} className="w-full bg-slate-50 rounded-xl p-3 text-xs font-bold outline-none focus:ring-2 focus:ring-primary/20" />
+                                <input name="bankIfscCode" value={formData.bankIfscCode} onChange={handleChange} maxLength={11} placeholder="HDFC0001234" pattern="[A-Z]{4}0[A-Z0-9]{6}" title="4 letters, 0, 6 alphanumeric (e.g. HDFC0001234)" className="w-full bg-slate-50 rounded-xl p-3 text-xs font-bold outline-none focus:ring-2 focus:ring-primary/20 uppercase" />
                             </div>
                         </div>
                     </div>
@@ -216,7 +261,6 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
 export default function ProfileScreen() {
     const { logout } = useVendorAuth();
     const navigate = useNavigate();
-    const [isDarkMode, setIsDarkMode] = useState(false);
     const [vendor, setVendor] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -367,49 +411,12 @@ export default function ProfileScreen() {
                     {/* <SettingItem icon={Globe} label="Marketplace Engine" value="Global Store Visibility" color="primary" onClick={() => navigate('/vendor/preview')} /> */}
                 </section>
 
-                <section className="space-y-3">
-                    <div className="flex items-center gap-2 mb-4 ml-2">
-                        <Settings size={14} className="text-slate-400" />
-                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">System Framework</h3>
-                    </div>
-
-                    {/* Dark Mode Toggle */}
-                    <div className="w-full bg-white p-5 rounded-[32px] border border-slate-100 shadow-sm flex items-center justify-between group hover:shadow-xl hover:shadow-slate-200/40 transition-all">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-slate-200 transition-transform group-hover:scale-110">
-                                <Moon size={20} />
-                            </div>
-                            <div className="text-left">
-                                <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] leading-none mb-1.5">User Interface</p>
-                                <p className="text-[13px] font-black text-slate-900 tracking-tight">Dark Mode Engine</p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => setIsDarkMode(!isDarkMode)}
-                            className={cn(
-                                "w-14 h-7 rounded-full transition-all duration-500 relative p-1 outline-none",
-                                isDarkMode ? "bg-slate-900 ring-4 ring-slate-100" : "bg-slate-100"
-                            )}
-                        >
-                            <motion.div
-                                animate={{ x: isDarkMode ? 28 : 0 }}
-                                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                                className={cn(
-                                    "w-5 h-5 rounded-full shadow-md",
-                                    isDarkMode ? "bg-white" : "bg-slate-400"
-                                )}
-                            />
-                        </button>
-                    </div>
-
-                </section>
-
                 <div className="pt-8 space-y-4">
                     <button
                         onClick={logout}
                         className="w-full bg-white text-red-500 py-6 rounded-[36px] font-black text-sm flex items-center justify-center gap-3 border border-red-50 hover:bg-red-50 transition-all active:scale-[0.98] shadow-sm hover:shadow-red-100/50"
                     >
-                        Terminate Session
+                        Logout
                         <LogOut size={18} />
                     </button>
 

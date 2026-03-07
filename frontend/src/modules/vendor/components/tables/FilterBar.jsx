@@ -10,7 +10,7 @@ const FilterBar = ({ categories, activeCategory, onCategoryChange, searchTerm, o
                     type="text"
                     placeholder={placeholder}
                     value={searchTerm}
-                    onChange={(e) => onSearchChange(e.target.value)}
+                    onChange={(e) => onSearchChange(e.target.value.trim())}
                     className="w-full bg-white border border-slate-100 rounded-2xl py-4 pl-12 pr-4 outline-none text-[11px] font-black uppercase tracking-widest focus:ring-4 focus:ring-slate-900/5 transition-all shadow-sm placeholder:text-slate-300"
                 />
             </div>

@@ -117,7 +117,7 @@ export default function PurchaseManagerScreen() {
             {/* Operational Workspace */}
             <div className="p-4 space-y-4">
                 <FilterBar
-                    onSearch={setSearchTerm}
+                    onSearch={(v) => setSearchTerm(typeof v === 'string' ? v.trim() : v)}
                     filters={['all', 'pending_approval', 'approved', 'draft']}
                     activeFilter={activeFilter}
                     onFilterChange={setActiveFilter}

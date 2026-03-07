@@ -299,7 +299,7 @@ export default function DeliveryMonitoringScreen() {
             {/* Main Operational Ledger */}
             <div className="flex flex-col gap-px">
                 <FilterBar
-                    onSearch={setSearchTerm}
+                    onSearch={(v) => setSearchTerm(typeof v === 'string' ? v.trim() : v)}
                     filters={[]}
                     actions={
                         <div className="flex items-center gap-2">

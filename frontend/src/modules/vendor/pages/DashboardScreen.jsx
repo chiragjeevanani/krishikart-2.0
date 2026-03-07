@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-    PlusCircle,
     Truck,
     TrendingUp,
     Clock,
@@ -163,9 +162,6 @@ export default function DashboardScreen() {
                     >
                         <Bell size={18} className={sendingPush ? "animate-pulse text-indigo-500" : "text-indigo-500"} />
                         {sendingPush ? 'Testing...' : 'Test Push'}
-                    </button>
-                    <button className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-slate-200 hover:scale-105 transition-all">
-                        <PlusCircle size={24} />
                     </button>
                 </div>
             </header>

@@ -208,7 +208,7 @@ export default function VendorTurnoverScreen() {
                                         type="text"
                                         placeholder="Filter by Vendor ID, Name, or Category..."
                                         value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        onChange={(e) => setSearchTerm(e.target.value.trim())}
                                         className="w-full bg-white border border-slate-200 rounded-sm py-2 pl-10 pr-4 outline-none text-[11px] font-bold text-slate-900 placeholder:text-slate-400 focus:ring-1 focus:ring-slate-900 transition-all font-sans"
                                     />
                                 </div>

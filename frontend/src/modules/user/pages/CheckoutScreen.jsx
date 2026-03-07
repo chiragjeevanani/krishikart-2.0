@@ -500,7 +500,7 @@ export default function CheckoutScreen() {
                                             <input
                                                 type="text"
                                                 value={couponCode}
-                                                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                                                onChange={(e) => setCouponCode(e.target.value.replace(/\s/g, '').toUpperCase())}
                                                 placeholder="Enter Code"
                                                 className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-4 py-3 text-sm font-bold focus:outline-none focus:border-primary transition-all uppercase"
                                             />

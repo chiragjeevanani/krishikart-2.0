@@ -146,7 +146,7 @@ export default function VendorProductDrawer({ isOpen, onClose, vendor }) {
                                 <input
                                     type="text"
                                     value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    onChange={(e) => setSearchTerm(e.target.value.trim())}
                                     placeholder="Search products..."
                                     className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 outline-none text-xs font-bold placeholder:text-slate-400 focus:border-slate-400 transition-all uppercase tracking-wide"
                                 />

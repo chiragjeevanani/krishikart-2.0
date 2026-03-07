@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Plus,
     Edit2,
     Trash2,
     CheckCircle2,
@@ -125,9 +124,6 @@ export default function InventoryScreen() {
                             <ListIcon size={18} />
                         </button>
                     </div>
-                    <button className="bg-primary text-white w-12 h-12 rounded-2xl shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center justify-center">
-                        <Plus size={24} />
-                    </button>
                 </div>
             </header>
 
@@ -136,7 +132,7 @@ export default function InventoryScreen() {
                 activeCategory={activeCategory}
                 onCategoryChange={setActiveCategory}
                 searchTerm={searchTerm}
-                onSearchChange={setSearchTerm}
+                onSearchChange={(v) => setSearchTerm(typeof v === 'string' ? v.trim() : v)}
                 placeholder="Locate produce by SKU or Name..."
             />
 

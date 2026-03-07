@@ -187,7 +187,7 @@ export default function ManageProductScreen() {
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                         <input
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onChange={(e) => setSearchTerm(e.target.value.trim())}
                             placeholder="SEARCH BY PRODUCT NAME OR SKU ID..."
                             className="w-full bg-white border border-slate-200 rounded-sm py-3 pl-12 pr-4 text-[11px] font-bold uppercase tracking-widest focus:outline-none focus:ring-1 focus:ring-slate-900 transition-all shadow-sm"
                         />

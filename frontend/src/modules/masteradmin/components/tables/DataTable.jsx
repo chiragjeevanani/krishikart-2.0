@@ -98,7 +98,7 @@ export default function DataTable({
                                 type="text"
                                 placeholder="Search..."
                                 value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onChange={(e) => setSearchQuery(e.target.value.trim())}
                                 className="pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:ring-1 focus:ring-blue-500 outline-none w-48 md:w-64 transition-all"
                             />
                         </div>

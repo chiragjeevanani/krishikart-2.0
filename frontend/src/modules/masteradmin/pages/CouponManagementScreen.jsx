@@ -213,7 +213,7 @@ export default function CouponManagementScreen() {
                                             <input
                                                 type="text"
                                                 value={form.code}
-                                                onChange={(e) => setForm(prev => ({ ...prev, code: e.target.value }))}
+                                                onChange={(e) => setForm(prev => ({ ...prev, code: e.target.value.replace(/\s/g, '') }))}
                                                 placeholder="e.g. MEGA50"
                                                 className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-3 text-sm font-bold focus:ring-1 focus:ring-slate-900 outline-none transition-all uppercase"
                                             />

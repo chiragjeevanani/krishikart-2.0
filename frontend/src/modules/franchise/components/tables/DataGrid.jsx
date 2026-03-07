@@ -78,7 +78,7 @@ export default function DataGrid({
                                     type="text"
                                     placeholder="Filter records..."
                                     value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    onChange={(e) => setSearchTerm(e.target.value.trim())}
                                     className="w-full bg-white border border-slate-200 rounded-sm py-2 pl-9 pr-4 outline-none text-xs font-bold text-slate-900 placeholder:text-slate-400 focus:border-slate-400 transition-all font-sans"
                                 />
                             </div>

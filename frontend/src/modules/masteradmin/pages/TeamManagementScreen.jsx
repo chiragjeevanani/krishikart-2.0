@@ -259,7 +259,7 @@ export default function TeamManagementScreen() {
                         type="text"
                         placeholder="Search by name or email..."
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={(e) => setSearchTerm(e.target.value.trim())}
                         className="w-full bg-slate-50 border-none rounded-sm pl-10 pr-4 py-2.5 text-xs font-bold focus:ring-2 focus:ring-slate-900 transition-all"
                     />
                 </div>

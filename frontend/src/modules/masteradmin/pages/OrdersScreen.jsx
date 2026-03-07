@@ -314,7 +314,7 @@ export default function OrdersScreen() {
                                 type="text"
                                 placeholder="Search by Customer Name, Mobile..."
                                 value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onChange={(e) => setSearchTerm(e.target.value.trim())}
                                 className="w-full bg-white border border-slate-200 rounded-sm py-1.5 pl-9 pr-4 outline-none text-[11px] font-medium placeholder:text-slate-400 focus:border-slate-400 transition-all font-sans"
                             />
                         </div>
