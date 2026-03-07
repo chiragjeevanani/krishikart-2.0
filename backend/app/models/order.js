@@ -122,6 +122,10 @@ const orderSchema = new mongoose.Schema({
         default: null
     },
     items: [orderItemSchema],
+    numberOfPackages: {
+        type: Number,
+        default: 0
+    },
     totalAmount: {
         type: Number,
         required: true

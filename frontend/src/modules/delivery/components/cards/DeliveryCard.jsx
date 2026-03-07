@@ -26,7 +26,6 @@ const DeliveryCard = ({ request, onAccept, onReject }) => {
                         </span>
                         <span className="text-xs font-medium text-muted-foreground">{request.distance} away</span>
                     </div>
-                    <span className="text-sm font-bold text-primary">₹{request.amount}</span>
                 </div>
 
                 <div className="space-y-4 relative">
@@ -61,7 +60,7 @@ const DeliveryCard = ({ request, onAccept, onReject }) => {
                 <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground pt-4 border-t border-muted/50">
                     <div className="flex items-center gap-1">
                         <Package className="w-3 h-3" />
-                        <span>{request.itemsCount} items</span>
+                        <span>{request.numberOfPackages} Packages</span>
                     </div>
 
                 </div>

@@ -24,38 +24,7 @@ const Dashboard = () => {
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [sendingPush, setSendingPush] = useState(false);
 
-    const handleTestPush = async () => {
-        setSendingPush(true);
-        let token = localStorage.getItem(`fcm_token_delivery`);
 
-        if (!token) {
-            const { requestFCMToken } = await import('@/lib/firebase');
-            token = await requestFCMToken();
-            if (token) {
-                localStorage.setItem(`fcm_token_delivery`, token);
-                await api.post(`/delivery/fcm-token`, { token });
-            }
-        }
-
-        if (!token) {
-            alert("No FCM token found. Please allow notifications in your browser.");
-            setSendingPush(false);
-            return;
-        }
-
-        try {
-            await api.post('/delivery/test-notification', {
-                fcm_token: token,
-                plateform: 'Delivery Web Dashboard'
-            });
-            alert("Test notification triggered!");
-        } catch (error) {
-            console.error(error);
-            alert("Failed to send test push");
-        } finally {
-            setSendingPush(false);
-        }
-    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -110,14 +79,7 @@ const Dashboard = () => {
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button
-                        onClick={handleTestPush}
-                        disabled={sendingPush}
-                        className="p-3 rounded-2xl bg-white border border-border text-foreground active:scale-95 transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
-                    >
-                        <Bell className={sendingPush ? "w-5 h-5 animate-pulse text-indigo-500" : "w-5 h-5 text-indigo-500"} />
-                        <span className="text-[10px] font-black uppercase tracking-widest">{sendingPush ? '...' : 'Test'}</span>
-                    </button>
+
                     <button className="relative p-3 rounded-2xl bg-muted/30 text-foreground active:scale-95 transition-all">
                         <Bell className="w-5 h-5" />
                         <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
