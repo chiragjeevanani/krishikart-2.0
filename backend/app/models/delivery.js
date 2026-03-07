@@ -20,7 +20,7 @@ const deliverySchema = new mongoose.Schema(
       type: String,
       required: true,
       uppercase: true,
-      match: [/^[A-Z]{4}\d{6}$/, "Vehicle number must be 4 alphabets followed by 6 digits (e.g. ABCD123456)"],
+      match: [/^[A-Z]{2}\d{2}[A-Z]{2}\d{4}$/, "Vehicle number must be in format MP09CS1234"],
     },
 
     vehicleType: {

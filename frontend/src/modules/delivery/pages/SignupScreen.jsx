@@ -67,8 +67,8 @@ const SignupScreen = () => {
             alert('Name should only contain alphabets');
             return;
         }
-        if (!/^[A-Z]{4}\d{6}$/.test(formData.vehicleNumber)) {
-            alert('Vehicle number must be 4 alphabets followed by 6 digits (e.g. ABCD123456)');
+        if (!/^[A-Z]{2}\d{2}[A-Z]{2}\d{4}$/.test(formData.vehicleNumber)) {
+            alert('Vehicle number must be in format MP09CS1234 (10 characters)');
             return;
         }
         if (!formData.aadharImage || !formData.panImage || !formData.licenseImage) {
@@ -346,12 +346,6 @@ const SignupScreen = () => {
                                     <h3 className="font-black text-slate-900 text-sm">Verify Details</h3>
                                     <p className="text-[10px] font-bold text-slate-400">OTP Sent to +91 {formData.phone}</p>
                                 </div>
-                                <button
-                                    onClick={() => setStep('details')}
-                                    className="text-[10px] font-bold text-primary hover:underline"
-                                >
-                                    Edit
-                                </button>
                             </div>
 
                             <form onSubmit={handleVerifyOtp} className="space-y-6">

@@ -15,8 +15,7 @@ import {
     ChevronRight,
     Home,
     AlertCircle,
-    LayoutGrid,
-    List
+    Truck
 } from 'lucide-react';
 import ApprovalCard from '../components/cards/ApprovalCard';
 import ApprovalDetailDrawer from '../components/drawers/ApprovalDetailDrawer';
@@ -51,7 +50,7 @@ export default function OnboardingApprovalScreen() {
     const tabs = [
         { id: 'vendor', label: 'Vendor KYC', icon: Users, count: vendors?.length || 0 },
         { id: 'franchise', label: 'Franchise Docs', icon: Building, count: franchises?.length || 0 },
-        { id: 'delivery', label: 'Delivery Partners', icon: Users, count: deliveryPartners?.length || 0 }
+        { id: 'delivery', label: 'Delivery Partners', icon: Truck, count: deliveryPartners?.length || 0 }
     ];
 
     const currentItems = activeTab === 'vendor' ? (vendors || []).filter(v =>
@@ -212,10 +211,7 @@ export default function OnboardingApprovalScreen() {
                     <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest tabular-nums leading-none">
                         Status: Live // {currentItems.length} Records In Queue
                     </div>
-                    <div className="flex items-center gap-1 p-1 bg-slate-200/50 rounded-sm">
-                        <button className="p-1.5 bg-white shadow-sm rounded-sm text-slate-900"><LayoutGrid size={14} /></button>
-                        <button className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors"><List size={14} /></button>
-                    </div>
+
                 </div>
 
                 <AnimatePresence mode="wait">

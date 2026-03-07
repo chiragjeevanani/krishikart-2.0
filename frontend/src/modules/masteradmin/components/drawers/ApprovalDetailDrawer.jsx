@@ -33,9 +33,9 @@ export default function ApprovalDetailDrawer({ isOpen, onClose, item, type, onAp
             { type: 'PAN Card', fileName: `PAN: ${item.kyc?.panNumber || 'N/A'}`, url: item.kyc?.panImage, submitted: !!item.kyc?.panImage }
         ] :
             isDelivery ? [
-                { type: 'Aadhar Number', fileName: item.aadharNumber, url: item.aadharImage, submitted: !!item.aadharImage },
-                { type: 'PAN Number', fileName: item.panNumber, url: item.panImage, submitted: !!item.panImage },
-                { type: 'License Number', fileName: item.licenseNumber, url: item.licenseImage, submitted: !!item.licenseImage },
+                { type: 'Aadhar Card', fileName: item.aadharNumber || 'Verification Image', url: item.aadharImage, submitted: !!item.aadharImage },
+                { type: 'PAN Card', fileName: item.panNumber || 'Verification Image', url: item.panImage, submitted: !!item.panImage },
+                { type: 'License Image', fileName: item.licenseNumber || 'Verification Image', url: item.licenseImage, submitted: !!item.licenseImage },
                 { type: 'Vehicle', fileName: `${item.vehicleType?.toUpperCase()}: ${item.vehicleNumber}`, url: null, submitted: true }
             ] :
                 item.supportingDocs || [];

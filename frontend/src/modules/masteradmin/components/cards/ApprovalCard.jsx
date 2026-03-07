@@ -88,7 +88,7 @@ export default function ApprovalCard({ item, type, onApprove, onReject, onViewDo
                                         <CheckCircle2 size={10} className={doc.image ? "text-emerald-500" : "text-slate-300"} />
                                         {doc.label}
                                     </span>
-                                    <span className="text-[9px] font-bold text-slate-900 ml-4 tabular-nums">{doc.value}</span>
+                                    {doc.value && <span className="text-[9px] font-bold text-slate-900 ml-4 tabular-nums">{doc.value}</span>}
                                 </div>
                                 {doc.image && <ExternalLink size={10} className="text-slate-300 group-hover:text-primary transition-colors" />}
                             </div>

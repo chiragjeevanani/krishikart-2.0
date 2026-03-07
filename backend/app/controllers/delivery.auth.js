@@ -26,8 +26,8 @@ export const registerDelivery = async (req, res) => {
     if (!/^[6-9]\d{9}$/.test(mobile))
       return handleResponse(res, 400, "Invalid mobile number. Must be 10 digits starting with 6-9.");
 
-    if (!/^[a-zA-Z]{4}\d{6}$/.test(vehicleNumber))
-      return handleResponse(res, 400, "Vehicle number must be 4 alphabets followed by 6 digits (e.g. ABCD123456)");
+    if (!/^[a-zA-Z]{2}\d{2}[a-zA-Z]{2}\d{4}$/.test(vehicleNumber))
+      return handleResponse(res, 400, "Vehicle number must be in format MP09CS1234");
 
     if (!["bike", "scooter"].includes(vehicleType))
       return handleResponse(res, 400, "Invalid vehicle type");
