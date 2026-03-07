@@ -11107,3 +11107,51 @@ Found: 63 orders
 [2026-03-07T09:09:13.304Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (Indore)
 Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
 Found: 63 orders
+
+[2026-03-07T09:10:12.831Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (Indore)
+Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
+Found: 63 orders
+
+[2026-03-07T09:37:51.386Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (Indore)
+Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
+Found: 63 orders
+
+[2026-03-07T09:38:13.129Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (Indore)
+Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
+Found: 63 orders
+
+[2026-03-07T09:39:13.076Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (Indore)
+Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
+Found: 63 orders
+
+[2026-03-07T09:40:13.437Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (Indore)
+Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
+Found: 63 orders
+
+[2026-03-07T09:41:12.843Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (Indore)
+Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
+Found: 63 orders
+
+[2026-03-07T09:42:12.800Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (Indore)
+Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
+Found: 63 orders
+
+[2026-03-07T09:43:13.200Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (Indore)
+Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
+Found: 63 orders
+
+[2026-03-07T09:44:12.837Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (Indore)
+Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
+Found: 63 orders
+
+[2026-03-07T09:45:13.084Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (Indore)
+Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
+Found: 63 orders
+
+[2026-03-07T09:46:12.798Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (Indore)
+Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
+Found: 63 orders
+
+[2026-03-07T09:47:13.082Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (Indore)
+Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
+Found: 63 orders

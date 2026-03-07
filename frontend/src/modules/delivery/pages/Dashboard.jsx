@@ -16,15 +16,22 @@ import api from '@/lib/axios';
 import axios from 'axios';
 
 const Dashboard = () => {
-    const { delivery } = useDeliveryAuth();
+    const { delivery, setDelivery } = useDeliveryAuth();
     const { dispatchedOrders } = useDeliveryOrders();
-    const [isOnline, setIsOnline] = useState(true);
+    const [isOnline, setIsOnline] = useState(delivery?.isOnline ?? true);
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isUpdating, setIsUpdating] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [sendingPush, setSendingPush] = useState(false);
 
 
+
+    useEffect(() => {
+        if (delivery) {
+            setIsOnline(delivery.isOnline);
+        }
+    }, [delivery]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -50,6 +57,27 @@ const Dashboard = () => {
         };
         fetchData();
     }, []);
+
+    const toggleOnline = async () => {
+        if (isUpdating) return;
+        setIsUpdating(true);
+        try {
+            const nextState = !isOnline;
+            const response = await api.put('/delivery/availability', { isOnline: nextState });
+            if (response.data.success) {
+                const updatedDelivery = response.data.delivery || response.data.result;
+                setIsOnline(nextState);
+                if (updatedDelivery) {
+                    setDelivery(updatedDelivery);
+                    localStorage.setItem('deliveryData', JSON.stringify(updatedDelivery));
+                }
+            }
+        } catch (error) {
+            console.error('Toggle availability error:', error);
+        } finally {
+            setIsUpdating(false);
+        }
+    };
 
     const today = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
     const completedCount = history.filter(item => item.date === today).length;
@@ -85,8 +113,9 @@ const Dashboard = () => {
                         <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
                     </button>
                     <button
-                        onClick={() => setIsOnline(!isOnline)}
-                        className={`p-3 rounded-2xl active:scale-95 transition-all shadow-sm ${isOnline ? 'bg-primary text-white shadow-primary/20' : 'bg-white text-muted-foreground border border-border'}`}
+                        onClick={toggleOnline}
+                        disabled={isUpdating}
+                        className={`p-3 rounded-2xl active:scale-95 transition-all shadow-sm ${isOnline ? 'bg-primary text-white shadow-primary/20' : 'bg-white text-muted-foreground border border-border'} ${isUpdating ? 'opacity-50' : ''}`}
                     >
                         <Power className="w-5 h-5" />
                     </button>
@@ -96,8 +125,8 @@ const Dashboard = () => {
             <div className="px-6 space-y-6 pt-6">
                 {/* Availability Toggle UI Block */}
                 <motion.div
-                    onClick={() => setIsOnline(!isOnline)}
-                    className={`cursor-pointer px-5 py-4 rounded-3xl flex items-center justify-between border-2 transition-all ${isOnline ? 'bg-primary/5 border-primary/20 shadow-lg shadow-primary/5' : 'bg-white border-border shadow-sm grayscale opacity-70'}`}
+                    onClick={toggleOnline}
+                    className={`cursor-pointer px-5 py-4 rounded-3xl flex items-center justify-between border-2 transition-all ${isUpdating ? 'opacity-70 pointer-events-none' : ''} ${isOnline ? 'bg-primary/5 border-primary/20 shadow-lg shadow-primary/5' : 'bg-white border-border shadow-sm grayscale opacity-70'}`}
                 >
                     <div className="flex items-center gap-4">
                         <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-colors ${isOnline ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>

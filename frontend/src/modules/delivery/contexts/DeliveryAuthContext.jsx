@@ -58,6 +58,7 @@ export function DeliveryAuthProvider({ children }) {
     return (
         <DeliveryAuthContext.Provider value={{
             delivery,
+            setDelivery,
             loginSuccess,
             logout,
             isAuthenticated: !!delivery,
