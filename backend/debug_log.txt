@@ -10043,3 +10043,31 @@ Found: 56 orders
 [2026-03-06T17:19:34.076Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (Indore)
 Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
 Found: 56 orders
+
+[2026-03-06T17:20:04.062Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (Indore)
+Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
+Found: 56 orders
+
+[2026-03-06T17:20:46.364Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (Indore)
+Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
+Found: 56 orders
+
+[2026-03-06T17:21:46.076Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (Indore)
+Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
+Found: 56 orders
+
+[2026-03-06T17:22:46.386Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (Indore)
+Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
+Found: 56 orders
+
+[2026-03-06T17:23:46.055Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (Indore)
+Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
+Found: 56 orders
+
+[2026-03-06T17:24:46.372Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (Indore)
+Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
+Found: 56 orders
+
+[2026-03-06T17:25:46.044Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (Indore)
+Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
+Found: 56 orders
