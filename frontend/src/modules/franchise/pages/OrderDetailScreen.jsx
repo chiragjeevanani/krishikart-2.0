@@ -11,7 +11,6 @@ import {
     CheckCircle2,
     ArrowRightCircle,
     Copy,
-    Share2,
     Truck,
     FileText,
     Shield,
@@ -21,7 +20,6 @@ import {
     RefreshCw,
     ShieldCheck,
     Settings2,
-    Download,
     ArrowRight,
     Briefcase
 } from 'lucide-react';
@@ -229,15 +227,6 @@ export default function OrderDetailScreen() {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <button className="p-1.5 text-slate-400 hover:text-slate-900 transition-colors border border-slate-200 rounded-sm bg-white">
-                            <Share2 size={14} />
-                        </button>
-                        <button className="bg-slate-900 text-white px-3 py-1.5 rounded-sm text-[11px] font-bold flex items-center gap-2 hover:bg-slate-800 transition-colors shadow-sm uppercase tracking-widest">
-                            <Download size={14} />
-                            Export PDF
-                        </button>
-                    </div>
                 </div>
             </div>
 
@@ -278,14 +267,11 @@ export default function OrderDetailScreen() {
                                 <div className="p-4 bg-slate-50 border border-slate-100 rounded-sm">
                                     <p className="text-[11px] font-bold text-slate-600 leading-relaxed uppercase tracking-tight">{order.address}</p>
                                 </div>
-                                <div className="flex items-center justify-between pt-2 border-t border-slate-50">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 rounded-sm bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">
-                                            <Phone size={14} />
-                                        </div>
-                                        <span className="text-[10px] font-black text-slate-900">{order.mobile}</span>
+                                <div className="flex items-center gap-2 pt-2 border-t border-slate-50">
+                                    <div className="w-8 h-8 rounded-sm bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">
+                                        <Phone size={14} />
                                     </div>
-                                    <button className="text-[9px] font-black uppercase text-slate-400 hover:text-slate-900 transition-colors">View Map</button>
+                                    <span className="text-[10px] font-black text-slate-900">{order.mobile}</span>
                                 </div>
                             </div>
 
@@ -448,27 +434,6 @@ export default function OrderDetailScreen() {
 
                             {/* Post-Acceptance Actions */}
                             {order.status === 'accepted' && (
-                                (order.items || []).some(i => i.isShortage) ? (
-                                    <div className="space-y-3">
-                                        <div className="p-4 bg-amber-50 border border-amber-200 rounded-sm">
-                                            <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center justify-center gap-2 mb-2">
-                                                <Info size={14} /> Stock Shortage Detected
-                                            </p>
-                                            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-tight text-center leading-relaxed">
-                                                Some items in this order are currently out of stock. Please procure them before packing.
-                                            </p>
-                                        </div>
-                                        <button
-                                            onClick={async () => {
-                                                await handleUpdateStatus('procuring');
-                                                navigate('/franchise/procurement');
-                                            }}
-                                            className="w-full h-12 bg-amber-500 text-white rounded-sm font-black uppercase text-[10px] tracking-[0.2em] shadow-lg hover:bg-amber-600 transition-all flex items-center justify-center gap-2"
-                                        >
-                                            Request Procurement
-                                        </button>
-                                    </div>
-                                ) : (
                                     <div className="space-y-3 p-4 border border-emerald-100 bg-emerald-50 rounded-sm">
                                         <label className="text-[10px] font-black uppercase text-emerald-800 tracking-widest flex items-center justify-between">
                                             <span>Number of Packages</span>
@@ -493,7 +458,6 @@ export default function OrderDetailScreen() {
                                             </button>
                                         </div>
                                     </div>
-                                )
                             )}
 
                             {order.status === 'procuring' && (
@@ -525,9 +489,6 @@ export default function OrderDetailScreen() {
                                 </div>
                             )}
 
-                            <button className="w-full h-10 border border-slate-200 text-slate-400 rounded-sm font-black uppercase text-[9px] tracking-widest hover:bg-slate-50 hover:text-slate-900 transition-all">
-                                Report Issue
-                            </button>
                         </div>
 
                         {(order.returnRequests?.length ?? 0) > 0 && (

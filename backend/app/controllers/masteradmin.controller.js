@@ -1275,8 +1275,18 @@ export const getAllDeliveryPartners = async (req, res) => {
     try {
         const { status } = req.query;
         let query = {};
-        if (status === 'pending') query.isApproved = false;
-        else if (status === 'verified') query.isApproved = true;
+        if (status === 'pending') {
+            // Only show awaiting review; exclude rejected
+            query.$or = [
+                { approvalStatus: 'pending' },
+                { approvalStatus: { $exists: false }, isApproved: false }
+            ];
+        } else if (status === 'verified') {
+            query.$or = [
+                { approvalStatus: 'approved' },
+                { isApproved: true }
+            ];
+        }
 
         const partners = await Delivery.find(query).select("-password -otp -otpExpiresAt");
         return handleResponse(res, 200, "Delivery partners fetched successfully", partners);
@@ -1292,7 +1302,10 @@ export const updateDeliveryStatus = async (req, res) => {
         const { isApproved, status } = req.body;
 
         const updateData = {};
-        if (isApproved !== undefined) updateData.isApproved = isApproved;
+        if (isApproved !== undefined) {
+            updateData.isApproved = isApproved;
+            updateData.approvalStatus = isApproved ? 'approved' : 'rejected';
+        }
         if (status) updateData.status = status;
 
         const partner = await Delivery.findByIdAndUpdate(id, updateData, { new: true }).select("-password");
@@ -1309,8 +1322,14 @@ export const updateDeliveryStatus = async (req, res) => {
 
 export const createFAQ = async (req, res) => {
     try {
-        const { question, answer, category, displayOrder } = req.body;
-        const faq = new FAQ({ question, answer, category, displayOrder });
+        const { question, answer, category, displayOrder, status } = req.body;
+        const faq = new FAQ({
+            question,
+            answer,
+            category: category || "General",
+            displayOrder: displayOrder ?? 0,
+            status: status === "inactive" ? "inactive" : "active"
+        });
         await faq.save();
         return handleResponse(res, 201, "FAQ created successfully", faq);
     } catch (err) {

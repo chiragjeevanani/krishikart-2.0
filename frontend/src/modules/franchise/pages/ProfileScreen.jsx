@@ -27,12 +27,24 @@ import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { getCurrentLocation } from '@/lib/geo';
 
+const NOTIFICATIONS_STORAGE_KEY = 'franchise_notifications_enabled';
+
+function getStoredNotificationsEnabled() {
+    try {
+        const stored = localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
+        if (stored === null) return true;
+        return stored === 'true';
+    } catch {
+        return true;
+    }
+}
+
 export default function ProfileScreen() {
     const { franchise, logout, updateProfile, loading: contextLoading } = useFranchiseAuth();
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(true);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+    const [notificationsEnabled, setNotificationsEnabled] = useState(getStoredNotificationsEnabled);
     const [isUploading, setIsUploading] = useState(false);
 
     useEffect(() => {
@@ -146,15 +158,9 @@ export default function ProfileScreen() {
                         </p>
                     </div>
 
-                    <div className="mt-6 grid grid-cols-2 gap-8 border-t border-slate-800 pt-6">
-                        <div className="text-center md:text-left">
-                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Operational Since</p>
-                            <p className="text-xs font-black text-white uppercase tabular-nums">Oct 2023</p>
-                        </div>
-                        <div className="text-center md:text-left border-l border-slate-800 pl-8">
-                            <h1 className="text-xl font-black text-white tracking-tight leading-none uppercase">{franchise?.franchiseName}</h1>
-                            <p className="text-xs font-black text-white uppercase">{franchise?.city}, {franchise?.state}</p>
-                        </div>
+                    <div className="mt-6 border-t border-slate-800 pt-6 text-center md:text-left">
+                        <h1 className="text-xl font-black text-white tracking-tight leading-none uppercase">{franchise?.franchiseName}</h1>
+                        <p className="text-xs font-black text-white uppercase mt-1">{franchise?.city}, {franchise?.state}</p>
                     </div>
                 </div>
 
@@ -189,7 +195,13 @@ export default function ProfileScreen() {
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                if (item.id === 'notifications') setNotificationsEnabled(!notificationsEnabled);
+                                                if (item.id === 'notifications') {
+                                                const next = !notificationsEnabled;
+                                                setNotificationsEnabled(next);
+                                                try {
+                                                    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, String(next));
+                                                } catch (_) {}
+                                            }
                                             }}
                                             className={cn(
                                                 "w-10 h-5 border border-slate-200 rounded-full relative p-0.5 transition-colors duration-300",

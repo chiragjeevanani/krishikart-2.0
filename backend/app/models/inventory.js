@@ -32,6 +32,18 @@ const inventorySchema = new mongoose.Schema({
 // Ensure one inventory record per franchise
 inventorySchema.index({ franchiseId: 1 }, { unique: true });
 
+// Never persist negative stock
+inventorySchema.pre('save', function (next) {
+    if (this.items && Array.isArray(this.items)) {
+        this.items.forEach(item => {
+            if (typeof item.currentStock === 'number' && item.currentStock < 0) {
+                item.currentStock = 0;
+            }
+        });
+    }
+    next();
+});
+
 const Inventory = mongoose.model("Inventory", inventorySchema);
 
 export default Inventory;

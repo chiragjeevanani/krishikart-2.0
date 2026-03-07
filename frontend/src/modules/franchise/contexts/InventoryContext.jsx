@@ -16,7 +16,7 @@ export const InventoryProvider = ({ children }) => {
                     id: item.id || item.productId?._id,
                     productId: item.productId?._id,
                     name: item.productId?.name || 'Unknown Product',
-                    currentStock: item.currentStock,
+                    currentStock: Math.max(0, Number(item.currentStock) || 0),
                     mbq: item.mbq,
                     price: item.productId?.price || 0,
                     bestPrice: item.productId?.bestPrice || 0,
@@ -82,6 +82,17 @@ export const InventoryProvider = ({ children }) => {
         }
     };
 
+    const updateStock = (productId, newStock) => {
+        const clamped = Math.max(0, Number(newStock) || 0);
+        setInventory(prev => prev.map(item => {
+            const id = item.id?.toString?.() || item.productId?.toString?.();
+            if (id === productId?.toString?.()) {
+                return { ...item, currentStock: clamped };
+            }
+            return item;
+        }));
+    };
+
     return (
         <InventoryContext.Provider value={{
             inventory,
@@ -90,7 +101,8 @@ export const InventoryProvider = ({ children }) => {
             getLowStockItems,
             getStockStats,
             resetAllStockItems,
-            refreshInventory: fetchInventory
+            refreshInventory: fetchInventory,
+            updateStock
         }}>
             {children}
         </InventoryContext.Provider>

@@ -723,7 +723,7 @@ export const franchiseConfirmReceipt = async (req, res) => {
                                     i.productId.toString() === (item.productId?._id?.toString() || item.productId?.toString())
                                 );
                                 if (invItem) {
-                                    invItem.currentStock -= item.quantity;
+                                    invItem.currentStock = Math.max(0, invItem.currentStock - item.quantity);
                                     invItem.lastUpdated = new Date();
                                 }
                             }

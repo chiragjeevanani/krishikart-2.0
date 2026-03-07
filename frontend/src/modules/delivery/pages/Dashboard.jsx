@@ -13,7 +13,7 @@ import MetricCard from '../components/cards/MetricCard';
 import { useDeliveryAuth } from '../contexts/DeliveryAuthContext';
 import { useDeliveryOrders } from '../contexts/DeliveryOrderContext';
 import api from '@/lib/axios';
-import axios from 'axios';
+import { toast } from 'sonner';
 
 const Dashboard = () => {
     const { delivery, setDelivery } = useDeliveryAuth();
@@ -60,20 +60,27 @@ const Dashboard = () => {
 
     const toggleOnline = async () => {
         if (isUpdating) return;
+        const nextState = !isOnline;
         setIsUpdating(true);
         try {
-            const nextState = !isOnline;
             const response = await api.put('/delivery/availability', { isOnline: nextState });
-            if (response.data.success) {
-                const updatedDelivery = response.data.delivery || response.data.result;
+            const ok = response.data && (response.data.success === true || response.status === 200);
+            const updatedDelivery = response.data?.result || response.data?.delivery;
+            if (ok) {
                 setIsOnline(nextState);
-                if (updatedDelivery) {
-                    setDelivery(updatedDelivery);
-                    localStorage.setItem('deliveryData', JSON.stringify(updatedDelivery));
-                }
+                const base = delivery || {};
+                const toSave = updatedDelivery ? { ...base, ...updatedDelivery, isOnline: nextState } : { ...base, isOnline: nextState };
+                if (setDelivery) setDelivery(toSave);
+                try {
+                    localStorage.setItem('deliveryData', JSON.stringify(toSave));
+                } catch (_) {}
+                toast.success(nextState ? 'You are now online' : 'You are now offline');
+            } else {
+                toast.error('Could not update status');
             }
         } catch (error) {
             console.error('Toggle availability error:', error);
+            toast.error(error.response?.data?.message || 'Failed to update availability');
         } finally {
             setIsUpdating(false);
         }

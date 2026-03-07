@@ -64,29 +64,42 @@ export default function OnboardingApprovalScreen() {
         (p.mobile || "").toLowerCase().includes(searchTerm.toLowerCase())
     ) : [];
 
-    const handleApprove = async (id) => {
+    const handleApprove = async (idOrItem) => {
+        let id = idOrItem;
+        if (typeof idOrItem === 'object' && idOrItem !== null) {
+            id = idOrItem._id ?? idOrItem.id;
+            if (id == null && typeof idOrItem.toString === 'function') id = idOrItem.toString();
+        }
+        if (id == null || id === '') return;
+        const idStr = String(id);
         if (activeTab === 'vendor') {
-            const success = await updateVendorStatus(id, 'active');
+            const success = await updateVendorStatus(idStr, 'active');
             if (success) setSelectedItem(null);
         } else if (activeTab === 'franchise') {
-            const success = await reviewFranchiseKYC(id, 'verified');
+            const success = await reviewFranchiseKYC(idStr, 'verified');
             if (success) setSelectedItem(null);
         } else if (activeTab === 'delivery') {
-            const success = await updateDeliveryPartnerStatus(id, true);
+            const success = await updateDeliveryPartnerStatus(idStr, true);
             if (success) setSelectedItem(null);
         }
     };
 
-    const handleReject = async (id, reason) => {
+    const handleReject = async (idOrItem, reason) => {
+        let id = idOrItem;
+        if (typeof idOrItem === 'object' && idOrItem !== null) {
+            id = idOrItem._id ?? idOrItem.id;
+            if (id == null && typeof idOrItem.toString === 'function') id = idOrItem.toString();
+        }
+        if (id == null || id === '') return;
+        const idStr = String(id);
         if (activeTab === 'vendor') {
-            const success = await updateVendorStatus(id, 'blocked');
+            const success = await updateVendorStatus(idStr, 'blocked');
             if (success) setSelectedItem(null);
         } else if (activeTab === 'franchise') {
-            const success = await reviewFranchiseKYC(id, 'rejected', reason);
+            const success = await reviewFranchiseKYC(idStr, 'rejected', reason);
             if (success) setSelectedItem(null);
         } else if (activeTab === 'delivery') {
-            // Reusing update status but with approved=false
-            const success = await updateDeliveryPartnerStatus(id, false);
+            const success = await updateDeliveryPartnerStatus(idStr, false);
             if (success) setSelectedItem(null);
         }
     };
@@ -225,9 +238,9 @@ export default function OnboardingApprovalScreen() {
                                 key={item._id}
                                 item={item}
                                 type={activeTab}
-                                onApprove={() => handleApprove(item._id)}
-                                onReject={() => handleReject(item._id)}
-                                onViewDoc={(item) => setSelectedItem(item)}
+                                onApprove={() => handleApprove(item)}
+                                onReject={() => handleReject(item)}
+                                onViewDoc={(it) => setSelectedItem(it)}
                             />
                         ))}
 
@@ -249,8 +262,8 @@ export default function OnboardingApprovalScreen() {
                 onClose={() => setSelectedItem(null)}
                 item={selectedItem}
                 type={activeTab}
-                onApprove={(item) => handleApprove(item._id)}
-                onReject={(item) => handleReject(item._id)}
+                onApprove={(it) => handleApprove(it || selectedItem)}
+                onReject={(it) => handleReject(it || selectedItem)}
             />
         </div>
     );

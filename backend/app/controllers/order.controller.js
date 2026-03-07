@@ -967,7 +967,7 @@ export const updateOrderStatus = async (req, res) => {
           for (const item of order.items) {
             const inventoryItem = inventory.items.find(i => i.productId.toString() === item.productId.toString());
             if (inventoryItem) {
-              inventoryItem.currentStock -= item.quantity;
+              inventoryItem.currentStock = Math.max(0, inventoryItem.currentStock - item.quantity);
               inventoryItem.lastUpdated = new Date();
             }
           }

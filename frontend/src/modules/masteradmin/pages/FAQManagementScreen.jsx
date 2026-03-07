@@ -20,7 +20,7 @@ export default function FAQManagementScreen() {
         try {
             const { data } = await api.get('/masteradmin/faqs');
             if (data.success) {
-                setFaqs(data.result);
+                setFaqs(data.results || data.result || []);
             }
         } catch (error) {
             console.error("Failed to fetch FAQs", error);

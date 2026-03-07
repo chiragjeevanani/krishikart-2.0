@@ -39,10 +39,12 @@ import MetricRow from '../components/cards/MetricRow';
 import ChartPanel from '../components/cards/ChartPanel';
 import DataGrid from '../components/tables/DataGrid';
 import FilterBar from '../components/tables/FilterBar';
+import OrderHistoryModal from '../components/modals/OrderHistoryModal';
 
 export default function DashboardScreen() {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(true);
+    const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
     const { franchise } = useFranchiseAuth();
     const { stats, orders, refreshOrders } = useFranchiseOrders();
     const { getStockStats, refreshInventory } = useInventory();
@@ -188,8 +190,26 @@ export default function DashboardScreen() {
 
                     <div className="flex items-center gap-2">
                         <div className="flex items-center bg-slate-100 p-0.5 rounded-sm mr-2">
-                            <button className="px-3 py-1 text-[9px] font-bold bg-white text-slate-900 shadow-sm rounded-sm uppercase tracking-widest">Today</button>
-                            <button className="px-3 py-1 text-[9px] font-bold text-slate-400 hover:text-slate-900 uppercase tracking-widest transition-colors">History</button>
+                            <button
+                                type="button"
+                                onClick={() => setIsHistoryModalOpen(false)}
+                                className={cn(
+                                    "px-3 py-1 text-[9px] font-bold rounded-sm uppercase tracking-widest transition-colors",
+                                    !isHistoryModalOpen ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-900"
+                                )}
+                            >
+                                Today
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setIsHistoryModalOpen(true)}
+                                className={cn(
+                                    "px-3 py-1 text-[9px] font-bold rounded-sm uppercase tracking-widest transition-colors",
+                                    isHistoryModalOpen ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-900"
+                                )}
+                            >
+                                History
+                            </button>
                         </div>
                         <button
                             onClick={() => {
@@ -385,6 +405,11 @@ export default function DashboardScreen() {
                     </div>
                 )}
             </AnimatePresence>
+
+            <OrderHistoryModal
+                isOpen={isHistoryModalOpen}
+                onClose={() => setIsHistoryModalOpen(false)}
+            />
         </div>
     );
 }

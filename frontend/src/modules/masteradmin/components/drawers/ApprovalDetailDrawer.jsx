@@ -41,14 +41,15 @@ export default function ApprovalDetailDrawer({ isOpen, onClose, item, type, onAp
         }
     };
 
-    const handleAction = (action) => {
+    const handleAction = async (action) => {
         setIsProcessing(true);
-        setTimeout(() => {
-            if (action === 'approve') onApprove(item);
-            else onReject(item);
+        try {
+            const fn = action === 'approve' ? onApprove : onReject;
+            const result = typeof fn === 'function' ? await Promise.resolve(fn(item)) : undefined;
+            if (result !== false) onClose();
+        } finally {
             setIsProcessing(false);
-            onClose();
-        }, 1500);
+        }
     };
 
     const documents = isVendor ? [
