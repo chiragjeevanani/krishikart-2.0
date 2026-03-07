@@ -1434,6 +1434,7 @@ export const getDispatchedOrders = async (req, res) => {
         customerAddress: order.shippingAddress,
         distance: distance,
         itemsCount: order.items.reduce((acc, item) => acc + item.quantity, 0),
+        numberOfPackages: order.numberOfPackages || 0,
         items: order.items,
         timeWindow: "20-30 mins",
         priority: "medium",

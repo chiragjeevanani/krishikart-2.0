@@ -43,6 +43,7 @@ export default function OrderDetailScreen() {
     const [reviewReasons, setReviewReasons] = useState({});
     const [isReviewing, setIsReviewing] = useState(false);
     const [isAssigningPickup, setIsAssigningPickup] = useState(false);
+    const [numberOfPackages, setNumberOfPackages] = useState(1);
 
     const fetchOrderDetail = async () => {
         setIsLoading(true);
@@ -468,12 +469,30 @@ export default function OrderDetailScreen() {
                                         </button>
                                     </div>
                                 ) : (
-                                    <button
-                                        onClick={() => handleUpdateStatus('Packed')}
-                                        className="w-full h-12 bg-emerald-600 text-white rounded-sm font-black uppercase text-[10px] tracking-[0.2em] shadow-lg hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
-                                    >
-                                        Proceed to Packing <ArrowRight size={14} />
-                                    </button>
+                                    <div className="space-y-3 p-4 border border-emerald-100 bg-emerald-50 rounded-sm">
+                                        <label className="text-[10px] font-black uppercase text-emerald-800 tracking-widest flex items-center justify-between">
+                                            <span>Number of Packages</span>
+                                            <Package size={14} />
+                                        </label>
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                value={numberOfPackages}
+                                                onChange={(e) => setNumberOfPackages(e.target.value)}
+                                                className="w-20 h-10 text-center text-sm font-black border border-emerald-200 rounded-sm focus:outline-none focus:border-emerald-500 bg-white"
+                                            />
+                                            <button
+                                                onClick={async () => {
+                                                    await updateOrderStatus(id, 'Packed', { numberOfPackages: Number(numberOfPackages) });
+                                                    fetchOrderDetail();
+                                                }}
+                                                className="flex-1 h-10 bg-emerald-600 text-white rounded-sm font-black uppercase text-[10px] tracking-[0.2em] shadow-lg hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
+                                            >
+                                                Proceed to Packing <ArrowRight size={14} />
+                                            </button>
+                                        </div>
+                                    </div>
                                 )
                             )}
 
@@ -511,10 +530,10 @@ export default function OrderDetailScreen() {
                             </button>
                         </div>
 
-{(order.returnRequests?.length ?? 0) > 0 && (
-                                <div className="bg-white border border-slate-200 p-6 rounded-sm space-y-4">
-                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Return Requests</h3>
-                                    <div className="space-y-4">
+                        {(order.returnRequests?.length ?? 0) > 0 && (
+                            <div className="bg-white border border-slate-200 p-6 rounded-sm space-y-4">
+                                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Return Requests</h3>
+                                <div className="space-y-4">
                                     {(order.returnRequests || []).map((request) => (
                                         <div key={request.index} className="border border-slate-200 rounded-sm p-4 space-y-3">
                                             <div className="flex items-center justify-between">
