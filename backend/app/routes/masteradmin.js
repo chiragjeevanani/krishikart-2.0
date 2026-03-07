@@ -43,7 +43,9 @@ import {
   getAdminDashboardStats,
   getAdminAnalyticsStats,
   testPushNotification,
-  globalSearch
+  globalSearch,
+  getAllDeliveryPartners,
+  updateDeliveryStatus
 } from "../controllers/masteradmin.controller.js";
 
 import { protectMasterAdmin, requirePermission } from "../middlewares/masteradmin.auth.js";
@@ -83,6 +85,10 @@ router.get("/franchises/:id", protectMasterAdmin, requirePermission("franchises"
 router.put("/franchises/:id/status", protectMasterAdmin, requirePermission("franchises"), updateFranchiseStatus);
 router.put("/franchises/:id/service-area", protectMasterAdmin, requirePermission("franchises"), updateFranchiseServiceArea);
 router.put("/franchises/:id/kyc-review", protectMasterAdmin, requirePermission("approvals"), reviewFranchiseKYC);
+
+/* 🚚 Delivery Partner Management */
+router.get("/delivery-partners", protectMasterAdmin, requirePermission("approvals"), getAllDeliveryPartners);
+router.put("/delivery-partners/:id/status", protectMasterAdmin, requirePermission("approvals"), updateDeliveryStatus);
 
 /* 👥 Customer Management */
 router.get("/customers", protectMasterAdmin, requirePermission("credit"), getAllCustomers);

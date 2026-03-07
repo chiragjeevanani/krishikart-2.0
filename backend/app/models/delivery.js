@@ -6,19 +6,21 @@ const deliverySchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      match: [/^[a-zA-Z\s]+$/, "Name should only contain alphabets"],
     },
 
     mobile: {
       type: String,
       required: true,
       unique: true,
-      match: [/^[6-9]\d{9}$/, "Invalid mobile number"],
+      match: [/^[6-9]\d{9}$/, "Invalid mobile number. Must be 10 digits starting with 6-9."],
     },
 
     vehicleNumber: {
       type: String,
       required: true,
       uppercase: true,
+      match: [/^[A-Z]{4}\d{6}$/, "Vehicle number must be 4 alphabets followed by 6 digits (e.g. ABCD123456)"],
     },
 
     vehicleType: {
@@ -40,6 +42,29 @@ const deliverySchema = new mongoose.Schema(
       type: String,
       enum: ["active", "blocked"],
       default: "active",
+    },
+
+    aadharNumber: {
+      type: String,
+    },
+
+    panNumber: {
+      type: String,
+      uppercase: true,
+    },
+
+    licenseNumber: {
+      type: String,
+      uppercase: true,
+    },
+
+    aadharImage: String,
+    panImage: String,
+    licenseImage: String,
+
+    isApproved: {
+      type: Boolean,
+      default: false,
     },
     location: {
       type: {

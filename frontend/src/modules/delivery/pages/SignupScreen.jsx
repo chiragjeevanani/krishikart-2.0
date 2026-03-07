@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Navigation, ShieldCheck, ArrowRight, Phone, User, Truck, Car } from 'lucide-react';
+import { Navigation, ShieldCheck, ArrowRight, Phone, User, Truck } from 'lucide-react';
 import { ROUTES } from '../utils/constants';
 import { useNavigate } from 'react-router-dom';
 import api from '../../../lib/axios';
@@ -11,7 +11,15 @@ const SignupScreen = () => {
         name: '',
         phone: '',
         vehicleNumber: '',
-        vehicleType: 'bike' // 'bike', 'scooter', 'van'
+        vehicleType: 'bike', // 'bike', 'scooter'
+        aadharImage: null,
+        panImage: null,
+        licenseImage: null
+    });
+    const [previews, setPreviews] = useState({
+        aadhar: null,
+        pan: null,
+        license: null
     });
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [loading, setLoading] = useState(false);
@@ -51,14 +59,36 @@ const SignupScreen = () => {
 
     const handleSendOtp = async (e) => {
         e.preventDefault();
-        if (formData.phone.length !== 10 || !formData.name || !formData.vehicleNumber) return;
+        if (formData.phone.length !== 10) {
+            alert('Please enter a valid 10-digit mobile number');
+            return;
+        }
+        if (!/^[a-zA-Z\s]+$/.test(formData.name)) {
+            alert('Name should only contain alphabets');
+            return;
+        }
+        if (!/^[A-Z]{4}\d{6}$/.test(formData.vehicleNumber)) {
+            alert('Vehicle number must be 4 alphabets followed by 6 digits (e.g. ABCD123456)');
+            return;
+        }
+        if (!formData.aadharImage || !formData.panImage || !formData.licenseImage) {
+            alert('Please upload all document images (Aadhar, PAN, and License)');
+            return;
+        }
+
         setLoading(true);
         try {
-            await api.post('/delivery/register', {
-                fullName: formData.name,
-                mobile: formData.phone,
-                vehicleNumber: formData.vehicleNumber,
-                vehicleType: formData.vehicleType
+            const data = new FormData();
+            data.append('fullName', formData.name);
+            data.append('mobile', formData.phone);
+            data.append('vehicleNumber', formData.vehicleNumber);
+            data.append('vehicleType', formData.vehicleType);
+            data.append('aadharImage', formData.aadharImage);
+            data.append('panImage', formData.panImage);
+            data.append('licenseImage', formData.licenseImage);
+
+            await api.post('/delivery/register', data, {
+                headers: { 'Content-Type': 'multipart/form-data' }
             });
             setStep('otp');
             setTimer(120);
@@ -80,10 +110,8 @@ const SignupScreen = () => {
                 mobile: formData.phone,
                 otp: otpCode
             });
-            // Store token and delivery user data
             localStorage.setItem('deliveryToken', response.data.token);
             localStorage.setItem('deliveryData', JSON.stringify(response.data));
-
             navigate(ROUTES.DASHBOARD);
         } catch (error) {
             console.error(error);
@@ -94,13 +122,24 @@ const SignupScreen = () => {
     };
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        if (name === 'phone') {
+        const { name, value, files } = e.target;
+        if (files) {
+            const file = files[0];
+            if (file) {
+                setFormData(prev => ({ ...prev, [name]: file }));
+                const previewKey = name.replace('Image', '');
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    setPreviews(prev => ({ ...prev, [previewKey]: reader.result }));
+                };
+                reader.readAsDataURL(file);
+            }
+        } else if (name === 'phone') {
             setFormData(prev => ({ ...prev, [name]: value.replace(/\D/g, '').slice(0, 10) }));
         } else if (name === 'name') {
             setFormData(prev => ({ ...prev, [name]: value.replace(/[^A-Za-z\s]/g, '') }));
         } else if (name === 'vehicleNumber') {
-            setFormData(prev => ({ ...prev, [name]: value.toUpperCase().replace(/[^A-Z0-9]/g, '') }));
+            setFormData(prev => ({ ...prev, [name]: value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10) }));
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
         }
@@ -176,8 +215,6 @@ const SignupScreen = () => {
                                             required
                                             value={formData.name}
                                             onChange={handleChange}
-                                            pattern="[A-Za-z\s]+"
-                                            title="Only alphabets and spaces are allowed"
                                             placeholder="Enter your name"
                                             className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-border bg-slate-50/50 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all text-sm font-black tracking-tight"
                                         />
@@ -214,12 +251,42 @@ const SignupScreen = () => {
                                             required
                                             value={formData.vehicleNumber}
                                             onChange={handleChange}
-                                            pattern="^[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}$"
-                                            title="Invalid Vehicle Number (must be 4 alphabets and 6 numbers e.g., MP09AB1234)"
                                             maxLength={10}
-                                            placeholder="MP09AB1234"
+                                            placeholder="ABCD 123456"
                                             className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-border bg-slate-50/50 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all text-sm font-black tracking-tight uppercase"
                                         />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4 pt-2">
+                                    <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] text-center">Upload Documents</p>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {[
+                                            { name: 'aadharImage', label: 'Aadhar', preview: previews.aadhar },
+                                            { name: 'panImage', label: 'PAN', preview: previews.pan },
+                                            { name: 'licenseImage', label: 'License', preview: previews.license }
+                                        ].map((doc) => (
+                                            <div key={doc.name} className="space-y-1">
+                                                <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center block">{doc.label}</label>
+                                                <label className="relative flex flex-col items-center justify-center aspect-square rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 hover:bg-white hover:border-primary transition-all cursor-pointer overflow-hidden group">
+                                                    {doc.preview ? (
+                                                        <img src={doc.preview} alt="Preview" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="flex flex-col items-center gap-1">
+                                                            <ShieldCheck className="w-5 h-5 text-slate-300 group-hover:text-primary transition-colors" />
+                                                            <span className="text-[8px] font-black text-slate-400">UPLOAD</span>
+                                                        </div>
+                                                    )}
+                                                    <input
+                                                        type="file"
+                                                        name={doc.name}
+                                                        accept="image/*"
+                                                        onChange={handleChange}
+                                                        className="hidden"
+                                                    />
+                                                </label>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
 
@@ -241,9 +308,9 @@ const SignupScreen = () => {
 
                                 <motion.button
                                     whileTap={{ scale: 0.96 }}
-                                    disabled={loading || !formData.name || formData.phone.length !== 10 || !formData.vehicleNumber}
+                                    disabled={loading || !formData.name || formData.phone.length !== 10 || !formData.vehicleNumber || !formData.aadharImage || !formData.panImage || !formData.licenseImage}
                                     type="submit"
-                                    className={`w-full py-4 rounded-3xl font-black text-sm shadow-xl transition-all flex items-center justify-center gap-2 mt-4 ${!loading && formData.name && formData.phone.length === 10 && formData.vehicleNumber ? 'bg-primary text-white shadow-primary/30' : 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'}`}
+                                    className={`w-full py-4 rounded-3xl font-black text-sm shadow-xl transition-all flex items-center justify-center gap-2 mt-4 ${!loading && formData.name && formData.phone.length === 10 && formData.vehicleNumber && formData.aadharImage && formData.panImage && formData.licenseImage ? 'bg-primary text-white shadow-primary/30' : 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'}`}
                                 >
                                     {loading ? (
                                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

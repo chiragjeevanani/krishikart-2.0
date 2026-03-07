@@ -27,7 +27,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export default function OnboardingApprovalScreen() {
-    const { vendors, franchises, isLoading: adminLoading, fetchVendors, fetchPendingFranchises, updateVendorStatus, reviewFranchiseKYC } = useAdmin();
+    const { vendors, franchises, deliveryPartners, isLoading: adminLoading, fetchVendors, fetchPendingFranchises, fetchDeliveryPartners, updateVendorStatus, reviewFranchiseKYC, updateDeliveryPartnerStatus } = useAdmin();
     const [searchParams, setSearchParams] = useSearchParams();
     const activeTab = searchParams.get('type') || 'vendor';
     const [searchTerm, setSearchTerm] = useState('');
@@ -43,12 +43,15 @@ export default function OnboardingApprovalScreen() {
             fetchVendors(mappedStatus);
         } else if (activeTab === 'franchise') {
             fetchPendingFranchises(mappedStatus);
+        } else if (activeTab === 'delivery') {
+            fetchDeliveryPartners(statusFilter.toLowerCase());
         }
     }, [activeTab, statusFilter]);
 
     const tabs = [
         { id: 'vendor', label: 'Vendor KYC', icon: Users, count: vendors?.length || 0 },
-        { id: 'franchise', label: 'Franchise Docs', icon: Building, count: franchises?.length || 0 }
+        { id: 'franchise', label: 'Franchise Docs', icon: Building, count: franchises?.length || 0 },
+        { id: 'delivery', label: 'Delivery Partners', icon: Users, count: deliveryPartners?.length || 0 }
     ];
 
     const currentItems = activeTab === 'vendor' ? (vendors || []).filter(v =>
@@ -57,6 +60,9 @@ export default function OnboardingApprovalScreen() {
     ) : activeTab === 'franchise' ? (franchises || []).filter(f =>
         (f.franchiseName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
         (f.ownerName || "").toLowerCase().includes(searchTerm.toLowerCase())
+    ) : activeTab === 'delivery' ? (deliveryPartners || []).filter(p =>
+        (p.fullName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (p.mobile || "").toLowerCase().includes(searchTerm.toLowerCase())
     ) : [];
 
     const handleApprove = async (id) => {
@@ -65,6 +71,9 @@ export default function OnboardingApprovalScreen() {
             if (success) setSelectedItem(null);
         } else if (activeTab === 'franchise') {
             const success = await reviewFranchiseKYC(id, 'verified');
+            if (success) setSelectedItem(null);
+        } else if (activeTab === 'delivery') {
+            const success = await updateDeliveryPartnerStatus(id, true);
             if (success) setSelectedItem(null);
         }
     };
@@ -75,6 +84,10 @@ export default function OnboardingApprovalScreen() {
             if (success) setSelectedItem(null);
         } else if (activeTab === 'franchise') {
             const success = await reviewFranchiseKYC(id, 'rejected', reason);
+            if (success) setSelectedItem(null);
+        } else if (activeTab === 'delivery') {
+            // Reusing update status but with approved=false
+            const success = await updateDeliveryPartnerStatus(id, false);
             if (success) setSelectedItem(null);
         }
     };
@@ -148,7 +161,7 @@ export default function OnboardingApprovalScreen() {
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{statusFilter} Records</p>
                     <div className="flex items-center gap-2">
                         <span className="text-xl font-black text-slate-900 tabular-nums">
-                            {activeTab === 'vendor' ? (vendors?.length || 0) : activeTab === 'franchise' ? (franchises?.length || 0) : 0}
+                            {activeTab === 'vendor' ? (vendors?.length || 0) : activeTab === 'franchise' ? (franchises?.length || 0) : activeTab === 'delivery' ? (deliveryPartners?.length || 0) : 0}
                         </span>
                         <div className={cn(
                             "px-1.5 py-0.5 rounded-sm text-[9px] font-bold uppercase tracking-wider border",
@@ -188,7 +201,8 @@ export default function OnboardingApprovalScreen() {
                         ? (activeTab === 'vendor' ? 'active' : 'verified')
                         : statusFilter.toLowerCase();
                     if (activeTab === 'vendor') fetchVendors(mappedStatus);
-                    else fetchPendingFranchises(mappedStatus);
+                    else if (activeTab === 'franchise') fetchPendingFranchises(mappedStatus);
+                    else if (activeTab === 'delivery') fetchDeliveryPartners(statusFilter.toLowerCase());
                 }}
             />
 

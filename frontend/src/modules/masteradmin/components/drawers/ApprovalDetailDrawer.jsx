@@ -6,6 +6,7 @@ import { useState } from 'react';
 export default function ApprovalDetailDrawer({ isOpen, onClose, item, type, onApprove, onReject }) {
     const isVendor = type === 'vendor';
     const isFranchise = type === 'franchise';
+    const isDelivery = type === 'delivery';
     const isCredit = type === 'credit';
     const [isProcessing, setIsProcessing] = useState(false);
 
@@ -31,7 +32,13 @@ export default function ApprovalDetailDrawer({ isOpen, onClose, item, type, onAp
             { type: 'Aadhaar Card', fileName: `Aadhaar: ${item.kyc?.aadhaarNumber || 'N/A'}`, url: item.kyc?.aadhaarImage, submitted: !!item.kyc?.aadhaarImage },
             { type: 'PAN Card', fileName: `PAN: ${item.kyc?.panNumber || 'N/A'}`, url: item.kyc?.panImage, submitted: !!item.kyc?.panImage }
         ] :
-            item.supportingDocs || [];
+            isDelivery ? [
+                { type: 'Aadhar Number', fileName: item.aadharNumber, url: item.aadharImage, submitted: !!item.aadharImage },
+                { type: 'PAN Number', fileName: item.panNumber, url: item.panImage, submitted: !!item.panImage },
+                { type: 'License Number', fileName: item.licenseNumber, url: item.licenseImage, submitted: !!item.licenseImage },
+                { type: 'Vehicle', fileName: `${item.vehicleType?.toUpperCase()}: ${item.vehicleNumber}`, url: null, submitted: true }
+            ] :
+                item.supportingDocs || [];
 
     return (
         <AnimatePresence>
@@ -58,7 +65,8 @@ export default function ApprovalDetailDrawer({ isOpen, onClose, item, type, onAp
                                 <div className={cn(
                                     "w-16 h-16 rounded-[24px] flex items-center justify-center shadow-inner",
                                     isVendor ? "bg-emerald-50 text-emerald-500" :
-                                        isFranchise ? "bg-blue-50 text-blue-500" : "bg-purple-50 text-purple-500"
+                                        isFranchise ? "bg-blue-50 text-blue-500" :
+                                            isDelivery ? "bg-amber-50 text-amber-500" : "bg-purple-50 text-purple-500"
                                 )}>
                                     {isVendor ? <User size={32} /> : isFranchise ? <Building size={32} /> : <ShieldCheck size={32} />}
                                 </div>
@@ -176,8 +184,8 @@ export default function ApprovalDetailDrawer({ isOpen, onClose, item, type, onAp
                                                                 <p className="text-xs font-black text-slate-900 uppercase tracking-tight">
                                                                     {(doc.type || 'Document').replace('_', ' ')}
                                                                 </p>
-                                                                <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">
-                                                                    {isVendor ? doc.fileName : doc.submitted ? 'Verified File' : 'Missing File'}
+                                                                <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5 truncate">
+                                                                    {isVendor ? doc.fileName : isDelivery ? doc.fileName : doc.submitted ? 'Verified File' : 'Missing File'}
                                                                 </p>
                                                             </div>
                                                         </div>

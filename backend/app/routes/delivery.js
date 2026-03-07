@@ -12,6 +12,7 @@ import {
 
 import { protectDelivery } from "../middlewares/delivery.auth.js";
 import { protectFranchise } from "../middlewares/franchise.auth.js";
+import upload from "../middlewares/upload.js";
 import {
   getAllDeliveryPartners,
   getMyCodSummary,
@@ -25,7 +26,11 @@ import {
 } from "../controllers/delivery.controller.js";
 
 const router = express.Router();
-router.post("/register", registerDelivery);
+router.post("/register", upload.fields([
+  { name: "aadharImage", maxCount: 1 },
+  { name: "panImage", maxCount: 1 },
+  { name: "licenseImage", maxCount: 1 }
+]), registerDelivery);
 
 
 router.post("/send-otp", sendDeliveryOTP);

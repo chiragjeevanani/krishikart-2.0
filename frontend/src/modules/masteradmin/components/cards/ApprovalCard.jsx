@@ -1,10 +1,11 @@
 import { motion } from 'framer-motion';
-import { FileCheck, ShieldCheck, XCircle, ExternalLink, Calendar, UserCheck, CheckCircle2, AlertCircle } from 'lucide-react';
+import { FileCheck, ShieldCheck, XCircle, ExternalLink, Calendar, UserCheck, CheckCircle2, AlertCircle, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function ApprovalCard({ item, type, onApprove, onReject, onViewDoc }) {
     const isVendor = type === 'vendor';
     const isFranchise = type === 'franchise';
+    const isDelivery = type === 'delivery';
     const isCredit = type === 'credit';
 
     return (
@@ -19,10 +20,12 @@ export default function ApprovalCard({ item, type, onApprove, onReject, onViewDo
                     <div className={cn(
                         "w-10 h-10 rounded-sm flex items-center justify-center border",
                         isVendor ? "bg-emerald-50 border-emerald-100 text-emerald-600" :
-                            isFranchise ? "bg-blue-50 border-blue-100 text-blue-600" : "bg-purple-50 border-purple-100 text-purple-600"
+                            isFranchise ? "bg-blue-50 border-blue-100 text-blue-600" :
+                                isDelivery ? "bg-amber-50 border-amber-100 text-amber-600" : "bg-purple-50 border-purple-100 text-purple-600"
                     )}>
                         {isVendor ? <UserCheck size={18} /> :
-                            isFranchise ? <ShieldCheck size={18} /> : <FileCheck size={18} />}
+                            isFranchise ? <ShieldCheck size={18} /> :
+                                isDelivery ? <Users size={18} /> : <FileCheck size={18} />}
                     </div>
                     <div>
                         <h4 className="font-bold text-slate-900 text-xs leading-none mb-1">
@@ -38,9 +41,9 @@ export default function ApprovalCard({ item, type, onApprove, onReject, onViewDo
                 </div>
                 <div className={cn(
                     "px-1.5 py-0.5 rounded-sm text-[8px] font-black uppercase tracking-widest",
-                    (item.status === 'active' || item.kyc?.status === 'verified') ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"
+                    (item.status === 'active' || item.kyc?.status === 'verified' || item.isApproved) ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"
                 )}>
-                    {isVendor ? item.status : item.kyc?.status || 'Pending'}
+                    {isVendor ? item.status : isDelivery ? (item.isApproved ? 'Approved' : 'Pending') : item.kyc?.status || 'Pending'}
                 </div>
             </div>
 
@@ -74,6 +77,22 @@ export default function ApprovalCard({ item, type, onApprove, onReject, onViewDo
                                 {doc.value && <ExternalLink size={10} className="text-slate-300 group-hover:text-primary transition-colors" />}
                             </div>
                         ))}
+                        {isDelivery && [
+                            { label: 'Aadhar Number', value: item.aadharNumber, image: item.aadharImage },
+                            { label: 'PAN Number', value: item.panNumber, image: item.panImage },
+                            { label: 'License Number', value: item.licenseNumber, image: item.licenseImage }
+                        ].map((doc, idx) => (
+                            <div key={idx} className="flex items-center justify-between py-1 border-b border-slate-50 last:border-0">
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-medium text-slate-600 flex items-center gap-1.5">
+                                        <CheckCircle2 size={10} className={doc.image ? "text-emerald-500" : "text-slate-300"} />
+                                        {doc.label}
+                                    </span>
+                                    <span className="text-[9px] font-bold text-slate-900 ml-4 tabular-nums">{doc.value}</span>
+                                </div>
+                                {doc.image && <ExternalLink size={10} className="text-slate-300 group-hover:text-primary transition-colors" />}
+                            </div>
+                        ))}
                         {isCredit && (
                             <div className="flex flex-col gap-1 p-2 bg-slate-50 border border-slate-100 rounded-sm">
                                 <span className="text-[9px] font-bold text-slate-400 uppercase">Exposure Requested</span>
@@ -94,12 +113,12 @@ export default function ApprovalCard({ item, type, onApprove, onReject, onViewDo
                     Reject
                 </button>
                 <button
-                    disabled={item.status === 'active' || item.kyc?.status === 'verified'}
+                    disabled={item.status === 'active' || item.kyc?.status === 'verified' || item.isApproved}
                     onClick={(e) => { e.stopPropagation(); onApprove(item); }}
                     className="py-1.5 bg-slate-900 text-white rounded-sm font-bold text-[9px] uppercase tracking-widest hover:bg-slate-800 transition-all flex items-center justify-center gap-1.5 shadow-sm disabled:bg-emerald-500 disabled:opacity-100"
                 >
-                    <CheckCircle2 size={12} className={cn((item.status === 'active' || item.kyc?.status === 'verified') ? "text-slate-900" : "text-emerald-400")} />
-                    {(item.status === 'active' || item.kyc?.status === 'verified') ? 'Verified' : 'Verify'}
+                    <CheckCircle2 size={12} className={cn((item.status === 'active' || item.kyc?.status === 'verified' || item.isApproved) ? "text-slate-900" : "text-emerald-400")} />
+                    {(item.status === 'active' || item.kyc?.status === 'verified' || item.isApproved) ? 'Verified' : 'Verify'}
                 </button>
             </div>
         </motion.div>

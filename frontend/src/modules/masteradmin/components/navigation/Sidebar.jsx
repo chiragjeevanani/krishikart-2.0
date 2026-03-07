@@ -127,6 +127,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                     submenu: [
                         { label: 'Vendor Documents', path: '/masteradmin/approvals?type=vendor', icon: Users },
                         { label: 'Franchise Documents', path: '/masteradmin/approvals?type=franchise', icon: Building },
+                        { label: 'Delivery Partners', path: '/masteradmin/approvals?type=delivery', icon: Truck },
                     ]
                 },
                 { icon: Briefcase, label: 'Team Management', path: '/masteradmin/team', permissionKey: 'superadmin' },

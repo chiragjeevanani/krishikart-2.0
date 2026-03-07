@@ -7,6 +7,7 @@ const AdminContext = createContext();
 export const AdminProvider = ({ children }) => {
     const [vendors, setVendors] = useState([]);
     const [franchises, setFranchises] = useState([]);
+    const [deliveryPartners, setDeliveryPartners] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
 
     const fetchVendors = async (status) => {
@@ -63,6 +64,35 @@ export const AdminProvider = ({ children }) => {
             }
         } catch (error) {
             toast.error(error.response?.data?.message || 'Review failed');
+            return false;
+        }
+    };
+
+    const fetchDeliveryPartners = async (status) => {
+        setIsLoading(true);
+        try {
+            const response = await api.get('/masteradmin/delivery-partners', { params: { status } });
+            if (response.data.success) {
+                setDeliveryPartners(response.data.results || response.data.result || []);
+            }
+        } catch (error) {
+            console.error('Fetch delivery partners error:', error);
+            toast.error('Failed to fetch delivery partners');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const updateDeliveryPartnerStatus = async (id, isApproved) => {
+        try {
+            const response = await api.put(`/masteradmin/delivery-partners/${id}/status`, { isApproved });
+            if (response.data.success) {
+                toast.success(`Delivery partner ${isApproved ? 'approved' : 'rejected'}`);
+                setDeliveryPartners(prev => prev.filter(p => p._id !== id));
+                return true;
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Update failed');
             return false;
         }
     };
@@ -162,7 +192,10 @@ export const AdminProvider = ({ children }) => {
             assignProductsToVendor,
             createVendorByAdmin,
             createFranchiseByAdmin,
-            updateFranchiseServiceArea
+            updateFranchiseServiceArea,
+            deliveryPartners,
+            fetchDeliveryPartners,
+            updateDeliveryPartnerStatus
         }}>
             {children}
         </AdminContext.Provider>

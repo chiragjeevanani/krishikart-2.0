@@ -11,6 +11,7 @@ import LoyaltyConfigHistory from "../models/loyaltyConfigHistory.js";
 import DeliveryCodRemittance from "../models/deliveryCodRemittance.js";
 import handleResponse from "../utils/helper.js";
 import bcrypt from "bcryptjs";
+import Delivery from "../models/delivery.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import { geocodeAddress } from "../utils/geo.js";
 import { sendNotificationToUser } from "../utils/pushNotificationHelper.js";
@@ -1263,6 +1264,42 @@ export const globalSearch = async (req, res) => {
         });
     } catch (err) {
         console.error("Global search error:", err);
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
+/* ================= DELIVERY PARTNER MANAGEMENT ================= */
+
+export const getAllDeliveryPartners = async (req, res) => {
+    try {
+        const { status } = req.query;
+        let query = {};
+        if (status === 'pending') query.isApproved = false;
+        else if (status === 'verified') query.isApproved = true;
+
+        const partners = await Delivery.find(query).select("-password -otp -otpExpiresAt");
+        return handleResponse(res, 200, "Delivery partners fetched successfully", partners);
+    } catch (err) {
+        console.error(err);
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
+export const updateDeliveryStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { isApproved, status } = req.body;
+
+        const updateData = {};
+        if (isApproved !== undefined) updateData.isApproved = isApproved;
+        if (status) updateData.status = status;
+
+        const partner = await Delivery.findByIdAndUpdate(id, updateData, { new: true }).select("-password");
+        if (!partner) return handleResponse(res, 404, "Delivery partner not found");
+
+        return handleResponse(res, 200, `Delivery partner status updated`, partner);
+    } catch (err) {
+        console.error(err);
         return handleResponse(res, 500, "Server error");
     }
 };

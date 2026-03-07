@@ -14,7 +14,7 @@ import admin from "../services/firebaseAdmin.js";
  */
 export const getAllDeliveryPartners = async (req, res) => {
     try {
-        const partners = await Delivery.find({ status: 'active', isVerified: true, isOnline: true })
+        const partners = await Delivery.find({ status: 'active', isVerified: true, isOnline: true, isApproved: true })
             .select('fullName mobile vehicleNumber vehicleType isOnline');
 
         return handleResponse(res, 200, "Delivery partners fetched successfully", partners);

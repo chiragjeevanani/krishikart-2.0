@@ -5,6 +5,7 @@ import { generateOTP, hashOTP, verifyHashedOTP } from "../utils/otpHelper.js";
 import { sendSMS } from "../utils/smsService.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { uploadToCloudinary } from "../utils/cloudinary.js";
 
 /* 🔐 TOKEN */
 const generateToken = (id) =>
@@ -15,16 +16,29 @@ const generateToken = (id) =>
 export const registerDelivery = async (req, res) => {
   try {
     const { fullName, mobile, vehicleNumber, vehicleType } = req.body;
-
     if (!fullName || !mobile || !vehicleNumber || !vehicleType) {
-      return handleResponse(res, 400, "All fields are required");
+      return handleResponse(res, 400, "All fields (Name, Mobile, Vehicle) are required");
     }
 
+    if (!/^[a-zA-Z\s]+$/.test(fullName))
+      return handleResponse(res, 400, "Name should only contain alphabets");
+
     if (!/^[6-9]\d{9}$/.test(mobile))
-      return handleResponse(res, 400, "Invalid mobile number");
+      return handleResponse(res, 400, "Invalid mobile number. Must be 10 digits starting with 6-9.");
+
+    if (!/^[a-zA-Z]{4}\d{6}$/.test(vehicleNumber))
+      return handleResponse(res, 400, "Vehicle number must be 4 alphabets followed by 6 digits (e.g. ABCD123456)");
 
     if (!["bike", "scooter"].includes(vehicleType))
       return handleResponse(res, 400, "Invalid vehicle type");
+
+    if (!req.files?.aadharImage?.[0] || !req.files?.panImage?.[0] || !req.files?.licenseImage?.[0]) {
+      return handleResponse(res, 400, "Aadhar, PAN and License images are required");
+    }
+
+    const aadharImageUrl = await uploadToCloudinary(req.files.aadharImage[0].buffer, "delivery/aadhar");
+    const panImageUrl = await uploadToCloudinary(req.files.panImage[0].buffer, "delivery/pan");
+    const licenseImageUrl = await uploadToCloudinary(req.files.licenseImage[0].buffer, "delivery/license");
 
     let delivery = await Delivery.findOne({ mobile });
 
@@ -38,6 +52,9 @@ export const registerDelivery = async (req, res) => {
         mobile,
         vehicleNumber,
         vehicleType,
+        aadharImage: aadharImageUrl,
+        panImage: panImageUrl,
+        licenseImage: licenseImageUrl
       });
     }
 
