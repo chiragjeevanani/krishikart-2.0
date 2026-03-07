@@ -149,8 +149,8 @@ export default function ProductCard({ product, layout = 'grid' }) {
                         addAreaActive ? "active:scale-100" : "active:scale-[0.98]"
                     )}
                 >
-                    {/* Image & Floating Actions Container */}
-                    <div className="relative aspect-square bg-white border border-slate-100 rounded-[14px] overflow-hidden m-0.5 group-hover:border-slate-200 transition-colors shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] md:rounded-[20px]">
+                    {/* Image area – part of the card, not a nested card */}
+                    <div className="relative aspect-square bg-slate-50/80 overflow-hidden rounded-t-[12px] md:rounded-t-[18px] group-hover:bg-slate-50 transition-colors">
                         <img
                             src={productImage}
                             alt={product.name}

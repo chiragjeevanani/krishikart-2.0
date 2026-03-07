@@ -236,10 +236,18 @@ export default function HomeScreen() {
                 {/* Categories Row - Full width background, centered content */}
                 <div className="bg-[var(--color-brand-subtle)]/75 md:bg-white shadow-sm md:shadow-none">
                     <div className="max-w-7xl mx-auto px-5 md:px-8 pt-5 md:pt-4 pb-10 md:pb-16">
-                        <h2 className="text-[22px] md:text-[28px] font-black text-slate-900 mb-6 md:mb-8 md:font-bold">Shop by category</h2>
+                        <div className="flex items-center justify-between mb-6 md:mb-8">
+                            <h2 className="text-[22px] md:text-[28px] font-black text-slate-900 md:font-bold">Shop by category</h2>
+                            <button
+                                onClick={() => navigate('/categories')}
+                                className="text-primary text-[11px] font-black uppercase tracking-widest bg-primary/10 px-4 py-2 rounded-full md:normal-case md:font-semibold md:text-sm hover:bg-primary/15 transition-colors"
+                            >
+                                View all
+                            </button>
+                        </div>
 
-                        <div className="grid grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-x-3 gap-y-6 md:gap-x-4 md:gap-y-8" style={{ perspective: 1000 }}>
-                            {categories.map((cat, idx) => (
+                        <div className="grid grid-cols-4 gap-x-3 gap-y-6 md:gap-x-4 md:gap-y-8" style={{ perspective: 1000 }}>
+                            {(categories.slice(0, 4)).map((cat, idx) => (
                                 <CategoryCard key={cat._id} cat={cat} idx={idx} navigate={navigate} />
                             ))}
                         </div>
