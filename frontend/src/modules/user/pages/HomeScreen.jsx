@@ -246,8 +246,15 @@ export default function HomeScreen() {
                             </button>
                         </div>
 
-                        <div className="grid grid-cols-4 gap-x-3 gap-y-6 md:gap-x-4 md:gap-y-8" style={{ perspective: 1000 }}>
+                        {/* Mobile: 4 categories only */}
+                        <div className="grid grid-cols-4 gap-x-3 gap-y-6 md:hidden" style={{ perspective: 1000 }}>
                             {(categories.slice(0, 4)).map((cat, idx) => (
+                                <CategoryCard key={cat._id} cat={cat} idx={idx} navigate={navigate} />
+                            ))}
+                        </div>
+                        {/* Desktop: all categories */}
+                        <div className="hidden md:grid md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-x-4 gap-y-8" style={{ perspective: 1000 }}>
+                            {categories.map((cat, idx) => (
                                 <CategoryCard key={cat._id} cat={cat} idx={idx} navigate={navigate} />
                             ))}
                         </div>
