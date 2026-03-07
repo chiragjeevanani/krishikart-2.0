@@ -45,7 +45,12 @@ import {
   testPushNotification,
   globalSearch,
   getAllDeliveryPartners,
-  updateDeliveryStatus
+  updateDeliveryStatus,
+  createFAQ,
+  getAllFAQs,
+  getPublicFAQs,
+  updateFAQ,
+  deleteFAQ
 } from "../controllers/masteradmin.controller.js";
 
 import { protectMasterAdmin, requirePermission } from "../middlewares/masteradmin.auth.js";
@@ -111,6 +116,13 @@ router.get("/settings", protectMasterAdmin, requirePermission("settings"), getGl
 router.post("/settings/update", protectMasterAdmin, requirePermission("settings"), updateGlobalSetting);
 router.get("/loyalty/history", protectMasterAdmin, getLoyaltyConfigHistory);
 router.get("/public-settings", getGlobalSettings); // Public route for user app
+router.get("/public-faqs", getPublicFAQs); // Public route for user app
+
+/* ❓ FAQ Management */
+router.get("/faqs", protectMasterAdmin, requirePermission("settings"), getAllFAQs);
+router.post("/faqs", protectMasterAdmin, requirePermission("settings"), createFAQ);
+router.put("/faqs/:id", protectMasterAdmin, requirePermission("settings"), updateFAQ);
+router.delete("/faqs/:id", protectMasterAdmin, requirePermission("settings"), deleteFAQ);
 /* 👥 Sub-Admin Management (SuperAdmin Only) */
 router.get("/subadmins", protectMasterAdmin, listSubAdmins);
 router.post("/subadmins", protectMasterAdmin, createSubAdmin);

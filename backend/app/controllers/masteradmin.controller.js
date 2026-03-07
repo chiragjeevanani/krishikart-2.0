@@ -15,6 +15,7 @@ import Delivery from "../models/delivery.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import { geocodeAddress } from "../utils/geo.js";
 import { sendNotificationToUser } from "../utils/pushNotificationHelper.js";
+import FAQ from "../models/faq.js";
 
 /* ================= VENDOR MANAGEMENT ================= */
 
@@ -1300,6 +1301,64 @@ export const updateDeliveryStatus = async (req, res) => {
         return handleResponse(res, 200, `Delivery partner status updated`, partner);
     } catch (err) {
         console.error(err);
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
+/* ================= FAQ MANAGEMENT ================= */
+
+export const createFAQ = async (req, res) => {
+    try {
+        const { question, answer, category, displayOrder } = req.body;
+        const faq = new FAQ({ question, answer, category, displayOrder });
+        await faq.save();
+        return handleResponse(res, 201, "FAQ created successfully", faq);
+    } catch (err) {
+        console.error("Create FAQ error:", err);
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
+export const getAllFAQs = async (req, res) => {
+    try {
+        const faqs = await FAQ.find().sort({ displayOrder: 1, createdAt: -1 });
+        return handleResponse(res, 200, "FAQs fetched successfully", faqs);
+    } catch (err) {
+        console.error("Get all FAQs error:", err);
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
+export const getPublicFAQs = async (req, res) => {
+    try {
+        const faqs = await FAQ.find({ status: "active" }).sort({ displayOrder: 1, createdAt: -1 });
+        return handleResponse(res, 200, "FAQs fetched successfully", faqs);
+    } catch (err) {
+        console.error("Get public FAQs error:", err);
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
+export const updateFAQ = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const faq = await FAQ.findByIdAndUpdate(id, req.body, { new: true });
+        if (!faq) return handleResponse(res, 404, "FAQ not found");
+        return handleResponse(res, 200, "FAQ updated successfully", faq);
+    } catch (err) {
+        console.error("Update FAQ error:", err);
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
+export const deleteFAQ = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const faq = await FAQ.findByIdAndDelete(id);
+        if (!faq) return handleResponse(res, 404, "FAQ not found");
+        return handleResponse(res, 200, "FAQ deleted successfully");
+    } catch (err) {
+        console.error("Delete FAQ error:", err);
         return handleResponse(res, 500, "Server error");
     }
 };

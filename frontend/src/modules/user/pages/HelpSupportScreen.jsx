@@ -1,8 +1,9 @@
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, MessageCircle, Phone, Mail, ChevronDown, ChevronUp } from 'lucide-react'
 import PageTransition from '../components/layout/PageTransition'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import api from '@/lib/axios'
 
 const faqs = [
     {
@@ -26,6 +27,29 @@ const faqs = [
 export default function HelpSupportScreen() {
     const navigate = useNavigate()
     const [openIndex, setOpenIndex] = useState(null)
+    const [supportInfo, setSupportInfo] = useState({
+        phone: '918555454446',
+        email: 'support@kisaankart.in',
+        whatsapp: '918555454446'
+    })
+
+    useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const res = await api.get('/masteradmin/public-settings')
+                if (res.data.success) {
+                    const settings = res.data.result || []
+                    const phone = settings.find(s => s.key === 'support_phone')?.value || '918555454446'
+                    const email = settings.find(s => s.key === 'support_email')?.value || 'support@kisaankart.in'
+                    const whatsapp = settings.find(s => s.key === 'support_whatsapp')?.value || phone
+                    setSupportInfo({ phone, email, whatsapp })
+                }
+            } catch (error) {
+                console.error('Failed to fetch support settings:', error)
+            }
+        }
+        fetchSettings()
+    }, [])
 
     return (
         <PageTransition>
@@ -41,7 +65,10 @@ export default function HelpSupportScreen() {
                 <div className="p-6 space-y-8">
                     {/* Contact Channels */}
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm flex flex-col items-center text-center gap-3">
+                        <a
+                            href={`tel:${supportInfo.phone}`}
+                            className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm flex flex-col items-center text-center gap-3 active:scale-95 transition-transform"
+                        >
                             <div className="w-14 h-14 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center">
                                 <Phone size={24} />
                             </div>
@@ -49,8 +76,13 @@ export default function HelpSupportScreen() {
                                 <h3 className="text-sm font-black text-slate-900">Call Us</h3>
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">24/7 Support</p>
                             </div>
-                        </div>
-                        <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm flex flex-col items-center text-center gap-3">
+                        </a>
+                        <a
+                            href={`https://wa.me/${supportInfo.whatsapp}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm flex flex-col items-center text-center gap-3 active:scale-95 transition-transform"
+                        >
                             <div className="w-14 h-14 bg-green-50 text-green-500 rounded-full flex items-center justify-center">
                                 <MessageCircle size={24} />
                             </div>
@@ -58,7 +90,7 @@ export default function HelpSupportScreen() {
                                 <h3 className="text-sm font-black text-slate-900">Chat</h3>
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Instant Help</p>
                             </div>
-                        </div>
+                        </a>
                     </div>
 
                     {/* FAQs */}
@@ -72,20 +104,37 @@ export default function HelpSupportScreen() {
                                         className="w-full flex items-center justify-between p-5 text-left"
                                     >
                                         <span className="text-sm font-bold text-slate-900">{faq.question}</span>
-                                        {openIndex === idx ? <ChevronUp size={18} className="text-slate-400" /> : <ChevronDown size={18} className="text-slate-400" />}
+                                        <motion.div
+                                            animate={{ rotate: openIndex === idx ? 180 : 0 }}
+                                            transition={{ duration: 0.2 }}
+                                        >
+                                            <ChevronDown size={18} className="text-slate-400" />
+                                        </motion.div>
                                     </button>
-                                    {openIndex === idx && (
-                                        <div className="px-5 pb-5 pt-0 text-xs text-slate-500 font-medium leading-relaxed">
-                                            {faq.answer}
-                                        </div>
-                                    )}
+                                    <AnimatePresence>
+                                        {openIndex === idx && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: "auto", opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.3, ease: "easeInOut" }}
+                                            >
+                                                <div className="px-5 pb-5 pt-0 text-xs text-slate-500 font-medium leading-relaxed">
+                                                    {faq.answer}
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                 </div>
                             ))}
                         </div>
                     </div>
 
                     {/* Email Support */}
-                    <div className="bg-slate-900 text-white p-6 rounded-[32px] flex items-center justify-between">
+                    <a
+                        href={`mailto:${supportInfo.email}`}
+                        className="bg-slate-900 text-white p-6 rounded-[32px] flex items-center justify-between active:scale-[0.98] transition-transform"
+                    >
                         <div>
                             <h3 className="text-lg font-black">Still need help?</h3>
                             <p className="text-xs text-slate-400 font-medium mt-1">Email our support team directly.</p>
@@ -93,9 +142,10 @@ export default function HelpSupportScreen() {
                         <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center text-white">
                             <Mail size={20} />
                         </div>
-                    </div>
+                    </a>
                 </div>
             </div>
         </PageTransition>
     )
 }
+

@@ -34,7 +34,8 @@ import {
     CheckCircle2,
     FileText,
     Undo2,
-    Ticket
+    Ticket,
+    HelpCircle
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
@@ -138,6 +139,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                     permissionKey: 'settings',
                     submenu: [
                         { label: 'My Profile', path: '/masteradmin/settings?section=profile', icon: UserCircle },
+                        { label: 'Manage FAQs', path: '/masteradmin/settings/faqs', icon: HelpCircle },
                     ]
                 }
             ]

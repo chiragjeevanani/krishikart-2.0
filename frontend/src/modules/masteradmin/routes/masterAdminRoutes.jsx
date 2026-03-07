@@ -38,6 +38,7 @@ const VendorQuotation = lazy(() => import('../pages/VendorQuotationScreen'));
 const Returns = lazy(() => import('../pages/ReturnsScreen'));
 const FranchisePayouts = lazy(() => import('../pages/FranchisePayoutsScreen'));
 const CodRemittance = lazy(() => import('../pages/CodRemittanceScreen'));
+const FAQManagement = lazy(() => import('../pages/FAQManagementScreen'));
 
 
 const AdminRootRedirect = () => {
@@ -227,6 +228,7 @@ export const masterAdminRoutes = (
                 {/* Configuration */}
                 <Route path="settings" element={<PermissionRoute permissionKey="settings" />}>
                     <Route index element={<AdminSettings />} />
+                    <Route path="faqs" element={<FAQManagement />} />
                 </Route>
             </Route>
         </Route>
