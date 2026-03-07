@@ -65,7 +65,7 @@ export default function TopBar() {
                             type="text"
                             placeholder="Search products, orders, or vendors..."
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(e) => setSearchQuery(e.target.value.trim())}
                             onFocus={() => setShowResults(true)}
                             className="bg-transparent border-none outline-none text-[11px] w-full font-bold placeholder:text-slate-400 text-slate-900"
                         />

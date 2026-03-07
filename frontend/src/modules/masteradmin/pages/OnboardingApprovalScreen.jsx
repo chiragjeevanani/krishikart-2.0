@@ -191,7 +191,7 @@ export default function OnboardingApprovalScreen() {
             </div>
 
             <FilterBar
-                onSearch={setSearchTerm}
+                onSearch={(v) => setSearchTerm(typeof v === 'string' ? v.trim() : v)}
                 activeFilter={statusFilter}
                 onFilterChange={setStatusFilter}
                 filters={['Pending', 'Verified']}

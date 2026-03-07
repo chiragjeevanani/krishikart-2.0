@@ -126,7 +126,7 @@ export default function DesktopNavbar() {
                         <input
                             type="text"
                             value={searchValue}
-                            onChange={(e) => setSearchValue(e.target.value)}
+                            onChange={(e) => setSearchValue(e.target.value.trim())}
                             placeholder=""
                             className="w-full h-[44px] pl-12 pr-4 bg-slate-50/50 border border-slate-100 rounded-full text-[14px] font-medium placeholder:text-slate-400 focus:bg-white focus:border-slate-200 focus:ring-4 focus:ring-slate-100 transition-all outline-none"
                         />

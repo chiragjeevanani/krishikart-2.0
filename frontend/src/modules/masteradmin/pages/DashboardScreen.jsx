@@ -311,7 +311,7 @@ export default function DashboardScreen() {
                 {/* Ledger Management */}
                 <div className="bg-white">
                     <FilterBar
-                        onSearch={setSettlementSearch}
+                        onSearch={(v) => setSettlementSearch(typeof v === 'string' ? v.trim() : v)}
                         onRefresh={() => {
                             setIsLoading(true);
                             setTimeout(() => setIsLoading(false), 800);

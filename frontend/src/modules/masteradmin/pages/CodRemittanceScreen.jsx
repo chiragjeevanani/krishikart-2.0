@@ -172,7 +172,7 @@ export default function CodRemittanceScreen() {
 
             <div className="flex flex-col gap-0 p-px">
                 <FilterBar
-                    onSearch={setSearch}
+                    onSearch={(v) => setSearch(typeof v === 'string' ? v.trim() : v)}
                     onRefresh={fetchRemittances}
                     activeFilter={status}
                     onFilterChange={setStatus}

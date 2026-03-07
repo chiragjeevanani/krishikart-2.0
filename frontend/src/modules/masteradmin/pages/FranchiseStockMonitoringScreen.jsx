@@ -423,7 +423,7 @@ export default function FranchiseStockMonitoringScreen() {
                                         type="text"
                                         placeholder={`Search items in ${selectedCategoryName}...`}
                                         value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        onChange={(e) => setSearchTerm(e.target.value.trim())}
                                         className="w-full border-none outline-none text-[11px] font-bold py-2 pl-9 pr-4 placeholder:text-slate-400 bg-transparent"
                                     />
                                 </div>

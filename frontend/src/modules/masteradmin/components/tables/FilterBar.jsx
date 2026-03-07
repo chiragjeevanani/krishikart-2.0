@@ -19,7 +19,7 @@ export default function FilterBar({
                     <input
                         type="search"
                         placeholder="Filter data..."
-                        onChange={(e) => onSearch?.(e.target.value)}
+                        onChange={(e) => onSearch?.(e.target.value.trim())}
                         className="w-full bg-white border border-slate-200 rounded-sm pl-8 pr-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 transition-all placeholder:text-slate-400"
                     />
                 </div>

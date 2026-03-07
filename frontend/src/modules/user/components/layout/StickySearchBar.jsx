@@ -149,7 +149,7 @@ export default function StickySearchBar() {
                     <input
                         type="text"
                         value={searchValue}
-                        onChange={(e) => setSearchValue(e.target.value)}
+                        onChange={(e) => setSearchValue(e.target.value.trim())}
                         className="w-full h-11 pl-9 pr-3 md:h-14 md:pl-12 md:pr-4 bg-white md:bg-slate-50 border border-white/30 md:border-none rounded-xl md:rounded-2xl text-xs md:text-sm font-medium focus:ring-2 focus:ring-primary/20 transition-all outline-none shadow-sm"
                     />
                     {!searchValue && (

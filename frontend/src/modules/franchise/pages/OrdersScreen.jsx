@@ -383,7 +383,7 @@ export default function OrdersScreen() {
                                     type="text"
                                     placeholder="Search by Order ID or Store..."
                                     value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onChange={(e) => setSearchQuery(e.target.value.trim())}
                                     className="bg-white border border-slate-200 rounded-sm py-1.5 pl-9 pr-4 outline-none text-[11px] font-black text-slate-900 placeholder:text-slate-400 focus:border-slate-400 transition-all font-sans min-w-[240px]"
                                 />
                             </div>

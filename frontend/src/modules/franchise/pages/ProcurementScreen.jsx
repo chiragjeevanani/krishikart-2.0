@@ -249,7 +249,7 @@ export default function ProcurementScreen() {
                                     type="text"
                                     placeholder="Search..."
                                     value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    onChange={(e) => setSearchTerm(e.target.value.trim())}
                                     className="w-full bg-slate-100 border border-slate-200 rounded-sm py-1.5 pl-9 pr-4 outline-none text-[11px] font-black text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-slate-400 transition-all font-sans"
                                 />
                             </div>

@@ -34,7 +34,6 @@ export default function VendorLayout() {
         );
     }
 
-    // Determine if we should show bottom nav (hide on specific detail/flow-heavy screens)
     const hideNav = location.pathname.includes('/orders/') ||
         location.pathname.includes('/dispatch') ||
         location.pathname.includes('/packing');
@@ -46,7 +45,7 @@ export default function VendorLayout() {
                 <Sidebar />
             </div>
 
-            <div className="flex-1 flex flex-col min-w-0 lg:ml-72 pb-32 lg:pb-10">
+            <div className="flex-1 flex flex-col min-w-0 lg:ml-72 pb-20 lg:pb-10">
                 <main className="flex-1 overflow-x-hidden p-6 md:p-10 lg:p-12">
                     <AnimatePresence mode="wait" initial={false}>
                         <motion.div
@@ -69,12 +68,8 @@ export default function VendorLayout() {
                 </main>
             </div>
 
-            {/* Mobile Bottom Navigation */}
-            {!hideNav && (
-                <div className="lg:hidden fixed bottom-8 left-6 right-6 z-50">
-                    <BottomNav />
-                </div>
-            )}
+            {/* Mobile bottom nav - full-width bar like user app (not floating) */}
+            {!hideNav && <BottomNav />}
 
             <NewAssignmentAlert
                 isOpen={isAlertOpen}

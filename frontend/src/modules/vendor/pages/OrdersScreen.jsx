@@ -202,7 +202,7 @@ export default function OrdersScreen() {
                 activeCategory={activeTab}
                 onCategoryChange={setActiveTab}
                 searchTerm={searchTerm}
-                onSearchChange={setSearchTerm}
+                onSearchChange={(v) => setSearchTerm(typeof v === 'string' ? v.trim() : v)}
                 placeholder="Locate Supply Ref..."
             />
 

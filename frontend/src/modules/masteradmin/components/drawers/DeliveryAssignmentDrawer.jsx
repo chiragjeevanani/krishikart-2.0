@@ -78,7 +78,7 @@ export default function DeliveryAssignmentDrawer({ isOpen, onClose, assignment, 
                             type="text"
                             placeholder="Search by name, ID or vehicle type..."
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onChange={(e) => setSearchTerm(e.target.value.trim())}
                             className="w-full bg-white border border-slate-200 rounded-sm py-2.5 pl-10 pr-4 outline-none text-[11px] font-bold focus:border-slate-400 focus:ring-4 focus:ring-slate-900/5 transition-all"
                         />
                     </div>

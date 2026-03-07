@@ -298,7 +298,7 @@ export default function LedgerSystemScreen() {
 
             <div className="p-px bg-slate-200">
                 <FilterBar
-                    onSearch={setSearchTerm}
+                    onSearch={(v) => setSearchTerm(typeof v === 'string' ? v.trim() : v)}
                     onRefresh={() => {
                         setIsLoading(true);
                         setTimeout(() => setIsLoading(false), 800);
