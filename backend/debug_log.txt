@@ -10155,3 +10155,27 @@ Found: 58 orders
 [2026-03-07T05:44:13.152Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (Indore)
 Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
 Found: 58 orders
+
+[2026-03-07T05:45:12.830Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (Indore)
+Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
+Found: 58 orders
+
+[2026-03-07T05:46:13.235Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (Indore)
+Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
+Found: 58 orders
+
+[2026-03-07T05:47:12.789Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (Indore)
+Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
+Found: 58 orders
+
+[2026-03-07T05:48:12.780Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (Indore)
+Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
+Found: 58 orders
+
+[2026-03-07T05:48:42.783Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (Indore)
+Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
+Found: 58 orders
+
+[2026-03-07T05:49:12.777Z] Fetching Orders for 6999858c1fc6cdf3d270e73a (Indore)
+Query: {"$or":[{"franchiseId":"6999858c1fc6cdf3d270e73a"},{"franchiseId":null,"$or":[{"shippingLocation.city":{}},{"shippingAddress":{}}],"orderStatus":{"$in":["Placed","pending","new"]}}]}
+Found: 58 orders
