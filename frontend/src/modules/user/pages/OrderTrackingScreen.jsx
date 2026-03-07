@@ -46,9 +46,9 @@ export default function OrderTrackingScreen() {
         <PageTransition>
             <div className="bg-slate-50 min-h-screen pb-32">
                 {/* Header */}
-                <div className="bg-white px-6 py-4 border-b border-slate-100 flex items-center justify-between sticky top-0 z-40">
+                <div className="bg-white/95 backdrop-blur-xl px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] border-b border-slate-100/80 shadow-[0_1px_10px_rgba(0,0,0,0.04)] flex items-center justify-between sticky top-0 z-40 md:px-6 md:py-4 md:pt-4">
                     <div className="flex items-center gap-4">
-                        <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-600">
+                        <button onClick={() => navigate(-1)} className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white border border-slate-100 shadow-sm text-slate-600 active:scale-95 transition-transform md:bg-slate-50 md:border-0 md:shadow-none">
                             <ArrowLeft size={20} />
                         </button>
                         <div>

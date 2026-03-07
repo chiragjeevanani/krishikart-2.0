@@ -16,7 +16,7 @@ export default function BottomNav() {
     const { wishlistCount } = useWishlist()
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 flex items-center justify-around h-16 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_10px_rgba(0,0,0,0.02)]">
+        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t-2 border-[var(--color-brand-primary)]/20 flex items-center justify-around min-h-[52px] py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] shadow-[0_-2px_16px_rgba(22,163,74,0.08)]">
             {navItems.map((item) => {
                 const isActive = location.pathname === item.path
                 const Icon = item.icon
@@ -25,26 +25,30 @@ export default function BottomNav() {
                     <button
                         key={item.label}
                         onClick={() => navigate(item.path)}
-                        className="flex-1 flex flex-col items-center justify-center gap-1.5 py-1 transition-all active:scale-95"
+                        aria-current={isActive ? 'page' : undefined}
+                        className="flex-1 flex flex-col items-center justify-center gap-0.5 py-1 min-h-[44px] min-w-[44px] transition-all duration-150 active:scale-95"
                     >
-                        <div className="relative">
+                        <div className={cn(
+                            "relative flex items-center justify-center rounded-full p-1.5 transition-colors duration-200",
+                            isActive && "bg-[var(--color-brand-primary)]/15 bottom-nav-icon-active"
+                        )}>
                             <Icon
-                                size={22}
+                                size={isActive ? 20 : 18}
                                 className={cn(
                                     "transition-colors duration-200",
-                                    isActive ? "text-emerald-500" : "text-slate-400"
+                                    isActive ? "text-primary" : "text-slate-400"
                                 )}
                                 strokeWidth={1.5}
                             />
                             {item.key === 'wishlist' && wishlistCount > 0 && (
-                                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center border border-white">
+                                <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center border border-white">
                                     {wishlistCount}
                                 </span>
                             )}
                         </div>
                         <span className={cn(
-                            "text-[11px] font-semibold transition-colors duration-200",
-                            isActive ? "text-emerald-600" : "text-slate-400"
+                            "text-[10px] font-medium transition-colors duration-200 leading-tight",
+                            isActive ? "text-primary" : "text-slate-400"
                         )}>
                             {item.label}
                         </span>

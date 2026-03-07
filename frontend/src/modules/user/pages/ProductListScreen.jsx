@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -40,6 +40,16 @@ export default function ProductListScreen() {
         inStock: false,
         sort: 'none' // 'price-low', 'price-high'
     })
+    const activeSidebarRef = useRef(null)
+    const sidebarListRef = useRef(null)
+    const [activeBarTop, setActiveBarTop] = useState(19)
+    /** Per-item height (py-4 + icon 54 + gap-1.5 + label ~14 + py-4) so bar position can be set instantly on click */
+    const SIDEBAR_ITEM_HEIGHT = 104
+
+    // Sync selected category from URL (e.g. when navigating from home to /products/:category)
+    useEffect(() => {
+        setSelectedCategory(category || 'all')
+    }, [category])
 
     // Update searchQuery when URL search param changes
     useEffect(() => {
@@ -117,6 +127,27 @@ export default function ProductListScreen() {
         return categories.find(c => c._id === selectedCategory) || { name: 'Products' }
     }, [selectedCategory, categories])
 
+    // Scroll active sidebar category into view (e.g. after opening from home)
+    useEffect(() => {
+        if (!selectedCategory || categories.length === 0) return
+        const id = setTimeout(() => {
+            activeSidebarRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth', inline: 'nearest' })
+        }, 100)
+        return () => clearTimeout(id)
+    }, [selectedCategory, categories.length])
+
+    // Sync bar position when selection comes from URL or categories load (ref-based)
+    useEffect(() => {
+        if (!selectedCategory) return
+        const updateBar = () => {
+            const btn = activeSidebarRef.current
+            if (btn && sidebarListRef.current) setActiveBarTop(btn.offsetTop + 19)
+        }
+        const raf = requestAnimationFrame(updateBar)
+        const t = setTimeout(updateBar, 80)
+        return () => { cancelAnimationFrame(raf); clearTimeout(t) }
+    }, [selectedCategory, categories.length])
+
     // Sidebar Categories
     const sidebarCategories = useMemo(() => {
         const cats = (categories || []).map(cat => ({
@@ -161,11 +192,11 @@ export default function ProductListScreen() {
         <PageTransition>
             <div className="bg-white min-h-screen pb-32 flex flex-col">
                 {/* Unified Header - Mobile Redesign */}
-                <div className="sticky top-0 z-40 bg-white border-b border-slate-100 md:hidden">
-                    <div className="flex items-center justify-between px-4 h-16">
+                <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b border-slate-100/80 shadow-[0_1px_10px_rgba(0,0,0,0.04)] md:hidden">
+                    <div className="flex items-center justify-between px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-3 h-16">
                         <div className="flex items-center gap-3">
-                            <button onClick={() => navigate(-1)} className="text-slate-900">
-                                <ArrowLeft size={24} />
+                            <button onClick={() => navigate(-1)} className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white border border-slate-100 shadow-sm text-slate-900 active:scale-95 transition-transform">
+                                <ArrowLeft size={22} />
                             </button>
                             <div className="flex flex-col">
                                 <h1 className="text-[17px] font-bold text-slate-900 leading-tight">
@@ -185,7 +216,10 @@ export default function ProductListScreen() {
                                             {sidebarCategories.map((cat) => (
                                                 <SheetClose asChild key={cat.id}>
                                                     <button
-                                                        onClick={() => setSelectedCategory(cat.id)}
+                                                        onClick={() => {
+                                                            setSelectedCategory(cat.id)
+                                                            navigate(`/products/${cat.id}`, { replace: true })
+                                                        }}
                                                         className="flex flex-col items-center gap-2"
                                                     >
                                                         <div className={cn(
@@ -230,13 +264,19 @@ export default function ProductListScreen() {
                 <div className="flex flex-1 overflow-hidden">
                     {/* Mobile Sidebar - LEFT COL */}
                     <aside className="w-[85px] border-r border-slate-50 h-[calc(100vh-120px)] overflow-y-auto no-scrollbar md:hidden bg-white shrink-0">
-                        <div className="flex flex-col py-2">
+                        <div ref={sidebarListRef} className="flex flex-col py-2 relative">
                             {sidebarCategories.map((cat) => {
                                 const isActive = selectedCategory === cat.id
                                 return (
                                     <button
                                         key={cat.id}
-                                        onClick={() => setSelectedCategory(cat.id)}
+                                        ref={isActive ? activeSidebarRef : null}
+                                        onClick={() => {
+                                            const idx = sidebarCategories.findIndex((c) => c.id === cat.id)
+                                            if (idx >= 0) setActiveBarTop(idx * SIDEBAR_ITEM_HEIGHT + 19)
+                                            setSelectedCategory(cat.id)
+                                            navigate(`/products/${cat.id}`, { replace: true })
+                                        }}
                                         className={cn(
                                             "relative flex flex-col items-center gap-1.5 py-4 px-1 transition-all",
                                             isActive ? "bg-white" : "hover:bg-slate-50/50"
@@ -259,17 +299,15 @@ export default function ProductListScreen() {
                                         )}>
                                             {cat.name}
                                         </span>
-
-                                        {/* Green Active Indicator Bar */}
-                                        {isActive && (
-                                            <motion.div
-                                                layoutId="activeSubBar"
-                                                className="absolute right-0 top-[19px] w-1 h-12 bg-emerald-600 rounded-l-md"
-                                            />
-                                        )}
                                     </button>
                                 )
                             })}
+                            {/* Single sliding bar – CSS transition only, no layout animation jitter */}
+                            <div
+                                className="absolute right-0 w-1 h-12 bg-emerald-600 rounded-l-md pointer-events-none z-10 transition-[top] duration-200 ease-out"
+                                style={{ top: activeBarTop }}
+                                aria-hidden
+                            />
                         </div>
                     </aside>
 

@@ -68,21 +68,21 @@ export default function WishlistScreen() {
         <PageTransition>
             <div className="bg-white min-h-screen pb-32 flex flex-col">
                 {/* Mobile Header - Redesigned */}
-                <div className="sticky top-0 z-40 bg-white border-b border-slate-100 md:hidden">
-                    <div className="flex items-center justify-between px-4 h-16">
+                <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b border-slate-100/80 shadow-[0_1px_10px_rgba(0,0,0,0.04)] md:hidden">
+                    <div className="flex items-center justify-between px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-3 h-16">
                         <div className="flex items-center gap-4">
-                            <button onClick={() => navigate(-1)} className="text-slate-900">
-                                <ArrowLeft size={24} />
+                            <button onClick={() => navigate(-1)} className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white border border-slate-100 shadow-sm text-slate-900 active:scale-95 transition-transform">
+                                <ArrowLeft size={22} />
                             </button>
                             <h1 className="text-[20px] font-bold text-slate-900 tracking-tight">My List</h1>
                         </div>
                         <div className="flex items-center gap-2">
-                            <button className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 border border-slate-100">
+                            <button className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white border border-slate-100 shadow-sm text-slate-400">
                                 <Search size={20} strokeWidth={2.5} />
                             </button>
                             <button
                                 onClick={() => navigate('/cart')}
-                                className="relative w-10 h-10 flex items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-100 font-bold"
+                                className="relative min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/20 font-bold"
                             >
                                 <ShoppingCart size={20} strokeWidth={2.5} />
                                 {cartCount > 0 && (

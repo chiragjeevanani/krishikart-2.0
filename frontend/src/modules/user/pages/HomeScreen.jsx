@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -38,6 +38,71 @@ import { useLocation } from '../contexts/LocationContext'
 import LocationPermissionPopup from '../components/common/LocationPermissionPopup'
 import BusinessTypeSelector from '../components/common/BusinessTypeSelector'
 import DocumentUploadPopup from '../components/common/DocumentUploadPopup'
+
+const isMobile = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches
+
+function CategoryCard({ cat, idx, navigate }) {
+    const flipEl = useRef(null)
+    const guard = useRef(false)
+
+    const runFlipThenNavigate = () => {
+        if (!flipEl.current || guard.current) return
+        guard.current = true
+        const el = flipEl.current
+        const onEnd = () => {
+            el.removeEventListener('animationend', onEnd)
+            el.classList.remove('category-card-flip')
+            guard.current = false
+            navigate(`/products/${cat._id}`)
+        }
+        el.addEventListener('animationend', onEnd, { once: true })
+        el.classList.add('category-card-flip')
+    }
+
+    const handleTouchStart = () => {
+        if (!isMobile()) return
+        runFlipThenNavigate()
+    }
+
+    const handleClick = () => {
+        if (isMobile()) {
+            if (!guard.current) runFlipThenNavigate()
+        } else {
+            navigate(`/products/${cat._id}`)
+        }
+    }
+
+    return (
+        <motion.div
+            key={cat._id}
+            onClick={handleClick}
+            onTouchStart={handleTouchStart}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: idx * 0.03, duration: 0.25 }}
+            style={{ touchAction: 'manipulation' }}
+            className="flex flex-col items-center group cursor-pointer select-none"
+        >
+            <div
+                ref={flipEl}
+                className="category-card-flip-target w-full aspect-square rounded-full md:rounded-[24px] bg-[var(--color-brand-subtle)]/50 backdrop-blur-xl border-2 border-white/60 shadow-[0_4px_20px_rgba(0,0,0,0.08)] mb-2.5 flex items-center justify-center transition-all duration-300 group-hover:-translate-y-1 relative overflow-hidden group-active:scale-95 p-2 md:bg-[var(--color-brand-subtle)] md:border md:border-slate-50 md:shadow-sm md:backdrop-blur-none"
+                style={{ transformStyle: 'preserve-3d' }}
+            >
+                <div className="w-full h-full relative z-10 transition-transform duration-500 group-hover:scale-110">
+                    <img
+                        src={cat.image}
+                        alt={cat.name}
+                        className="w-full h-full object-contain mix-blend-multiply"
+                        onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=400&q=80' }}
+                    />
+                </div>
+            </div>
+            <span className="text-[11px] md:text-[13px] font-bold text-slate-800 text-center leading-tight transition-colors group-hover:text-primary line-clamp-2 w-full px-0.5">
+                {cat.name}
+            </span>
+        </motion.div>
+    )
+}
 
 export default function HomeScreen() {
     const [categories, setCategories] = useState([])
@@ -161,41 +226,21 @@ export default function HomeScreen() {
     };
 
     return (
-        <PageTransition>
-            <div className="bg-white pb-32 min-h-screen">
-                <div className="md:hidden">
-                    <StickySearchBar />
-                </div>
-
+        <>
+            {/* Header outside PageTransition so sticky works (transform on motion breaks sticky) */}
+            <div className="md:hidden">
+                <StickySearchBar />
+            </div>
+            <PageTransition>
+                <div className="bg-transparent md:bg-white pb-32 min-h-screen pt-16 md:pt-0">
                 {/* Categories Row - Full width background, centered content */}
-                <div className="bg-white shadow-sm md:shadow-none">
-                    <div className="max-w-7xl mx-auto px-4 md:px-8 pt-2 pb-10 md:pt-4 md:pb-16">
-                        <h2 className="text-[20px] md:text-[28px] font-bold text-slate-900 mb-6 md:mb-8">Shop by category</h2>
+                <div className="bg-[var(--color-brand-subtle)]/75 md:bg-white shadow-sm md:shadow-none">
+                    <div className="max-w-7xl mx-auto px-5 md:px-8 pt-5 md:pt-4 pb-10 md:pb-16">
+                        <h2 className="text-[22px] md:text-[28px] font-black text-slate-900 mb-6 md:mb-8 md:font-bold">Shop by category</h2>
 
-                        <div className="grid grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-x-3 gap-y-6 md:gap-x-4 md:gap-y-8">
+                        <div className="grid grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-x-3 gap-y-6 md:gap-x-4 md:gap-y-8" style={{ perspective: 1000 }}>
                             {categories.map((cat, idx) => (
-                                <motion.div
-                                    key={cat._id}
-                                    onClick={() => navigate(`/products/${cat._id}`)}
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ delay: idx * 0.02 }}
-                                    className="flex flex-col items-center group cursor-pointer"
-                                >
-                                    <div className="w-full aspect-square rounded-[24px] bg-[#eef7f6] mb-2.5 flex items-center justify-center transition-all duration-300 group-hover:-translate-y-1 relative overflow-hidden group-active:scale-95 shadow-sm border border-slate-50 p-2">
-                                        <div className="w-full h-full relative z-10 transition-transform duration-500 group-hover:scale-110">
-                                            <img
-                                                src={cat.image}
-                                                alt={cat.name}
-                                                className="w-full h-full object-contain mix-blend-multiply"
-                                                onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=400&q=80' }}
-                                            />
-                                        </div>
-                                    </div>
-                                    <span className="text-[11px] md:text-[13px] font-bold text-slate-800 text-center leading-tight transition-colors group-hover:text-primary line-clamp-2 w-full px-0.5">
-                                        {cat.name}
-                                    </span>
-                                </motion.div>
+                                <CategoryCard key={cat._id} cat={cat} idx={idx} navigate={navigate} />
                             ))}
                         </div>
                     </div>
@@ -204,23 +249,23 @@ export default function HomeScreen() {
                 {/* Main Content Wrapper */}
                 <div className="max-w-7xl mx-auto md:px-8">
                     {/* Hero Promotion */}
-                    <div className="px-5 mt-6 md:px-0 md:mt-4">
+                    <div className="px-5 mt-8 md:px-0 md:mt-4">
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="w-full bg-slate-900 rounded-[40px] md:rounded-2xl p-8 md:p-12 relative overflow-hidden shadow-xl"
+                            className="w-full rounded-[40px] md:rounded-2xl p-8 md:p-12 relative overflow-hidden shadow-xl bg-gradient-to-br from-[var(--color-brand-dark)] via-[var(--color-brand-primary)] to-[var(--color-brand-yellow)]/20"
                         >
                             <div className="relative z-10 max-w-lg">
                                 <h2 className="text-3xl md:text-5xl font-black text-white leading-tight tracking-tight md:normal-case md:font-bold">
-                                    Wholesale <span className="text-primary">B2B</span> <br />
+                                    Wholesale <span className="text-[var(--color-brand-yellow)] md:text-primary">B2B</span> <br />
                                     Direct from Farms
                                 </h2>
                                 <p className="text-slate-400 mt-2 text-xs md:text-sm font-bold uppercase tracking-widest md:normal-case md:font-medium">Pricing starts from 10kg+</p>
-                                <Button className="mt-6 md:mt-10 bg-primary hover:bg-primary/90 text-white rounded-2xl md:rounded-lg h-12 md:h-14 px-8 md:px-10 font-black md:font-bold shadow-lg shadow-green-900/20">
+                                <Button className="mt-6 md:mt-10 bg-primary hover:bg-primary/90 text-white rounded-2xl md:rounded-lg min-h-[48px] h-12 md:h-14 px-8 md:px-10 font-black md:font-bold shadow-lg shadow-primary/25">
                                     Order Now
                                 </Button>
                             </div>
-                            <div className="absolute right-[-20px] bottom-[-20px] opacity-10 md:opacity-20 text-primary">
+                            <div className="absolute right-[-20px] bottom-[-20px] opacity-15 md:opacity-25 text-[var(--color-brand-primary)]">
                                 <Sprout size={180} className="md:w-[320px] md:h-[320px]" />
                             </div>
                         </motion.div>
@@ -228,13 +273,13 @@ export default function HomeScreen() {
 
                     {/* Section 1: Flash Deals */}
                     <div className="mt-8 md:mt-12">
-                        <div className="px-6 md:px-0 flex items-end justify-between mb-6">
+                        <div className="px-5 md:px-0 flex items-end justify-between mb-6">
                             <div>
                                 <div className="flex items-center gap-2 mb-1">
                                     <div className="p-1.5 bg-red-100 rounded-lg md:rounded-md">
                                         <Flame size={16} className="text-red-500 fill-red-500 md:w-5 md:h-5" />
                                     </div>
-                                    <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight md:font-bold">Flash Deals</h2>
+                                    <h2 className="text-[22px] md:text-3xl font-black text-slate-900 tracking-tight md:font-bold">Flash Deals</h2>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Timer size={14} className="text-slate-400" />
@@ -243,41 +288,43 @@ export default function HomeScreen() {
                             </div>
                             <button onClick={() => navigate('/products/all')} className="text-primary text-[11px] font-black uppercase tracking-widest bg-primary/5 px-4 py-2 rounded-full md:normal-case md:font-semibold md:text-sm hover:bg-primary/10 transition-colors">See All</button>
                         </div>
-                        <div className="overflow-x-auto no-scrollbar md:overflow-visible px-6 md:px-0">
-                            <div className="flex gap-4 w-max md:w-full md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 pb-2 md:pb-0">
+                        <div className="relative overflow-x-auto no-scrollbar md:overflow-visible px-5 md:px-0">
+                            <div className="flex gap-4 w-max md:w-full md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 pb-2 md:pb-0 pr-4 md:pr-0">
                                 {(products || []).slice(0, 5).map((product) => (
                                     <div key={product._id} className="w-[164px] md:w-full cursor-pointer">
                                         <ProductCard product={product} />
                                     </div>
                                 ))}
                             </div>
+                            <div className="pointer-events-none absolute right-0 top-0 bottom-2 w-12 bg-gradient-to-l from-[var(--color-background)] to-transparent md:hidden" aria-hidden="true" />
                         </div>
                     </div>
                 </div>
 
                 {/* Section 2: Bulk Savings - Full width background row */}
-                <div className="mt-2 md:mt-4 py-8 md:py-10 bg-slate-50/50 border-y border-slate-100/50">
+                <div className="mt-6 md:mt-4 py-8 md:py-10 bg-[var(--color-brand-yellow-subtle)]/70 md:bg-slate-50/50 border-y border-[var(--color-brand-yellow)]/10 md:border-slate-100/50">
                     <div className="max-w-7xl mx-auto md:px-8">
-                        <div className="px-6 md:px-0 flex items-center justify-between mb-6">
+                        <div className="px-5 md:px-0 flex items-center justify-between mb-6">
                             <div className="flex flex-col">
                                 <div className="flex items-center gap-2 mb-1">
                                     <div className="p-1.5 bg-orange-100 rounded-lg md:rounded-md">
                                         <TrendingDown size={16} className="text-orange-500 md:w-5 md:h-5" />
                                     </div>
-                                    <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight md:font-bold">Bulk Savings</h2>
+                                    <h2 className="text-[22px] md:text-3xl font-black text-slate-900 tracking-tight md:font-bold">Bulk Savings</h2>
                                 </div>
                                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest md:normal-case md:font-medium md:text-sm">Best prices for businesses</p>
                             </div>
                             <button onClick={() => navigate('/products/all')} className="text-primary text-[11px] font-black uppercase tracking-widest bg-primary/5 px-4 py-2 rounded-full md:normal-case md:font-semibold md:text-sm hover:bg-primary/10 transition-colors">See All</button>
                         </div>
-                        <div className="overflow-x-auto no-scrollbar md:overflow-visible px-6 md:px-0">
-                            <div className="flex gap-4 w-max md:w-full md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 pb-4">
+                        <div className="relative overflow-x-auto no-scrollbar md:overflow-visible px-5 md:px-0">
+                            <div className="flex gap-4 w-max md:w-full md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 pb-4 pr-4 md:pr-0">
                                 {(products || []).filter(p => p.bulkPricing || p.wholesalePrice).slice(0, 5).map((product) => (
                                     <div key={product._id} className="w-[155px] md:w-full cursor-pointer">
                                         <ProductCard product={product} />
                                     </div>
                                 ))}
                             </div>
+                            <div className="pointer-events-none absolute right-0 top-0 bottom-4 w-12 bg-gradient-to-l from-[var(--color-brand-yellow-subtle)]/90 to-transparent md:hidden" aria-hidden="true" />
                         </div>
                     </div>
                 </div>
@@ -285,13 +332,13 @@ export default function HomeScreen() {
                 {/* Remaining sections wrapped in centered container */}
                 <div className="max-w-7xl mx-auto md:px-8">
                     {/* Section 3: Seasonal Picks */}
-                    <div className="mt-4 px-6 md:px-0 md:mt-8">
+                    <div className="mt-8 px-5 md:px-0 md:mt-8">
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-2">
-                                <div className="p-1.5 bg-emerald-100 rounded-lg md:rounded-md">
-                                    <Sparkles size={16} className="text-emerald-500 fill-emerald-500 md:w-5 md:h-5" />
+                                <div className="p-1.5 bg-primary/10 rounded-lg md:rounded-md">
+                                    <Sparkles size={16} className="text-primary fill-primary md:w-5 md:h-5" />
                                 </div>
-                                <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight md:font-bold">Seasonal Picks</h2>
+                                <h2 className="text-[22px] md:text-3xl font-black text-slate-900 tracking-tight md:font-bold">Seasonal Picks</h2>
                             </div>
                             <button onClick={() => navigate('/products/all')} className="text-primary text-[11px] font-black uppercase tracking-widest bg-primary/5 px-4 py-2 rounded-full md:normal-case md:font-semibold md:text-sm hover:bg-primary/10 transition-colors">See All</button>
                         </div>
@@ -304,33 +351,34 @@ export default function HomeScreen() {
 
                     {/* Section 4: Premium Exotic Finds */}
                     <div className="mt-8 md:mt-10">
-                        <div className="px-6 md:px-0 flex items-center justify-between mb-6">
+                        <div className="px-5 md:px-0 flex items-center justify-between mb-6">
                             <div className="flex items-center gap-2">
                                 <div className="p-1.5 bg-purple-100 rounded-lg md:rounded-md">
                                     <Gem size={16} className="text-purple-500 fill-purple-500 md:w-5 md:h-5" />
                                 </div>
-                                <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight md:font-bold">Exotic Finds</h2>
+                                <h2 className="text-[22px] md:text-3xl font-black text-slate-900 tracking-tight md:font-bold">Exotic Finds</h2>
                             </div>
                             <button onClick={() => navigate('/products/all')} className="text-primary text-[11px] font-black uppercase tracking-widest px-4 py-2 bg-primary/5 rounded-full md:normal-case md:font-semibold md:text-sm hover:bg-primary/10 transition-colors">See All</button>
                         </div>
-                        <div className="overflow-x-auto no-scrollbar md:overflow-visible px-6 md:px-0">
-                            <div className="flex gap-4 w-max md:w-full md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 pb-6">
+                        <div className="relative overflow-x-auto no-scrollbar md:overflow-visible px-5 md:px-0">
+                            <div className="flex gap-4 w-max md:w-full md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 pb-6 pr-4 md:pr-0">
                                 {(products || []).filter(p => p.category?.name?.toLowerCase() === 'exotic').slice(0, 5).map((product) => (
                                     <div key={product._id} className="w-[164px] md:w-full cursor-pointer">
                                         <ProductCard product={product} />
                                     </div>
                                 ))}
                             </div>
+                            <div className="pointer-events-none absolute right-0 top-0 bottom-6 w-12 bg-gradient-to-l from-[var(--color-background)] to-transparent md:hidden" aria-hidden="true" />
                         </div>
                     </div>
 
                     {/* Section 5: Daily Essentials */}
-                    <div className="mt-8 px-6 md:px-0 md:mt-10">
+                    <div className="mt-8 px-5 md:px-0 md:mt-10">
                         <div className="flex items-center gap-2 mb-6">
                             <div className="p-1.5 bg-blue-100 rounded-lg md:rounded-md">
                                 <History size={16} className="text-blue-500 md:w-5 md:h-5" />
                             </div>
-                            <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight md:font-bold">Daily Essentials</h2>
+                            <h2 className="text-[22px] md:text-3xl font-black text-slate-900 tracking-tight md:font-bold">Daily Essentials</h2>
                         </div>
                         <div className="space-y-4 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-4 md:space-y-0">
                             {(products || []).slice(0, 3).map((product, idx) => (
@@ -343,9 +391,9 @@ export default function HomeScreen() {
 
 
                     {/* Final Grid: All Best Sellers */}
-                    <div className="mt-12 px-6 md:px-0 md:mt-16 md:pb-20">
+                    <div className="mt-10 px-5 md:px-0 md:mt-16 md:pb-20">
                         <div className="flex flex-col mb-10">
-                            <h2 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tight text-center md:font-bold">Best Sellers near you</h2>
+                            <h2 className="text-[22px] md:text-4xl font-black text-slate-900 tracking-tight text-center md:font-bold">Best Sellers near you</h2>
                             <div className="w-16 h-1 bg-primary rounded-full mx-auto mt-4" />
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
@@ -381,6 +429,7 @@ export default function HomeScreen() {
                 onSkip={() => handleOnboardingFinalize()}
                 onClose={() => setShowDocumentPopup(false)}
             />
-        </PageTransition>
+            </PageTransition>
+        </>
     )
 }
