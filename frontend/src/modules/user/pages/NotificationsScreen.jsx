@@ -1,9 +1,10 @@
+import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Bell, Package, Tag, Info, CheckCircle2 } from 'lucide-react'
 import PageTransition from '../components/layout/PageTransition'
 
-const notifications = [
+const initialNotifications = [
     {
         id: 1,
         title: 'Order Delivered',
@@ -44,6 +45,13 @@ const notifications = [
 
 export default function NotificationsScreen() {
     const navigate = useNavigate()
+    const [notifications, setNotifications] = useState(initialNotifications)
+
+    const hasUnread = notifications.some((n) => !n.read)
+
+    const handleMarkAllRead = useCallback(() => {
+        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+    }, [])
 
     return (
         <PageTransition>
@@ -56,7 +64,13 @@ export default function NotificationsScreen() {
                         </button>
                         <h1 className="text-xl font-black text-slate-900 tracking-tight">Notifications</h1>
                     </div>
-                    <button className="text-[10px] font-black uppercase tracking-widest text-primary">Mark all read</button>
+                    <button
+                        onClick={handleMarkAllRead}
+                        disabled={!hasUnread}
+                        className="text-[10px] font-black uppercase tracking-widest text-primary disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transition-transform"
+                    >
+                        Mark all read
+                    </button>
                 </div>
 
                 <div className="p-6 space-y-4">

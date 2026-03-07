@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-    ArrowLeft, AlertCircle, MessageSquare,
+    ArrowLeft, AlertCircle,
     CircleDollarSign, FileText, Phone, Mail, Edit3,
     Smartphone, Receipt, X, CheckCircle2,
-    Plus, Briefcase, Info, Headset, Trash2, Loader2
+    Plus, Briefcase, Trash2, Loader2
 } from 'lucide-react'
 import PageTransition from '../components/layout/PageTransition'
 import { Button } from '@/components/ui/button'
@@ -415,33 +415,6 @@ export default function EditProfileScreen() {
                                                 />
                                                 <span className="absolute -top-2 left-4 bg-white px-1 text-[10px] font-black text-slate-400 uppercase">Address</span>
                                             </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Support Info Box */}
-                                    <div className="bg-[#f0f9ff] rounded-3xl p-6 border border-blue-100 space-y-5">
-                                        <div className="flex items-start gap-4">
-                                            <div className="w-8 h-8 rounded-lg bg-blue-100/50 flex items-center justify-center text-blue-500 shrink-0 mt-0.5">
-                                                <Info size={18} strokeWidth={2.5} />
-                                            </div>
-                                            <p className="text-[13.5px] font-bold text-slate-600 leading-relaxed">
-                                                Please reach out to our customer support to update account details & government provided documents
-                                            </p>
-                                        </div>
-
-                                        <div className="space-y-4 pl-12 pt-1 border-white/50">
-                                            <button className="flex items-center gap-3 text-emerald-600 font-black text-sm hover:underline underline-offset-4 decoration-2">
-                                                <MessageSquare size={18} />
-                                                Chat with us
-                                            </button>
-                                            <button className="flex items-center gap-3 text-emerald-600 font-black text-sm hover:underline underline-offset-4 decoration-2">
-                                                <Headset size={18} />
-                                                011-41171717
-                                            </button>
-                                            <button className="flex items-center gap-3 text-emerald-600 font-black text-sm hover:underline underline-offset-4 decoration-2">
-                                                <Mail size={18} />
-                                                help@kisaankart.com
-                                            </button>
                                         </div>
                                     </div>
                                 </div>

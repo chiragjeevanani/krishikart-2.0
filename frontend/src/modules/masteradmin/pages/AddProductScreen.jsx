@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Package,
@@ -25,7 +26,34 @@ import {
 import { cn } from '@/lib/utils';
 import { useCatalog } from '../contexts/CatalogContext';
 
+const INITIAL_FORM_DATA = {
+    name: '',
+    skuCode: '',
+    category: '',
+    subcategory: '',
+    price: '',
+    comparePrice: '',
+    stock: '',
+    unit: 'kg',
+    unitValue: '1',
+    bulkUnit: 'kg',
+    description: '',
+    shortDescription: '',
+    tags: [],
+    status: 'active',
+    images: [],
+    primaryImage: null,
+    primaryFile: null,
+    galleryFiles: [],
+    bulkPricing: [],
+    bestPrice: '',
+    dietaryType: 'veg',
+    showOnPOS: true,
+    showOnStorefront: true
+};
+
 export default function AddProductScreen() {
+    const navigate = useNavigate();
     const { categories, subcategories, addCategory, addSubcategory, getSubcategoriesByCategory, addProduct } = useCatalog();
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -38,31 +66,7 @@ export default function AddProductScreen() {
     const [quickAddFile, setQuickAddFile] = useState(null);
 
     // Form State
-    const [formData, setFormData] = useState({
-        name: '',
-        skuCode: '',
-        category: '',
-        subcategory: '',
-        price: '',
-        comparePrice: '',
-        stock: '',
-        unit: 'kg',
-        unitValue: '1',
-        bulkUnit: 'kg',
-        description: '',
-        shortDescription: '',
-        tags: [],
-        status: 'active',
-        images: [],
-        primaryImage: null,
-        primaryFile: null,
-        galleryFiles: [],
-        bulkPricing: [],
-        bestPrice: '',
-        dietaryType: 'veg', // 'veg' | 'non-veg' | 'none'
-        showOnPOS: true,
-        showOnStorefront: true
-    });
+    const [formData, setFormData] = useState(INITIAL_FORM_DATA);
 
     const [currentTag, setCurrentTag] = useState('');
 
@@ -175,15 +179,28 @@ export default function AddProductScreen() {
         setIsSaving(true);
         try {
             await addProduct(formData);
-            // On success, redirect or clear form
             setTimeout(() => {
-                window.location.href = '/masteradmin/products/manage';
+                navigate('/masteradmin/products/manage');
             }, 1000);
         } catch (error) {
             console.error(error);
         } finally {
             setIsSaving(false);
         }
+    };
+
+    const hasFormData = formData.name || formData.skuCode || formData.description || formData.price || formData.primaryImage || formData.tags?.length > 0 || formData.bulkPricing?.length > 0;
+
+    const handleDiscard = () => {
+        if (hasFormData && !window.confirm('Discard all changes and go back to product list?')) return;
+        setFormData(INITIAL_FORM_DATA);
+        setCurrentTag('');
+        setShowQuickAddCat(false);
+        setShowQuickAddSub(false);
+        setQuickAddName('');
+        setQuickAddImage(null);
+        setQuickAddFile(null);
+        navigate('/masteradmin/products/manage');
     };
 
     if (isLoading) {
@@ -290,7 +307,11 @@ export default function AddProductScreen() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <button className="px-4 py-1.5 border border-slate-200 text-slate-500 hover:text-slate-900 hover:border-slate-900 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all">
+                        <button
+                            type="button"
+                            onClick={handleDiscard}
+                            className="px-4 py-1.5 border border-slate-200 text-slate-500 hover:text-slate-900 hover:border-slate-900 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all"
+                        >
                             Discard
                         </button>
                         <button

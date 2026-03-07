@@ -9,8 +9,37 @@ export default function ApprovalDetailDrawer({ isOpen, onClose, item, type, onAp
     const isDelivery = type === 'delivery';
     const isCredit = type === 'credit';
     const [isProcessing, setIsProcessing] = useState(false);
+    const [downloadingId, setDownloadingId] = useState(null);
 
     if (!isOpen || !item) return null;
+
+    const handleDownload = async (doc, idx) => {
+        if (!doc?.url) return;
+        setDownloadingId(idx);
+        try {
+            const res = await fetch(doc.url, { mode: 'cors', credentials: 'omit' });
+            if (!res.ok) throw new Error('Download failed');
+            const blob = await res.blob();
+            const fromUrl = doc.url.split('.').pop()?.split('?')[0]?.toLowerCase();
+            const fromMime = blob.type && blob.type.split('/')[1] ? (blob.type === 'image/jpeg' ? 'jpg' : blob.type.split('/')[1]) : null;
+            const ext = (fromUrl && /^[a-z0-9]+$/i.test(fromUrl)) ? fromUrl : (fromMime || 'pdf');
+            const baseName = (doc.type || 'document').replace(/\s+/g, '_').replace(/[^a-z0-9_-]/gi, '_').toLowerCase();
+            const downloadName = `${baseName}.${ext}`;
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = downloadName;
+            a.rel = 'noopener noreferrer';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch {
+            window.open(doc.url, '_blank', 'noopener,noreferrer');
+        } finally {
+            setDownloadingId(null);
+        }
+    };
 
     const handleAction = (action) => {
         setIsProcessing(true);
@@ -200,13 +229,18 @@ export default function ApprovalDetailDrawer({ isOpen, onClose, item, type, onAp
                                                                     >
                                                                         <ExternalLink size={14} />
                                                                     </a>
-                                                                    <a
-                                                                        href={doc.url}
-                                                                        download
-                                                                        className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-lg active:scale-95 transition-all"
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(e) => { e.stopPropagation(); handleDownload(doc, idx); }}
+                                                                        disabled={downloadingId === idx}
+                                                                        className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-lg active:scale-95 transition-all disabled:opacity-70 disabled:cursor-wait"
                                                                     >
-                                                                        <Download size={14} />
-                                                                    </a>
+                                                                        {downloadingId === idx ? (
+                                                                            <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                                        ) : (
+                                                                            <Download size={14} />
+                                                                        )}
+                                                                    </button>
                                                                 </>
                                                             )}
                                                         </div>

@@ -431,7 +431,7 @@ export default function CouponManagementScreen() {
                                 type="text"
                                 placeholder="Search Ledger..."
                                 value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onChange={(e) => setSearchQuery(e.target.value.replace(/\s/g, ''))}
                                 className="bg-slate-50/50 border border-slate-200 rounded-sm pl-10 pr-4 py-2 text-[11px] font-bold focus:bg-white focus:ring-1 focus:ring-slate-900 outline-none w-64 transition-all"
                             />
                         </div>
