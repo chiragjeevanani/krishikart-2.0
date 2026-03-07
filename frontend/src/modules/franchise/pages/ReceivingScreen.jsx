@@ -341,24 +341,12 @@ const ReceivingScreen = () => {
                                                             <div className="flex flex-col gap-1.5">
                                                                 <label className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Received</label>
                                                                 <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg p-1 w-32">
-                                                                    <button
-                                                                        onClick={() => updateItem(itemId, 'received', Math.max(0, data.received - 1))}
-                                                                        className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-white rounded-md transition-all"
-                                                                    >
-                                                                        <Minus size={14} />
-                                                                    </button>
                                                                     <input
                                                                         type="number"
                                                                         value={data.received}
                                                                         onChange={(e) => updateItem(itemId, 'received', parseInt(e.target.value) || 0)}
-                                                                        className="bg-transparent w-full text-center font-black text-sm outline-none tabular-nums"
+                                                                        className="bg-transparent w-full text-center font-black text-sm outline-none tabular-nums py-1"
                                                                     />
-                                                                    <button
-                                                                        onClick={() => updateItem(itemId, 'received', data.received + 1)}
-                                                                        className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-white rounded-md transition-all"
-                                                                    >
-                                                                        <Plus size={14} />
-                                                                    </button>
                                                                 </div>
                                                             </div>
 

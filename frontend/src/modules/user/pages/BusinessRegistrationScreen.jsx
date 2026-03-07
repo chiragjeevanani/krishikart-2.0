@@ -177,15 +177,16 @@ export default function BusinessRegistrationScreen() {
                                         <div className="space-y-4 pt-4">
                                             <Input
                                                 placeholder="PAN Number"
-                                                className="h-14 bg-white border-slate-200 rounded-xl px-5 text-base font-bold placeholder:text-slate-400 focus:ring-emerald-500/10"
+                                                maxLength={10}
+                                                className="h-14 bg-white border-slate-200 rounded-xl px-5 text-base font-bold placeholder:text-slate-400 focus:ring-emerald-500/10 uppercase"
                                                 value={formData.pan}
-                                                onChange={(e) => setFormData(prev => ({ ...prev, pan: e.target.value }))}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, pan: e.target.value.toUpperCase() }))}
                                             />
                                             <Input
                                                 placeholder="Legal entity name"
                                                 className="h-14 bg-white border-slate-200 rounded-xl px-5 text-base font-bold placeholder:text-slate-400 focus:ring-emerald-500/10"
                                                 value={formData.entityName}
-                                                onChange={(e) => setFormData(prev => ({ ...prev, entityName: e.target.value }))}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, entityName: e.target.value.replace(/[^a-zA-Z\s]/g, '') }))}
                                             />
                                             <div className="relative">
                                                 <Input

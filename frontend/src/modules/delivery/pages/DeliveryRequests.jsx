@@ -8,7 +8,7 @@ import { ROUTES } from '../utils/constants';
 import { useDeliveryOrders } from '../contexts/DeliveryOrderContext';
 
 const DeliveryRequests = () => {
-    const { dispatchedOrders: requests, loading: refreshing, fetchDispatchedOrders: handleRefresh } = useDeliveryOrders();
+    const { dispatchedOrders: requests, loading: refreshing, fetchDispatchedOrders: handleRefresh, rejectTask } = useDeliveryOrders();
     const navigate = useNavigate();
 
     const handleAccept = (id) => {
@@ -18,8 +18,8 @@ const DeliveryRequests = () => {
         navigate(ROUTES.ACTIVE);
     };
 
-    const handleReject = (id) => {
-        // Just local filter for now
+    const handleReject = async (id) => {
+        await rejectTask(id);
     };
 
     return (

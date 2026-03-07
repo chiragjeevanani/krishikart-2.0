@@ -84,6 +84,19 @@ export function DeliveryOrderProvider({ children }) {
         }
     };
 
+    const rejectTask = async (orderId) => {
+        try {
+            const response = await api.put(`/orders/delivery/${orderId}/reject`);
+            if (response.data.success) {
+                toast.success(`Task rejected`);
+                fetchDispatchedOrders();
+            }
+        } catch (error) {
+            console.error('Reject task error:', error);
+            toast.error(error.response?.data?.message || 'Failed to reject task');
+        }
+    };
+
     useEffect(() => {
         if (delivery?._id) {
             joinDeliveryRoom(delivery._id);
@@ -119,7 +132,8 @@ export function DeliveryOrderProvider({ children }) {
             fetchDispatchedOrders,
             fetchReturnPickups,
             updateStatus,
-            updateReturnStatus
+            updateReturnStatus,
+            rejectTask
         }}>
             {children}
         </DeliveryOrderContext.Provider>

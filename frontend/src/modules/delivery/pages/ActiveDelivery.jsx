@@ -6,7 +6,6 @@ import {
     Navigation,
     MapPin,
     Clock,
-    MoreVertical,
     Loader2,
     Package
 } from 'lucide-react';
@@ -73,9 +72,6 @@ const ActiveDelivery = () => {
             <div className="px-6 pt-8 pb-2 bg-white sticky top-0 z-10 border-b border-border/30">
                 <div className="flex justify-between items-center mb-4">
                     <h1 className="text-xl font-bold">Active Delivery</h1>
-                    <button className="p-2 rounded-full bg-muted/50">
-                        <MoreVertical className="w-5 h-5 text-muted-foreground" />
-                    </button>
                 </div>
                 <StatusProgress currentStatus={currentStatus} />
             </div>
@@ -110,15 +106,32 @@ const ActiveDelivery = () => {
                             </div>
                             <div className="flex-1">
                                 <p className="text-[10px] font-bold text-muted-foreground uppercase mb-0.5">Pickup — Franchise</p>
-                                <h3 className="text-sm font-bold">{order?.franchiseId?.shopName || 'Franchise'}</h3>
-                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{order?.franchiseId?.address || '—'}</p>
+                                <h3 className="text-sm font-bold">{order?.franchiseId?.franchiseName || 'Franchise'}</h3>
+                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                    {[order?.franchiseId?.area, order?.franchiseId?.city].filter(Boolean).join(', ') || '—'}
+                                </p>
                             </div>
                         </div>
                         <div className="mt-4 flex gap-2">
-                            <button className="flex-1 bg-muted/50 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
+                            <button
+                                onClick={() => {
+                                    if (order?.franchiseId?.mobile) {
+                                        window.location.href = `tel:${order.franchiseId.mobile}`;
+                                    }
+                                }}
+                                className="flex-1 bg-muted/50 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 active:bg-slate-100"
+                            >
                                 <Phone className="w-3.5 h-3.5" /> Call Franchise
                             </button>
-                            <button className="flex-1 bg-muted/50 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
+                            <button
+                                onClick={() => {
+                                    if (order?.franchiseId?.location?.coordinates) {
+                                        const [lng, lat] = order.franchiseId.location.coordinates;
+                                        window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+                                    }
+                                }}
+                                className="flex-1 bg-muted/50 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 active:bg-slate-100"
+                            >
                                 <Navigation className="w-3.5 h-3.5" /> Directions
                             </button>
                         </div>
@@ -137,11 +150,25 @@ const ActiveDelivery = () => {
                             </div>
                         </div>
                         <div className="mt-4 flex gap-2">
-                            <button className="flex-1 bg-muted/50 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
+                            <button
+                                onClick={() => {
+                                    if (order?.userId?.mobile) {
+                                        window.location.href = `tel:${order.userId.mobile}`;
+                                    }
+                                }}
+                                className="flex-1 bg-muted/50 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 active:bg-slate-100"
+                            >
                                 <Phone className="w-3.5 h-3.5" /> Call Customer
                             </button>
-                            <button className="flex-1 bg-muted/50 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
-                                <MessageSquare className="w-3.5 h-3.5" /> Chat
+                            <button
+                                onClick={() => {
+                                    // Use shipping address for directions if coordinates not available
+                                    const encodedAddress = encodeURIComponent(order?.shippingAddress || '');
+                                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`, '_blank');
+                                }}
+                                className="flex-1 bg-muted/50 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 active:bg-slate-100"
+                            >
+                                <Navigation size={14} className="w-3.5 h-3.5" /> Directions
                             </button>
                         </div>
                     </div>

@@ -17,6 +17,7 @@ import {
     assignDeliveryPartner,
     getDispatchedOrders,
     getDeliveryOrderHistory,
+    rejectDeliveryTask,
     getAdminDeliveryTracking
 } from "../controllers/order.controller.js";
 import { protect } from "../middlewares/authmiddleware.js";
@@ -51,6 +52,7 @@ router.put("/franchise/:id/returns/:requestIndex/assign-pickup", protectFranchis
 // Delivery Routes
 router.get("/delivery/dispatched", protectDelivery, getDispatchedOrders);
 router.get("/delivery/history", protectDelivery, getDeliveryOrderHistory);
+router.put("/delivery/:id/reject", protectDelivery, rejectDeliveryTask);
 router.put("/delivery/:id/status", protectDelivery, updateOrderStatus);
 router.get("/delivery/return-pickups", protectDelivery, getDeliveryReturnPickups);
 router.put("/delivery/return-pickups/:id/:requestIndex/status", protectDelivery, updateReturnPickupStatus);

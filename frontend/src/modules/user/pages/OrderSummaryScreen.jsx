@@ -160,16 +160,16 @@ export default function OrderSummaryScreen() {
                                     {order.deliveryFee === 0 ? "Free" : `₹${order.deliveryFee}`}
                                 </span>
                             </div>
-                            {order.platformFee > 0 && (
-                                <div className="flex justify-between text-xs font-bold text-slate-500">
-                                    <span className="uppercase tracking-widest">Platform Fee</span>
-                                    <span className="text-slate-800 font-black">₹{order.platformFee}</span>
-                                </div>
-                            )}
                             <div className="flex justify-between text-xs font-bold text-slate-500">
                                 <span className="uppercase tracking-widest">GST & Taxes</span>
                                 <span className="text-slate-800 font-black">₹{(order.tax || 0).toLocaleString()}</span>
                             </div>
+                            {(order.discountAmount > 0) && (
+                                <div className="flex justify-between text-xs font-bold text-emerald-600">
+                                    <span className="uppercase tracking-widest">Coupon Discount</span>
+                                    <span className="font-black">- ₹{order.discountAmount}</span>
+                                </div>
+                            )}
                         </div>
 
                         <div className="flex justify-between items-center pt-2">
@@ -177,10 +177,12 @@ export default function OrderSummaryScreen() {
                                 <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1 text-left">Grand Total</h4>
                                 <span className="text-2xl font-black text-emerald-600 tracking-tighter">₹{(order.totalAmount || 0).toLocaleString()}</span>
                             </div>
-                            <div className="bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100">
-                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Savings</p>
-                                <p className="text-[11px] font-black text-emerald-600 uppercase">₹120 SAVED</p>
-                            </div>
+                            {order.discountAmount > 0 && (
+                                <div className="bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-100">
+                                    <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-1">Savings</p>
+                                    <p className="text-[11px] font-black text-emerald-600 uppercase">₹{order.discountAmount} SAVED</p>
+                                </div>
+                            )}
                         </div>
                     </div>
 

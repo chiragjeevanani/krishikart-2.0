@@ -6,6 +6,8 @@ import api from '@/lib/axios';
 const DeliveryHistory = () => {
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [dateFilter, setDateFilter] = useState('');
 
     useEffect(() => {
         const fetchHistory = async () => {
@@ -23,13 +25,29 @@ const DeliveryHistory = () => {
         fetchHistory();
     }, []);
 
-    const totalEarnings = history.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+    const filteredHistory = history.filter(item => {
+        const matchesSearch = item.customer?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.franchiseName?.toLowerCase().includes(searchQuery.toLowerCase());
+
+        let matchesDate = true;
+        if (dateFilter) {
+            // Compare local YYYY-MM-DD reliably without UTC offset issues
+            const localTargetStr = item.rawDate
+                ? new Date(item.rawDate).toLocaleDateString('en-CA')
+                : new Date(item.date).toLocaleDateString('en-CA');
+            matchesDate = localTargetStr === dateFilter;
+        }
+
+        return matchesSearch && matchesDate;
+    });
+
+    const totalDeliveries = filteredHistory.length;
 
     return (
         <div className="flex flex-col min-h-full bg-slate-50 pb-20">
             {/* Header */}
             <div className="px-6 pt-8 pb-4 bg-white sticky top-0 z-10 border-b border-border/10">
-                <h1 className="text-2xl font-bold mb-4">Earnings History</h1>
+                <h1 className="text-2xl font-bold mb-4">Delivery History</h1>
 
                 <div className="bg-primary/5 p-5 rounded-3xl flex items-center justify-between border border-primary/10 mb-6">
                     <div className="flex items-center gap-3">
@@ -37,8 +55,8 @@ const DeliveryHistory = () => {
                             <TrendingUp className="text-primary w-6 h-6" />
                         </div>
                         <div>
-                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Total Earnings</p>
-                            <p className="text-xl font-black text-foreground">₹{totalEarnings.toLocaleString('en-IN')}</p>
+                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Total Deliveries</p>
+                            <p className="text-xl font-black text-foreground">{totalDeliveries} Completed</p>
                         </div>
                     </div>
                 </div>
@@ -48,13 +66,31 @@ const DeliveryHistory = () => {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <input
                             type="text"
-                            placeholder="Search orders..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search by customer or store..."
                             className="w-full pl-9 pr-4 py-3 rounded-2xl border border-border bg-muted/20 focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm font-medium"
                         />
                     </div>
-                    <button className="p-3 rounded-2xl border border-border bg-white text-foreground active:scale-95 shadow-sm">
-                        <Calendar className="w-5 h-5" />
-                    </button>
+                    <div className="relative">
+                        <input
+                            type="date"
+                            value={dateFilter}
+                            onChange={(e) => setDateFilter(e.target.value)}
+                            className="p-3 w-12 text-transparent rounded-2xl border border-border bg-white text-foreground active:scale-95 shadow-sm absolute inset-0 opacity-0 z-10 cursor-pointer"
+                        />
+                        <button className="p-3 rounded-2xl border border-border bg-white text-foreground active:scale-95 shadow-sm relative z-0 flex items-center justify-center">
+                            <Calendar className="w-5 h-5" />
+                        </button>
+                    </div>
+                    {dateFilter && (
+                        <button
+                            onClick={() => setDateFilter('')}
+                            className="text-xs font-bold text-red-500 bg-red-50 px-3 rounded-2xl"
+                        >
+                            Clear
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -66,9 +102,9 @@ const DeliveryHistory = () => {
                             <div key={i} className="h-24 bg-white border border-border rounded-3xl animate-pulse" />
                         ))}
                     </div>
-                ) : history.length > 0 ? (
+                ) : filteredHistory.length > 0 ? (
                     <div className="space-y-4">
-                        {history.map((item, i) => (
+                        {filteredHistory.map((item, i) => (
                             <motion.div
                                 key={item.id}
                                 initial={{ opacity: 0, x: -10 }}
@@ -87,7 +123,7 @@ const DeliveryHistory = () => {
                                     </div>
                                 </div>
                                 <div className="text-right flex flex-col items-end gap-1">
-                                    <span className="text-sm font-black text-primary">+ ₹{item.amount}</span>
+                                    <span className="text-xs font-black text-primary">{item.numberOfPackages || 0} PKGS</span>
                                     <span className="text-[8px] bg-green-500 text-white px-2 py-0.5 rounded-sm font-black uppercase tracking-tighter">Delivered</span>
                                 </div>
                             </motion.div>
@@ -100,7 +136,7 @@ const DeliveryHistory = () => {
                         </div>
                         <h3 className="text-lg font-bold text-foreground">No History Found</h3>
                         <p className="text-sm text-muted-foreground px-10">
-                            Complete your first delivery to see your earnings history here!
+                            Complete your first delivery to see your history here!
                         </p>
                     </div>
                 )}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Navigation, ShieldCheck, ArrowRight, Phone, User, Truck, Car } from 'lucide-react';
 import { ROUTES } from '../utils/constants';
@@ -15,7 +15,39 @@ const SignupScreen = () => {
     });
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [loading, setLoading] = useState(false);
+    const [timer, setTimer] = useState(120);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        let interval;
+        if (step === 'otp' && timer > 0) {
+            interval = setInterval(() => {
+                setTimer((prev) => prev - 1);
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [step, timer]);
+
+    const formatTime = (seconds) => {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}:${s < 10 ? '0' : ''}${s}`;
+    };
+
+    const handleResendOtp = async () => {
+        if (timer > 0) return;
+        setLoading(true);
+        try {
+            await api.post('/delivery/send-otp', { mobile: formData.phone });
+            setTimer(120);
+            setOtp(['', '', '', '', '', '']);
+        } catch (error) {
+            console.error(error);
+            alert(error.response?.data?.message || 'Failed to resend OTP');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleSendOtp = async (e) => {
         e.preventDefault();
@@ -29,6 +61,7 @@ const SignupScreen = () => {
                 vehicleType: formData.vehicleType
             });
             setStep('otp');
+            setTimer(120);
         } catch (error) {
             console.error(error);
             alert(error.response?.data?.message || 'Registration failed');
@@ -64,6 +97,10 @@ const SignupScreen = () => {
         const { name, value } = e.target;
         if (name === 'phone') {
             setFormData(prev => ({ ...prev, [name]: value.replace(/\D/g, '').slice(0, 10) }));
+        } else if (name === 'name') {
+            setFormData(prev => ({ ...prev, [name]: value.replace(/[^A-Za-z\s]/g, '') }));
+        } else if (name === 'vehicleNumber') {
+            setFormData(prev => ({ ...prev, [name]: value.toUpperCase().replace(/[^A-Z0-9]/g, '') }));
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
         }
@@ -139,6 +176,8 @@ const SignupScreen = () => {
                                             required
                                             value={formData.name}
                                             onChange={handleChange}
+                                            pattern="[A-Za-z\s]+"
+                                            title="Only alphabets and spaces are allowed"
                                             placeholder="Enter your name"
                                             className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-border bg-slate-50/50 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all text-sm font-black tracking-tight"
                                         />
@@ -173,11 +212,13 @@ const SignupScreen = () => {
                                             name="vehicleNumber"
                                             type="text"
                                             required
-                                            style={{ textTransform: 'uppercase' }}
                                             value={formData.vehicleNumber}
                                             onChange={handleChange}
-                                            placeholder="MP 09 AB 1234"
-                                            className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-border bg-slate-50/50 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all text-sm font-black tracking-tight"
+                                            pattern="^[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}$"
+                                            title="Invalid Vehicle Number (must be 4 alphabets and 6 numbers e.g., MP09AB1234)"
+                                            maxLength={10}
+                                            placeholder="MP09AB1234"
+                                            className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-border bg-slate-50/50 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all text-sm font-black tracking-tight uppercase"
                                         />
                                     </div>
                                 </div>
@@ -277,6 +318,17 @@ const SignupScreen = () => {
                                     )}
                                 </motion.button>
                             </form>
+
+                            <div className="mt-8 text-center">
+                                <button
+                                    type="button"
+                                    onClick={handleResendOtp}
+                                    disabled={timer > 0 || loading}
+                                    className="text-[11px] font-black text-slate-400 uppercase tracking-widest hover:text-primary transition-colors flex items-center justify-center gap-2 mx-auto disabled:opacity-50"
+                                >
+                                    {timer > 0 ? `Resend Code in ${formatTime(timer)}` : 'Resend OTP'}
+                                </button>
+                            </div>
                         </motion.div>
                     )}
                 </AnimatePresence>

@@ -15,7 +15,39 @@ export default function LoginScreen() {
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [isLoading, setIsLoading] = useState(false);
     const [mode, setMode] = useState('mobile'); // 'mobile' or 'otp'
+    const [timer, setTimer] = useState(120);
     const otpRefs = [useRef(), useRef(), useRef(), useRef(), useRef(), useRef()];
+
+    useEffect(() => {
+        let interval;
+        if (mode === 'otp' && timer > 0) {
+            interval = setInterval(() => {
+                setTimer((prev) => prev - 1);
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [mode, timer]);
+
+    const formatTime = (seconds) => {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}:${s < 10 ? '0' : ''}${s}`;
+    };
+
+    const handleResendOtp = async () => {
+        if (timer > 0) return;
+        setIsLoading(true);
+        try {
+            await api.post('/franchise/send-otp', { mobile });
+            setTimer(120);
+            setOtp(['', '', '', '', '', '']);
+        } catch (error) {
+            console.error(error);
+            alert(error.response?.data?.message || 'Failed to resend OTP');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handleNext = async (e) => {
         e.preventDefault();
@@ -24,6 +56,7 @@ export default function LoginScreen() {
             try {
                 await api.post('/franchise/send-otp', { mobile });
                 setMode('otp');
+                setTimer(120);
             } catch (error) {
                 console.error(error);
                 alert(error.response?.data?.message || 'Failed to send OTP');
@@ -228,15 +261,14 @@ export default function LoginScreen() {
                                                 </>
                                             )}
                                         </button>
+
                                         <button
                                             type="button"
-                                            onClick={() => {
-                                                setMode('mobile');
-                                                setOtp(['', '', '', '', '', '']);
-                                            }}
-                                            className="text-[10px] font-black text-slate-400 uppercase tracking-widest py-2 hover:text-slate-900 transition-colors underline underline-offset-8 decoration-slate-200"
+                                            onClick={handleResendOtp}
+                                            disabled={timer > 0 || isLoading}
+                                            className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors underline underline-offset-8 decoration-slate-200 disabled:opacity-50 disabled:hover:text-slate-400"
                                         >
-                                            Change Mobile Number
+                                            {timer > 0 ? `Resend Code in ${formatTime(timer)}` : 'Resend OTP'}
                                         </button>
                                     </div>
                                 </motion.div>

@@ -241,7 +241,7 @@ export default function HomeScreen() {
                                     <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest md:normal-case md:font-medium">Ending in 02:45:12</span>
                                 </div>
                             </div>
-                            <button className="text-primary text-[11px] font-black uppercase tracking-widest bg-primary/5 px-4 py-2 rounded-full md:normal-case md:font-semibold md:text-sm hover:bg-primary/10 transition-colors">See All</button>
+                            <button onClick={() => navigate('/products/all')} className="text-primary text-[11px] font-black uppercase tracking-widest bg-primary/5 px-4 py-2 rounded-full md:normal-case md:font-semibold md:text-sm hover:bg-primary/10 transition-colors">See All</button>
                         </div>
                         <div className="overflow-x-auto no-scrollbar md:overflow-visible px-6 md:px-0">
                             <div className="flex gap-4 w-max md:w-full md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 pb-2 md:pb-0">
@@ -268,7 +268,7 @@ export default function HomeScreen() {
                                 </div>
                                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest md:normal-case md:font-medium md:text-sm">Best prices for businesses</p>
                             </div>
-                            <button className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-primary border border-slate-200 hover:border-primary transition-all shadow-sm"><ChevronRight size={20} /></button>
+                            <button onClick={() => navigate('/products/all')} className="text-primary text-[11px] font-black uppercase tracking-widest bg-primary/5 px-4 py-2 rounded-full md:normal-case md:font-semibold md:text-sm hover:bg-primary/10 transition-colors">See All</button>
                         </div>
                         <div className="overflow-x-auto no-scrollbar md:overflow-visible px-6 md:px-0">
                             <div className="flex gap-4 w-max md:w-full md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 pb-4">
@@ -286,11 +286,14 @@ export default function HomeScreen() {
                 <div className="max-w-7xl mx-auto md:px-8">
                     {/* Section 3: Seasonal Picks */}
                     <div className="mt-4 px-6 md:px-0 md:mt-8">
-                        <div className="flex items-center gap-2 mb-6">
-                            <div className="p-1.5 bg-emerald-100 rounded-lg md:rounded-md">
-                                <Sparkles size={16} className="text-emerald-500 fill-emerald-500 md:w-5 md:h-5" />
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-2">
+                                <div className="p-1.5 bg-emerald-100 rounded-lg md:rounded-md">
+                                    <Sparkles size={16} className="text-emerald-500 fill-emerald-500 md:w-5 md:h-5" />
+                                </div>
+                                <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight md:font-bold">Seasonal Picks</h2>
                             </div>
-                            <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight md:font-bold">Seasonal Picks</h2>
+                            <button onClick={() => navigate('/products/all')} className="text-primary text-[11px] font-black uppercase tracking-widest bg-primary/5 px-4 py-2 rounded-full md:normal-case md:font-semibold md:text-sm hover:bg-primary/10 transition-colors">See All</button>
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-5 gap-4">
                             {(products || []).slice(0, 5).map((product) => (
@@ -308,7 +311,7 @@ export default function HomeScreen() {
                                 </div>
                                 <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight md:font-bold">Exotic Finds</h2>
                             </div>
-                            <button className="text-primary text-[11px] font-black uppercase tracking-widest px-4 py-2 bg-primary/5 rounded-full md:normal-case md:font-semibold md:text-sm">View All</button>
+                            <button onClick={() => navigate('/products/all')} className="text-primary text-[11px] font-black uppercase tracking-widest px-4 py-2 bg-primary/5 rounded-full md:normal-case md:font-semibold md:text-sm hover:bg-primary/10 transition-colors">See All</button>
                         </div>
                         <div className="overflow-x-auto no-scrollbar md:overflow-visible px-6 md:px-0">
                             <div className="flex gap-4 w-max md:w-full md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 pb-6">

@@ -45,9 +45,13 @@ export default function VendorManagementScreen() {
     }, []);
 
     const filteredVendors = (vendors || []).filter(v => {
-        const matchesSearch = v.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            v.email?.toLowerCase().includes(searchTerm.toLowerCase());
-
+        const name = (v.fullName || "").toLowerCase();
+        const email = (v.email || "").toLowerCase();
+        const mobile = (v.mobile || "").toLowerCase();
+        const searchKeywords = searchTerm.toLowerCase().trim().split(/\s+/);
+        const matchesSearch = searchTerm.trim() === '' ? true : searchKeywords.every(kw =>
+            name.includes(kw) || email.includes(kw) || mobile.includes(kw)
+        );
         const matchesStatus = statusFilter === 'All' ||
             (statusFilter === 'Verified' && v.status === 'active') ||
             (statusFilter === 'Pending' && v.status === 'pending');

@@ -37,12 +37,12 @@ export default function CouponManagementScreen() {
         title: '',
         description: '',
         type: 'percentage',
-        value: 0,
-        minOrderValue: 0,
-        maxDiscount: 0,
-        buyQty: 0,
+        value: '',
+        minOrderValue: '',
+        maxDiscount: '',
+        buyQty: '',
         buyUnit: 'unit',
-        getQty: 0,
+        getQty: '',
         getUnit: 'unit',
         isFirstTimeUserOnly: false,
         startDate: new Date().toISOString().split('T')[0],
@@ -94,12 +94,12 @@ export default function CouponManagementScreen() {
             title: '',
             description: '',
             type: 'percentage',
-            value: 0,
-            minOrderValue: 0,
-            maxDiscount: 0,
-            buyQty: 0,
+            value: '',
+            minOrderValue: '',
+            maxDiscount: '',
+            buyQty: '',
             buyUnit: 'unit',
-            getQty: 0,
+            getQty: '',
             getUnit: 'unit',
             isFirstTimeUserOnly: false,
             startDate: new Date().toISOString().split('T')[0],
@@ -311,8 +311,18 @@ export default function CouponManagementScreen() {
                                                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] ml-0.5">Start Date</label>
                                                 <input
                                                     type="date"
+                                                    min={new Date().toISOString().split('T')[0]}
                                                     value={form.startDate}
-                                                    onChange={(e) => setForm(prev => ({ ...prev, startDate: e.target.value }))}
+                                                    onChange={(e) => {
+                                                        const newStartDate = e.target.value;
+                                                        setForm(prev => {
+                                                            const updates = { startDate: newStartDate };
+                                                            if (prev.endDate && newStartDate > prev.endDate) {
+                                                                updates.endDate = '';
+                                                            }
+                                                            return { ...prev, ...updates };
+                                                        });
+                                                    }}
                                                     className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-3 text-sm font-bold focus:ring-1 focus:ring-slate-900 outline-none transition-all"
                                                 />
                                             </div>
@@ -320,6 +330,7 @@ export default function CouponManagementScreen() {
                                                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] ml-0.5">End Date</label>
                                                 <input
                                                     type="date"
+                                                    min={form.startDate || new Date().toISOString().split('T')[0]}
                                                     value={form.endDate}
                                                     onChange={(e) => setForm(prev => ({ ...prev, endDate: e.target.value }))}
                                                     className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-3 text-sm font-bold focus:ring-1 focus:ring-slate-900 outline-none transition-all"

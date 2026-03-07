@@ -57,7 +57,9 @@ export default function VehicleInfoScreen() {
                         <input
                             type="text"
                             value={formData.fullName}
-                            onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                            onChange={(e) => setFormData({ ...formData, fullName: e.target.value.replace(/[^A-Za-z\s]/g, '') })}
+                            pattern="[A-Za-z\s]+"
+                            title="Only alphabets and spaces are allowed"
                             className="w-full p-4 rounded-2xl border border-border bg-muted/20 focus:outline-none focus:ring-2 focus:ring-primary/20 font-bold"
                             placeholder="Full Name"
                             required
@@ -69,9 +71,12 @@ export default function VehicleInfoScreen() {
                         <input
                             type="text"
                             value={formData.vehicleNumber}
-                            onChange={(e) => setFormData({ ...formData, vehicleNumber: e.target.value })}
+                            onChange={(e) => setFormData({ ...formData, vehicleNumber: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') })}
+                            pattern="^[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}$"
+                            title="Invalid Vehicle Number (must be 4 alphabets and 6 numbers e.g., MP09AB1234)"
+                            maxLength={10}
                             className="w-full p-4 rounded-2xl border border-border bg-muted/20 focus:outline-none focus:ring-2 focus:ring-primary/20 font-bold uppercase"
-                            placeholder="e.g. DL 3S ET 4521"
+                            placeholder="e.g. MP09AB1234"
                             required
                         />
                     </div>
@@ -85,8 +90,8 @@ export default function VehicleInfoScreen() {
                                     type="button"
                                     onClick={() => setFormData({ ...formData, vehicleType: type })}
                                     className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${formData.vehicleType === type
-                                            ? 'border-primary bg-primary/5 shadow-lg shadow-primary/5'
-                                            : 'border-border bg-white text-muted-foreground'
+                                        ? 'border-primary bg-primary/5 shadow-lg shadow-primary/5'
+                                        : 'border-border bg-white text-muted-foreground'
                                         }`}
                                 >
                                     {type === 'bike' ? <Bike className="w-6 h-6" /> : <Truck className="w-6 h-6" />}

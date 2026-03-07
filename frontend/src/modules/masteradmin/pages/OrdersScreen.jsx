@@ -67,10 +67,18 @@ export default function OrdersScreen() {
         const data = filteredOrders.map(order => ({
             ...order,
             customerName: order.userId?.fullName || 'Unknown',
-            totalAmount: order.items?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0
+            totalAmount: order.totalAmount,
+            discount: order.discountAmount || 0,
+            coupon: order.couponCode || 'None'
         }));
 
-        exportToCSV('Orders_Report', columns, data);
+        const exportColumns = [
+            ...columns,
+            { header: 'Discount', key: 'discount' },
+            { header: 'Coupon', key: 'coupon' }
+        ];
+
+        exportToCSV('Orders_Report', exportColumns, data);
     };
 
     const fetchAllOrders = async (silent = false) => {
@@ -233,9 +241,15 @@ export default function OrdersScreen() {
     }, []);
 
     const filteredOrders = allOrders.filter(order => {
-        const customerName = order.userId?.fullName || 'Unknown';
-        const matchesSearch = customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            order._id.toLowerCase().includes(searchTerm.toLowerCase());
+        const customerName = (order.userId?.fullName || 'Unknown').toLowerCase();
+        const customerMobile = (order.userId?.mobile || '').toLowerCase();
+
+        // Multi-keyword search logic
+        const searchKeywords = searchTerm.toLowerCase().trim().split(/\s+/);
+        const matchesSearch = searchKeywords.every(keyword =>
+            customerName.includes(keyword) || customerMobile.includes(keyword)
+        );
+
         const matchesFilter = activeFilter === 'all' || order.orderStatus.toLowerCase() === activeFilter.toLowerCase();
         return matchesSearch && matchesFilter;
     });
@@ -298,7 +312,7 @@ export default function OrdersScreen() {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors" size={14} />
                             <input
                                 type="text"
-                                placeholder="Search by Order ID, Customer Name..."
+                                placeholder="Search by Customer Name, Mobile..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full bg-white border border-slate-200 rounded-sm py-1.5 pl-9 pr-4 outline-none text-[11px] font-medium placeholder:text-slate-400 focus:border-slate-400 transition-all font-sans"

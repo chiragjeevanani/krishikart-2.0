@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -28,7 +28,39 @@ export default function SignupScreen() {
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [isLoading, setIsLoading] = useState(false);
     const [mode, setMode] = useState('details'); // 'details' or 'otp'
+    const [timer, setTimer] = useState(120);
     const otpRefs = [useRef(), useRef(), useRef(), useRef(), useRef(), useRef()];
+
+    useEffect(() => {
+        let interval;
+        if (mode === 'otp' && timer > 0) {
+            interval = setInterval(() => {
+                setTimer((prev) => prev - 1);
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [mode, timer]);
+
+    const formatTime = (seconds) => {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}:${s < 10 ? '0' : ''}${s}`;
+    };
+
+    const handleResendOtp = async () => {
+        if (timer > 0) return;
+        setIsLoading(true);
+        try {
+            await api.post('/franchise/send-otp', { mobile: formData.mobile });
+            setTimer(120);
+            setOtp(['', '', '', '', '', '']);
+        } catch (error) {
+            console.error(error);
+            alert(error.response?.data?.message || 'Failed to resend OTP');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handleChange = (field, value) => {
         if (field === 'state') {
@@ -60,6 +92,7 @@ export default function SignupScreen() {
                     location: coords
                 });
                 setMode('otp');
+                setTimer(120);
             } catch (error) {
                 console.error(error);
                 alert(error.response?.data?.message || 'Registration failed');
@@ -206,7 +239,7 @@ export default function SignupScreen() {
                                                 </div>
                                                 <input
                                                     value={formData.ownerName}
-                                                    onChange={(e) => handleChange('ownerName', e.target.value)}
+                                                    onChange={(e) => handleChange('ownerName', e.target.value.replace(/[^a-zA-Z\s]/g, ''))}
                                                     placeholder="Owner Name"
                                                     className="w-full h-12 pl-12 pr-4 bg-slate-50 border border-slate-200 rounded-sm outline-none text-xs font-black text-slate-900 placeholder:text-slate-300 focus:bg-white focus:border-slate-900 transition-all font-sans"
                                                 />
@@ -257,7 +290,7 @@ export default function SignupScreen() {
                                                 </div>
                                                 <input
                                                     value={formData.city}
-                                                    onChange={(e) => handleChange('city', e.target.value)}
+                                                    onChange={(e) => handleChange('city', e.target.value.replace(/[^a-zA-Z\s]/g, ''))}
                                                     placeholder="e.g. Indore"
                                                     className="w-full h-12 pl-12 pr-4 bg-slate-50 border border-slate-200 rounded-sm outline-none text-xs font-black text-slate-900 placeholder:text-slate-300 focus:bg-white focus:border-slate-900 transition-all font-sans"
                                                 />
@@ -273,7 +306,7 @@ export default function SignupScreen() {
                                             </div>
                                             <input
                                                 value={formData.state}
-                                                onChange={(e) => handleChange('state', e.target.value)}
+                                                onChange={(e) => handleChange('state', e.target.value.replace(/[^a-zA-Z\s]/g, ''))}
                                                 placeholder="e.g. Madhya Pradesh"
                                                 maxLength={50}
                                                 className="w-full h-12 pl-12 pr-4 bg-slate-50 border border-slate-200 rounded-sm outline-none text-xs font-black text-slate-900 placeholder:text-slate-300 focus:bg-white focus:border-slate-900 transition-all font-sans"
@@ -340,15 +373,14 @@ export default function SignupScreen() {
                                                 </>
                                             )}
                                         </button>
+
                                         <button
                                             type="button"
-                                            onClick={() => {
-                                                setMode('details');
-                                                setOtp(['', '', '', '', '', '']);
-                                            }}
-                                            className="text-[10px] font-black text-slate-400 uppercase tracking-widest py-2 hover:text-slate-900 transition-colors underline underline-offset-8 decoration-slate-200"
+                                            onClick={handleResendOtp}
+                                            disabled={timer > 0 || isLoading}
+                                            className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors underline underline-offset-8 decoration-slate-200 disabled:opacity-50 disabled:hover:text-slate-400"
                                         >
-                                            Edit Details
+                                            {timer > 0 ? `Resend Code in ${formatTime(timer)}` : 'Resend OTP'}
                                         </button>
                                     </div>
                                 </motion.div>

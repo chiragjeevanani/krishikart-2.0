@@ -1407,20 +1407,23 @@ export const getDispatchedOrders = async (req, res) => {
       deliveryPartnerId: partnerId,
     })
       .populate("userId", "fullName mobile address")
-      .populate("franchiseId", "shopName address location")
+      .populate("franchiseId", "franchiseName city area mobile location")
       .sort({ updatedAt: -1 });
 
     // Map to format delivery app expects
     const formatted = orders.map((order) => {
       let distance = "N/A";
 
-      // Calculate real distance if coords available
-      if (order.franchiseId?.location?.lat && order.shippingLocation?.lat) {
+      // Calculate real distance if coords available (GeoJSON uses [lng, lat])
+      const fLoc = order.franchiseId?.location?.coordinates;
+      const sLoc = order.shippingLocation?.coordinates;
+
+      if (Array.isArray(fLoc) && fLoc.length === 2 && Array.isArray(sLoc) && sLoc.length === 2) {
         const d = getDistance(
-          order.franchiseId.location.lat,
-          order.franchiseId.location.lng,
-          order.shippingLocation.lat,
-          order.shippingLocation.lng,
+          fLoc[1], // latitude
+          fLoc[0], // longitude
+          sLoc[1], // latitude
+          sLoc[0], // longitude
         );
         distance = d < 1 ? `${(d * 1000).toFixed(0)}m` : `${d.toFixed(1)}km`;
       }
@@ -1457,6 +1460,40 @@ export const getDispatchedOrders = async (req, res) => {
   }
 };
 
+// Reject a delivery task (return back to Packed state)
+export const rejectDeliveryTask = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const partnerId = req.delivery?._id || req.user?.id;
+
+    if (!partnerId) return handleResponse(res, 401, "Unauthorized");
+
+    const order = await Order.findById(id);
+    if (!order) return handleResponse(res, 404, "Order not found");
+
+    // Clear partner and reset status
+    order.deliveryPartnerId = null;
+    order.orderStatus = "Packed";
+    order.statusHistory.push({
+      status: "Task Rejected",
+      updatedAt: new Date(),
+      updatedBy: "delivery",
+    });
+
+    await order.save();
+
+    // Notify franchise/admin if needed
+    if (order.franchiseId) {
+      emitToFranchise(order.franchiseId, "ORDER_REJECTED", { orderId: id });
+    }
+
+    return handleResponse(res, 200, "Task rejected successfully");
+  } catch (error) {
+    console.error("Reject delivery task error:", error);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
 // Get completed orders for delivery partner (History)
 export const getDeliveryOrderHistory = async (req, res) => {
   try {
@@ -1478,13 +1515,14 @@ export const getDeliveryOrderHistory = async (req, res) => {
         franchiseName: order.franchiseId?.shopName || "Kisaankart Store",
         franchiseAddress: order.franchiseId?.address || "N/A",
         items: order.items,
-        amount: 50, // Earnings
+        numberOfPackages: order.numberOfPackages || 0,
         status: "delivered",
         date: dateObj.toLocaleDateString("en-IN", {
           day: "2-digit",
           month: "short",
           year: "numeric",
         }),
+        rawDate: dateObj.toISOString(),
         time: dateObj.toLocaleTimeString("en-IN", {
           hour: "2-digit",
           minute: "2-digit",

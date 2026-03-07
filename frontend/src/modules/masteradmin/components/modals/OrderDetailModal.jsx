@@ -111,6 +111,7 @@ const OrderDetailModal = ({ isOpen, onClose, orderId, onProcure }) => {
                         <p><strong>Subtotal:</strong> ₹${(order.subtotal ?? 0).toLocaleString()}</p>
                         <p><strong>Delivery:</strong> ₹${(order.deliveryFee ?? 0).toLocaleString()}</p>
                         <p><strong>Tax:</strong> ₹${(order.tax ?? 0).toLocaleString()}</p>
+                        ${order.discountAmount > 0 ? `<p><strong>Discount (${order.couponCode}):</strong> -₹${(order.discountAmount ?? 0).toLocaleString()}</p>` : ''}
                         <p><strong>Total:</strong> ₹${(order.totalAmount ?? 0).toLocaleString()}</p>
                         <p><em>Generated on ${new Date().toLocaleString()}</em></p>
                     `;
@@ -321,6 +322,12 @@ const OrderDetailModal = ({ isOpen, onClose, orderId, onProcure }) => {
                                                         <div className="flex items-center justify-between text-slate-400 text-[10px] font-black uppercase tracking-widest">
                                                             <span>Tax</span>
                                                             <span className="tabular-nums">₹{(Number(order.tax) || 0).toLocaleString()}</span>
+                                                        </div>
+                                                    )}
+                                                    {(Number(order.discountAmount) || 0) > 0 && (
+                                                        <div className="flex items-center justify-between text-rose-400 text-[10px] font-black uppercase tracking-widest">
+                                                            <span>Discount ({order.couponCode})</span>
+                                                            <span className="tabular-nums">-₹{(Number(order.discountAmount) || 0).toLocaleString()}</span>
                                                         </div>
                                                     )}
                                                     <div className="h-px bg-slate-800 my-1" />

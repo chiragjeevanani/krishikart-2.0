@@ -310,7 +310,7 @@ const EditProfileModal = ({ isOpen, onClose, franchiseData, onUpdate }) => {
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Owner Name</label>
                         <input
                             value={formData.ownerName}
-                            onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
+                            onChange={(e) => setFormData({ ...formData, ownerName: e.target.value.replace(/[^a-zA-Z\s]/g, '') })}
                             className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
                         />
                     </div>
@@ -337,7 +337,7 @@ const EditProfileModal = ({ isOpen, onClose, franchiseData, onUpdate }) => {
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">City</label>
                             <input
                                 value={formData.city}
-                                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                                onChange={(e) => setFormData({ ...formData, city: e.target.value.replace(/[^a-zA-Z\s]/g, '') })}
                                 className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
                                 placeholder="e.g. Indore"
                             />
@@ -348,7 +348,7 @@ const EditProfileModal = ({ isOpen, onClose, franchiseData, onUpdate }) => {
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">State</label>
                         <input
                             value={formData.state}
-                            onChange={(e) => setFormData({ ...formData, state: e.target.value.replace(/[^A-Za-z\s]/g, '') })}
+                            onChange={(e) => setFormData({ ...formData, state: e.target.value.replace(/[^a-zA-Z\s]/g, '') })}
                             className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
                             placeholder="e.g. Madhya Pradesh"
                             maxLength={50}

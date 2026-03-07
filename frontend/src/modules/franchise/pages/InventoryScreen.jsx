@@ -123,16 +123,6 @@ export default function InventoryScreen() {
             align: 'right',
             render: (val) => <span className="text-[11px] font-black text-slate-900 tabular-nums">₹{(val || 0).toLocaleString()}</span>
         },
-        {
-            header: 'Action',
-            key: 'actions',
-            align: 'right',
-            render: () => (
-                <button className="p-1.5 hover:bg-slate-100 rounded-sm text-slate-400 transition-colors">
-                    <Settings2 size={14} />
-                </button>
-            )
-        }
     ];
 
     if (inventoryLoading && inventory.length === 0) {

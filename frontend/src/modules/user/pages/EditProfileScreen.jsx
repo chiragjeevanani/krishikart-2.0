@@ -92,6 +92,13 @@ export default function EditProfileScreen() {
     }
 
     const handleSaveProfile = async () => {
+        // Email Validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (editData.email && !emailRegex.test(editData.email)) {
+            alert('Please enter a valid email address (e.g., user@example.com)');
+            return;
+        }
+
         setIsSaving(true)
         try {
             const response = await api.put('/user/update-profile', {
@@ -322,7 +329,7 @@ export default function EditProfileScreen() {
                                             <div className="relative">
                                                 <Input
                                                     value={editData.fullName}
-                                                    onChange={(e) => setEditData({ ...editData, fullName: e.target.value })}
+                                                    onChange={(e) => setEditData({ ...editData, fullName: e.target.value.replace(/[^a-zA-Z\s]/g, '') })}
                                                     placeholder="Name"
                                                     className="h-14 bg-white border-slate-200 rounded-xl px-5 text-base font-bold focus:ring-[#10b981]/10"
                                                 />
@@ -383,16 +390,17 @@ export default function EditProfileScreen() {
                                             <div className="relative group">
                                                 <Input
                                                     value={editData.panNumber}
-                                                    onChange={(e) => setEditData({ ...editData, panNumber: e.target.value })}
+                                                    onChange={(e) => setEditData({ ...editData, panNumber: e.target.value.toUpperCase() })}
                                                     placeholder="PAN Number"
-                                                    className="h-14 bg-white border-slate-200 rounded-xl px-5 text-base font-bold pr-16"
+                                                    maxLength={10}
+                                                    className="h-14 bg-white border-slate-200 rounded-xl px-5 text-base font-bold pr-16 uppercase"
                                                 />
                                                 <span className="absolute -top-2 left-4 bg-white px-1 text-[10px] font-black text-slate-400 uppercase">PAN Number</span>
                                             </div>
                                             <div className="relative group">
                                                 <Input
                                                     value={editData.legalEntityName}
-                                                    onChange={(e) => setEditData({ ...editData, legalEntityName: e.target.value })}
+                                                    onChange={(e) => setEditData({ ...editData, legalEntityName: e.target.value.replace(/[^a-zA-Z\s]/g, '') })}
                                                     placeholder="Legal Entity Name"
                                                     className="h-14 bg-white border-slate-200 rounded-xl px-5 text-base font-bold pr-16"
                                                 />

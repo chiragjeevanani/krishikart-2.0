@@ -1,7 +1,7 @@
 import { Search, MapPin, ShoppingCart } from 'lucide-react'
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation as useRouteLocation } from 'react-router-dom'
 import { useCart } from '../../contexts/CartContext'
 import { useLocation } from '../../contexts/LocationContext'
 import { toast } from 'sonner'
@@ -34,6 +34,24 @@ export default function StickySearchBar() {
         }, 3000)
         return () => clearInterval(interval)
     }, [])
+
+    const routeLocation = useRouteLocation()
+    const [isInitial, setIsInitial] = useState(true)
+
+    useEffect(() => {
+        if (isInitial) {
+            setIsInitial(false)
+            return
+        }
+        const timer = setTimeout(() => {
+            if (searchValue.trim()) {
+                navigate(`/products/all?search=${encodeURIComponent(searchValue.trim())}`)
+            } else if (routeLocation.pathname.includes('/products/all')) {
+                navigate(`/products/all`)
+            }
+        }, 500)
+        return () => clearTimeout(timer)
+    }, [searchValue, navigate, routeLocation.pathname, isInitial])
 
     return (
         <motion.div

@@ -9,6 +9,7 @@ import {
 import PageTransition from '../components/layout/PageTransition'
 import { Button } from '@/components/ui/button'
 import { useOrders } from '@/modules/user/contexts/OrderContext'
+import { useCart } from '@/modules/user/contexts/CartContext'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -17,6 +18,7 @@ export default function OrderDetailScreen() {
     const navigate = useNavigate()
     const { id } = useParams()
     const { orders, requestReturn } = useOrders()
+    const { addToCart } = useCart()
     const [returnQuantities, setReturnQuantities] = useState({})
     const [returnReason, setReturnReason] = useState('')
     const [isSubmittingReturn, setIsSubmittingReturn] = useState(false)
@@ -170,6 +172,22 @@ export default function OrderDetailScreen() {
         }
     };
 
+    const handleReorder = async () => {
+        toast.promise(
+            Promise.all(order.items.map(item =>
+                addToCart({ _id: item.productId, ...item }, item.quantity)
+            )),
+            {
+                loading: 'Adding items to cart...',
+                success: () => {
+                    navigate('/cart');
+                    return 'Reordered successfully!';
+                },
+                error: 'Failed to reorder items'
+            }
+        );
+    };
+
     return (
         <PageTransition>
             <div className="bg-[#f8fafc] min-h-screen pb-32 font-sans">
@@ -244,16 +262,11 @@ export default function OrderDetailScreen() {
                                     <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
                                         <Button
                                             variant="outline"
-                                            onClick={() => navigate('/home')}
+                                            onClick={handleReorder}
                                             className="w-full sm:w-auto h-12 px-8 rounded-2xl border-slate-100 font-black text-[11px] uppercase tracking-widest gap-2 bg-slate-50/50"
                                         >
                                             <RotateCcw size={14} /> Reorder
                                         </Button>
-                                        {['delivered', 'received'].includes(order.orderStatus?.toLowerCase()) && (
-                                            <Button className="w-full sm:w-auto h-12 px-8 rounded-2xl bg-slate-900 font-black text-[11px] uppercase tracking-widest gap-2 shadow-lg shadow-slate-200 text-white">
-                                                <Star size={14} className="text-yellow-400 fill-yellow-400" /> Review
-                                            </Button>
-                                        )}
                                     </div>
                                 </div>
                                 <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50 rounded-full blur-3xl -mr-32 -mt-32 opacity-50" />
@@ -427,16 +440,16 @@ export default function OrderDetailScreen() {
                                             {order.deliveryFee === 0 ? "Free" : `₹${order.deliveryFee}`}
                                         </span>
                                     </div>
-                                    {order.platformFee > 0 && (
-                                        <div className="flex justify-between text-xs font-bold text-slate-400">
-                                            <span className="uppercase tracking-widest text-[10px]">Platform Fee</span>
-                                            <span className="text-slate-800 font-black tabular-nums">₹{order.platformFee}</span>
-                                        </div>
-                                    )}
                                     <div className="flex justify-between text-xs font-bold text-slate-400">
                                         <span className="uppercase tracking-widest text-[10px]">GST & Taxes</span>
                                         <span className="text-slate-800 font-black tabular-nums">₹{(order.tax || 0).toLocaleString()}</span>
                                     </div>
+                                    {(order.discountAmount > 0) && (
+                                        <div className="flex justify-between text-xs font-bold text-emerald-600">
+                                            <span className="uppercase tracking-widest text-[10px]">Coupon Discount</span>
+                                            <span className="font-black tracking-widest tabular-nums">- ₹{order.discountAmount}</span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="space-y-4">
@@ -445,10 +458,12 @@ export default function OrderDetailScreen() {
                                             <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1 text-left">Grand Total</h4>
                                             <span className="text-3xl font-black text-emerald-600 tracking-tighter tabular-nums">₹{(order.totalAmount || 0).toLocaleString()}</span>
                                         </div>
-                                        <div className="bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-100 flex flex-col items-center">
-                                            <p className="text-[8px] font-black text-emerald-400 uppercase tracking-widest leading-none mb-0.5 whitespace-nowrap">Your Savings</p>
-                                            <p className="text-[11px] font-black text-emerald-600 uppercase whitespace-nowrap">₹120 SAVED</p>
-                                        </div>
+                                        {order.discountAmount > 0 && (
+                                            <div className="bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-100 flex flex-col items-center">
+                                                <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-0.5 whitespace-nowrap">Your Savings</p>
+                                                <p className="text-[11px] font-black text-emerald-600 uppercase whitespace-nowrap">₹{order.discountAmount} SAVED</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Phone, ArrowRight, ShieldCheck, CheckCircle2, Sprout } from 'lucide-react'
@@ -20,6 +20,38 @@ export default function LoginScreen() {
     const navigate = useNavigate()
 
     const [isLoading, setIsLoading] = useState(false)
+    const [timer, setTimer] = useState(120)
+
+    useEffect(() => {
+        let interval;
+        if (step === 'otp' && timer > 0) {
+            interval = setInterval(() => {
+                setTimer((prev) => prev - 1);
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [step, timer]);
+
+    const formatTime = (seconds) => {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}:${s < 10 ? '0' : ''}${s}`;
+    };
+
+    const handleResendOtp = async () => {
+        if (timer > 0) return;
+        setIsLoading(true);
+        try {
+            await api.post('/user/send-otp', { mobile: phone });
+            setTimer(120);
+            setOtp(['', '', '', '', '', '']);
+        } catch (error) {
+            console.error(error);
+            alert(error.response?.data?.message || 'Failed to resend OTP');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handleNext = async () => {
         if (step === 'phone') {
@@ -28,6 +60,7 @@ export default function LoginScreen() {
                 try {
                     await api.post('/user/send-otp', { mobile: phone });
                     setStep('otp')
+                    setTimer(120)
                 } catch (error) {
                     console.error(error);
                     alert(error.response?.data?.message || 'Failed to send OTP');
@@ -212,10 +245,12 @@ export default function LoginScreen() {
                                             {isLoading ? 'Verifying...' : 'Verify Identity'}
                                         </Button>
                                         <button
-                                            onClick={() => setStep('phone')}
-                                            className="text-slate-400 font-bold text-xs text-center hover:text-primary transition-colors"
+                                            type="button"
+                                            onClick={handleResendOtp}
+                                            disabled={timer > 0 || isLoading}
+                                            className="text-slate-400 font-bold text-xs text-center hover:text-primary transition-colors disabled:opacity-50 disabled:hover:text-slate-400"
                                         >
-                                            Use a different number
+                                            {timer > 0 ? `Resend Code in ${formatTime(timer)}` : 'Resend OTP'}
                                         </button>
                                     </div>
                                 </motion.div>

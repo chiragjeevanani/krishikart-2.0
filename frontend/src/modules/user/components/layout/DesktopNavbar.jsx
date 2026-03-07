@@ -43,6 +43,24 @@ export default function DesktopNavbar() {
         }
     }, [])
 
+    const routeLocation = useRouteLocation()
+    const [isInitial, setIsInitial] = useState(true)
+
+    useEffect(() => {
+        if (isInitial) {
+            setIsInitial(false)
+            return
+        }
+        const timer = setTimeout(() => {
+            if (searchValue.trim()) {
+                navigate(`/products/all?search=${encodeURIComponent(searchValue.trim())}`)
+            } else if (routeLocation.pathname.includes('/products/all')) {
+                navigate(`/products/all`)
+            }
+        }, 500)
+        return () => clearTimeout(timer)
+    }, [searchValue, navigate, routeLocation.pathname, isInitial])
+
     const handleLocationClick = async () => {
         toast.info("Fetching real-time location...")
         try {

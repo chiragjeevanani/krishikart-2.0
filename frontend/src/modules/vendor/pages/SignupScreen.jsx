@@ -36,10 +36,12 @@ export default function SignupScreen() {
         if (files) {
             setFormData({ ...formData, [name]: files[0] });
         } else {
-            if (name === 'farmCity') {
+            if (name === 'farmCity' || name === 'farmState' || name === 'bankName' || name === 'bankAccountHolderName' || name === 'fullName') {
                 setFormData({ ...formData, [name]: value.replace(/[^A-Za-z\s]/g, '') });
-            } else if (name === 'farmState') {
-                setFormData({ ...formData, [name]: value.replace(/[^A-Za-z\s]/g, '') });
+            } else if (name === 'mobile' || name === 'bankAccountNumber' || name === 'fssaiLicense') {
+                setFormData({ ...formData, [name]: value.replace(/\D/g, '') });
+            } else if (name === 'bankIfscCode') {
+                setFormData({ ...formData, [name]: value.toUpperCase() });
             } else {
                 setFormData({ ...formData, [name]: value });
             }
@@ -202,6 +204,8 @@ export default function SignupScreen() {
                                         required
                                         value={formData.farmCity}
                                         onChange={handleChange}
+                                        pattern="[A-Za-z\s]+"
+                                        title="Only alphabets and spaces are allowed"
                                         placeholder="e.g. Indore"
                                         maxLength={50}
                                         className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-10 pr-4 outline-none text-xs font-bold focus:ring-4 focus:ring-primary/5 transition-all text-slate-900"
@@ -220,6 +224,8 @@ export default function SignupScreen() {
                                         required
                                         value={formData.farmState}
                                         onChange={handleChange}
+                                        pattern="[A-Za-z\s]+"
+                                        title="Only alphabets and spaces are allowed"
                                         placeholder="e.g. Madhya Pradesh"
                                         maxLength={50}
                                         className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-10 pr-4 outline-none text-xs font-bold focus:ring-4 focus:ring-primary/5 transition-all text-slate-900"
@@ -255,7 +261,10 @@ export default function SignupScreen() {
                                         required
                                         value={formData.mobile}
                                         onChange={handleChange}
-                                        placeholder="+91 98765 43210"
+                                        pattern="\d*"
+                                        title="Only numbers are allowed"
+                                        placeholder="9876543210"
+                                        maxLength={10}
                                         className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-10 pr-4 outline-none text-xs font-bold focus:ring-4 focus:ring-primary/5 transition-all text-slate-900"
                                     />
                                 </div>
@@ -279,6 +288,8 @@ export default function SignupScreen() {
                                         required
                                         value={formData.bankName}
                                         onChange={handleChange}
+                                        pattern="[A-Za-z\s]+"
+                                        title="Only alphabets and spaces are allowed"
                                         placeholder="HDFC Bank"
                                         className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-10 pr-4 outline-none text-xs font-bold focus:ring-4 focus:ring-primary/5 transition-all text-slate-900"
                                     />
@@ -296,6 +307,8 @@ export default function SignupScreen() {
                                         required
                                         value={formData.bankAccountHolderName}
                                         onChange={handleChange}
+                                        pattern="[A-Za-z\s]+"
+                                        title="Only alphabets and spaces are allowed"
                                         placeholder="Name on Passbook"
                                         className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-10 pr-4 outline-none text-xs font-bold focus:ring-4 focus:ring-primary/5 transition-all text-slate-900"
                                     />
@@ -309,11 +322,15 @@ export default function SignupScreen() {
                                     </div>
                                     <input
                                         name="bankAccountNumber"
-                                        type="text"
+                                        type="tel"
                                         required
                                         value={formData.bankAccountNumber}
                                         onChange={handleChange}
-                                        placeholder="0000 0000 0000 0000"
+                                        pattern="\d{11,17}"
+                                        title="Account number must be between 11 and 17 digits"
+                                        minLength={11}
+                                        maxLength={17}
+                                        placeholder="00000000000"
                                         className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-10 pr-4 outline-none text-xs font-bold focus:ring-4 focus:ring-primary/5 transition-all text-slate-900"
                                     />
                                 </div>
@@ -330,6 +347,10 @@ export default function SignupScreen() {
                                         required
                                         value={formData.bankIfscCode}
                                         onChange={handleChange}
+                                        pattern="^[A-Z]{4}0[A-Z0-9]{6}$"
+                                        title="Invalid IFSC Code (must be exactly 11 characters e.g. HDFC0001234)"
+                                        minLength={11}
+                                        maxLength={11}
                                         placeholder="HDFC0001234"
                                         className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-10 pr-4 outline-none text-xs font-bold focus:ring-4 focus:ring-primary/5 transition-all text-slate-900 uppercase"
                                     />
@@ -350,10 +371,14 @@ export default function SignupScreen() {
                                     </div>
                                     <input
                                         name="fssaiLicense"
-                                        type="text"
+                                        type="tel"
                                         required
                                         value={formData.fssaiLicense}
                                         onChange={handleChange}
+                                        pattern="\d{14}"
+                                        title="FSSAI License must be exactly 14 digits"
+                                        minLength={14}
+                                        maxLength={14}
                                         placeholder="12345678901234"
                                         className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-10 pr-4 outline-none text-xs font-bold focus:ring-4 focus:ring-primary/5 transition-all text-slate-900"
                                     />

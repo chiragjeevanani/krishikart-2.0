@@ -61,9 +61,14 @@ export default function FranchiseManagementScreen() {
     }, []);
 
     const filteredFranchises = franchises.filter(f => {
-        const matchesSearch = (f.franchiseName?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-            (f.city?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-            (f.ownerName?.toLowerCase() || "").includes(searchTerm.toLowerCase());
+        const name = (f.franchiseName || "").toLowerCase();
+        const city = (f.city || "").toLowerCase();
+        const owner = (f.ownerName || "").toLowerCase();
+
+        const searchKeywords = searchTerm.toLowerCase().trim().split(/\s+/);
+        const matchesSearch = searchTerm.trim() === '' ? true : searchKeywords.every(kw =>
+            name.includes(kw) || city.includes(kw) || owner.includes(kw)
+        );
 
         const matchesStatus = statusFilter === 'All' ||
             (statusFilter === 'Verified' && f.status === 'active') ||

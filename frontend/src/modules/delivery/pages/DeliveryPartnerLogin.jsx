@@ -11,6 +11,7 @@ const DeliveryPartnerLogin = () => {
     const [phone, setPhone] = useState('');
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [loading, setLoading] = useState(false);
+    const [timer, setTimer] = useState(120);
     const navigate = useNavigate();
     const { loginSuccess, isAuthenticated } = useDeliveryAuth();
 
@@ -20,6 +21,37 @@ const DeliveryPartnerLogin = () => {
         }
     }, [isAuthenticated, navigate]);
 
+    React.useEffect(() => {
+        let interval;
+        if (step === 'otp' && timer > 0) {
+            interval = setInterval(() => {
+                setTimer((prev) => prev - 1);
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [step, timer]);
+
+    const formatTime = (seconds) => {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}:${s < 10 ? '0' : ''}${s}`;
+    };
+
+    const handleResendOtp = async () => {
+        if (timer > 0) return;
+        setLoading(true);
+        try {
+            await api.post('/delivery/send-otp', { mobile: phone });
+            setTimer(120);
+            setOtp(['', '', '', '', '', '']);
+        } catch (error) {
+            console.error(error);
+            alert(error.response?.data?.message || 'Failed to resend OTP');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleSendOtp = async (e) => {
         e.preventDefault();
         if (phone.length !== 10) return;
@@ -27,6 +59,7 @@ const DeliveryPartnerLogin = () => {
         try {
             await api.post('/delivery/send-otp', { mobile: phone });
             setStep('otp');
+            setTimer(120);
         } catch (error) {
             console.error(error);
             alert(error.response?.data?.message || 'Login failed');
@@ -226,9 +259,13 @@ const DeliveryPartnerLogin = () => {
                             </form>
 
                             <div className="mt-8 text-center">
-                                <button className="text-[11px] font-black text-slate-400 uppercase tracking-widest hover:text-primary transition-colors flex items-center justify-center gap-2 mx-auto disabled:opacity-50">
+                                <button
+                                    onClick={handleResendOtp}
+                                    disabled={timer > 0 || loading}
+                                    className="text-[11px] font-black text-slate-400 uppercase tracking-widest hover:text-primary transition-colors flex items-center justify-center gap-2 mx-auto disabled:opacity-50"
+                                >
                                     <MessageSquare className="w-3 h-3" />
-                                    Resend Code in 0:24
+                                    {timer > 0 ? `Resend Code in ${formatTime(timer)}` : 'Resend OTP'}
                                 </button>
                             </div>
                         </motion.div>

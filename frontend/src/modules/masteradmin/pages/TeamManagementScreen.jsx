@@ -196,10 +196,16 @@ export default function TeamManagementScreen() {
         }
     };
 
-    const filteredAdmins = (subAdmins || []).filter(admin =>
-        admin.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        admin.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredAdmins = (subAdmins || []).filter(admin => {
+        const name = (admin.fullName || "").toLowerCase();
+        const email = (admin.email || "").toLowerCase();
+        const mobile = (admin.mobile || "").toLowerCase();
+
+        const searchKeywords = searchTerm.toLowerCase().trim().split(/\s+/);
+        return searchTerm.trim() === '' ? true : searchKeywords.every(kw =>
+            name.includes(kw) || email.includes(kw) || mobile.includes(kw)
+        );
+    });
 
     if (!isSuperAdmin) {
         return (
