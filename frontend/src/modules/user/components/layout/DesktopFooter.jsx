@@ -43,15 +43,7 @@ export default function DesktopFooter() {
                         </ul>
                     </div>
 
-                    {/* Business */}
-                    <div>
-                        <h4 className="text-slate-900 font-bold mb-6">For Business</h4>
-                        <ul className="space-y-4">
-                            <li><Link to="/business-registration" className="text-slate-500 hover:text-primary text-sm transition-colors">Bulk Pricing</Link></li>
-                            <li><Link to="/business-registration" className="text-slate-500 hover:text-primary text-sm transition-colors">Become a Supplier</Link></li>
-                            <li><Link to="/business-registration" className="text-slate-500 hover:text-primary text-sm transition-colors">Refer a Partner</Link></li>
-                        </ul>
-                    </div>
+
                 </div>
 
                 <div className="mt-20 pt-8 border-t border-slate-50 flex flex-col md:flex-row justify-between items-center gap-4">

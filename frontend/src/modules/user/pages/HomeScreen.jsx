@@ -36,8 +36,6 @@ import { Button } from '@/components/ui/button'
 import { MapPin } from 'lucide-react'
 import { useLocation } from '../contexts/LocationContext'
 import LocationPermissionPopup from '../components/common/LocationPermissionPopup'
-import BusinessTypeSelector from '../components/common/BusinessTypeSelector'
-import DocumentUploadPopup from '../components/common/DocumentUploadPopup'
 
 const isMobile = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches
 
@@ -110,8 +108,6 @@ export default function HomeScreen() {
     const { location: userLocation, updateLocation, address } = useLocation()
     const [loading, setLoading] = useState(true)
     const [showLocationPopup, setShowLocationPopup] = useState(false)
-    const [showBusinessPopup, setShowBusinessPopup] = useState(false)
-    const [showDocumentPopup, setShowDocumentPopup] = useState(false)
     const navigate = useNavigate()
 
     useEffect(() => {
@@ -144,20 +140,6 @@ export default function HomeScreen() {
         // Step 1: Location Access
         if (!userLocation && !hasDeclinedLoc) {
             setShowLocationPopup(true);
-            setShowBusinessPopup(false);
-            setShowDocumentPopup(false);
-        }
-        // Step 2: Business Type (if location is resolved or declined)
-        else if (!hasSetBiz) {
-            setShowBusinessPopup(true);
-            setShowLocationPopup(false);
-            setShowDocumentPopup(false);
-        }
-        // Step 3: Documents (only for registered businesses)
-        else if (hasSetBiz === 'registered' && !localStorage.getItem('kk_documents_skipped')) {
-            setShowDocumentPopup(true);
-            setShowBusinessPopup(false);
-            setShowLocationPopup(false);
         }
     }, [userLocation]);
 
@@ -181,49 +163,6 @@ export default function HomeScreen() {
         localStorage.setItem('kk_location_declined', 'true');
     };
 
-    const handleBusinessSelect = async (type) => {
-        localStorage.setItem('kk_business_type', type);
-        setShowBusinessPopup(false);
-
-        try {
-            const payload = { businessType: type };
-            // If unregistered, mark onboarding as complete immediately
-            if (type === 'unregistered') {
-                payload.onboardingCompleted = true;
-                localStorage.setItem('kk_onboarding_completed', 'true');
-            }
-            await api.put('/user/update-profile', payload);
-            syncUserData(payload);
-        } catch (err) {
-            console.error('Failed to save business type:', err);
-        }
-
-        if (type === 'registered') {
-            setShowDocumentPopup(true);
-        }
-    };
-
-    const handleOnboardingFinalize = async (docsData = null) => {
-        setShowDocumentPopup(false);
-
-        try {
-            const payload = { onboardingCompleted: true };
-            if (docsData) {
-                if (docsData.gst) payload.gstNumber = docsData.gst;
-                if (docsData.fssai) payload.fssaiNumber = docsData.fssai;
-            } else {
-                localStorage.setItem('kk_documents_skipped', 'true');
-            }
-
-            await api.put('/user/update-profile', payload);
-            syncUserData(payload);
-            localStorage.setItem('kk_onboarding_completed', 'true');
-        } catch (err) {
-            console.error('Failed to save documents:', err);
-            // Still mark locally so user isn't stuck
-            localStorage.setItem('kk_onboarding_completed', 'true');
-        }
-    };
 
     return (
         <>
@@ -233,210 +172,204 @@ export default function HomeScreen() {
             </div>
             <PageTransition>
                 <div className="bg-transparent md:bg-white pb-32 min-h-screen pt-16 md:pt-0">
-                {/* Categories Row - Full width background, centered content */}
-                <div className="bg-[var(--color-brand-subtle)]/75 md:bg-white shadow-sm md:shadow-none">
-                    <div className="max-w-7xl mx-auto px-5 md:px-8 pt-5 md:pt-4 pb-10 md:pb-16">
-                        <div className="flex items-center justify-between mb-6 md:mb-8">
-                            <h2 className="text-[22px] md:text-[28px] font-black text-slate-900 md:font-bold">Shop by category</h2>
-                            <button
-                                onClick={() => navigate('/categories')}
-                                className="text-primary text-[11px] font-black uppercase tracking-widest bg-primary/10 px-4 py-2 rounded-full md:normal-case md:font-semibold md:text-sm hover:bg-primary/15 transition-colors"
-                            >
-                                View all
-                            </button>
-                        </div>
-
-                        <div className="grid grid-cols-4 gap-x-3 gap-y-6 md:gap-x-4 md:gap-y-8" style={{ perspective: 1000 }}>
-                            {(categories.slice(0, 4)).map((cat, idx) => (
-                                <CategoryCard key={cat._id} cat={cat} idx={idx} navigate={navigate} />
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Main Content Wrapper */}
-                <div className="max-w-7xl mx-auto md:px-8">
-                    {/* Hero Promotion */}
-                    <div className="px-5 mt-8 md:px-0 md:mt-4">
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="w-full rounded-[40px] md:rounded-2xl p-8 md:p-12 relative overflow-hidden shadow-xl bg-gradient-to-br from-[var(--color-brand-dark)] via-[var(--color-brand-primary)] to-[var(--color-brand-yellow)]/20"
-                        >
-                            <div className="relative z-10 max-w-lg">
-                                <h2 className="text-3xl md:text-5xl font-black text-white leading-tight tracking-tight md:normal-case md:font-bold">
-                                    Wholesale <span className="text-[var(--color-brand-yellow)] md:text-primary">B2B</span> <br />
-                                    Direct from Farms
-                                </h2>
-                                <p className="text-slate-400 mt-2 text-xs md:text-sm font-bold uppercase tracking-widest md:normal-case md:font-medium">Pricing starts from 10kg+</p>
-                                <Button className="mt-6 md:mt-10 bg-primary hover:bg-primary/90 text-white rounded-2xl md:rounded-lg min-h-[48px] h-12 md:h-14 px-8 md:px-10 font-black md:font-bold shadow-lg shadow-primary/25">
-                                    Order Now
-                                </Button>
+                    {/* Categories Row - Full width background, centered content */}
+                    <div className="bg-[var(--color-brand-subtle)]/75 md:bg-white shadow-sm md:shadow-none">
+                        <div className="max-w-7xl mx-auto px-5 md:px-8 pt-5 md:pt-4 pb-10 md:pb-16">
+                            <div className="flex items-center justify-between mb-6 md:mb-8">
+                                <h2 className="text-[22px] md:text-[28px] font-black text-slate-900 md:font-bold">Shop by category</h2>
+                                <button
+                                    onClick={() => navigate('/categories')}
+                                    className="text-primary text-[11px] font-black uppercase tracking-widest bg-primary/10 px-4 py-2 rounded-full md:normal-case md:font-semibold md:text-sm hover:bg-primary/15 transition-colors"
+                                >
+                                    View all
+                                </button>
                             </div>
-                            <div className="absolute right-[-20px] bottom-[-20px] opacity-15 md:opacity-25 text-[var(--color-brand-primary)]">
-                                <Sprout size={180} className="md:w-[320px] md:h-[320px]" />
-                            </div>
-                        </motion.div>
-                    </div>
 
-                    {/* Section 1: Flash Deals */}
-                    <div className="mt-8 md:mt-12">
-                        <div className="px-5 md:px-0 flex items-end justify-between mb-6">
-                            <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                    <div className="p-1.5 bg-red-100 rounded-lg md:rounded-md">
-                                        <Flame size={16} className="text-red-500 fill-red-500 md:w-5 md:h-5" />
-                                    </div>
-                                    <h2 className="text-[22px] md:text-3xl font-black text-slate-900 tracking-tight md:font-bold">Flash Deals</h2>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Timer size={14} className="text-slate-400" />
-                                    <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest md:normal-case md:font-medium">Ending in 02:45:12</span>
-                                </div>
-                            </div>
-                            <button onClick={() => navigate('/products/all')} className="text-primary text-[11px] font-black uppercase tracking-widest bg-primary/5 px-4 py-2 rounded-full md:normal-case md:font-semibold md:text-sm hover:bg-primary/10 transition-colors">See All</button>
-                        </div>
-                        <div className="relative overflow-x-auto no-scrollbar md:overflow-visible px-5 md:px-0">
-                            <div className="flex gap-4 w-max md:w-full md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 pb-2 md:pb-0 pr-4 md:pr-0">
-                                {(products || []).slice(0, 5).map((product) => (
-                                    <div key={product._id} className="w-[164px] md:w-full cursor-pointer">
-                                        <ProductCard product={product} />
-                                    </div>
+                            {/* Mobile: 4 categories only */}
+                            <div className="grid grid-cols-4 gap-x-3 gap-y-6 md:hidden" style={{ perspective: 1000 }}>
+                                {(categories.slice(0, 4)).map((cat, idx) => (
+                                    <CategoryCard key={cat._id} cat={cat} idx={idx} navigate={navigate} />
                                 ))}
                             </div>
-                            <div className="pointer-events-none absolute right-0 top-0 bottom-2 w-12 bg-gradient-to-l from-[var(--color-background)] to-transparent md:hidden" aria-hidden="true" />
+                            {/* Desktop: all categories */}
+                            <div className="hidden md:grid md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-x-4 gap-y-8" style={{ perspective: 1000 }}>
+                                {categories.map((cat, idx) => (
+                                    <CategoryCard key={cat._id} cat={cat} idx={idx} navigate={navigate} />
+                                ))}
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Section 2: Bulk Savings - Full width background row */}
-                <div className="mt-6 md:mt-4 py-8 md:py-10 bg-[var(--color-brand-yellow-subtle)]/70 md:bg-slate-50/50 border-y border-[var(--color-brand-yellow)]/10 md:border-slate-100/50">
+                    {/* Main Content Wrapper */}
                     <div className="max-w-7xl mx-auto md:px-8">
-                        <div className="px-5 md:px-0 flex items-center justify-between mb-6">
-                            <div className="flex flex-col">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <div className="p-1.5 bg-orange-100 rounded-lg md:rounded-md">
-                                        <TrendingDown size={16} className="text-orange-500 md:w-5 md:h-5" />
-                                    </div>
-                                    <h2 className="text-[22px] md:text-3xl font-black text-slate-900 tracking-tight md:font-bold">Bulk Savings</h2>
+                        {/* Hero Promotion */}
+                        <div className="px-5 mt-8 md:px-0 md:mt-4">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="w-full rounded-[40px] md:rounded-2xl p-8 md:p-12 relative overflow-hidden shadow-xl bg-gradient-to-br from-[var(--color-brand-dark)] via-[var(--color-brand-primary)] to-[var(--color-brand-yellow)]/20"
+                            >
+                                <div className="relative z-10 max-w-lg">
+                                    <h2 className="text-3xl md:text-5xl font-black text-white leading-tight tracking-tight md:normal-case md:font-bold">
+                                        Wholesale <span className="text-[var(--color-brand-yellow)] md:text-primary">B2B</span> <br />
+                                        Direct from Farms
+                                    </h2>
+                                    <p className="text-slate-400 mt-2 text-xs md:text-sm font-bold uppercase tracking-widest md:normal-case md:font-medium">Pricing starts from 10kg+</p>
+                                    <Button className="mt-6 md:mt-10 bg-primary hover:bg-primary/90 text-white rounded-2xl md:rounded-lg min-h-[48px] h-12 md:h-14 px-8 md:px-10 font-black md:font-bold shadow-lg shadow-primary/25">
+                                        Order Now
+                                    </Button>
                                 </div>
-                                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest md:normal-case md:font-medium md:text-sm">Best prices for businesses</p>
-                            </div>
-                            <button onClick={() => navigate('/products/all')} className="text-primary text-[11px] font-black uppercase tracking-widest bg-primary/5 px-4 py-2 rounded-full md:normal-case md:font-semibold md:text-sm hover:bg-primary/10 transition-colors">See All</button>
+                                <div className="absolute right-[-20px] bottom-[-20px] opacity-15 md:opacity-25 text-[var(--color-brand-primary)]">
+                                    <Sprout size={180} className="md:w-[320px] md:h-[320px]" />
+                                </div>
+                            </motion.div>
                         </div>
-                        <div className="relative overflow-x-auto no-scrollbar md:overflow-visible px-5 md:px-0">
-                            <div className="flex gap-4 w-max md:w-full md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 pb-4 pr-4 md:pr-0">
-                                {(products || []).filter(p => p.bulkPricing || p.wholesalePrice).slice(0, 5).map((product) => (
-                                    <div key={product._id} className="w-[155px] md:w-full cursor-pointer">
-                                        <ProductCard product={product} />
+
+                        {/* Section 1: Flash Deals */}
+                        <div className="mt-8 md:mt-12">
+                            <div className="px-5 md:px-0 flex items-end justify-between mb-6">
+                                <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <div className="p-1.5 bg-red-100 rounded-lg md:rounded-md">
+                                            <Flame size={16} className="text-red-500 fill-red-500 md:w-5 md:h-5" />
+                                        </div>
+                                        <h2 className="text-[22px] md:text-3xl font-black text-slate-900 tracking-tight md:font-bold">Flash Deals</h2>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Timer size={14} className="text-slate-400" />
+                                        <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest md:normal-case md:font-medium">Ending in 02:45:12</span>
+                                    </div>
+                                </div>
+                                <button onClick={() => navigate('/products/all')} className="text-primary text-[11px] font-black uppercase tracking-widest bg-primary/5 px-4 py-2 rounded-full md:normal-case md:font-semibold md:text-sm hover:bg-primary/10 transition-colors">See All</button>
+                            </div>
+                            <div className="relative overflow-x-auto no-scrollbar md:overflow-visible px-5 md:px-0">
+                                <div className="flex gap-4 w-max md:w-full md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 pb-2 md:pb-0 pr-4 md:pr-0">
+                                    {(products || []).slice(0, 5).map((product) => (
+                                        <div key={product._id} className="w-[164px] md:w-full cursor-pointer">
+                                            <ProductCard product={product} />
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="pointer-events-none absolute right-0 top-0 bottom-2 w-12 bg-gradient-to-l from-[var(--color-background)] to-transparent md:hidden" aria-hidden="true" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Section 2: Bulk Savings - Full width background row */}
+                    <div className="mt-6 md:mt-4 py-8 md:py-10 bg-[var(--color-brand-yellow-subtle)]/70 md:bg-slate-50/50 border-y border-[var(--color-brand-yellow)]/10 md:border-slate-100/50">
+                        <div className="max-w-7xl mx-auto md:px-8">
+                            <div className="px-5 md:px-0 flex items-center justify-between mb-6">
+                                <div className="flex flex-col">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <div className="p-1.5 bg-orange-100 rounded-lg md:rounded-md">
+                                            <TrendingDown size={16} className="text-orange-500 md:w-5 md:h-5" />
+                                        </div>
+                                        <h2 className="text-[22px] md:text-3xl font-black text-slate-900 tracking-tight md:font-bold">Bulk Savings</h2>
+                                    </div>
+                                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest md:normal-case md:font-medium md:text-sm">Best prices for businesses</p>
+                                </div>
+                                <button onClick={() => navigate('/products/all')} className="text-primary text-[11px] font-black uppercase tracking-widest bg-primary/5 px-4 py-2 rounded-full md:normal-case md:font-semibold md:text-sm hover:bg-primary/10 transition-colors">See All</button>
+                            </div>
+                            <div className="relative overflow-x-auto no-scrollbar md:overflow-visible px-5 md:px-0">
+                                <div className="flex gap-4 w-max md:w-full md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 pb-4 pr-4 md:pr-0">
+                                    {(products || []).filter(p => p.bulkPricing || p.wholesalePrice).slice(0, 5).map((product) => (
+                                        <div key={product._id} className="w-[155px] md:w-full cursor-pointer">
+                                            <ProductCard product={product} />
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="pointer-events-none absolute right-0 top-0 bottom-4 w-12 bg-gradient-to-l from-[var(--color-brand-yellow-subtle)]/90 to-transparent md:hidden" aria-hidden="true" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Remaining sections wrapped in centered container */}
+                    <div className="max-w-7xl mx-auto md:px-8">
+                        {/* Section 3: Seasonal Picks */}
+                        <div className="mt-8 px-5 md:px-0 md:mt-8">
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center gap-2">
+                                    <div className="p-1.5 bg-primary/10 rounded-lg md:rounded-md">
+                                        <Sparkles size={16} className="text-primary fill-primary md:w-5 md:h-5" />
+                                    </div>
+                                    <h2 className="text-[22px] md:text-3xl font-black text-slate-900 tracking-tight md:font-bold">Seasonal Picks</h2>
+                                </div>
+                                <button onClick={() => navigate('/products/all')} className="text-primary text-[11px] font-black uppercase tracking-widest bg-primary/5 px-4 py-2 rounded-full md:normal-case md:font-semibold md:text-sm hover:bg-primary/10 transition-colors">See All</button>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-5 gap-4">
+                                {(products || []).slice(0, 5).map((product) => (
+                                    <ProductCard key={product._id} product={product} />
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Section 4: Premium Exotic Finds */}
+                        <div className="mt-8 md:mt-10">
+                            <div className="px-5 md:px-0 flex items-center justify-between mb-6">
+                                <div className="flex items-center gap-2">
+                                    <div className="p-1.5 bg-purple-100 rounded-lg md:rounded-md">
+                                        <Gem size={16} className="text-purple-500 fill-purple-500 md:w-5 md:h-5" />
+                                    </div>
+                                    <h2 className="text-[22px] md:text-3xl font-black text-slate-900 tracking-tight md:font-bold">Exotic Finds</h2>
+                                </div>
+                                <button onClick={() => navigate('/products/all')} className="text-primary text-[11px] font-black uppercase tracking-widest px-4 py-2 bg-primary/5 rounded-full md:normal-case md:font-semibold md:text-sm hover:bg-primary/10 transition-colors">See All</button>
+                            </div>
+                            <div className="relative overflow-x-auto no-scrollbar md:overflow-visible px-5 md:px-0">
+                                <div className="flex gap-4 w-max md:w-full md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 pb-6 pr-4 md:pr-0">
+                                    {(products || []).filter(p => p.category?.name?.toLowerCase() === 'exotic').slice(0, 5).map((product) => (
+                                        <div key={product._id} className="w-[164px] md:w-full cursor-pointer">
+                                            <ProductCard product={product} />
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="pointer-events-none absolute right-0 top-0 bottom-6 w-12 bg-gradient-to-l from-[var(--color-background)] to-transparent md:hidden" aria-hidden="true" />
+                            </div>
+                        </div>
+
+                        {/* Section 5: Daily Essentials */}
+                        <div className="mt-8 px-5 md:px-0 md:mt-10">
+                            <div className="flex items-center gap-2 mb-6">
+                                <div className="p-1.5 bg-blue-100 rounded-lg md:rounded-md">
+                                    <History size={16} className="text-blue-500 md:w-5 md:h-5" />
+                                </div>
+                                <h2 className="text-[22px] md:text-3xl font-black text-slate-900 tracking-tight md:font-bold">Daily Essentials</h2>
+                            </div>
+                            <div className="space-y-4 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-4 md:space-y-0">
+                                {(products || []).slice(0, 3).map((product, idx) => (
+                                    <div key={product._id} onClick={() => navigate(`/product/${product._id}`)} className="cursor-pointer">
+                                        <ProductCard product={product} layout="list" index={idx} />
                                     </div>
                                 ))}
                             </div>
-                            <div className="pointer-events-none absolute right-0 top-0 bottom-4 w-12 bg-gradient-to-l from-[var(--color-brand-yellow-subtle)]/90 to-transparent md:hidden" aria-hidden="true" />
+                        </div>
+
+
+                        {/* Final Grid: All Best Sellers */}
+                        <div className="mt-10 px-5 md:px-0 md:mt-16 md:pb-20">
+                            <div className="flex flex-col mb-10">
+                                <h2 className="text-[22px] md:text-4xl font-black text-slate-900 tracking-tight text-center md:font-bold">Best Sellers near you</h2>
+                                <div className="w-16 h-1 bg-primary rounded-full mx-auto mt-4" />
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                                {(products || []).map((product, idx) => (
+                                    <div key={product._id} onClick={() => navigate(`/product/${product._id}`)} className="cursor-pointer">
+                                        <ProductCard product={product} index={idx} />
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Remaining sections wrapped in centered container */}
-                <div className="max-w-7xl mx-auto md:px-8">
-                    {/* Section 3: Seasonal Picks */}
-                    <div className="mt-8 px-5 md:px-0 md:mt-8">
-                        <div className="flex items-center justify-between mb-6">
-                            <div className="flex items-center gap-2">
-                                <div className="p-1.5 bg-primary/10 rounded-lg md:rounded-md">
-                                    <Sparkles size={16} className="text-primary fill-primary md:w-5 md:h-5" />
-                                </div>
-                                <h2 className="text-[22px] md:text-3xl font-black text-slate-900 tracking-tight md:font-bold">Seasonal Picks</h2>
-                            </div>
-                            <button onClick={() => navigate('/products/all')} className="text-primary text-[11px] font-black uppercase tracking-widest bg-primary/5 px-4 py-2 rounded-full md:normal-case md:font-semibold md:text-sm hover:bg-primary/10 transition-colors">See All</button>
-                        </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-5 gap-4">
-                            {(products || []).slice(0, 5).map((product) => (
-                                <ProductCard key={product._id} product={product} />
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Section 4: Premium Exotic Finds */}
-                    <div className="mt-8 md:mt-10">
-                        <div className="px-5 md:px-0 flex items-center justify-between mb-6">
-                            <div className="flex items-center gap-2">
-                                <div className="p-1.5 bg-purple-100 rounded-lg md:rounded-md">
-                                    <Gem size={16} className="text-purple-500 fill-purple-500 md:w-5 md:h-5" />
-                                </div>
-                                <h2 className="text-[22px] md:text-3xl font-black text-slate-900 tracking-tight md:font-bold">Exotic Finds</h2>
-                            </div>
-                            <button onClick={() => navigate('/products/all')} className="text-primary text-[11px] font-black uppercase tracking-widest px-4 py-2 bg-primary/5 rounded-full md:normal-case md:font-semibold md:text-sm hover:bg-primary/10 transition-colors">See All</button>
-                        </div>
-                        <div className="relative overflow-x-auto no-scrollbar md:overflow-visible px-5 md:px-0">
-                            <div className="flex gap-4 w-max md:w-full md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 pb-6 pr-4 md:pr-0">
-                                {(products || []).filter(p => p.category?.name?.toLowerCase() === 'exotic').slice(0, 5).map((product) => (
-                                    <div key={product._id} className="w-[164px] md:w-full cursor-pointer">
-                                        <ProductCard product={product} />
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="pointer-events-none absolute right-0 top-0 bottom-6 w-12 bg-gradient-to-l from-[var(--color-background)] to-transparent md:hidden" aria-hidden="true" />
-                        </div>
-                    </div>
-
-                    {/* Section 5: Daily Essentials */}
-                    <div className="mt-8 px-5 md:px-0 md:mt-10">
-                        <div className="flex items-center gap-2 mb-6">
-                            <div className="p-1.5 bg-blue-100 rounded-lg md:rounded-md">
-                                <History size={16} className="text-blue-500 md:w-5 md:h-5" />
-                            </div>
-                            <h2 className="text-[22px] md:text-3xl font-black text-slate-900 tracking-tight md:font-bold">Daily Essentials</h2>
-                        </div>
-                        <div className="space-y-4 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-4 md:space-y-0">
-                            {(products || []).slice(0, 3).map((product, idx) => (
-                                <div key={product._id} onClick={() => navigate(`/product/${product._id}`)} className="cursor-pointer">
-                                    <ProductCard product={product} layout="list" index={idx} />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-
-                    {/* Final Grid: All Best Sellers */}
-                    <div className="mt-10 px-5 md:px-0 md:mt-16 md:pb-20">
-                        <div className="flex flex-col mb-10">
-                            <h2 className="text-[22px] md:text-4xl font-black text-slate-900 tracking-tight text-center md:font-bold">Best Sellers near you</h2>
-                            <div className="w-16 h-1 bg-primary rounded-full mx-auto mt-4" />
-                        </div>
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                            {(products || []).map((product, idx) => (
-                                <div key={product._id} onClick={() => navigate(`/product/${product._id}`)} className="cursor-pointer">
-                                    <ProductCard product={product} index={idx} />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <LocationPermissionPopup
-                isOpen={showLocationPopup}
-                onAllow={handleAllowLocation}
-                onManual={handleManualLocation}
-                onClose={() => {
-                    setShowLocationPopup(false);
-                    localStorage.setItem('kk_location_declined', 'true');
-                }}
-            />
-
-            <BusinessTypeSelector
-                isOpen={showBusinessPopup}
-                onSelect={handleBusinessSelect}
-                onClose={() => setShowBusinessPopup(false)}
-            />
-
-            <DocumentUploadPopup
-                isOpen={showDocumentPopup}
-                onSubmit={handleOnboardingFinalize}
-                onSkip={() => handleOnboardingFinalize()}
-                onClose={() => setShowDocumentPopup(false)}
-            />
+                <LocationPermissionPopup
+                    isOpen={showLocationPopup}
+                    onAllow={handleAllowLocation}
+                    onManual={handleManualLocation}
+                    onClose={() => {
+                        setShowLocationPopup(false);
+                        localStorage.setItem('kk_location_declined', 'true');
+                    }}
+                />
             </PageTransition>
         </>
     )

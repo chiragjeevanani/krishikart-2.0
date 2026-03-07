@@ -5,7 +5,7 @@ import PageTransition from '../components/layout/PageTransition'
 import { useState, useEffect } from 'react'
 import api from '@/lib/axios'
 
-const faqs = [
+const defaultFaqs = [
     {
         question: "How do I track my order?",
         answer: "Go to the 'Orders' section in your profile. Select the order you want to track to see its current status and estimated delivery time."
@@ -27,6 +27,7 @@ const faqs = [
 export default function HelpSupportScreen() {
     const navigate = useNavigate()
     const [openIndex, setOpenIndex] = useState(null)
+    const [faqs, setFaqs] = useState(defaultFaqs)
     const [supportInfo, setSupportInfo] = useState({
         phone: '918555454446',
         email: 'support@kisaankart.in',
@@ -34,21 +35,28 @@ export default function HelpSupportScreen() {
     })
 
     useEffect(() => {
-        const fetchSettings = async () => {
+        const fetchData = async () => {
             try {
-                const res = await api.get('/masteradmin/public-settings')
-                if (res.data.success) {
-                    const settings = res.data.result || []
+                // Fetch Support Settings
+                const settingsRes = await api.get('/masteradmin/public-settings')
+                if (settingsRes.data.success) {
+                    const settings = settingsRes.data.result || []
                     const phone = settings.find(s => s.key === 'support_phone')?.value || '918555454446'
                     const email = settings.find(s => s.key === 'support_email')?.value || 'support@kisaankart.in'
                     const whatsapp = settings.find(s => s.key === 'support_whatsapp')?.value || phone
                     setSupportInfo({ phone, email, whatsapp })
                 }
+
+                // Fetch Dynamic FAQs
+                const faqRes = await api.get('/masteradmin/public-faqs')
+                if (faqRes.data.success && faqRes.data.result.length > 0) {
+                    setFaqs(faqRes.data.result)
+                }
             } catch (error) {
-                console.error('Failed to fetch support settings:', error)
+                console.error('Failed to fetch data:', error)
             }
         }
-        fetchSettings()
+        fetchData()
     }, [])
 
     return (
@@ -64,7 +72,7 @@ export default function HelpSupportScreen() {
 
                 <div className="p-6 space-y-8">
                     {/* Contact Channels */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                         <a
                             href={`tel:${supportInfo.phone}`}
                             className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm flex flex-col items-center text-center gap-3 active:scale-95 transition-transform"
@@ -75,20 +83,6 @@ export default function HelpSupportScreen() {
                             <div>
                                 <h3 className="text-sm font-black text-slate-900">Call Us</h3>
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">24/7 Support</p>
-                            </div>
-                        </a>
-                        <a
-                            href={`https://wa.me/${supportInfo.whatsapp}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm flex flex-col items-center text-center gap-3 active:scale-95 transition-transform"
-                        >
-                            <div className="w-14 h-14 bg-green-50 text-green-500 rounded-full flex items-center justify-center">
-                                <MessageCircle size={24} />
-                            </div>
-                            <div>
-                                <h3 className="text-sm font-black text-slate-900">Chat</h3>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Instant Help</p>
                             </div>
                         </a>
                     </div>

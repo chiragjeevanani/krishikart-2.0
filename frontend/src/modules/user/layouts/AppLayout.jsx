@@ -33,7 +33,6 @@ export default function AppLayout() {
         '/favorites',
         '/wishlist',
         '/verification',
-        '/business-registration',
         '/help-support',
         '/about',
         '/edit-profile',

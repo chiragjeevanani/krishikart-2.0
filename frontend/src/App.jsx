@@ -25,7 +25,6 @@ import HelpSupportScreen from './modules/user/pages/HelpSupportScreen'
 import AboutScreen from './modules/user/pages/AboutScreen'
 import WishlistScreen from './modules/user/pages/WishlistScreen'
 import CreditInfoScreen from './modules/user/pages/CreditInfoScreen'
-import BusinessRegistrationScreen from './modules/user/pages/BusinessRegistrationScreen'
 import { WishlistProvider } from './modules/user/contexts/WishlistContext'
 import { LocationProvider } from './modules/user/contexts/LocationContext'
 import { UserAuthProvider } from './modules/user/contexts/UserAuthContext'
@@ -149,7 +148,6 @@ function App() {
               <Route path="/wishlist" element={<WishlistScreen />} />
               <Route path="/verification" element={<VerificationScreen />} />
               <Route path="/help-support" element={<HelpSupportScreen />} />
-              <Route path="/business-registration" element={<BusinessRegistrationScreen />} />
               <Route path="/about" element={<AboutScreen />} />
             </Route>
           </Route>
