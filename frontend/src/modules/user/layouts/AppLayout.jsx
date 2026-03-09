@@ -22,6 +22,54 @@ export default function AppLayout() {
         window.scrollTo(0, 0)
     }, [location.pathname])
 
+    // Mobile: prevent pull-down overscroll only when at top (so top section doesn’t scroll down)
+    useEffect(() => {
+        if (typeof window === 'undefined') return
+        const isMobile = () => window.innerWidth < 768
+        let touchStartY = 0
+        let rafId = null
+
+        const onTouchStart = (e) => {
+            touchStartY = e.touches[0].clientY
+        }
+        const onTouchMove = (e) => {
+            if (!isMobile()) return
+            if (window.scrollY <= 2 && e.touches[0].clientY > touchStartY) {
+                e.preventDefault()
+            }
+        }
+        const onWheel = (e) => {
+            if (!isMobile()) return
+            if (window.scrollY <= 2 && e.deltaY < 0) {
+                e.preventDefault()
+            }
+        }
+
+        const clampScrollTop = () => {
+            if (!isMobile()) return
+            if (window.scrollY <= 0) {
+                window.scrollTo(0, 0)
+            }
+        }
+        const onScroll = () => {
+            if (rafId) cancelAnimationFrame(rafId)
+            rafId = requestAnimationFrame(clampScrollTop)
+        }
+
+        document.addEventListener('touchstart', onTouchStart, { passive: true })
+        document.addEventListener('touchmove', onTouchMove, { passive: false })
+        document.addEventListener('wheel', onWheel, { passive: false })
+        window.addEventListener('scroll', onScroll, { passive: true })
+
+        return () => {
+            document.removeEventListener('touchstart', onTouchStart)
+            document.removeEventListener('touchmove', onTouchMove)
+            document.removeEventListener('wheel', onWheel)
+            window.removeEventListener('scroll', onScroll)
+            if (rafId) cancelAnimationFrame(rafId)
+        }
+    }, [])
+
     const isHomeScreen = location.pathname === '/home'
 
     const hideBottomNav = [

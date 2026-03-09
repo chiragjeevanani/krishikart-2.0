@@ -40,6 +40,13 @@
     text-decoration: none;
 }
 
+.lp-navbar-logo-img {
+    height: 100px;
+    width: auto;
+    object-fit: contain;
+    display: block;
+}
+
 .lp-navbar-logo-icon {
     width: 40px;
     height: 40px;
@@ -78,18 +85,6 @@
 
 .lp-navbar-link:hover {
     color: #1a6b2a;
-}
-
-.lp-navbar-link .badge {
-    position: absolute;
-    top: -8px;
-    right: -24px;
-    background: #e74c3c;
-    color: white;
-    font-size: 9px;
-    padding: 1px 5px;
-    border-radius: 4px;
-    font-weight: 700;
 }
 
 .lp-navbar-search {
@@ -293,11 +288,11 @@
     gap: 24px;
 }
 
+/* Desktop/webview only: content-height cards, no empty space. Mobile (768px) overrides below. */
 .lp-quality-card {
     border-radius: 20px;
     overflow: hidden;
     position: relative;
-    aspect-ratio: 3/4;
     cursor: pointer;
     transition: transform 0.3s;
 }
@@ -306,32 +301,58 @@
     transform: translateY(-4px);
 }
 
-.lp-quality-card img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+/* Desktop: stacked layout (no flip) — height = content only */
+.lp-quality-card-inner {
+    display: flex;
+    flex-direction: column;
 }
 
-.lp-quality-card-content {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 24px;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
-    color: white;
+.lp-quality-card-icon-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 24px;
+    padding-bottom: 12px;
+    flex-shrink: 0;
 }
 
-.lp-quality-card-content h3 {
-    font-size: 18px;
+.lp-quality-card-icon-box {
+    width: 72px;
+    height: 72px;
+    border-radius: 20px;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lp-quality-card-front-title {
+    display: none; /* desktop: title only on back */
+}
+
+.lp-quality-card-back {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 0 20px 24px;
+    position: relative;
+    background: none;
+    color: #333;
+}
+
+.lp-quality-card-back-title {
+    font-size: 17px;
     font-weight: 700;
-    margin-bottom: 4px;
+    color: #1a1a2e;
+    margin-bottom: 6px;
+    line-height: 1.3;
 }
 
-.lp-quality-card-content p {
+.lp-quality-card-back-desc {
     font-size: 13px;
-    opacity: 0.8;
-    line-height: 1.4;
+    color: #666;
+    line-height: 1.45;
+    margin: 0;
 }
 
 /* ── NETWORK CTA ── */
@@ -839,12 +860,26 @@
 }
 
 .lp-testimonials-scroll {
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
     padding: 20px 0 40px;
     width: 100%;
     position: relative;
-    mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
-    -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+    mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    cursor: grab;
+}
+
+.lp-testimonials-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.lp-testimonials-scroll:active {
+    cursor: grabbing;
 }
 
 .lp-marquee-track {
@@ -852,9 +887,11 @@
     gap: 24px;
     width: max-content;
     animation: lpMarquee 35s linear infinite;
+    padding: 0 5%;
 }
 
-.lp-marquee-track:hover {
+.lp-marquee-track:hover,
+.lp-marquee-track.lp-marquee-paused {
     animation-play-state: paused;
 }
 
@@ -877,6 +914,8 @@
     height: 380px;
     flex-shrink: 0;
     cursor: pointer;
+    scroll-snap-align: start;
+    scroll-snap-stop: normal;
 }
 
 .lp-flip-card-inner {
@@ -1060,11 +1099,20 @@
     background: #111;
     color: white;
     padding: 60px 80px 32px;
+    overflow: hidden;
+}
+
+/* Reset global border on footer so no dotted/diagonal artifacts */
+.lp-footer,
+.lp-footer * {
+    border-width: 0;
+    border-style: solid;
+    outline: none;
 }
 
 .lp-footer-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr;
+    grid-template-columns: 2fr 1fr 1fr;
     gap: 40px;
     margin-bottom: 40px;
     padding-bottom: 40px;
@@ -1084,6 +1132,10 @@
     font-size: 13px;
     color: #aaa;
     line-height: 1.6;
+}
+
+.lp-footer-company a:hover {
+    color: #1a6b2a;
 }
 
 .lp-footer-column h4 {
@@ -1154,6 +1206,11 @@
 @media (max-width: 1024px) {
     .lp-navbar {
         padding: 0 24px;
+    }
+
+    .lp-login-btn {
+        padding: 8px 18px;
+        font-size: 13px;
     }
 
     .lp-hero {
@@ -1227,7 +1284,8 @@
 @media (max-width: 768px) {
 
     .lp-navbar-center,
-    .lp-navbar-search {
+    .lp-navbar-search,
+    .lp-navbar-right {
         display: none;
     }
 
@@ -1286,6 +1344,80 @@
     .lp-quality-grid {
         grid-template-columns: 1fr 1fr;
         gap: 12px;
+    }
+
+    /* Mobile: flip card — show headline first, flip on scroll (one by one) or click */
+    .lp-quality-card {
+        overflow: visible;
+        min-height: 160px;
+    }
+
+    .lp-quality-card-inner {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        min-height: 160px;
+        transform-style: preserve-3d;
+        transition: transform 0.5s ease;
+        flex-direction: row;
+    }
+
+    .lp-quality-card-inner.flipped {
+        transform: rotateY(180deg);
+    }
+
+    .lp-quality-card-front,
+    .lp-quality-card-back {
+        position: absolute;
+        inset: 0;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        border-radius: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        text-align: center;
+    }
+
+    .lp-quality-card-front {
+        z-index: 1;
+    }
+
+    .lp-quality-card-back {
+        transform: rotateY(180deg);
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .lp-quality-card-icon-wrap {
+        padding-top: 0;
+        padding-bottom: 8px;
+    }
+
+    .lp-quality-card-icon-box {
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+    }
+
+    .lp-quality-card-front .lp-quality-card-icon-wrap + .lp-quality-card-front-title {
+        display: block;
+        font-size: 14px;
+        font-weight: 700;
+        color: #1a1a2e;
+        margin: 0;
+        line-height: 1.2;
+    }
+
+    .lp-quality-card-back-title {
+        font-size: 15px;
+        margin-bottom: 6px;
+    }
+
+    .lp-quality-card-back-desc {
+        font-size: 12px;
     }
 
     .lp-network-grid {
@@ -1373,6 +1505,21 @@
         text-decoration: none;
         padding: 12px 0;
         border-bottom: 1px solid #f0f0f0;
+    }
+
+    .lp-mobile-overlay .lp-mobile-login-btn {
+        margin-top: 16px;
+        padding: 14px 24px;
+        background: #1a6b2a;
+        color: white !important;
+        border-radius: 10px;
+        text-align: center;
+        border: none;
+        font-size: 16px;
+    }
+
+    .lp-mobile-overlay .lp-mobile-login-btn:hover {
+        background: #145522;
     }
 
     .lp-mobile-close {

@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
     Sprout, Search, ChevronLeft, ChevronRight, ArrowUpRight, ChevronDown,
-    Instagram, Linkedin, Youtube, Mail, Phone, Menu, X,
+    Mail, Phone, Menu, X,
     Wheat, ShieldCheck, Snowflake, Truck, Leaf, Package, Store, Users
 } from 'lucide-react';
 import api from '@/lib/axios';
@@ -101,6 +101,11 @@ export default function LandingPage() {
     const [products, setProducts] = useState([]);
     const [openFaq, setOpenFaq] = useState(null);
     const [mobileMenu, setMobileMenu] = useState(false);
+    const [qualityFlipped, setQualityFlipped] = useState(() => qualityCards.map(() => false));
+    const qualityCardRefs = useRef([]);
+    const [testimonialMarqueePaused, setTestimonialMarqueePaused] = useState(false);
+    const testimonialScrollRef = useRef(null);
+    const testimonialPauseTimeoutRef = useRef(null);
 
     useEffect(() => {
         const onScroll = () => setScrolled(window.scrollY > 20);
@@ -118,6 +123,30 @@ export default function LandingPage() {
             }
         }
     }, [location.hash]);
+
+    // Quality cards: flip one-by-one when they enter view on mobile, and allow click to toggle
+    useEffect(() => {
+        const isMobile = () => window.matchMedia('(max-width: 768px)').matches;
+        const refs = qualityCardRefs.current.filter(Boolean);
+        if (refs.length === 0 || !isMobile()) return;
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (!entry.isIntersecting) return;
+                    const i = refs.indexOf(entry.target);
+                    if (i === -1) return;
+                    setQualityFlipped((prev) => {
+                        const next = [...prev];
+                        next[i] = true;
+                        return next;
+                    });
+                });
+            },
+            { threshold: 0.3, rootMargin: '0px 0px -20px 0px' }
+        );
+        refs.forEach((el) => observer.observe(el));
+        return () => refs.forEach((el) => observer.unobserve(el));
+    }, []);
 
     // Hero auto-play
     useEffect(() => {
@@ -161,12 +190,11 @@ export default function LandingPage() {
             {/* ── NAVBAR ── */}
             <nav className={`lp-navbar ${scrolled ? 'scrolled' : ''}`}>
                 <Link to="/" className="lp-navbar-logo">
-                    <div className="lp-navbar-logo-icon"><Sprout color="#fff" size={22} /></div>
-                    <div className="lp-navbar-logo-text">Krishi<span>Kart</span></div>
+                    <img src="/logo.png" alt="KrishiKart" className="lp-navbar-logo-img" />
                 </Link>
                 <div className="lp-navbar-center">
                     <a href="#quality" className="lp-navbar-link">Quality</a>
-                    <a href="#categories" className="lp-navbar-link">Browse Catalogue <span className="badge">NEW</span></a>
+                    <a href="#categories" className="lp-navbar-link">Browse Catalogue</a>
                     <a href="#delivery" className="lp-navbar-link">Delivery</a>
                     <a href="#faq" className="lp-navbar-link">FAQ</a>
                 </div>
@@ -190,7 +218,7 @@ export default function LandingPage() {
                     <a href="#categories" onClick={() => setMobileMenu(false)}>Browse Catalogue</a>
                     <a href="#delivery" onClick={() => setMobileMenu(false)}>Delivery</a>
                     <a href="#faq" onClick={() => setMobileMenu(false)}>FAQ</a>
-                    <Link to="/login" onClick={() => setMobileMenu(false)} style={{ color: '#1a6b2a', fontWeight: 700 }}>Login / Signup</Link>
+                    <Link to="/login" className="lp-mobile-login-btn" onClick={() => setMobileMenu(false)}>Login / Signup</Link>
                 </div>
             )}
 
@@ -230,30 +258,32 @@ export default function LandingPage() {
                 <div className="lp-quality-grid">
                     {qualityCards.map((card, i) => {
                         const IconComponent = card.icon;
+                        const isFlipped = qualityFlipped[i];
                         return (
                             <motion.div
                                 key={i}
+                                ref={(el) => { qualityCardRefs.current[i] = el; }}
                                 initial={{ opacity: 0, y: 20 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
                                 transition={{ delay: i * 0.1 }}
                                 className="lp-quality-card"
                                 style={{ background: card.bg }}
+                                onClick={() => setQualityFlipped((prev) => { const n = [...prev]; n[i] = !n[i]; return n; })}
                             >
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 48, paddingBottom: 24 }}>
-                                    <div style={{
-                                        width: 80, height: 80,
-                                        borderRadius: 24,
-                                        background: 'white',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        boxShadow: '0 4px 16px rgba(0,0,0,0.08)'
-                                    }}>
-                                        <IconComponent size={36} color={card.color} strokeWidth={1.8} />
+                                <div className={`lp-quality-card-inner ${isFlipped ? 'flipped' : ''}`}>
+                                    <div className="lp-quality-card-front">
+                                        <div className="lp-quality-card-icon-wrap">
+                                            <div className="lp-quality-card-icon-box" style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
+                                                <IconComponent size={36} color={card.color} strokeWidth={1.8} />
+                                            </div>
+                                        </div>
+                                        <h3 className="lp-quality-card-front-title">{card.title}</h3>
                                     </div>
-                                </div>
-                                <div className="lp-quality-card-content" style={{ position: 'relative', background: 'none', color: '#333' }}>
-                                    <h3 style={{ color: '#1a1a2e' }}>{card.title}</h3>
-                                    <p style={{ color: '#666' }}>{card.desc}</p>
+                                    <div className="lp-quality-card-back">
+                                        <h3 className="lp-quality-card-back-title">{card.title}</h3>
+                                        <p className="lp-quality-card-back-desc">{card.desc}</p>
+                                    </div>
                                 </div>
                             </motion.div>
                         );
@@ -515,8 +545,26 @@ export default function LandingPage() {
             {/* ── TESTIMONIALS (Hyperpure-style 3D Flip Cards) ── */}
             <section className="lp-testimonials">
                 <h2>What our partners say about us</h2>
-                <div className="lp-testimonials-scroll">
-                    <div className="lp-marquee-track">
+                <div
+                    className="lp-testimonials-scroll"
+                    ref={testimonialScrollRef}
+                    onScroll={() => {
+                        setTestimonialMarqueePaused(true);
+                        if (testimonialPauseTimeoutRef.current) clearTimeout(testimonialPauseTimeoutRef.current);
+                        testimonialPauseTimeoutRef.current = setTimeout(() => setTestimonialMarqueePaused(false), 2500);
+                    }}
+                    onWheel={() => {
+                        setTestimonialMarqueePaused(true);
+                        if (testimonialPauseTimeoutRef.current) clearTimeout(testimonialPauseTimeoutRef.current);
+                        testimonialPauseTimeoutRef.current = setTimeout(() => setTestimonialMarqueePaused(false), 2500);
+                    }}
+                    onTouchStart={() => {
+                        setTestimonialMarqueePaused(true);
+                        if (testimonialPauseTimeoutRef.current) clearTimeout(testimonialPauseTimeoutRef.current);
+                        testimonialPauseTimeoutRef.current = setTimeout(() => setTestimonialMarqueePaused(false), 2500);
+                    }}
+                >
+                    <div className={`lp-marquee-track ${testimonialMarqueePaused ? 'lp-marquee-paused' : ''}`}>
                         {[...testimonials, ...testimonials].map((t, i) => (
                             <div key={i} className="lp-flip-card">
                                 <div className="lp-flip-card-inner">
@@ -583,16 +631,16 @@ export default function LandingPage() {
                         <h4>Company</h4>
                         <p><strong>Kisaankart Agriculture Private Limited</strong></p>
                         <p style={{ marginTop: 8 }}>Farm-fresh agricultural produce marketplace connecting farmers, vendors, and businesses.</p>
-                        <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 8, color: '#aaa', fontSize: 13 }}>
+                        <a href="tel:+919999999999" style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 8, color: '#aaa', fontSize: 13, textDecoration: 'none' }}>
                             <Phone size={14} /> +91 999 999 9999
-                        </div>
-                        <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8, color: '#aaa', fontSize: 13 }}>
-                            <Mail size={14} /> <a href="mailto:hello@kisaankart.com" style={{ color: '#aaa' }}>hello@kisaankart.com</a>
-                        </div>
+                        </a>
+                        <a href="mailto:hello@kisaankart.com" style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8, color: '#aaa', fontSize: 13, textDecoration: 'none' }}>
+                            <Mail size={14} /> hello@kisaankart.com
+                        </a>
                     </div>
                     <div className="lp-footer-column">
                         <h4>Know More</h4>
-                        <a href="/#about">Quality</a>
+                        <a href="/#quality">Quality</a>
                         <a href="/#categories">Categories</a>
                         <a href="/#delivery">Delivery</a>
                         <a href="/#faq">FAQ</a>
@@ -605,14 +653,6 @@ export default function LandingPage() {
                         <Link to="/franchise/login">Franchise Hub</Link>
                         <Link to="/delivery/login">Delivery Partner</Link>
                         <Link to="/masteradmin/login">Admin Panel</Link>
-                    </div>
-                    <div className="lp-footer-column">
-                        <h4>Follow us on</h4>
-                        <div className="lp-footer-social">
-                            <a href="#"><Instagram size={18} /></a>
-                            <a href="#"><Linkedin size={18} /></a>
-                            <a href="#"><Youtube size={18} /></a>
-                        </div>
                     </div>
                 </div>
                 <div className="lp-footer-bottom">
