@@ -66,6 +66,12 @@ const deliverySchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    /** pending = awaiting review, approved = verified, rejected = rejected by admin */
+    approvalStatus: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
     location: {
       type: {
         type: String,

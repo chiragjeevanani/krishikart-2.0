@@ -131,6 +131,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                         { label: 'Delivery Partners', path: '/masteradmin/approvals?type=delivery', icon: Truck },
                     ]
                 },
+                { icon: HelpCircle, label: 'Frequently Asked Questions', path: '/masteradmin/settings/faqs', permissionKey: 'settings' },
                 { icon: Briefcase, label: 'Team Management', path: '/masteradmin/team', permissionKey: 'superadmin' },
                 {
                     icon: Settings,

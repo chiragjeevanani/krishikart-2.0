@@ -8,6 +8,11 @@ export default function ApprovalCard({ item, type, onApprove, onReject, onViewDo
     const isDelivery = type === 'delivery';
     const isCredit = type === 'credit';
 
+    const isAlreadyApproved = isVendor ? item.status === 'active'
+        : isFranchise ? item.kyc?.status === 'verified'
+        : isDelivery ? (item.isApproved || item.approvalStatus === 'approved')
+        : false;
+
     return (
         <motion.div
             initial={{ opacity: 0, scale: 0.98 }}
@@ -41,9 +46,9 @@ export default function ApprovalCard({ item, type, onApprove, onReject, onViewDo
                 </div>
                 <div className={cn(
                     "px-1.5 py-0.5 rounded-sm text-[8px] font-black uppercase tracking-widest",
-                    (item.status === 'active' || item.kyc?.status === 'verified' || item.isApproved) ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"
+                    isAlreadyApproved ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"
                 )}>
-                    {isVendor ? item.status : isDelivery ? (item.isApproved ? 'Approved' : 'Pending') : item.kyc?.status || 'Pending'}
+                    {isVendor ? item.status : isDelivery ? (item.isApproved || item.approvalStatus === 'approved' ? 'Approved' : 'Pending') : item.kyc?.status || 'Pending'}
                 </div>
             </div>
 
@@ -103,22 +108,24 @@ export default function ApprovalCard({ item, type, onApprove, onReject, onViewDo
                 </div>
             </div>
 
-            <div className="p-2 bg-slate-50 border-t border-slate-100 grid grid-cols-2 gap-2">
+            <div className="p-2 bg-slate-50 border-t border-slate-100 grid grid-cols-2 gap-2" onClick={(e) => e.stopPropagation()}>
                 <button
+                    type="button"
                     disabled={item.status === 'blocked' || item.kyc?.status === 'rejected'}
-                    onClick={(e) => { e.stopPropagation(); onReject(item); }}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onReject(item); }}
                     className="py-1.5 bg-white border border-slate-200 text-slate-500 rounded-sm font-bold text-[9px] uppercase tracking-widest hover:bg-rose-50 hover:text-rose-600 hover:border-rose-100 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
                     <XCircle size={12} />
                     Reject
                 </button>
                 <button
-                    disabled={item.status === 'active' || item.kyc?.status === 'verified' || item.isApproved}
-                    onClick={(e) => { e.stopPropagation(); onApprove(item); }}
+                    type="button"
+                    disabled={isAlreadyApproved}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onApprove(item); }}
                     className="py-1.5 bg-slate-900 text-white rounded-sm font-bold text-[9px] uppercase tracking-widest hover:bg-slate-800 transition-all flex items-center justify-center gap-1.5 shadow-sm disabled:bg-emerald-500 disabled:opacity-100"
                 >
-                    <CheckCircle2 size={12} className={cn((item.status === 'active' || item.kyc?.status === 'verified' || item.isApproved) ? "text-slate-900" : "text-emerald-400")} />
-                    {(item.status === 'active' || item.kyc?.status === 'verified' || item.isApproved) ? 'Verified' : 'Verify'}
+                    <CheckCircle2 size={12} className={cn(isAlreadyApproved ? "text-slate-900" : "text-emerald-400")} />
+                    {isAlreadyApproved ? 'Verified' : 'Verify'}
                 </button>
             </div>
         </motion.div>

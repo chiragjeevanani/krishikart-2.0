@@ -170,6 +170,11 @@ export default function TeamManagementScreen() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const mobile = (formData.mobile || '').trim();
+        if (mobile && (mobile.length !== 10 || !/^\d{10}$/.test(mobile))) {
+            alert('Phone number must be exactly 10 digits. No letters or symbols allowed.');
+            return;
+        }
         setIsSubmitting(true);
         try {
             if (editingAdmin) {
@@ -385,7 +390,10 @@ export default function TeamManagementScreen() {
                                             <input
                                                 required
                                                 value={formData.fullName}
-                                                onChange={e => setFormData({ ...formData, fullName: e.target.value })}
+                                                onChange={e => {
+                                                    const raw = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                                                    setFormData({ ...formData, fullName: raw });
+                                                }}
                                                 className="w-full bg-slate-50 border-none rounded-sm px-4 py-2.5 text-xs font-bold focus:ring-2 focus:ring-slate-900 transition-all"
                                                 placeholder="e.g. John Doe"
                                             />
@@ -393,11 +401,24 @@ export default function TeamManagementScreen() {
                                         <div className="space-y-1.5">
                                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Phone Number</label>
                                             <input
+                                                type="tel"
+                                                inputMode="numeric"
+                                                pattern="[0-9]*"
+                                                maxLength={10}
                                                 value={formData.mobile}
-                                                onChange={e => setFormData({ ...formData, mobile: e.target.value })}
+                                                onChange={e => {
+                                                    const raw = e.target.value.replace(/\D/g, '');
+                                                    const mobile = raw.slice(0, 10);
+                                                    setFormData({ ...formData, mobile });
+                                                }}
                                                 className="w-full bg-slate-50 border-none rounded-sm px-4 py-2.5 text-xs font-bold focus:ring-2 focus:ring-slate-900 transition-all"
                                                 placeholder="9876543210"
                                             />
+                                            {formData.mobile.length > 0 && (
+                                                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">
+                                                    {formData.mobile.length}/10 digits
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
                                 </section>

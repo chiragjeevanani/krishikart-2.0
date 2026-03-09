@@ -60,17 +60,18 @@ export default function InventoryScreen() {
         {
             header: 'Item Name',
             key: 'name',
+            align: 'left',
             render: (val, row) => (
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 overflow-hidden border border-slate-100/50 group-hover:border-slate-300 transition-all">
+                <div className="flex items-center gap-3 text-left">
+                    <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 overflow-hidden border border-slate-100/50 group-hover:border-slate-300 transition-all shrink-0">
                         {row.image ? (
                             <img src={row.image} alt={val} className="w-full h-full object-cover" />
                         ) : (
                             <Scale size={16} />
                         )}
                     </div>
-                    <div className="flex flex-col">
-                        <span className="font-black text-slate-900 text-[11px] tracking-tight leading-none mb-1">{val}</span>
+                    <div className="flex flex-col min-w-0">
+                        <span className="font-black text-slate-900 text-[11px] tracking-tight leading-none mb-1 truncate">{val}</span>
                         <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">#{row.id?.slice(-8).toUpperCase()}</span>
                     </div>
                 </div>
@@ -79,40 +80,41 @@ export default function InventoryScreen() {
         {
             header: 'Category',
             key: 'category',
-            render: (val) => <span className="text-[10px] font-bold text-slate-600 bg-slate-50 px-2 py-0.5 rounded-sm border border-slate-200 uppercase tracking-tight">{val}</span>
+            align: 'left',
+            render: (val) => <span className="text-[10px] font-bold text-slate-600 bg-slate-50 px-2 py-0.5 rounded-sm border border-slate-200 uppercase tracking-tight inline-block text-left">{val}</span>
         },
         {
             header: 'Current Stock',
             key: 'currentStock',
             align: 'right',
             render: (val, row) => (
-                <div className="flex items-center justify-end gap-2">
+                <div className="flex items-center justify-end gap-2 w-full">
                     <span className={cn(
-                        "text-[11px] font-black tabular-nums",
+                        "text-[11px] font-black tabular-nums text-right",
                         val < 10 ? "text-rose-600" : "text-slate-900"
                     )}>
                         {val} <span className="text-[9px] font-bold text-slate-400 ml-0.5">{row.unit}</span>
                     </span>
-                    {val < 10 && <AlertTriangle size={10} className="text-rose-500 animate-pulse" />}
+                    <span className="w-4 flex justify-center shrink-0">{val < 10 ? <AlertTriangle size={10} className="text-rose-500 animate-pulse" /> : null}</span>
                 </div>
             )
         },
         {
             header: 'Stock Level',
             key: 'usageRate',
+            align: 'right',
             render: (_, row) => {
-                // Calculate percentage based on currentStock vs MBQ (e.g. 5x MBQ is considered 100%)
                 const targetStock = row.mbq * 5 || 50;
                 const percentage = Math.round((row.currentStock / targetStock) * 100);
                 return (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 w-full min-w-[120px]">
                         <div className="flex-1 min-w-[60px] h-1 bg-slate-100 rounded-full overflow-hidden">
                             <div
                                 className={cn("h-full", percentage < 20 ? "bg-rose-500" : "bg-emerald-500")}
                                 style={{ width: `${Math.min(percentage, 100)}%` }}
                             />
                         </div>
-                        <span className="text-[9px] font-bold text-slate-400 tabular-nums">{Math.min(percentage, 100)}%</span>
+                        <span className="text-[9px] font-bold text-slate-400 tabular-nums w-8 text-right shrink-0">{Math.min(percentage, 100)}%</span>
                     </div>
                 );
             }
@@ -121,7 +123,7 @@ export default function InventoryScreen() {
             header: 'Price',
             key: 'price',
             align: 'right',
-            render: (val) => <span className="text-[11px] font-black text-slate-900 tabular-nums">₹{(val || 0).toLocaleString()}</span>
+            render: (val) => <span className="text-[11px] font-black text-slate-900 tabular-nums block text-right">₹{(val || 0).toLocaleString()}</span>
         },
     ];
 

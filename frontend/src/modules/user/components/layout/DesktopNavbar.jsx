@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation as useRouteLocation, Link } from 'react-router-dom'
-import { Search, Heart, ShoppingCart, MapPin } from 'lucide-react'
+import { Search, Heart, ShoppingCart, MapPin, Bell } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCart } from '../../contexts/CartContext'
 import { useWishlist } from '../../contexts/WishlistContext'
@@ -161,6 +161,15 @@ export default function DesktopNavbar() {
                                 {wishlistCount}
                             </span>
                         )}
+                    </button>
+
+                    {/* Notifications */}
+                    <button
+                        onClick={() => navigate('/notifications')}
+                        aria-label="Notifications"
+                        className="w-11 h-11 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-900 transition-all active:scale-95"
+                    >
+                        <Bell size={20} strokeWidth={2.5} />
                     </button>
 
                     {/* Cart */}

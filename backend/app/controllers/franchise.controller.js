@@ -91,7 +91,7 @@ export const getInventory = async (req, res) => {
             return {
                 id: product._id,
                 productId: product,
-                currentStock: stockItem ? stockItem.currentStock : 0,
+                currentStock: Math.max(0, stockItem ? Number(stockItem.currentStock) : 0),
                 mbq: stockItem ? stockItem.mbq : (product.stock || 5), // Use product stock as fallback mbq
                 lastUpdated: stockItem ? stockItem.lastUpdated : null
             };

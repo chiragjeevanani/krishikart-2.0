@@ -99,13 +99,16 @@ export default function DataGrid({
                                     key={column.key || idx}
                                     onClick={() => column.sortable && requestSort(column.key)}
                                     className={cn(
-                                        "text-left text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none select-none",
+                                        "text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none select-none",
                                         column.sortable ? 'cursor-pointer hover:text-slate-900' : '',
-                                        column.align === 'right' ? 'text-right' : '',
+                                        column.align === 'right' ? 'text-right' : column.align === 'center' ? 'text-center' : 'text-left',
                                         densityClass
                                     )}
                                 >
-                                    <div className={cn("flex items-center gap-2", column.align === 'right' ? 'justify-end' : 'justify-start')}>
+                                    <div className={cn(
+                                        "flex items-center gap-2",
+                                        column.align === 'right' ? 'justify-end' : column.align === 'center' ? 'justify-center' : 'justify-start'
+                                    )}>
                                         {column.header}
                                         {column.sortable && <ArrowUpDown size={12} className={cn("transition-colors", sortConfig.key === column.key ? "text-slate-900" : "text-slate-300")} />}
                                     </div>
@@ -125,7 +128,7 @@ export default function DataGrid({
                                             key={colIdx}
                                             className={cn(
                                                 "text-sm font-bold text-slate-600 transition-colors whitespace-nowrap",
-                                                column.align === 'right' ? 'text-right' : '',
+                                                column.align === 'right' ? 'text-right' : column.align === 'center' ? 'text-center' : 'text-left',
                                                 densityClass
                                             )}
                                         >

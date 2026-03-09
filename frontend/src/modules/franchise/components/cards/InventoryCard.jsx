@@ -91,8 +91,11 @@ export default function InventoryCard({ item }) {
                     <input
                         type="number"
                         value={inputValue}
-                        onChange={(e) => setInputValue(parseInt(e.target.value) || 0)}
-                        onBlur={() => handleUpdate(inputValue)}
+                        onChange={(e) => {
+                            const v = parseInt(e.target.value, 10);
+                            setInputValue(isNaN(v) ? 0 : Math.max(0, v));
+                        }}
+                        onBlur={() => handleUpdate(Math.max(0, Number(inputValue) || 0))}
                         className="bg-transparent border-none w-full text-center font-black text-slate-900 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                     <button

@@ -257,7 +257,10 @@ export const updateAvailability = async (req, res) => {
             deliveryId,
             { $set: updateData },
             { new: true }
-        );
+        )
+            .select('-password -otp -otpExpiresAt');
+
+        if (!delivery) return handleResponse(res, 404, "Delivery partner not found");
 
         return handleResponse(res, 200, "Availability updated successfully", delivery);
     } catch (err) {

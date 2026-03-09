@@ -45,9 +45,11 @@ export const AdminProvider = ({ children }) => {
             const response = await api.put(`/masteradmin/vendors/${id}/status`, { status });
             if (response.data.success) {
                 toast.success(`Vendor ${status === 'active' ? 'approved' : 'updated'}`);
-                setVendors(prev => prev.filter(v => v._id !== id));
+                setVendors(prev => prev.filter(v => String(v._id || v.id) !== String(id)));
                 return true;
             }
+            toast.error(response.data?.message || 'Update failed');
+            return false;
         } catch (error) {
             toast.error(error.response?.data?.message || 'Update failed');
             return false;
@@ -59,9 +61,11 @@ export const AdminProvider = ({ children }) => {
             const response = await api.put(`/masteradmin/franchises/${id}/kyc-review`, { status, rejectionReason });
             if (response.data.success) {
                 toast.success(`Franchise KYC ${status}`);
-                setFranchises(prev => prev.filter(f => f._id !== id));
+                setFranchises(prev => prev.filter(f => String(f._id || f.id) !== String(id)));
                 return true;
             }
+            toast.error(response.data?.message || 'Review failed');
+            return false;
         } catch (error) {
             toast.error(error.response?.data?.message || 'Review failed');
             return false;
@@ -84,13 +88,21 @@ export const AdminProvider = ({ children }) => {
     };
 
     const updateDeliveryPartnerStatus = async (id, isApproved) => {
+        const idStr = id != null ? String(id) : '';
+        if (!idStr) {
+            toast.error('Invalid partner id');
+            return false;
+        }
         try {
-            const response = await api.put(`/masteradmin/delivery-partners/${id}/status`, { isApproved });
-            if (response.data.success) {
+            const response = await api.put(`/masteradmin/delivery-partners/${idStr}/status`, { isApproved });
+            const ok = response.status === 200 && (response.data?.success !== false);
+            if (ok) {
                 toast.success(`Delivery partner ${isApproved ? 'approved' : 'rejected'}`);
-                setDeliveryPartners(prev => prev.filter(p => p._id !== id));
+                setDeliveryPartners(prev => prev.filter(p => String(p._id || p.id) !== idStr));
                 return true;
             }
+            toast.error(response.data?.message || 'Update failed');
+            return false;
         } catch (error) {
             toast.error(error.response?.data?.message || 'Update failed');
             return false;

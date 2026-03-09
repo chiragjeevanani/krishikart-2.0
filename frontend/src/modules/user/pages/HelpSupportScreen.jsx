@@ -47,10 +47,11 @@ export default function HelpSupportScreen() {
                     setSupportInfo({ phone, email, whatsapp })
                 }
 
-                // Fetch Dynamic FAQs
+                // Fetch Dynamic FAQs (admin-added from masteradmin)
                 const faqRes = await api.get('/masteradmin/public-faqs')
-                if (faqRes.data.success && faqRes.data.result.length > 0) {
-                    setFaqs(faqRes.data.result)
+                if (faqRes.data.success) {
+                    const list = faqRes.data.results || faqRes.data.result || []
+                    if (list.length > 0) setFaqs(list)
                 }
             } catch (error) {
                 console.error('Failed to fetch data:', error)

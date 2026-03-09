@@ -1,4 +1,4 @@
-import { Search, MapPin, ShoppingCart } from 'lucide-react'
+import { Search, MapPin, ShoppingCart, Bell } from 'lucide-react'
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation as useRouteLocation } from 'react-router-dom'
@@ -73,6 +73,13 @@ export default function StickySearchBar() {
                 </div>
             </div>
             <div className="absolute top-0 right-3 md:static md:top-auto md:right-auto flex items-center gap-2 shrink-0">
+                <button
+                    onClick={() => navigate('/notifications')}
+                    className="relative min-h-[38px] min-w-[38px] md:min-h-[44px] md:min-w-[44px] flex items-center justify-center rounded-xl md:rounded-2xl bg-white/30 md:bg-white border border-white/50 md:border-slate-100 shadow-md md:shadow-sm text-white md:text-slate-400 active:scale-95 transition-all"
+                    aria-label="Notifications"
+                >
+                    <Bell size={16} className="md:w-[18px] md:h-[18px] md:text-slate-900 drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)] md:drop-shadow-none" />
+                </button>
                 <button
                     onClick={() => navigate('/cart')}
                     className="relative min-h-[38px] min-w-[38px] md:min-h-[44px] md:min-w-[44px] flex items-center justify-center rounded-xl md:rounded-2xl bg-white/30 md:bg-white border border-white/50 md:border-slate-100 shadow-md md:shadow-sm text-white md:text-slate-400 active:scale-95 transition-all"

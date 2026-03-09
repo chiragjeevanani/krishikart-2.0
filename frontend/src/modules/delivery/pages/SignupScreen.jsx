@@ -4,6 +4,9 @@ import { Navigation, ShieldCheck, ArrowRight, Phone, User, Truck } from 'lucide-
 import { ROUTES } from '../utils/constants';
 import { useNavigate } from 'react-router-dom';
 import api from '../../../lib/axios';
+import { toast } from 'sonner';
+
+const VEHICLE_REGEX = /^[A-Z]{2}\d{2}[A-Z]{2}\d{4}$/;
 
 const SignupScreen = () => {
     const [step, setStep] = useState('details'); // 'details' or 'otp'
@@ -51,7 +54,7 @@ const SignupScreen = () => {
             setOtp(['', '', '', '', '', '']);
         } catch (error) {
             console.error(error);
-            alert(error.response?.data?.message || 'Failed to resend OTP');
+            toast.error(error.response?.data?.message || 'Failed to resend OTP');
         } finally {
             setLoading(false);
         }
@@ -60,19 +63,24 @@ const SignupScreen = () => {
     const handleSendOtp = async (e) => {
         e.preventDefault();
         if (formData.phone.length !== 10) {
-            alert('Please enter a valid 10-digit mobile number');
+            toast.error('Please enter a valid 10-digit mobile number');
             return;
         }
         if (!/^[a-zA-Z\s]+$/.test(formData.name)) {
-            alert('Name should only contain alphabets');
+            toast.error('Name should only contain alphabets');
             return;
         }
-        if (!/^[A-Z]{2}\d{2}[A-Z]{2}\d{4}$/.test(formData.vehicleNumber)) {
-            alert('Vehicle number must be in format MP09CS1234 (10 characters)');
+        let vehicleNumber = (formData.vehicleNumber || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (vehicleNumber.length === 9 && /^[A-Z]\d{2}[A-Z]{2}\d{4}$/.test(vehicleNumber)) {
+            vehicleNumber = vehicleNumber[0] + vehicleNumber;
+            setFormData(prev => ({ ...prev, vehicleNumber }));
+        }
+        if (!VEHICLE_REGEX.test(vehicleNumber)) {
+            toast.error('Vehicle number must be 2 letters + 2 digits + 2 letters + 4 digits (e.g. MP09CS1234)');
             return;
         }
         if (!formData.aadharImage || !formData.panImage || !formData.licenseImage) {
-            alert('Please upload all document images (Aadhar, PAN, and License)');
+            toast.error('Please upload all document images (Aadhar, PAN, and License)');
             return;
         }
 
@@ -81,7 +89,7 @@ const SignupScreen = () => {
             const data = new FormData();
             data.append('fullName', formData.name);
             data.append('mobile', formData.phone);
-            data.append('vehicleNumber', formData.vehicleNumber);
+            data.append('vehicleNumber', vehicleNumber);
             data.append('vehicleType', formData.vehicleType);
             data.append('aadharImage', formData.aadharImage);
             data.append('panImage', formData.panImage);
@@ -94,7 +102,7 @@ const SignupScreen = () => {
             setTimer(120);
         } catch (error) {
             console.error(error);
-            alert(error.response?.data?.message || 'Registration failed');
+            toast.error(error.response?.data?.message || 'Registration failed');
         } finally {
             setLoading(false);
         }
@@ -115,7 +123,7 @@ const SignupScreen = () => {
             navigate(ROUTES.DASHBOARD);
         } catch (error) {
             console.error(error);
-            alert(error.response?.data?.message || 'Verification failed');
+            toast.error(error.response?.data?.message || 'Verification failed');
         } finally {
             setLoading(false);
         }
@@ -252,10 +260,11 @@ const SignupScreen = () => {
                                             value={formData.vehicleNumber}
                                             onChange={handleChange}
                                             maxLength={10}
-                                            placeholder="ABCD 123456"
+                                            placeholder="e.g. MP09CS1234"
                                             className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-border bg-slate-50/50 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all text-sm font-black tracking-tight uppercase"
                                         />
                                     </div>
+                                    <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider ml-1">2 letters (state) + 2 digits + 2 letters + 4 digits</p>
                                 </div>
 
                                 <div className="space-y-4 pt-2">
