@@ -12,7 +12,8 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const messaging = getMessaging(app);
+export const messaging = getMessaging(app);
+export { firebaseConfig };
 
 export const requestFCMToken = async () => {
     try {
@@ -25,7 +26,23 @@ export const requestFCMToken = async () => {
             const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
                 scope: '/'
             });
-            console.log("[FCM] Service worker registered successfully. Fetching token...");
+            console.log("[FCM] Service worker registered successfully. Initializing messaging in SW and fetching token...");
+
+            // Send Firebase config to the service worker so it doesn't need hard-coded keys
+            try {
+                const readyRegistration = await navigator.serviceWorker.ready;
+                const sw = readyRegistration.active || registration.active;
+                if (sw) {
+                    sw.postMessage({
+                        type: 'INIT_FIREBASE',
+                        payload: { firebaseConfig },
+                    });
+                } else {
+                    console.warn("[FCM] No active service worker found to receive config");
+                }
+            } catch (e) {
+                console.warn("[FCM] Failed to send Firebase config to service worker:", e);
+            }
 
             const token = await getToken(messaging, {
                 vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
@@ -42,11 +59,7 @@ export const requestFCMToken = async () => {
     return null;
 };
 
-export const onMessageListener = () =>
-    new Promise((resolve) => {
-        onMessage(messaging, (payload) => {
-            resolve(payload);
-        });
-    });
+// Re-export onMessage so hooks can subscribe directly and get an unsubscribe function
+export { onMessage };
 
 export default app;

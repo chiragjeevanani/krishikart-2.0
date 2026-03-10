@@ -1366,6 +1366,14 @@ export const assignDeliveryPartner = async (req, res) => {
 
     await order.save();
 
+    console.log(
+      "[AssignDeliveryPartner] Order dispatched with delivery partner",
+      {
+        orderId: order._id.toString(),
+        deliveryPartnerId: deliveryPartnerId.toString(),
+      }
+    );
+
     // Note: Stock deduction is now handled in updateOrderStatus when status changes to "Packed"
     // So we don't need to deduct it again here.
 
@@ -1380,12 +1388,14 @@ export const assignDeliveryPartner = async (req, res) => {
       message: `New delivery task assigned: #${order._id.toString().slice(-6)}`
     });
 
-    // Send Push Notification
+    // Send Push Notification (standardized payload for delivery assignment)
     sendNotificationToUser(deliveryPartnerId, {
       title: "New Delivery Task",
       body: `You have been assigned a new delivery task for order #${order._id.toString().slice(-6)}.`,
       data: {
-        type: "delivery",
+        type: "new_delivery",
+        notificationCategory: "assignment",
+        source: "franchise",
         orderId: order._id.toString(),
         link: `/delivery/assignments/${order._id}`
       }

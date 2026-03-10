@@ -116,6 +116,8 @@ export const assignOrderToFranchise = async (orderId) => {
 
             await order.save();
 
+            console.log(`[Assignment] Order ${orderId} auto-assigned to franchise ${franchise._id}. Triggering FCM + socket...`);
+
             // Send Push Notification
             await sendNotificationToUser(franchise._id, {
                 title: 'New Order Auto-Assigned',
@@ -193,20 +195,24 @@ export const assignDeliveryToOrder = async (orderId) => {
             lng: franchise.location.coordinates[0]
         };
 
+        console.log('[Assignment] Looking for nearest delivery partner for order', orderId, 'at location', location);
         const partner = await findNearestDeliveryPartner(location);
 
         if (partner) {
+            console.log('[Assignment] Nearest delivery partner found:', partner._id);
             order.deliveryPartnerId = partner._id;
             // Status remains Accepted or becomes Packed? 
             // Usually assigned when packed or accepted.
             await order.save();
 
-            // Send Notification
+            // Send Notification (standardized payload for delivery assignment)
             await sendNotificationToUser(partner._id, {
-                title: 'New Delivery Assigned',
-                body: `You have a new delivery assignment for order #${order._id.toString().slice(-6)}.`,
+                title: 'New Delivery Task',
+                body: `You have a new delivery task for order #${order._id.toString().slice(-6)}.`,
                 data: {
                     type: 'new_delivery',
+                    notificationCategory: 'assignment',
+                    source: 'franchise',
                     orderId: order._id.toString(),
                     link: `/delivery/assignments/${order._id}`
                 }
