@@ -3,39 +3,111 @@ import { getCurrentLocation, reverseGeocode } from '@/lib/geo';
 
 const LocationContext = createContext();
 
+/**
+ * LocationProvider now tracks TWO independent locations:
+ * - franchiseLocation: used on Home to find nearest franchise / serviceability
+ * - deliveryLocation: precise drop address used during checkout
+ *
+ * For backwards compatibility:
+ * - location/address refer to franchise* values.
+ */
 export function LocationProvider({ children }) {
-    const [location, setLocation] = useState(null);
-    const [address, setAddress] = useState(null);
+    // Nearest-franchise level location (used across browsing)
+    const [franchiseLocation, setFranchiseLocation] = useState(null);
+    const [franchiseAddress, setFranchiseAddress] = useState(null);
+    const [hasFranchisePinned, setHasFranchisePinned] = useState(false);
+
+    // Delivery drop location (accurate pin from map)
+    const [deliveryLocation, setDeliveryLocation] = useState(null);
+    const [deliveryAddress, setDeliveryAddress] = useState(null);
+    const [hasDeliveryPinned, setHasDeliveryPinned] = useState(false);
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
     // Load from localStorage on mount
     useEffect(() => {
-        const savedLoc = localStorage.getItem('kk_user_location');
-        const savedAddr = localStorage.getItem('kk_user_address');
-        if (savedLoc) setLocation(JSON.parse(savedLoc));
-        if (savedAddr) setAddress(savedAddr);
+        // Franchise (browsing / nearest franchise)
+        const savedFrLoc = localStorage.getItem('kk_franchise_location');
+        const savedFrAddr = localStorage.getItem('kk_franchise_address');
+        const savedFrPinned = localStorage.getItem('kk_franchise_location_pinned');
+
+        if (savedFrLoc) setFranchiseLocation(JSON.parse(savedFrLoc));
+        if (savedFrAddr) setFranchiseAddress(savedFrAddr);
+        if (savedFrPinned === 'true') setHasFranchisePinned(true);
+
+        // Delivery (checkout)
+        const savedDelLoc = localStorage.getItem('kk_delivery_location');
+        const savedDelAddr = localStorage.getItem('kk_delivery_address');
+        const savedDelPinned = localStorage.getItem('kk_delivery_location_pinned');
+
+        if (savedDelLoc) setDeliveryLocation(JSON.parse(savedDelLoc));
+        if (savedDelAddr) setDeliveryAddress(savedDelAddr);
+        if (savedDelPinned === 'true') setHasDeliveryPinned(true);
     }, []);
 
-    const updateLocation = useCallback(async (manual = false) => {
-        if (loading) return; // Prevent concurrent calls
+    const setPinnedFranchiseLocation = useCallback(async (loc) => {
+        if (!loc) return;
+
+        const { lat, lng } = loc;
+        const normalized = { lat, lng };
+        setFranchiseLocation(normalized);
+        localStorage.setItem('kk_franchise_location', JSON.stringify(normalized));
+
+        let addr = loc.address || null;
+        if (!addr) {
+            addr = await reverseGeocode(lat, lng);
+        }
+
+        if (addr) {
+            setFranchiseAddress(addr);
+            localStorage.setItem('kk_franchise_address', addr);
+        } else {
+            const fallbackAddr = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+            setFranchiseAddress(fallbackAddr);
+        }
+
+        setHasFranchisePinned(true);
+        localStorage.setItem('kk_franchise_location_pinned', 'true');
+    }, []);
+
+    const setPinnedDeliveryLocation = useCallback(async (loc) => {
+        if (!loc) return;
+
+        const { lat, lng } = loc;
+        const normalized = { lat, lng };
+        setDeliveryLocation(normalized);
+        localStorage.setItem('kk_delivery_location', JSON.stringify(normalized));
+
+        let addr = loc.address || null;
+        if (!addr) {
+            addr = await reverseGeocode(lat, lng);
+        }
+
+        if (addr) {
+            setDeliveryAddress(addr);
+            localStorage.setItem('kk_delivery_address', addr);
+        } else {
+            const fallbackAddr = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+            setDeliveryAddress(fallbackAddr);
+        }
+
+        setHasDeliveryPinned(true);
+        localStorage.setItem('kk_delivery_location_pinned', 'true');
+    }, []);
+
+    /**
+     * Auto-detect current location (used primarily for franchiseLocation).
+     * We still allow this as a helper, but mandatory flows should drive the user
+     * through the map picker and call setPinnedFranchiseLocation / setPinnedDeliveryLocation.
+     */
+    const updateFranchiseLocation = useCallback(async (manual = false) => {
+        if (loading) return;
         setLoading(true);
         setError(null);
         try {
             const loc = await getCurrentLocation();
-            setLocation(loc);
-            localStorage.setItem('kk_user_location', JSON.stringify(loc));
-
-            // Try to get human readable address
-            const addr = await reverseGeocode(loc.lat, loc.lng);
-            if (addr) {
-                setAddress(addr);
-                localStorage.setItem('kk_user_address', addr);
-            } else {
-                // Fallback if reverseGeocode returns null
-                const fallbackAddr = `${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`;
-                setAddress(fallbackAddr);
-            }
+            await setPinnedFranchiseLocation({ lat: loc.lat, lng: loc.lng });
         } catch (err) {
             console.error('Location error:', err);
             setError(err.message);
@@ -43,15 +115,47 @@ export function LocationProvider({ children }) {
         } finally {
             setLoading(false);
         }
-    }, [loading]);
+    }, [loading, setPinnedFranchiseLocation]);
+
+    // Backwards-compat alias
+    const location = franchiseLocation;
+    const address = franchiseAddress;
 
     const value = useMemo(() => ({
+        // legacy consumers (home header etc.)
         location,
         address,
+
+        // explicit franchise fields
+        franchiseLocation,
+        franchiseAddress,
+        hasFranchisePinned,
+        setPinnedFranchiseLocation,
+        updateFranchiseLocation,
+
+        // delivery fields
+        deliveryLocation,
+        deliveryAddress,
+        hasDeliveryPinned,
+        setPinnedDeliveryLocation,
+
         loading,
         error,
-        updateLocation
-    }), [location, address, loading, error, updateLocation]);
+    }), [
+        location,
+        address,
+        franchiseLocation,
+        franchiseAddress,
+        hasFranchisePinned,
+        updateFranchiseLocation,
+        deliveryLocation,
+        deliveryAddress,
+        hasDeliveryPinned,
+        loading,
+        error,
+        setPinnedFranchiseLocation,
+        setPinnedDeliveryLocation,
+    ]);
 
     return (
         <LocationContext.Provider value={value}>

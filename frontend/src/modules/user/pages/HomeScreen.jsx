@@ -33,7 +33,6 @@ import PageTransition from '../components/layout/PageTransition'
 import ProductCard from '../components/common/ProductCard'
 import api from '@/lib/axios'
 import { Button } from '@/components/ui/button'
-import { MapPin } from 'lucide-react'
 import { useLocation } from '../contexts/LocationContext'
 import LocationPermissionPopup from '../components/common/LocationPermissionPopup'
 
@@ -166,12 +165,12 @@ export default function HomeScreen() {
 
     return (
         <>
-            {/* Header outside PageTransition so sticky works (transform on motion breaks sticky) */}
+            {/* Global fixed header + search overlay (mobile only) */}
             <div className="md:hidden">
                 <StickySearchBar />
             </div>
             <PageTransition>
-                <div className="bg-transparent md:bg-white pb-32 min-h-screen pt-16 md:pt-0">
+                <div className="bg-[var(--color-brand-subtle)] md:bg-white pb-32 min-h-screen pt-24 md:pt-0">
                     {/* Categories Row - Full width background, centered content */}
                     <div className="bg-[var(--color-brand-subtle)]/75 md:bg-white shadow-sm md:shadow-none">
                         <div className="max-w-7xl mx-auto px-5 md:px-8 pt-5 md:pt-4 pb-10 md:pb-16">
@@ -203,19 +202,22 @@ export default function HomeScreen() {
                     {/* Main Content Wrapper */}
                     <div className="max-w-7xl mx-auto md:px-8">
                         {/* Hero Promotion */}
-                        <div className="px-5 mt-8 md:px-0 md:mt-4">
+                        <div className="px-5 mt-6 md:px-0 md:mt-4">
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
-                                className="w-full rounded-[40px] md:rounded-2xl p-8 md:p-12 relative overflow-hidden shadow-xl bg-gradient-to-br from-[var(--color-brand-dark)] via-[var(--color-brand-primary)] to-[var(--color-brand-yellow)]/20"
+                                className="w-full rounded-[32px] md:rounded-2xl px-6 py-6 md:px-10 md:py-10 relative overflow-hidden shadow-xl bg-gradient-to-br from-[var(--color-brand-dark)] via-[var(--color-brand-primary)] to-[var(--color-brand-yellow)]/20"
                             >
                                 <div className="relative z-10 max-w-lg">
-                                    <h2 className="text-3xl md:text-5xl font-black text-white leading-tight tracking-tight md:normal-case md:font-bold">
+                                    <h2 className="text-[26px] md:text-5xl font-black text-white leading-tight tracking-tight md:normal-case md:font-bold">
                                         Wholesale <span className="text-[var(--color-brand-yellow)] md:text-primary">B2B</span> <br />
                                         Direct from Farms
                                     </h2>
-                                    <p className="text-slate-400 mt-2 text-xs md:text-sm font-bold uppercase tracking-widest md:normal-case md:font-medium">Pricing starts from 10kg+</p>
-                                    <Button className="mt-6 md:mt-10 bg-primary hover:bg-primary/90 text-white rounded-2xl md:rounded-lg min-h-[48px] h-12 md:h-14 px-8 md:px-10 font-black md:font-bold shadow-lg shadow-primary/25">
+                                    <p className="text-slate-300 mt-1.5 text-[11px] md:text-sm font-bold uppercase tracking-widest md:normal-case md:font-medium">Pricing starts from 10kg+</p>
+                                    <Button
+                                        onClick={() => navigate('/products/all')}
+                                        className="mt-5 md:mt-8 bg-primary hover:bg-primary/90 text-white rounded-2xl md:rounded-lg min-h-[44px] h-11 md:h-14 px-7 md:px-10 font-black md:font-bold shadow-lg shadow-primary/25"
+                                    >
                                         Order Now
                                     </Button>
                                 </div>
@@ -250,7 +252,6 @@ export default function HomeScreen() {
                                         </div>
                                     ))}
                                 </div>
-                                <div className="pointer-events-none absolute right-0 top-0 bottom-2 w-12 bg-gradient-to-l from-[var(--color-background)] to-transparent md:hidden" aria-hidden="true" />
                             </div>
                         </div>
                     </div>
@@ -278,7 +279,6 @@ export default function HomeScreen() {
                                         </div>
                                     ))}
                                 </div>
-                                <div className="pointer-events-none absolute right-0 top-0 bottom-4 w-12 bg-gradient-to-l from-[var(--color-brand-yellow-subtle)]/90 to-transparent md:hidden" aria-hidden="true" />
                             </div>
                         </div>
                     </div>
@@ -322,7 +322,6 @@ export default function HomeScreen() {
                                         </div>
                                     ))}
                                 </div>
-                                <div className="pointer-events-none absolute right-0 top-0 bottom-6 w-12 bg-gradient-to-l from-[var(--color-background)] to-transparent md:hidden" aria-hidden="true" />
                             </div>
                         </div>
 
