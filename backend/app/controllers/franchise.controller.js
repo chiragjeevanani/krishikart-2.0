@@ -275,21 +275,23 @@ export const saveFCMToken = async (req, res) => {
  * @access Private (Franchise)
  */
 export const testPushByToken = async (req, res) => {
-    try {
-        const { fcm_token, plateform } = req.body;
-        if (!fcm_token) return handleResponse(res, 400, "fcm_token is required");
+    // Keep token in a single variable so we can reuse it in catch as well
+    const { fcm_token, plateform } = req.body;
+    const bodyToken = fcm_token;
 
-        console.log(`[FCM-Test] Sending test ping to ${plateform || 'mobile'}:`, fcm_token);
+    try {
+        if (!bodyToken) return handleResponse(res, 400, "fcm_token is required");
+
+        console.log(`[FCM-Test] Sending test ping to ${plateform || 'device'}:`, bodyToken);
 
         const message = {
             notification: {
                 title: "Kisaankart Notification Test",
                 body: `Success! Your ${plateform || 'device'} is correctly integrated with Kisaankart FCM.`
             },
-            token: fcm_token
+            token: bodyToken
         };
 
-        const bodyToken = fcm_token || token; // Defensive check
         const response = await admin.messaging().send(message);
         return handleResponse(res, 200, "Test notification sent successfully!", response);
     } catch (error) {
@@ -298,7 +300,7 @@ export const testPushByToken = async (req, res) => {
         // Specific handling for stale/invalid tokens
         if (error.code === 'messaging/registration-token-not-registered') {
             const franchiseId = req.franchise?._id;
-            if (franchiseId) {
+            if (franchiseId && bodyToken) {
                 // Pull from both possible arrays to be safe
                 await Franchise.findByIdAndUpdate(franchiseId, {
                     $pull: {
@@ -309,10 +311,10 @@ export const testPushByToken = async (req, res) => {
                 console.log(`[FCM-Cleanup] Removed stale token from all possible fields for Franchise ${franchiseId}: ${bodyToken}`);
             }
 
-            return handleResponse(res, 410, "FCM Token is no longer valid (NotRegistered). Please generate a fresh token from the mobile app.", {
+            return handleResponse(res, 410, "FCM Token is no longer valid (NotRegistered). Please generate a fresh token and try again.", {
                 code: error.code,
                 error_message: error.message,
-                suggestion: "Refresh the token on the mobile device and try again."
+                suggestion: "Refresh the token on the device/dashboard and try again."
             });
         }
 

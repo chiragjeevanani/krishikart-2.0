@@ -7,6 +7,7 @@ import User from "../models/user.js";
 import Product from "../models/product.js";
 import Franchise from "../models/franchise.js";
 import { geocodeAddress, getDistance } from "../utils/geo.js";
+import { assignOrderToFranchise } from "../utils/assignment.js";
 
 /**
  * Helper to calculate price based on quantity and bulk pricing rules (Copied from order controller)
@@ -234,6 +235,13 @@ export const verifyPayment = async (req, res) => {
 
         await newOrder.save();
         console.log("Order saved successfully, ID:", newOrder._id);
+
+        // Auto-assign nearest franchise (with push + socket) using shared helper
+        try {
+            await assignOrderToFranchise(newOrder._id);
+        } catch (assignErr) {
+            console.error("[VerifyPayment] Auto-assignment failed:", assignErr);
+        }
 
         // Clear Cart
         cart.items = [];
