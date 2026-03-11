@@ -84,12 +84,39 @@ export default function EditProfileScreen() {
                 tax: userData.preferences?.showTaxInclusive || false,
                 paper: userData.preferences?.paperInvoice || false
             })
+            if (Array.isArray(userData.additionalNumbers)) {
+                setAdditionalNumbers(
+                    userData.additionalNumbers.map((item, idx) => ({
+                        id: `${userData.mobile || 'user'}-${idx}`,
+                        phone: item.phone || '',
+                        name: item.name || ''
+                    }))
+                )
+            } else {
+                setAdditionalNumbers([])
+            }
         } catch (error) {
             console.error('Failed to fetch profile:', error)
         } finally {
             setIsLoading(false)
         }
     }
+
+    // PAN format: 5 letters + 4 digits + 1 letter (e.g. ABCDE1234F)
+    const formatPanInput = (raw) => {
+        const s = raw.toUpperCase().replace(/\s/g, '')
+        let out = ''
+        for (let i = 0; i < s.length && out.length < 10; i++) {
+            const pos = out.length
+            const ch = s[i]
+            if (pos < 5 && /[A-Z]/.test(ch)) out += ch
+            else if (pos >= 5 && pos < 9 && /\d/.test(ch)) out += ch
+            else if (pos === 9 && /[A-Z]/.test(ch)) out += ch
+        }
+        return out
+    }
+
+    const isValidPan = (pan) => !pan || /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan)
 
     const handleSaveProfile = async () => {
         // Email Validation
@@ -98,6 +125,19 @@ export default function EditProfileScreen() {
             alert('Please enter a valid email address (e.g., user@example.com)');
             return;
         }
+        // PAN Validation (format: 5 letters + 4 digits + 1 letter, e.g. ABCDE1234F)
+        if (editData.panNumber && !isValidPan(editData.panNumber)) {
+            alert('Please enter a valid PAN (e.g. ABCDE1234F – 5 letters, 4 digits, 1 letter)');
+            return;
+        }
+
+        // Prepare additional numbers payload for backend (only rows with a phone)
+        const cleanedAdditionalNumbers = additionalNumbers
+            .filter(row => row.phone && row.phone.length === 10)
+            .map(row => ({
+                phone: row.phone,
+                name: row.name || ''
+            }))
 
         setIsSaving(true)
         try {
@@ -106,7 +146,8 @@ export default function EditProfileScreen() {
                 email: editData.email,
                 panNumber: editData.panNumber,
                 legalEntityName: editData.legalEntityName,
-                address: editData.address
+                address: editData.address,
+                additionalNumbers: cleanedAdditionalNumbers
             })
             const updatedUser = response.data.result
             setUser(updatedUser)
@@ -168,6 +209,18 @@ export default function EditProfileScreen() {
         setAdditionalNumbers(prev => prev.filter(row => row.id !== id))
     }
 
+    const updateNumberRow = (id, field, value) => {
+        if (field === 'phone') {
+            const digitsOnly = value.replace(/\D/g, '').slice(0, 10)
+            setAdditionalNumbers(prev => prev.map(row => row.id === id ? { ...row, phone: digitsOnly } : row))
+        } else if (field === 'name') {
+            const lettersAndSpacesOnly = value.replace(/[^a-zA-Z\s]/g, '')
+            setAdditionalNumbers(prev => prev.map(row => row.id === id ? { ...row, name: lettersAndSpacesOnly } : row))
+        } else {
+            setAdditionalNumbers(prev => prev.map(row => row.id === id ? { ...row, [field]: value } : row))
+        }
+    }
+
     if (isLoading) {
         return (
             <div className="h-screen w-full flex items-center justify-center bg-slate-50">
@@ -180,41 +233,41 @@ export default function EditProfileScreen() {
         <PageTransition>
             <div className="bg-[#fcfdff] min-h-screen pb-20 font-sans relative overflow-x-hidden">
                 {/* Mobile Header (Hidden on Desktop) */}
-                <div className="md:hidden bg-white px-5 py-4 flex items-center gap-4 shadow-sm border-b border-slate-100 sticky top-0 z-40">
+                <div className="md:hidden bg-white px-4 py-3 flex items-center gap-3 shadow-sm border-b border-slate-100 sticky top-0 z-40">
                     <button
                         onClick={() => navigate(-1)}
                         className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-600 active:scale-90 transition-transform"
                     >
                         <ArrowLeft size={18} strokeWidth={2.5} />
                     </button>
-                    <h1 className="text-[17px] font-black text-slate-900 tracking-tight">Profile settings</h1>
+                    <h1 className="text-[16px] font-black text-slate-900 tracking-tight">Profile settings</h1>
                 </div>
 
-                <div className="max-w-6xl mx-auto px-6 py-8">
+                <div className="max-w-6xl mx-auto px-4 py-5 md:px-6 md:py-8">
                     {/* Desktop Page Title */}
                     <h1 className="hidden md:block text-3xl font-bold text-slate-900 mb-10">Profile settings</h1>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                         {/* Left Column: Detailed Form Card */}
-                        <div className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-sm space-y-7">
-                            <div className="space-y-6">
+                        <div className="bg-white rounded-2xl md:rounded-[32px] p-5 md:p-8 border border-slate-100 shadow-sm space-y-5 md:space-y-7">
+                            <div className="space-y-4 md:space-y-6">
                                 <div className="space-y-1.5">
-                                    <label className="text-[13px] font-bold text-slate-400">User name</label>
-                                    <p className="text-[18px] font-bold text-slate-800 leading-none tracking-tight">{user.fullName || 'Guest User'}</p>
+                                    <label className="text-xs md:text-[13px] font-bold text-slate-400">User name</label>
+                                    <p className="text-[16px] md:text-[18px] font-bold text-slate-800 leading-none tracking-tight">{user.fullName || 'Guest User'}</p>
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label className="text-[13px] font-bold text-slate-400">Login phone number</label>
-                                    <p className="text-[18px] font-bold text-slate-800 leading-none tracking-tight">{user.mobile || 'N/A'}</p>
+                                    <label className="text-xs md:text-[13px] font-bold text-slate-400">Login phone number</label>
+                                    <p className="text-[16px] md:text-[18px] font-bold text-slate-800 leading-none tracking-tight">{user.mobile || 'N/A'}</p>
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label className="text-[13px] font-bold text-slate-400">Email address</label>
-                                    <p className="text-[18px] font-bold text-slate-800 leading-none tracking-tight">{user.email || 'Not set'}</p>
+                                    <label className="text-xs md:text-[13px] font-bold text-slate-400">Email address</label>
+                                    <p className="text-[16px] md:text-[18px] font-bold text-slate-800 leading-none tracking-tight">{user.email || 'Not set'}</p>
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label className="text-[13px] font-bold text-slate-400">PAN card number</label>
+                                    <label className="text-xs md:text-[13px] font-bold text-slate-400">PAN card number</label>
                                     <div className="flex items-center gap-1.5 text-orange-500 font-black">
                                         {user.panNumber ? (
                                             <p className="text-[18px] font-bold text-slate-800 leading-none tracking-tight">{user.panNumber}</p>
@@ -223,15 +276,15 @@ export default function EditProfileScreen() {
                                                 <div className="w-4 h-4 rounded-full bg-orange-500 flex items-center justify-center text-white">
                                                     <AlertCircle size={10} strokeWidth={4} />
                                                 </div>
-                                                <span className="text-[14px]">Unverified</span>
+                                                <span className="text-[12px] md:text-[14px]">Unverified</span>
                                             </>
                                         )}
                                     </div>
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label className="text-[13px] font-bold text-slate-400">Legal entity name</label>
-                                    <p className="text-[18px] font-bold text-slate-800 leading-none tracking-tight">{user.legalEntityName || 'Guest Account'}</p>
+                                    <label className="text-xs md:text-[13px] font-bold text-slate-400">Legal entity name</label>
+                                    <p className="text-[16px] md:text-[18px] font-bold text-slate-800 leading-none tracking-tight">{user.legalEntityName || 'Guest Account'}</p>
                                 </div>
                             </div>
 
@@ -255,7 +308,7 @@ export default function EditProfileScreen() {
                                 </div>
                             </div>
 
-                            <div className="space-y-4 pt-6 mt-6 border-t border-slate-50">
+                            <div className="space-y-3 md:space-y-4 pt-5 md:pt-6 mt-5 md:mt-6 border-t border-slate-50">
                                 <div className="flex items-center gap-4 text-slate-600">
                                     <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-emerald-500 transition-colors">
                                         <Phone size={18} />
@@ -291,17 +344,17 @@ export default function EditProfileScreen() {
                                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
                                 className="fixed top-0 right-0 h-full w-full max-w-[520px] bg-slate-50 shadow-2xl z-[101] flex flex-col"
                             >
-                                <div className="flex items-center justify-between px-8 py-6 bg-white border-b border-slate-100">
-                                    <h2 className="text-xl font-black text-slate-800 tracking-tight">Edit Profile</h2>
+                                <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-slate-100">
+                                    <h2 className="text-lg font-black text-slate-800 tracking-tight">Edit Profile</h2>
                                     <button
                                         onClick={() => setIsEditDrawerOpen(false)}
-                                        className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors bg-slate-50 rounded-full"
+                                        className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors bg-slate-50 rounded-full"
                                     >
-                                        <X size={20} strokeWidth={2.5} />
+                                        <X size={18} strokeWidth={2.5} />
                                     </button>
                                 </div>
 
-                                <div className="flex-1 overflow-y-auto p-8 space-y-8">
+                                <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
                                     {/* Personal Info Section */}
                                     <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-6">
                                         <div className="space-y-1.5">
@@ -349,10 +402,16 @@ export default function EditProfileScreen() {
                                                 >
                                                     <Input
                                                         placeholder="Phone number"
+                                                        value={row.phone}
+                                                        onChange={(e) => updateNumberRow(row.id, 'phone', e.target.value)}
+                                                        maxLength={10}
+                                                        inputMode="numeric"
                                                         className="h-14 bg-white border-slate-200 rounded-xl px-5 text-base font-bold"
                                                     />
                                                     <Input
                                                         placeholder="Name"
+                                                        value={row.name}
+                                                        onChange={(e) => updateNumberRow(row.id, 'name', e.target.value)}
                                                         className="h-14 bg-white border-slate-200 rounded-xl px-5 text-base font-bold"
                                                     />
                                                     <button
@@ -390,8 +449,8 @@ export default function EditProfileScreen() {
                                             <div className="relative group">
                                                 <Input
                                                     value={editData.panNumber}
-                                                    onChange={(e) => setEditData({ ...editData, panNumber: e.target.value.toUpperCase() })}
-                                                    placeholder="PAN Number"
+                                                    onChange={(e) => setEditData({ ...editData, panNumber: formatPanInput(e.target.value) })}
+                                                    placeholder="e.g. ABCDE1234F"
                                                     maxLength={10}
                                                     className="h-14 bg-white border-slate-200 rounded-xl px-5 text-base font-bold pr-16 uppercase"
                                                 />
@@ -419,11 +478,11 @@ export default function EditProfileScreen() {
                                     </div>
                                 </div>
 
-                                <div className="p-8 bg-white border-t border-slate-100">
+                                <div className="px-6 py-4 bg-white border-t border-slate-100">
                                     <Button
                                         onClick={handleSaveProfile}
                                         disabled={isSaving}
-                                        className="w-full h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-lg shadow-lg shadow-emerald-100 active:scale-[0.98] transition-all"
+                                        className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-black text-base shadow-md shadow-emerald-100 active:scale-[0.98] transition-all"
                                     >
                                         {isSaving ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Save Changes'}
                                     </Button>

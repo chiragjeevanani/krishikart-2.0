@@ -108,6 +108,7 @@ export default function HomeScreen() {
     const [loading, setLoading] = useState(true)
     const [showLocationPopup, setShowLocationPopup] = useState(false)
     const navigate = useNavigate()
+    const flashDealsScrollRef = useRef(null)
 
     useEffect(() => {
         const fetchData = async () => {
@@ -161,6 +162,32 @@ export default function HomeScreen() {
         setShowLocationPopup(false);
         localStorage.setItem('kk_location_declined', 'true');
     };
+
+    // Auto-scroll Flash Deals cards on mobile (horizontal marquee-style)
+    useEffect(() => {
+        if (!isMobile()) return;
+        const container = flashDealsScrollRef.current;
+        if (!container) return;
+
+        const step = 180; // pixels per tick
+        const intervalMs = 2500;
+
+        const id = setInterval(() => {
+            if (!container) return;
+            const { scrollLeft, scrollWidth, clientWidth } = container;
+            const maxScroll = scrollWidth - clientWidth;
+            if (maxScroll <= 0) return;
+
+            const next = scrollLeft + step;
+            if (next >= maxScroll - 4) {
+                container.scrollTo({ left: 0, behavior: 'smooth' });
+            } else {
+                container.scrollTo({ left: next, behavior: 'smooth' });
+            }
+        }, intervalMs);
+
+        return () => clearInterval(id);
+    }, []);
 
 
     return (
@@ -244,7 +271,10 @@ export default function HomeScreen() {
                                 </div>
                                 <button onClick={() => navigate('/products/all')} className="text-primary text-[11px] font-black uppercase tracking-widest bg-primary/5 px-4 py-2 rounded-full md:normal-case md:font-semibold md:text-sm hover:bg-primary/10 transition-colors">See All</button>
                             </div>
-                            <div className="relative overflow-x-auto no-scrollbar md:overflow-visible px-5 md:px-0">
+                        <div
+                            ref={flashDealsScrollRef}
+                            className="relative overflow-x-auto no-scrollbar md:overflow-visible px-5 md:px-0"
+                        >
                                 <div className="flex gap-4 w-max md:w-full md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 pb-2 md:pb-0 pr-4 md:pr-0">
                                     {(products || []).slice(0, 5).map((product) => (
                                         <div key={product._id} className="w-[164px] md:w-full cursor-pointer">
