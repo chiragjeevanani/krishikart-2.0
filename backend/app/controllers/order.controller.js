@@ -1144,23 +1144,10 @@ export const getAdminDeliveryTracking = async (req, res) => {
 export const getFranchiseOrders = async (req, res) => {
   try {
     const franchiseId = new mongoose.Types.ObjectId(req.franchise._id);
-    const franchiseCity = req.franchise.city;
     const { date } = req.query;
 
-    console.log(`[Orders] Franchise City: ${franchiseCity}, ID: ${franchiseId}`);
-    let query = {
-      $or: [
-        { franchiseId: franchiseId },
-        {
-          franchiseId: null,
-          $or: [
-            { "shippingLocation.city": new RegExp(franchiseCity, 'i') },
-            { shippingAddress: new RegExp(franchiseCity, 'i') }
-          ],
-          orderStatus: { $in: ["Placed", "pending", "new"] }
-        }
-      ]
-    };
+    // Strict isolation: a franchise sees ONLY its own orders
+    const query = { franchiseId };
 
     if (date) {
       const startOfDay = new Date(date);
@@ -1179,7 +1166,7 @@ export const getFranchiseOrders = async (req, res) => {
       )
       .sort({ createdAt: -1 });
 
-    const debugInfo = `\n[${new Date().toISOString()}] Fetching Orders for ${franchiseId} (${franchiseCity})\nQuery: ${JSON.stringify(query)}\nFound: ${orders.length} orders\n`;
+    const debugInfo = `\n[${new Date().toISOString()}] Fetching Orders for ${franchiseId}\nQuery: ${JSON.stringify(query)}\nFound: ${orders.length} orders\n`;
     fs.appendFileSync("debug_log.txt", debugInfo);
 
     const formattedOrders = orders.map((order) => {
@@ -1217,12 +1204,11 @@ export const getFranchiseOrders = async (req, res) => {
   }
 };
 
-// Get franchise order by ID (same eligibility as list: assigned to this franchise OR open-pool order in their city)
+// Get franchise order by ID (only if it belongs to this franchise)
 export const getFranchiseOrderById = async (req, res) => {
   try {
     const { id } = req.params;
     const franchiseId = req.franchise._id;
-    const franchiseCity = req.franchise.city || "";
 
     const order = await Order.findById(id)
       .populate("userId", "fullName mobile address legalEntityName")
@@ -1239,19 +1225,10 @@ export const getFranchiseOrderById = async (req, res) => {
       return handleResponse(res, 404, "Order not found");
     }
 
-    const assignedToThisFranchise =
-      order.franchiseId && order.franchiseId.toString() === franchiseId.toString();
-
-    const openPoolEligible =
-      !order.franchiseId &&
-      ["Placed", "pending", "new"].includes(order.orderStatus) &&
-      franchiseCity &&
-      (
-        (order.shippingLocation?.city && new RegExp(franchiseCity, "i").test(order.shippingLocation.city)) ||
-        (order.shippingAddress && new RegExp(franchiseCity, "i").test(order.shippingAddress))
-      );
-
-    if (!assignedToThisFranchise && !openPoolEligible) {
+    if (
+      !order.franchiseId ||
+      order.franchiseId.toString() !== franchiseId.toString()
+    ) {
       return handleResponse(res, 403, "Not authorized to view this order");
     }
 

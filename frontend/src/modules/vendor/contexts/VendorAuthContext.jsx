@@ -75,7 +75,8 @@ export function VendorAuthProvider({ children }) {
     // Socket Setup
     useEffect(() => {
         if (vendor?._id) {
-            joinVendorRoom(vendor._id);
+            // Join secured vendor room using JWT (handled inside helper)
+            joinVendorRoom();
             const socket = getSocket();
 
             const handleNewAssignment = (data) => {

@@ -46,7 +46,14 @@ export const joinDeliveryRoom = (deliveryId) => {
     const s = getSocket();
     s.emit("join_delivery_room", deliveryId);
 };
-export const joinVendorRoom = (vendorId) => {
+export const joinVendorRoom = () => {
     const s = getSocket();
-    s.emit("join_vendor_room", vendorId);
+    const token = localStorage.getItem("vendorToken");
+
+    if (!token) {
+        console.warn("[Socket] No vendorToken found in localStorage. Skipping join_vendor_room.");
+        return;
+    }
+
+    s.emit("join_vendor_room", { token });
 };
