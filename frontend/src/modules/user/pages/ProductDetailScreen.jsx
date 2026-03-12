@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   Heart,
   Share2,
+  ShoppingCart,
   Star,
   Minus,
   Plus,
@@ -125,6 +126,13 @@ export default function ProductDetailScreen() {
             >
               <Heart size={18} fill={isFavorite ? "currentColor" : "none"} />
             </button>
+            <button
+              onClick={() => navigate('/cart')}
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white/90 shadow-sm border border-slate-100 text-slate-900 active:scale-90 transition-transform"
+              aria-label="Go to cart"
+            >
+              <ShoppingCart size={18} />
+            </button>
           </div>
         </div>
 
@@ -132,7 +140,7 @@ export default function ProductDetailScreen() {
         <div className="max-w-7xl mx-auto md:px-8">
           <div className="md:flex md:gap-12 md:items-start">
             {/* Hero Image */}
-            <div className="relative aspect-[4/5] md:aspect-square md:w-[450px] lg:w-[500px] shrink-0 bg-white overflow-hidden md:rounded-xl md:border md:border-slate-100 flex items-center justify-center">
+            <div className="relative aspect-[3/4] md:aspect-square md:w-[450px] lg:w-[500px] shrink-0 bg-white overflow-hidden md:rounded-xl md:border md:border-slate-100 flex items-center justify-center">
               <img
                 src={productImage}
                 alt={product.name}
@@ -142,8 +150,8 @@ export default function ProductDetailScreen() {
             </div>
 
             {/* Content */}
-            <div className="px-6 -mt-8 relative z-10 bg-white rounded-t-[32px] pt-8 md:mt-0 md:bg-transparent md:px-0 md:pt-0 md:flex-1">
-              <div className="flex items-center gap-2 mb-3">
+            <div className="px-5 -mt-6 relative z-10 bg-white rounded-t-[28px] pt-6 md:mt-0 md:bg-transparent md:px-0 md:pt-0 md:flex-1">
+              <div className="flex items-center gap-2 mb-2">
                 <Badge className="bg-green-50 text-green-700 hover:bg-green-100 border-green-100 px-3 font-bold uppercase text-[10px] md:normal-case md:font-semibold">
                   {productCategory}
                 </Badge>
@@ -166,9 +174,9 @@ export default function ProductDetailScreen() {
                 )}
               </div>
 
-              <h1 className="text-2xl md:text-4xl font-black text-slate-900 leading-tight mb-2 uppercase md:normal-case md:font-bold">{product.name}</h1>
+              <h1 className="text-xl md:text-4xl font-black text-slate-900 leading-tight mb-1.5 uppercase md:normal-case md:font-bold">{product.name}</h1>
 
-              <div className="flex items-center gap-4 mb-6">
+              <div className="flex items-center gap-3 mb-4">
                 <div className="flex items-center gap-1">
                   <div className="flex items-center gap-0.5 bg-yellow-400/10 px-2 py-1 rounded-lg">
                     <Star size={14} className="fill-yellow-400 text-yellow-400" />
@@ -333,12 +341,12 @@ export default function ProductDetailScreen() {
 
 
         {/* Sticky Bottom Actions - Mobile Only */}
-        <div className="fixed bottom-0 left-0 right-0 z-[60] bg-white/95 backdrop-blur-xl border-t border-slate-100/80 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] max-w-md mx-auto md:hidden">
-          <div className="flex items-center gap-3 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] px-5">
-            <div className="flex items-center gap-1 bg-slate-50 border border-slate-100 rounded-xl p-1 min-h-[44px] w-36 shrink-0">
+        <div className="fixed bottom-0 left-0 right-0 z-[60] bg-white border-t border-slate-100/80 shadow-[0_-4px_16px_rgba(15,23,42,0.12)] max-w-md mx-auto md:hidden">
+          <div className="flex items-center gap-2 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            <div className="flex items-center gap-1 bg-slate-50 border border-slate-100 rounded-lg p-1 min-h-[40px] w-28 shrink-0">
               <button
                 onClick={() => setQuantity(prev => Math.max(1, (Number(prev) || 1) - 1))}
-                className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-white shadow-sm text-slate-900 active:scale-90 transition-transform font-bold"
+                className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-md bg-white shadow-sm text-slate-900 active:scale-95 transition-transform font-bold"
               >
                 <Minus size={16} />
               </button>
@@ -358,11 +366,11 @@ export default function ProductDetailScreen() {
                 onBlur={() => {
                   if (!quantity || Number(quantity) < 1) setQuantity(1);
                 }}
-                className="flex-1 w-full text-center text-sm font-black text-slate-900 tracking-tighter border-none focus:outline-none bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="flex-1 w-full text-center text-xs font-black text-slate-900 tracking-tighter border-none focus:outline-none bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               <button
                 onClick={() => setQuantity(prev => (Number(prev) || 0) + 1)}
-                className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-white shadow-sm text-slate-900 active:scale-90 transition-transform font-bold"
+                className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-md bg-white shadow-sm text-slate-900 active:scale-95 transition-transform font-bold"
               >
                 <Plus size={16} />
               </button>
@@ -381,12 +389,12 @@ export default function ProductDetailScreen() {
                 }
                 navigate('/cart')
               }}
-              className="flex-1 min-h-[52px] h-12 rounded-2xl bg-primary hover:bg-primary/90 text-md font-black shadow-lg shadow-primary/20 transition-all active:scale-[0.98] flex flex-col justify-center items-center gap-0"
+              className="flex-1 min-h-[46px] h-11 rounded-xl bg-primary hover:bg-primary/90 text-sm font-black shadow-md shadow-primary/20 transition-all active:scale-[0.98] flex flex-col justify-center items-center gap-0"
             >
-              <span className="text-white/80 text-[8px] font-bold uppercase tracking-widest leading-none mb-1">
+              <span className="text-white/80 text-[9px] font-bold uppercase tracking-[0.18em] leading-none mb-0.5">
                 {cartItem ? 'Update Cart' : 'Add to Cart'}
               </span>
-              <span className="leading-none text-[15px]">₹{currentPrice * (Number(quantity) || 1)}</span>
+              <span className="leading-none text-[13px]">₹{currentPrice * (Number(quantity) || 1)}</span>
             </Button>
           </div>
         </div>

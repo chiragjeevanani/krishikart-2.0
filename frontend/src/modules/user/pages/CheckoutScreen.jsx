@@ -28,10 +28,15 @@ import { cn } from '@/lib/utils'
 import api from '@/lib/axios'
 import { toast } from 'sonner'
 import { geocodeAddressFrontend } from '@/lib/geo'
+import { useLocation } from '../contexts/LocationContext'
 
 export default function CheckoutScreen() {
     const navigate = useNavigate()
     const { cartItems, cartTotal, clearCart, deliveryConstraints } = useCart()
+    const locationCtx = useLocation()
+    const ctxDeliveryAddress = locationCtx?.deliveryAddress
+    const ctxHasDeliveryPinned = locationCtx?.hasDeliveryPinned
+    const ctxUpdateDeliveryLocation = locationCtx?.updateDeliveryLocation
     const { placeOrder } = useOrders()
     const { balance, payWithWallet, creditLimit, creditUsed, availableCredit } = useWallet()
 
@@ -59,6 +64,28 @@ export default function CheckoutScreen() {
         state: 'Madhya Pradesh'
     });
     const [deliveryShift, setDeliveryShift] = useState('');
+
+    const ensureDeliveryLocationPinned = () => {
+        if (ctxHasDeliveryPinned) return true;
+        toast.error('Please pin your exact delivery location on the map.');
+        // Return to this screen after picking
+        navigate('/location-picker?type=delivery&returnTo=/checkout');
+        return false;
+    }
+
+    const handlePinCurrentLocation = async () => {
+        if (!ctxUpdateDeliveryLocation) {
+            navigate('/location-picker?type=delivery&returnTo=/checkout');
+            return;
+        }
+        try {
+            await ctxUpdateDeliveryLocation(true);
+            toast.success('Current location pinned for delivery.');
+        } catch (error) {
+            console.error('Pin current location error:', error);
+            toast.error(error?.message || 'Unable to fetch your current location.');
+        }
+    }
 
     const buildFullAddress = (details) => (
         `Flat: ${details.flat}, Floor: ${details.floor}, ${details.colony}, Landmark: ${details.landmark}, ${details.city}, ${details.state}`
@@ -115,6 +142,15 @@ export default function CheckoutScreen() {
         fetchProfile()
         fetchAvailableCoupons()
     }, [])
+
+    useEffect(() => {
+        if (!ctxDeliveryAddress) return;
+        setDeliveryAddress(ctxDeliveryAddress);
+        const parsed = parseAddressToDetails(ctxDeliveryAddress);
+        if (parsed) {
+            setAddressDetails(parsed);
+        }
+    }, [ctxDeliveryAddress])
 
     const fetchProfile = async () => {
         try {
@@ -292,6 +328,11 @@ export default function CheckoutScreen() {
             return;
         }
 
+        // Ensure user has pinned an exact delivery location on the map at least once
+        if (!ensureDeliveryLocationPinned()) {
+            return;
+        }
+
         setIsPlacingOrder(true)
 
         const methodMap = {
@@ -427,12 +468,34 @@ export default function CheckoutScreen() {
                             <section>
                                 <div className="flex items-center justify-between mb-4">
                                     <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest md:normal-case md:tracking-normal md:text-slate-900 md:text-base">Delivery Address</h2>
-                                    <button
-                                        onClick={() => setIsEditingAddress(true)}
-                                        className="text-primary text-[11px] font-bold uppercase transition-colors hover:text-primary/80"
-                                    >
-                                        Change
-                                    </button>
+                                    <div className="flex items-center gap-3">
+                                        {ctxHasDeliveryPinned && (
+                                            <div className="hidden md:flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 px-3 py-1">
+                                                <CheckCircle2 size={12} />
+                                                <span className="text-[10px] font-bold uppercase tracking-widest">Location pinned</span>
+                                            </div>
+                                        )}
+                                        <button
+                                            onClick={handlePinCurrentLocation}
+                                            className="flex items-center gap-1 text-[11px] font-bold uppercase text-slate-400 hover:text-primary transition-colors"
+                                        >
+                                            <MapPin size={12} className="hidden md:inline-block" />
+                                            <span>{ctxHasDeliveryPinned ? 'Re-pin my location' : 'Pin my location'}</span>
+                                        </button>
+                                        <button
+                                            onClick={() => navigate('/location-picker?type=delivery&returnTo=/checkout')}
+                                            className="hidden md:flex items-center gap-1 text-[11px] font-bold uppercase text-slate-400 hover:text-primary transition-colors"
+                                        >
+                                            <MapPin size={12} />
+                                            <span>Pin on map</span>
+                                        </button>
+                                        <button
+                                            onClick={() => setIsEditingAddress(true)}
+                                            className="text-primary text-[11px] font-bold uppercase transition-colors hover:text-primary/80"
+                                        >
+                                            Change
+                                        </button>
+                                    </div>
                                 </div>
                                 <div className="bg-white rounded-4xl md:rounded-xl p-6 border border-slate-100 shadow-sm">
                                     <div className="flex items-start gap-4">

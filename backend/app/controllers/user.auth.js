@@ -337,6 +337,7 @@ export const updateUserProfile = async (req, res) => {
       gstNumber,
       fssaiNumber,
       onboardingCompleted,
+      additionalNumbers,
     } = req.body;
 
     const user = await User.findById(userId);
@@ -354,6 +355,7 @@ export const updateUserProfile = async (req, res) => {
     if (gstNumber !== undefined) user.gstNumber = gstNumber;
     if (fssaiNumber !== undefined) user.fssaiNumber = fssaiNumber;
     if (onboardingCompleted !== undefined) user.onboardingCompleted = onboardingCompleted;
+    if (additionalNumbers !== undefined) user.additionalNumbers = additionalNumbers;
 
     if (preferences) {
       user.preferences = {

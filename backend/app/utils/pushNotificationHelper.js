@@ -23,13 +23,19 @@ export const sendNotificationToUser = async (userId, payload, userType = 'user')
             recipient = await Vendor.findById(userId);
         }
 
-        const allTokens = [
-            ...(recipient.fcmTokens || []),
-            ...(recipient.mobile_fcm || [])
-        ];
+        if (!recipient) {
+            console.warn(`[FCM] No recipient found for type=${userType}, id=${userId}`);
+            return;
+        }
+
+        const webTokens = recipient.fcmTokens || [];
+        const mobileTokens = recipient.mobile_fcm || [];
+        const allTokens = [...webTokens, ...mobileTokens];
+
+        console.log(`[FCM] Preparing notification for ${userType} ${userId}. WebTokens=${webTokens.length}, MobileTokens=${mobileTokens.length}`);
 
         if (allTokens.length === 0) {
-            console.log(`No FCM tokens found for ${userType} ${userId}`);
+            console.log(`[FCM] No FCM tokens found for ${userType} ${userId}, skipping send. Payload title="${payload.title}"`);
             return;
         }
 
@@ -42,26 +48,29 @@ export const sendNotificationToUser = async (userId, payload, userType = 'user')
             tokens: allTokens,
         };
 
+        console.log(`[FCM] Sending multicast notification to ${userType} ${userId} with ${allTokens.length} tokens. Data=`, payload.data || {});
         const response = await admin.messaging().sendEachForMulticast(message);
-        console.log(`Successfully sent ${response.successCount} messages to ${userType} ${userId}`);
+        console.log(`[FCM] sendEachForMulticast result for ${userType} ${userId}: success=${response.successCount}, failure=${response.failureCount}`);
 
         if (response.failureCount > 0) {
             const failedTokens = [];
             response.responses.forEach((resp, idx) => {
                 if (!resp.success) {
-                    failedTokens.push(recipient.fcmTokens[idx]);
+                    failedTokens.push(allTokens[idx]);
+                    console.warn(`[FCM] Token send failure for ${userType} ${userId}: token=${allTokens[idx]}, error=${resp.error?.code}`);
                 }
             });
-            console.log('Failed tokens:', failedTokens);
+            console.log('[FCM] Failed tokens to be cleaned:', failedTokens);
 
             // Remove failed tokens from both database arrays
-            recipient.fcmTokens = (recipient.fcmTokens || []).filter(t => !failedTokens.includes(t));
-            recipient.mobile_fcm = (recipient.mobile_fcm || []).filter(t => !failedTokens.includes(t));
+            recipient.fcmTokens = webTokens.filter(t => !failedTokens.includes(t));
+            recipient.mobile_fcm = mobileTokens.filter(t => !failedTokens.includes(t));
             await recipient.save();
+            console.log(`[FCM] Cleaned failed tokens for ${userType} ${userId}. Remaining WebTokens=${recipient.fcmTokens.length}, MobileTokens=${recipient.mobile_fcm.length}`);
         }
 
         return response;
     } catch (error) {
-        console.error(`Error sending push notification to ${userType}:`, error);
+        console.error(`Error sending push notification to ${userType} ${userId}:`, error);
     }
 };

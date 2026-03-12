@@ -30,7 +30,7 @@ export default function HelpSupportScreen() {
     const [faqs, setFaqs] = useState(defaultFaqs)
     const [supportInfo, setSupportInfo] = useState({
         phone: '918555454446',
-        email: 'support@kisaankart.in',
+        email: 'support@kisaankart.com',
         whatsapp: '918555454446'
     })
 
@@ -42,7 +42,7 @@ export default function HelpSupportScreen() {
                 if (settingsRes.data.success) {
                     const settings = settingsRes.data.result || []
                     const phone = settings.find(s => s.key === 'support_phone')?.value || '918555454446'
-                    const email = settings.find(s => s.key === 'support_email')?.value || 'support@kisaankart.in'
+                    const email = settings.find(s => s.key === 'support_email')?.value || 'support@kisaankart.com'
                     const whatsapp = settings.find(s => s.key === 'support_whatsapp')?.value || phone
                     setSupportInfo({ phone, email, whatsapp })
                 }
@@ -125,9 +125,11 @@ export default function HelpSupportScreen() {
                         </div>
                     </div>
 
-                    {/* Email Support */}
+                    {/* Email Support - opens Gmail compose with support as recipient */}
                     <a
-                        href={`mailto:${supportInfo.email}`}
+                        href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(supportInfo.email)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="bg-slate-900 text-white p-6 rounded-[32px] flex items-center justify-between active:scale-[0.98] transition-transform"
                     >
                         <div>

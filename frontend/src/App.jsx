@@ -25,6 +25,7 @@ import HelpSupportScreen from './modules/user/pages/HelpSupportScreen'
 import AboutScreen from './modules/user/pages/AboutScreen'
 import WishlistScreen from './modules/user/pages/WishlistScreen'
 import CreditInfoScreen from './modules/user/pages/CreditInfoScreen'
+import LocationMapPicker from './modules/user/pages/LocationMapPicker'
 import { WishlistProvider } from './modules/user/contexts/WishlistContext'
 import { LocationProvider } from './modules/user/contexts/LocationContext'
 import { UserAuthProvider } from './modules/user/contexts/UserAuthContext'
@@ -146,6 +147,7 @@ function App() {
               <Route path="/notifications" element={<NotificationsScreen />} />
               <Route path="/favorites" element={<FavoritesScreen />} />
               <Route path="/wishlist" element={<WishlistScreen />} />
+              <Route path="/location-picker" element={<LocationMapPicker />} />
               <Route path="/verification" element={<VerificationScreen />} />
               <Route path="/help-support" element={<HelpSupportScreen />} />
               <Route path="/about" element={<AboutScreen />} />

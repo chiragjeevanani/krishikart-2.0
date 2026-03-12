@@ -56,6 +56,14 @@ const userSchema = new mongoose.Schema(
       type: String,
     },
 
+    // Optional additional contact numbers for the user
+    additionalNumbers: [
+      {
+        phone: { type: String, trim: true },
+        name: { type: String, trim: true },
+      },
+    ],
+
     profileImage: {
       type: String,
       default: "",
