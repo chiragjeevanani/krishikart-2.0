@@ -55,9 +55,12 @@ export const createProduct = async (req, res) => {
             dietaryType,
             status,
             bulkPricing,
+            homeSections,
             showOnPOS,
             showOnStorefront
         } = req.body;
+
+        const isNull = (val) => val === undefined || val === null || val === "" || val === "null" || val === "undefined";
 
         if (!name || !category || !price) {
             return handleResponse(res, 400, "Required fields: name, category, and price");
@@ -94,11 +97,21 @@ export const createProduct = async (req, res) => {
             }
         }
 
+        // Parse homeSections
+        let parsedHomeSections = [];
+        if (homeSections) {
+            try {
+                parsedHomeSections = typeof homeSections === 'string' ? JSON.parse(homeSections) : homeSections;
+            } catch (e) {
+                console.error("Home Sections Parse Error:", e);
+            }
+        }
+
         const product = await Product.create({
             name,
             skuCode: normalizeSkuCode(skuCode) || undefined,
-            category,
-            subcategory: subcategory || null,
+            category: isNull(category) ? null : category,
+            subcategory: isNull(subcategory) ? null : subcategory,
             price: Number(price),
             comparePrice: comparePrice ? Number(comparePrice) : undefined,
             bestPrice: bestPrice ? Number(bestPrice) : undefined,
@@ -112,6 +125,7 @@ export const createProduct = async (req, res) => {
             primaryImage: primaryImageUrl,
             images: galleryImages,
             bulkPricing: parsedBulk,
+            homeSections: parsedHomeSections,
             showOnPOS: showOnPOS === 'true' || showOnPOS === true,
             showOnStorefront: showOnStorefront === 'true' || showOnStorefront === true,
         });
@@ -163,13 +177,14 @@ export const getProducts = async (req, res) => {
         if (showOnPOS === 'false') filter.showOnPOS = false;
         if (showOnStorefront === 'true') filter.showOnStorefront = { $ne: false };
         if (showOnStorefront === 'false') filter.showOnStorefront = false;
-        if (search) {
+        if (search && search !== 'null' && search !== 'undefined') {
+            const searchRegex = { $regex: search, $options: 'i' };
             filter.$or = [
-                { name: { $regex: search, $options: 'i' } },
-                { skuCode: { $regex: search, $options: 'i' } },
-                { description: { $regex: search, $options: 'i' } },
-                { shortDescription: { $regex: search, $options: 'i' } },
-                { tags: { $regex: search, $options: 'i' } }
+                { name: searchRegex },
+                { skuCode: searchRegex },
+                { description: searchRegex },
+                { shortDescription: searchRegex },
+                { tags: searchRegex }
             ];
         }
 
@@ -254,6 +269,22 @@ export const updateProduct = async (req, res) => {
         if (updateData.showOnStorefront !== undefined) {
             updateData.showOnStorefront = updateData.showOnStorefront === 'true' || updateData.showOnStorefront === true;
         }
+
+        // Parse homeSections for update
+        if (updateData.homeSections) {
+            try {
+                updateData.homeSections = typeof updateData.homeSections === 'string' 
+                    ? JSON.parse(updateData.homeSections) 
+                    : updateData.homeSections;
+            } catch (e) {
+                console.error("Home Sections Update Parse Error:", e);
+            }
+        }
+
+        // Sanitize ObjectId fields to prevent CastError for empty/null strings
+        const isNull = (val) => val === undefined || val === null || val === "" || val === "null" || val === "undefined";
+        if (isNull(updateData.category)) updateData.category = null;
+        if (isNull(updateData.subcategory)) updateData.subcategory = null;
 
         const updatedProduct = await Product.findByIdAndUpdate(id, updateData, { new: true });
 

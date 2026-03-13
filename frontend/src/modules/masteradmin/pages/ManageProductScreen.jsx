@@ -183,14 +183,16 @@ export default function ManageProductScreen() {
             <div className="p-8 max-w-[1400px] mx-auto">
                 {/* Search & Stats Bar */}
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8">
-                    <div className="lg:col-span-2 relative">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                        <input
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value.trim())}
-                            placeholder="SEARCH BY PRODUCT NAME OR SKU ID..."
-                            className="w-full bg-white border border-slate-200 rounded-sm py-3 pl-12 pr-4 text-[11px] font-bold uppercase tracking-widest focus:outline-none focus:ring-1 focus:ring-slate-900 transition-all shadow-sm"
-                        />
+                    <div className="lg:col-span-2">
+                        <div className="flex items-center gap-3 px-4 bg-white border border-slate-200 rounded-sm group focus-within:border-slate-400 focus-within:ring-1 focus-within:ring-slate-900/5 transition-all shadow-sm">
+                            <Search className="text-slate-400 group-focus-within:text-slate-900 transition-colors" size={16} />
+                            <input
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                placeholder="SEARCH BY PRODUCT NAME OR SKU ID..."
+                                className="w-full bg-transparent py-3 text-[10px] font-bold uppercase tracking-widest focus:outline-none outline-none border-none text-slate-900 placeholder:text-slate-400"
+                            />
+                        </div>
                     </div>
                     <div className="bg-slate-900 rounded-sm p-3 flex-1 flex items-center justify-between shadow-lg">
                         <div className="space-y-0.5">
