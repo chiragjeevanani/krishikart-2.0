@@ -38,9 +38,14 @@ export const joinOrderRoom = (orderId) => {
     const s = getSocket();
     s.emit("join_order_room", orderId);
 };
-export const joinFranchiseRoom = (franchiseId) => {
+export const joinFranchiseRoom = () => {
     const s = getSocket();
-    s.emit("join_franchise_room", franchiseId);
+    const token = localStorage.getItem("franchiseToken");
+    if (!token) {
+        console.warn("[Socket] No franchiseToken found. Skipping join_franchise_room.");
+        return;
+    }
+    s.emit("join_franchise_room", { token });
 };
 export const joinDeliveryRoom = (deliveryId) => {
     const s = getSocket();

@@ -23,16 +23,28 @@ export function FranchiseAuthProvider({ children }) {
     useEffect(() => {
         const loadUser = async () => {
             const token = localStorage.getItem('franchiseToken');
-            if (token) {
-                try {
-                    const { data } = await api.get('/franchise/me');
+            if (!token) {
+                setLoading(false);
+                return;
+            }
+            try {
+                // Explicit token so session restores reliably on refresh (no interceptor timing issues)
+                const { data } = await api.get('/franchise/me', {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                if (data?.result) {
                     setFranchise(data.result);
                     localStorage.setItem('franchiseData', JSON.stringify(data.result));
-                } catch (error) {
-                    console.error("Failed to load franchise profile", error);
-                    if (error.response?.status === 401) {
-                        logout();
-                    }
+                }
+            } catch (error) {
+                console.error("Failed to load franchise profile", error);
+                if (error.response?.status === 401) {
+                    setFranchise(null);
+                    setLoading(false);
+                    localStorage.removeItem('franchiseToken');
+                    localStorage.removeItem('franchiseData');
+                    window.location.href = '/franchise/login';
+                    return;
                 }
             }
             setLoading(false);

@@ -24,9 +24,26 @@ export const initSocket = (server) => {
             console.log(`Socket ${socket.id} joined admin_delivery_tracking`);
         });
 
-        socket.on("join_franchise_room", (franchiseId) => {
-            socket.join(`franchise_${franchiseId}`);
-            console.log(`Socket ${socket.id} joined franchise_${franchiseId}`);
+        socket.on("join_franchise_room", (payload) => {
+            try {
+                let franchiseIdFromToken = null;
+                if (payload && typeof payload === "object" && payload.token) {
+                    const decoded = jwt.verify(payload.token, process.env.JWT_SECRET);
+                    franchiseIdFromToken = decoded.id;
+                } else if (typeof payload === "string" && payload) {
+                    const decoded = jwt.verify(payload, process.env.JWT_SECRET);
+                    franchiseIdFromToken = decoded.id;
+                }
+                if (!franchiseIdFromToken) {
+                    console.warn(`join_franchise_room: Missing or invalid token from socket ${socket.id}`);
+                    return;
+                }
+                const roomName = `franchise_${franchiseIdFromToken}`;
+                socket.join(roomName);
+                console.log(`Socket ${socket.id} joined ${roomName} (secured via token)`);
+            } catch (err) {
+                console.error("join_franchise_room auth error:", err.message);
+            }
         });
 
         socket.on("join_delivery_room", (deliveryId) => {

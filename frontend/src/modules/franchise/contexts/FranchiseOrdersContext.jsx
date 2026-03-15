@@ -110,7 +110,7 @@ export function FranchiseOrdersProvider({ children }) {
         if (!franchise?._id) return;
 
         const socket = getSocket();
-        joinFranchiseRoom(franchise._id);
+        joinFranchiseRoom();
 
         const handleNewOrder = (data) => {
             console.log('New real-time order received:', data);

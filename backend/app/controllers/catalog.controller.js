@@ -1,6 +1,6 @@
 import Category from "../models/category.js";
 import Subcategory from "../models/subcategory.js";
-import handleResponse from "../utils/helper.js";
+import handleResponse, { capitalizeFirst } from "../utils/helper.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import GlobalSetting from "../models/globalSetting.js";
 
@@ -14,7 +14,8 @@ export const createCategory = async (req, res) => {
             return handleResponse(res, 400, "Category name is required");
         }
 
-        const exists = await Category.findOne({ name });
+        const nameNorm = capitalizeFirst(name);
+        const exists = await Category.findOne({ name: nameNorm });
         if (exists) {
             return handleResponse(res, 400, "Category already exists");
         }
@@ -25,7 +26,7 @@ export const createCategory = async (req, res) => {
         }
 
         const category = await Category.create({
-            name,
+            name: nameNorm,
             description,
             image: imageUrl,
             adminCommission: adminCommission || 0,
@@ -57,7 +58,7 @@ export const updateCategory = async (req, res) => {
             return handleResponse(res, 404, "Category not found");
         }
 
-        if (name) category.name = name;
+        if (name) category.name = capitalizeFirst(name);
         if (description !== undefined) category.description = description;
         if (isVisible !== undefined) category.isVisible = isVisible;
         if (adminCommission !== undefined) category.adminCommission = adminCommission;
@@ -111,7 +112,8 @@ export const createSubcategory = async (req, res) => {
             return handleResponse(res, 404, "Primary category not found");
         }
 
-        const exists = await Subcategory.findOne({ name, category });
+        const nameNorm = capitalizeFirst(name);
+        const exists = await Subcategory.findOne({ name: nameNorm, category });
         if (exists) {
             return handleResponse(res, 400, "Subcategory already exists in this category");
         }
@@ -122,7 +124,7 @@ export const createSubcategory = async (req, res) => {
         }
 
         const subcategory = await Subcategory.create({
-            name,
+            name: nameNorm,
             category,
             image: imageUrl,
         });
@@ -158,7 +160,7 @@ export const updateSubcategory = async (req, res) => {
             return handleResponse(res, 404, "Subcategory not found");
         }
 
-        if (name) subcategory.name = name;
+        if (name) subcategory.name = capitalizeFirst(name);
         if (category) subcategory.category = category;
         if (isVisible !== undefined) subcategory.isVisible = isVisible;
 

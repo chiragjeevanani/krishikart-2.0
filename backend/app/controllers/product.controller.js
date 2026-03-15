@@ -1,7 +1,7 @@
 import Product from "../models/product.js";
 import Category from "../models/category.js";
 import Subcategory from "../models/subcategory.js";
-import handleResponse from "../utils/helper.js";
+import handleResponse, { capitalizeFirst } from "../utils/helper.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import * as xlsx from 'xlsx';
 
@@ -108,7 +108,7 @@ export const createProduct = async (req, res) => {
         }
 
         const product = await Product.create({
-            name,
+            name: capitalizeFirst(name),
             skuCode: normalizeSkuCode(skuCode) || undefined,
             category: isNull(category) ? null : category,
             subcategory: isNull(subcategory) ? null : subcategory,
@@ -286,6 +286,8 @@ export const updateProduct = async (req, res) => {
         if (isNull(updateData.category)) updateData.category = null;
         if (isNull(updateData.subcategory)) updateData.subcategory = null;
 
+        if (updateData.name !== undefined) updateData.name = capitalizeFirst(updateData.name);
+
         const updatedProduct = await Product.findByIdAndUpdate(id, updateData, { new: true });
 
         return handleResponse(res, 200, "Product record updated", updatedProduct);
@@ -369,7 +371,7 @@ export const importProductsFromExcel = async (req, res) => {
                 }
 
                 const productData = {
-                    name: name.toString().trim(),
+                    name: capitalizeFirst(name.toString().trim()),
                     skuCode: skuCode ? skuCode.toString().trim().toUpperCase() : undefined,
                     category: category._id,
                     subcategory: subcategory ? subcategory._id : null,

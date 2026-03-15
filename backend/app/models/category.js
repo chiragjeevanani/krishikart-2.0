@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { capitalizeFirst } from "../utils/helper.js";
 
 const categorySchema = new mongoose.Schema(
     {
@@ -7,6 +8,7 @@ const categorySchema = new mongoose.Schema(
             required: true,
             unique: true,
             trim: true,
+            set: capitalizeFirst,
         },
         description: {
             type: String,

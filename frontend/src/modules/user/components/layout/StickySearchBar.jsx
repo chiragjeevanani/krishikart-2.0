@@ -85,9 +85,12 @@ export default function StickySearchBar() {
                     className={`flex items-center gap-1.5 min-w-0 max-w-full cursor-pointer active:scale-95 transition-all min-h-[38px] ${loading ? 'opacity-50' : ''} text-slate-900`}
                 >
                     <MapPin size={16} strokeWidth={2.5} className={`shrink-0 ${loading ? 'animate-pulse' : ''}`} />
-                    <span className="text-xs font-bold uppercase tracking-wider truncate">
-                        {loading ? "Locating..." : (address || "Set Location")}
-                    </span>
+                    <div className="flex flex-col min-w-0 max-w-full text-left">
+                        <span className="text-[11px] font-bold text-slate-900 leading-tight">Delivery tomorrow</span>
+                        <span className="text-[10px] font-medium text-slate-400 leading-tight truncate">
+                            {loading ? "Locating..." : (address || "Set Location")}
+                        </span>
+                    </div>
                 </button>
             </div>
             {/* Right: notifications + cart */}

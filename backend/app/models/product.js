@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { capitalizeFirst } from '../utils/helper.js';
 
 const bulkPricingSchema = new mongoose.Schema({
     minQty: {
@@ -15,7 +16,8 @@ const productSchema = new mongoose.Schema({
     name: {
         type: String,
         required: [true, 'Product name is required'],
-        trim: true
+        trim: true,
+        set: capitalizeFirst
     },
     skuCode: {
         type: String,

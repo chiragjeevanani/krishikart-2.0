@@ -15,6 +15,9 @@ export const protectFranchise = async (req, res, next) => {
       return handleResponse(res, 401, "Unauthorized");
 
     req.franchise = franchise;
+    // Isolation: never trust client-supplied franchiseId; only req.franchise._id is valid
+    delete req.body.franchiseId;
+    delete req.query.franchiseId;
     next();
   } catch (err) {
     return handleResponse(res, 401, "Invalid token");

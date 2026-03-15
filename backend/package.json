@@ -8,6 +8,8 @@
         "start": "node index.js",
         "dev": "nodemon index.js",
         "seed": "node seedProducts.js",
+        "migrate-mongo": "node scripts/migrate-mongo.js",
+        "capitalize-names": "node scripts/capitalize-names.js",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "keywords": [],

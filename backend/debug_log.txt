@@ -12691,3 +12691,183 @@ Found: 0 orders
 [2026-03-12T15:57:58.389Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
 Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
 Found: 68 orders
+
+[2026-03-14T11:57:12.888Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T11:57:18.076Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T11:57:18.494Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T11:57:19.008Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T11:57:48.694Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T11:58:19.014Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T11:58:48.817Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T11:59:18.514Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T11:59:49.201Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T12:00:18.625Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T12:01:08.396Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T12:01:14.425Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T12:01:15.555Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T12:01:15.842Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T12:01:46.725Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T12:02:15.504Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T12:02:46.283Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T12:03:15.742Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T12:03:47.119Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T12:04:15.784Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T12:05:08.004Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T12:06:07.968Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T12:07:08.039Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T12:08:08.445Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T12:09:07.765Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T12:10:07.863Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T12:11:08.030Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T12:12:09.595Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T12:13:08.861Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T12:14:07.968Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T12:15:04.308Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T12:15:16.406Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T12:15:46.411Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T12:16:15.469Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T12:16:45.482Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T12:17:14.963Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T12:17:46.853Z] Fetching Orders for 6999858c1fc6cdf3d270e73a
+Query: {"franchiseId":"6999858c1fc6cdf3d270e73a"}
+Found: 68 orders
+
+[2026-03-14T12:18:18.855Z] Fetching Orders for 6997f5d4c39314b00f750fde
+Query: {"franchiseId":"6997f5d4c39314b00f750fde"}
+Found: 7 orders
+
+[2026-03-14T12:18:19.225Z] Fetching Orders for 6997f5d4c39314b00f750fde
+Query: {"franchiseId":"6997f5d4c39314b00f750fde"}
+Found: 7 orders
+
+[2026-03-14T12:18:19.735Z] Fetching Orders for 6997f5d4c39314b00f750fde
+Query: {"franchiseId":"6997f5d4c39314b00f750fde"}
+Found: 7 orders
+
+[2026-03-14T12:18:48.028Z] Fetching Orders for 6997f5d4c39314b00f750fde
+Query: {"franchiseId":"6997f5d4c39314b00f750fde"}
+Found: 7 orders
+
+[2026-03-14T12:19:18.301Z] Fetching Orders for 6997f5d4c39314b00f750fde
+Query: {"franchiseId":"6997f5d4c39314b00f750fde"}
+Found: 7 orders
+
+[2026-03-14T12:19:48.379Z] Fetching Orders for 6997f5d4c39314b00f750fde
+Query: {"franchiseId":"6997f5d4c39314b00f750fde"}
+Found: 7 orders
+
+[2026-03-14T12:20:18.044Z] Fetching Orders for 6997f5d4c39314b00f750fde
+Query: {"franchiseId":"6997f5d4c39314b00f750fde"}
+Found: 7 orders
+
+[2026-03-14T12:20:48.458Z] Fetching Orders for 6997f5d4c39314b00f750fde
+Query: {"franchiseId":"6997f5d4c39314b00f750fde"}
+Found: 7 orders

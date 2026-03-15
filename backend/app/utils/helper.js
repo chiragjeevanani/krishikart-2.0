@@ -1,3 +1,10 @@
+/** Capitalize first letter of string; trim. Used for product/category/subcategory names. */
+export const capitalizeFirst = (val) => {
+    if (val == null || typeof val !== 'string') return val;
+    const s = String(val).trim();
+    return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+};
+
 export const handleResponse = (res, statusCode, message, data = {}) => {
   const success = statusCode >= 200 && statusCode < 300;
 

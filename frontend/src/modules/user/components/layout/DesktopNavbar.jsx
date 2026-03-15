@@ -108,7 +108,7 @@ export default function DesktopNavbar() {
                             <MapPin size={18} strokeWidth={2.5} />
                         </div>
                         <div className="flex flex-col max-w-[150px]">
-                            <span className="text-[14px] font-bold text-slate-900 leading-tight">Deliver to</span>
+                            <span className="text-[14px] font-bold text-slate-900 leading-tight">Delivery tomorrow</span>
                             <span className="text-[12px] font-medium text-slate-400 leading-tight truncate">
                                 {loading ? "Fetching..." : (address || "Set Location")}
                             </span>
