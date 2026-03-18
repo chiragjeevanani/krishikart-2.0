@@ -12,11 +12,11 @@ export const initSocket = () => {
         });
 
         socket.on("connect", () => {
-            console.log("Connected to Socket.io server");
+            // silent in production
         });
 
         socket.on("disconnect", () => {
-            console.log("Disconnected from Socket.io server");
+            // silent in production
         });
     }
     return socket;
@@ -42,7 +42,6 @@ export const joinFranchiseRoom = () => {
     const s = getSocket();
     const token = localStorage.getItem("franchiseToken");
     if (!token) {
-        console.warn("[Socket] No franchiseToken found. Skipping join_franchise_room.");
         return;
     }
     s.emit("join_franchise_room", { token });
@@ -56,7 +55,6 @@ export const joinVendorRoom = () => {
     const token = localStorage.getItem("vendorToken");
 
     if (!token) {
-        console.warn("[Socket] No vendorToken found in localStorage. Skipping join_vendor_room.");
         return;
     }
 

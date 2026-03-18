@@ -35,6 +35,7 @@ export default function CheckoutScreen() {
     const { cartItems, cartTotal, clearCart, deliveryConstraints } = useCart()
     const locationCtx = useLocation()
     const ctxDeliveryAddress = locationCtx?.deliveryAddress
+    const ctxDeliveryLocation = locationCtx?.deliveryLocation
     const ctxHasDeliveryPinned = locationCtx?.hasDeliveryPinned
     const ctxUpdateDeliveryLocation = locationCtx?.updateDeliveryLocation
     const { placeOrder } = useOrders()
@@ -245,18 +246,12 @@ export default function CheckoutScreen() {
                 handler: async (response) => {
                     try {
                         setIsPlacingOrder(true)
-                        console.log("Payment successful, verifying...", {
-                            orderId: response.razorpay_order_id,
-                            paymentId: response.razorpay_payment_id
-                        })
-
                         const verifyRes = await api.post('/payment/verify', {
                             ...response,
                             orderData
                         })
 
                         if (verifyRes.data.success) {
-                            console.log("Verification successful, order created:", verifyRes.data.result._id)
                             setLastOrder(verifyRes.data.result)
                             setStep(3)
                             setTimeout(() => {
@@ -352,11 +347,15 @@ export default function CheckoutScreen() {
             toast.error('Could not save address to profile')
         }
 
-        let coords = null;
-        try {
-            coords = await geocodeAddressFrontend(fullAddress);
-        } catch (geoErr) {
-            console.warn("Geocoding failed on frontend:", geoErr);
+        // Prefer the exact pinned delivery coordinates from the map.
+        // Fallback to geocoding the typed address if coordinates are unavailable.
+        let coords = ctxDeliveryLocation || null;
+        if (!coords) {
+            try {
+                coords = await geocodeAddressFrontend(fullAddress);
+            } catch (geoErr) {
+                // non-fatal
+            }
         }
 
         const orderData = {

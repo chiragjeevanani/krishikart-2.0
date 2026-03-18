@@ -105,7 +105,6 @@ export function DeliveryOrderProvider({ children }) {
 
             const socket = getSocket();
             const handleNewTask = (data) => {
-                console.log('New task assigned:', data);
                 setNewTaskData(data);
                 setIsAlertOpen(true);
                 playNotificationSound();

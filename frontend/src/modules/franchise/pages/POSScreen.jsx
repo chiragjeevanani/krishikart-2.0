@@ -249,7 +249,6 @@ export default function POSScreen() {
                                                 alt={item.name}
                                                 loading="lazy"
                                                 onError={(e) => {
-                                                    console.log("Image load error for:", item.name);
                                                     e.target.onerror = null;
                                                     e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600';
                                                 }}

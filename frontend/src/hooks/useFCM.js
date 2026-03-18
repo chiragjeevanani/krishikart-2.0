@@ -11,15 +11,12 @@ export const useFCM = (isAuthenticated, userType) => {
         if (!isAuthenticated) return;
 
         try {
-            console.log(`[useFCM] Initializing token registration for ${userType}...`);
             const token = await requestFCMToken();
 
             if (token) {
-                console.log(`[useFCM] Sending token to backend for ${userType}...`);
                 const response = await api.post(`/${userType}/fcm-token`, { token });
 
                 if (response.data.success) {
-                    console.log(`[useFCM] Token successfully registered on backend for ${userType}`);
                     localStorage.setItem(`fcm_token_${userType}`, token);
                 }
             }
@@ -32,9 +29,7 @@ export const useFCM = (isAuthenticated, userType) => {
         if (isAuthenticated) {
             saveToken();
 
-            console.log('[useFCM] Subscribing to foreground FCM messages for', userType);
             const unsubscribe = onMessage(messaging, async (payload) => {
-                console.log('[useFCM] Foreground FCM message received:', payload);
                 const data = payload.data || {};
 
                 // Show UI toast for immediate feedback
@@ -47,7 +42,6 @@ export const useFCM = (isAuthenticated, userType) => {
                 if (Notification.permission === 'granted') {
                     try {
                         const registration = await navigator.serviceWorker.ready;
-                        console.log('[useFCM] Showing foreground native notification via SW registration');
                         registration.showNotification(payload.notification.title || 'Kisaankart', {
                             body: payload.notification.body || '',
                             icon: '/favicon.png',
@@ -58,7 +52,6 @@ export const useFCM = (isAuthenticated, userType) => {
                             renotify: true,
                             silent: false
                         });
-                        console.log('[useFCM] Native foreground notification triggered successfully');
                     } catch (err) {
                         console.error('[useFCM] Failed to trigger native foreground notification:', err);
                     }
@@ -84,11 +77,10 @@ export const useFCM = (isAuthenticated, userType) => {
             });
 
             return () => {
-                console.log('[useFCM] Cleaning up FCM foreground subscription for', userType);
                 if (typeof unsubscribe === 'function') {
                     unsubscribe();
                 } else {
-                    console.warn('[useFCM] unsubscribe was not a function during cleanup');
+                    console.error('[useFCM] unsubscribe was not a function during cleanup');
                 }
             };
         }

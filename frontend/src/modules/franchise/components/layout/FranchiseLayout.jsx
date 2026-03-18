@@ -26,7 +26,6 @@ export default function FranchiseLayout() {
             source.connect(context.destination);
             source.start(0);
 
-            console.log("Audio logic unlocked via user interaction");
             window.removeEventListener('click', unlockAudio);
             window.removeEventListener('touchstart', unlockAudio);
         };

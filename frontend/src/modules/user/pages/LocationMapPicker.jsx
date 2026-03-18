@@ -57,6 +57,10 @@ export default function LocationMapPicker() {
             await setPinnedFranchiseLocation(markerPos);
         }
 
+        toast.success(
+            mode === 'delivery' ? 'Drop location saved.' : 'Service area saved.',
+        );
+
         const returnTo = searchParams.get('returnTo');
         if (returnTo) {
             navigate(returnTo);
@@ -117,7 +121,7 @@ export default function LocationMapPicker() {
     }
 
     return (
-        <div className="h-screen flex flex-col bg-white">
+        <div className="h-screen flex flex-col bg-white pb-[72px] md:pb-0">
             <header className="flex flex-col gap-2 px-4 py-3 border-b border-slate-100">
                 <div className="flex items-center gap-3">
                     <button
@@ -164,6 +168,19 @@ export default function LocationMapPicker() {
                         Me
                     </Button>
                 </form>
+
+                {/* Desktop/Web Save button */}
+                <div className="hidden md:flex justify-end -mt-1">
+                    <Button
+                        type="button"
+                        size="sm"
+                        disabled={!markerPos}
+                        onClick={handleConfirm}
+                        className="h-9 rounded-full px-5 font-bold"
+                    >
+                        Save
+                    </Button>
+                </div>
             </header>
 
             <div className="flex-1 relative">
@@ -194,13 +211,13 @@ export default function LocationMapPicker() {
                 </div>
             </div>
 
-            <footer className="p-4 border-t border-slate-100 bg-white">
+            <footer className="p-4 border-t border-slate-100 bg-white md:hidden">
                 <Button
                     className="w-full h-11 rounded-xl font-bold"
                     disabled={!markerPos}
                     onClick={handleConfirm}
                 >
-                    Confirm location
+                    Save
                 </Button>
             </footer>
         </div>

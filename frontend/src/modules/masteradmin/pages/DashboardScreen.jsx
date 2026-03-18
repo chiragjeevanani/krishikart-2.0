@@ -85,7 +85,6 @@ export default function DashboardScreen() {
         joinAdminDeliveryTracking();
 
         const handleUpdate = () => {
-            console.log("Refreshing dashboard stats due to socket event");
             fetchDashboardStats();
         };
 

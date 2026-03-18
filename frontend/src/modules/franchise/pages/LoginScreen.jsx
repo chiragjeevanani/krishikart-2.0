@@ -98,6 +98,11 @@ export default function LoginScreen() {
             // The context login function might need updating or we handle storage manually here to match other modules
             // Assuming context handles state update if we pass data, but let's do manual storage for consistency
             const { token, ...franchiseData } = response.data.result;
+            // Persist JWT immediately so refresh can restore session reliably
+            if (token) {
+                localStorage.setItem('franchiseToken', token);
+                localStorage.setItem('franchiseData', JSON.stringify(franchiseData));
+            }
             loginSuccess(franchiseData, token);
             navigate('/franchise/dashboard');
         } catch (error) {

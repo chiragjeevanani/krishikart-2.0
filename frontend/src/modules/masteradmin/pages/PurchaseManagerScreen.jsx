@@ -49,14 +49,12 @@ export default function PurchaseManagerScreen() {
     });
 
     const handleFinalizeAssignment = (assignments) => {
-        console.log('Finalizing Procurement with assignments:', assignments);
         setSelectedPOForAssignment(null);
         setIsLoading(true);
         setTimeout(() => setIsLoading(false), 800);
     };
 
     const handleDeliveryAssignment = (partner) => {
-        console.log('Assigned Delivery Partner:', partner, 'to PO:', selectedPOForDelivery?.id);
         setSelectedPOForDelivery(null);
         setIsLoading(true);
         setTimeout(() => setIsLoading(false), 800);

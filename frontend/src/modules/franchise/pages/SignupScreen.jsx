@@ -78,7 +78,7 @@ export default function SignupScreen() {
                 try {
                     coords = await geocodeAddressFrontend(`${formData.city}, ${formData.state}`);
                 } catch (geoErr) {
-                    console.warn("Frontend registration geocode failed", geoErr);
+                    // non-fatal
                 }
 
                 await api.post('/franchise/register', {
@@ -132,6 +132,11 @@ export default function SignupScreen() {
             const response = await api.post('/franchise/verify-otp', { mobile: formData.mobile, otp: otpValue });
 
             const { token, ...franchiseData } = response.data.result;
+            // Persist JWT immediately so refresh can restore session reliably
+            if (token) {
+                localStorage.setItem('franchiseToken', token);
+                localStorage.setItem('franchiseData', JSON.stringify(franchiseData));
+            }
             loginSuccess(franchiseData, token);
             navigate('/franchise/dashboard');
         } catch (error) {

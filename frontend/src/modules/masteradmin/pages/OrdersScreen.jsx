@@ -104,7 +104,6 @@ export default function OrdersScreen() {
         joinAdminDeliveryTracking();
 
         socket.on('new_order_placed', (data) => {
-            console.log("New order received via socket:", data);
             toast.info(data.message || "A new order has been placed!", {
                 description: `Order ID: #${data.orderId.slice(-6)}`
             });
@@ -113,7 +112,6 @@ export default function OrdersScreen() {
         });
 
         socket.on('order_status_updated', (updatedOrder) => {
-            console.log("Order status updated via socket:", updatedOrder);
             setAllOrders(prev => {
                 const index = prev.findIndex(o => o._id === updatedOrder._id);
                 if (index !== -1) {

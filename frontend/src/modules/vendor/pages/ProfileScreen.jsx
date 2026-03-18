@@ -287,13 +287,6 @@ export default function ProfileScreen() {
 
     const handleProfileUpdate = async (formData) => {
         try {
-            // Debug: Check FormData content
-            if (formData instanceof FormData) {
-                for (let pair of formData.entries()) {
-                    console.log('FormData Entry:', pair[0], pair[1]);
-                }
-            }
-
             const { data } = await api.put('/vendor/update', formData, {
                 headers: { 'Content-Type': null }
             });

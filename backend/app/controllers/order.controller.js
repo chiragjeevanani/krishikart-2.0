@@ -1144,10 +1144,18 @@ export const getAdminDeliveryTracking = async (req, res) => {
 export const getFranchiseOrders = async (req, res) => {
   try {
     const franchiseId = new mongoose.Types.ObjectId(req.franchise._id);
-    const { date } = req.query;
+    const { date, includeOpen } = req.query;
 
-    // Strict isolation: a franchise sees ONLY its own orders
-    const query = { franchiseId };
+    // Strict isolation: a franchise sees ONLY its own assigned orders.
+    // Optional: include "open" orders (franchiseId === null) so the franchise portal can claim them.
+    const query = includeOpen
+      ? {
+          $or: [
+            { franchiseId },
+            { franchiseId: null, orderStatus: { $in: ["Placed", "Assigned", "pending"] } },
+          ],
+        }
+      : { franchiseId };
 
     if (date) {
       const startOfDay = new Date(date);
@@ -1166,8 +1174,10 @@ export const getFranchiseOrders = async (req, res) => {
       )
       .sort({ createdAt: -1 });
 
-    const debugInfo = `\n[${new Date().toISOString()}] Fetching Orders for ${franchiseId}\nQuery: ${JSON.stringify(query)}\nFound: ${orders.length} orders\n`;
-    fs.appendFileSync("debug_log.txt", debugInfo);
+    if (process.env.DEBUG_LOG_TO_FILE === "true") {
+      const debugInfo = `\n[${new Date().toISOString()}] Fetching Orders for ${franchiseId}\nQuery: ${JSON.stringify(query)}\nFound: ${orders.length} orders\n`;
+      fs.appendFileSync("debug_log.txt", debugInfo);
+    }
 
     const formattedOrders = orders.map((order) => {
       const dateObj = new Date(order.createdAt || Date.now());
@@ -1197,8 +1207,10 @@ export const getFranchiseOrders = async (req, res) => {
       formattedOrders,
     );
   } catch (error) {
-    const errInfo = `\n[${new Date().toISOString()}] ERROR in getFranchiseOrders: ${error.message}\nStack: ${error.stack}\n`;
-    fs.appendFileSync("debug_log.txt", errInfo);
+    if (process.env.DEBUG_LOG_TO_FILE === "true") {
+      const errInfo = `\n[${new Date().toISOString()}] ERROR in getFranchiseOrders: ${error.message}\nStack: ${error.stack}\n`;
+      fs.appendFileSync("debug_log.txt", errInfo);
+    }
     console.error("Fetch franchise orders error:", error);
     return handleResponse(res, 500, "Server error");
   }

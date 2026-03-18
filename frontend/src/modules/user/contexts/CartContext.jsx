@@ -54,7 +54,6 @@ export function CartProvider({ children }) {
             if (Array.isArray(settingsArray)) {
                 const deliverySetting = settingsArray.find(s => s.key === 'delivery_constraints');
                 if (deliverySetting && deliverySetting.value) {
-                    console.log("Successfully fetched delivery constraints:", deliverySetting.value);
                     setDeliveryConstraints(deliverySetting.value);
                 }
             }

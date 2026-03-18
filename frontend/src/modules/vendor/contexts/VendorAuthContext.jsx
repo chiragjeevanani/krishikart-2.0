@@ -80,7 +80,6 @@ export function VendorAuthProvider({ children }) {
             const socket = getSocket();
 
             const handleNewAssignment = (data) => {
-                console.log('New assignment received:', data);
                 setNewAssignmentData(data);
                 setIsAlertOpen(true);
                 playNotificationSound();

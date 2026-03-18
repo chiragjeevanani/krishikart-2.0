@@ -3,6 +3,7 @@ import api from '@/lib/axios';
 import { toast } from 'sonner';
 import { getSocket, joinFranchiseRoom } from '@/lib/socket';
 import { useFranchiseAuth } from '@/modules/franchise/contexts/FranchiseAuthContext'; // Need franchise ID
+import sellerAlert from '@/assets/sounds/seller_alert.mp3';
 
 const FranchiseOrdersContext = createContext();
 
@@ -16,52 +17,62 @@ export function FranchiseOrdersProvider({ children }) {
     const [isAlertOpen, setIsAlertOpen] = useState(false);
     const [newOrderData, setNewOrderData] = useState(null);
 
-    // Play sound helper using AudioContext (100% reliable, no network/CORS issues)
+    // Play sound helper when new order arrives.
+    // Preferred: play seller_alert.mp3. Fallback: oscillator "beeps".
     const playNotificationSound = () => {
-        try {
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            if (!AudioContext) return;
-            const ctx = new AudioContext();
+        const fallbackBeep = () => {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
 
-            const playBeep = (freq, startTime, duration) => {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
+                const playBeep = (freq, startTime, duration) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
 
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(freq, ctx.currentTime + startTime);
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, ctx.currentTime + startTime);
+                    gain.gain.setValueAtTime(0, ctx.currentTime + startTime);
+                    gain.gain.linearRampToValueAtTime(1, ctx.currentTime + startTime + 0.05);
+                    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + startTime + duration);
 
-                gain.gain.setValueAtTime(0, ctx.currentTime + startTime);
-                gain.gain.linearRampToValueAtTime(1, ctx.currentTime + startTime + 0.05);
-                gain.gain.linearRampToValueAtTime(0, ctx.currentTime + startTime + duration);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
 
-                osc.connect(gain);
-                gain.connect(ctx.destination);
+                    osc.start(ctx.currentTime + startTime);
+                    osc.stop(ctx.currentTime + startTime + duration);
+                };
 
-                osc.start(ctx.currentTime + startTime);
-                osc.stop(ctx.currentTime + startTime + duration);
-            };
-
-            // Play a pleasant "Ding-Dong" or "Success" sequence
-            playBeep(880, 0, 0.15); // A5
-            playBeep(1108.73, 0.15, 0.25); // C#6
-
-            // Repeat for emphasis (Alarm style)
-            setTimeout(() => {
                 playBeep(880, 0, 0.15);
                 playBeep(1108.73, 0.15, 0.25);
-            }, 800);
 
-            setTimeout(() => {
-                playBeep(880, 0, 0.15);
-                playBeep(1108.73, 0.15, 0.25);
-            }, 1600);
+                setTimeout(() => {
+                    playBeep(880, 0, 0.15);
+                    playBeep(1108.73, 0.15, 0.25);
+                }, 800);
 
-            // Resume context if browser suspended it
-            if (ctx.state === 'suspended') {
-                ctx.resume();
+                setTimeout(() => {
+                    playBeep(880, 0, 0.15);
+                    playBeep(1108.73, 0.15, 0.25);
+                }, 1600);
+
+                if (ctx.state === 'suspended') ctx.resume();
+            } catch (_) {
+                // silent fallback
             }
-        } catch (err) {
-            console.error('Audio engine failure:', err);
+        };
+
+        try {
+            const audio = new Audio(sellerAlert);
+            audio.volume = 1.0;
+            audio.currentTime = 0;
+            const playPromise = audio.play();
+
+            if (playPromise && typeof playPromise.catch === 'function') {
+                playPromise.catch(() => fallbackBeep());
+            }
+        } catch (_) {
+            fallbackBeep();
         }
     };
 
@@ -70,10 +81,6 @@ export function FranchiseOrdersProvider({ children }) {
         try {
             const response = await api.get('/orders/franchise/all');
             if (response.data.success) {
-                console.log('Franchise Orders API sync:', response.data.results);
-                // Log unique statuses to debug filtering
-                const statuses = [...new Set(response.data.results.map(o => o.orderStatus))];
-                console.log('Available order statuses in DB:', statuses);
                 setLiveOrders(response.data.results || []);
             }
         } catch (error) {
@@ -113,7 +120,6 @@ export function FranchiseOrdersProvider({ children }) {
         joinFranchiseRoom();
 
         const handleNewOrder = (data) => {
-            console.log('New real-time order received:', data);
             setNewOrderData(data);
             setIsAlertOpen(true);
             playNotificationSound();
@@ -177,10 +183,13 @@ export function FranchiseOrdersProvider({ children }) {
             if (response.data.success) {
                 toast.success(`Order status updated to ${newStatus}`);
                 setLiveOrders(prev => prev.map(o => o._id === orderId ? { ...o, orderStatus: newStatus, ...extraData } : o));
+                return true;
             }
+            return false;
         } catch (error) {
             console.error('Update order status error:', error);
             toast.error(error.response?.data?.message || 'Failed to update status');
+            return false;
         }
     };
 
@@ -191,10 +200,13 @@ export function FranchiseOrdersProvider({ children }) {
                 toast.success('Order accepted successfully');
                 setLiveOrders(prev => prev.map(o => o._id === orderId ? { ...o, orderStatus: 'Accepted' } : o));
                 fetchOrders(); // Refresh to get full details from server
+                return true;
             }
+            return false;
         } catch (error) {
             console.error('Accept order error:', error);
             toast.error(error.response?.data?.message || 'Failed to accept order');
+            return false;
         }
     };
 

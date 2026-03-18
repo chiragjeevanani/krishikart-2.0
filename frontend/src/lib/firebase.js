@@ -17,16 +17,12 @@ export { firebaseConfig };
 
 export const requestFCMToken = async () => {
     try {
-        console.log("[FCM] Requesting notification permission...");
         const permission = await Notification.requestPermission();
-        console.log("[FCM] Notification permission status:", permission);
 
         if (permission === 'granted') {
-            console.log("[FCM] Permission granted. Registering service worker...");
             const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
                 scope: '/'
             });
-            console.log("[FCM] Service worker registered successfully. Initializing messaging in SW and fetching token...");
 
             // Send Firebase config to the service worker so it doesn't need hard-coded keys
             try {
@@ -38,20 +34,19 @@ export const requestFCMToken = async () => {
                         payload: { firebaseConfig },
                     });
                 } else {
-                    console.warn("[FCM] No active service worker found to receive config");
+                    // non-fatal
                 }
             } catch (e) {
-                console.warn("[FCM] Failed to send Firebase config to service worker:", e);
+                // non-fatal
             }
 
             const token = await getToken(messaging, {
                 vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
                 serviceWorkerRegistration: registration
             });
-            console.log("[FCM] Token generated successfully:", token);
             return token;
         } else {
-            console.warn("[FCM] Permission not granted. Status:", permission);
+            // non-fatal
         }
     } catch (error) {
         console.error("[FCM] Token Error:", error);
