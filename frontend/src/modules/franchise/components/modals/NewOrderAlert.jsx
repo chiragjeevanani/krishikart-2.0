@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, X, Bell, ArrowRight, Package } from 'lucide-react';
 import { useFranchiseOrders } from '../../contexts/FranchiseOrdersContext';
@@ -16,11 +16,7 @@ const NewOrderAlert = () => {
     } = useFranchiseOrders();
     const navigate = useNavigate();
 
-    if (!isAlertOpen || !newOrderData) return null;
-
-    const orderId = useMemo(() => {
-        return newOrderData.orderId || newOrderData._id || newOrderData.id || null;
-    }, [newOrderData]);
+    const orderId = newOrderData?.orderId || newOrderData?._id || newOrderData?.id || null;
 
     const [orderDetail, setOrderDetail] = useState(null);
     const [detailLoading, setDetailLoading] = useState(false);
@@ -64,6 +60,8 @@ const NewOrderAlert = () => {
 
     const totalAmount = orderDetail?.totalAmount ?? orderDetail?.total ?? newOrderData?.totalAmount ?? 0;
     const items = orderDetail?.items || newOrderData?.items || [];
+
+    if (!isAlertOpen || !newOrderData) return null;
 
     const onAccept = async () => {
         if (!orderId) return;

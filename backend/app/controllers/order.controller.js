@@ -224,14 +224,37 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    // 6. Coordinates for Order
-    let userCoords = null;
-    if (shippingLocation && shippingLocation.lat && shippingLocation.lng) {
-      userCoords = {
-        type: 'Point',
-        coordinates: [shippingLocation.lng, shippingLocation.lat] // GeoJSON: [longitude, latitude]
-      };
+    // 6. Coordinates for Order (required for nearest-franchise assignment)
+    const parsedLat = Number(shippingLocation?.lat);
+    const parsedLng = Number(shippingLocation?.lng);
+    const hasValidClientCoords =
+      Number.isFinite(parsedLat) &&
+      Number.isFinite(parsedLng) &&
+      parsedLat >= -90 &&
+      parsedLat <= 90 &&
+      parsedLng >= -180 &&
+      parsedLng <= 180;
+
+    let resolvedLocation = null;
+    if (hasValidClientCoords) {
+      resolvedLocation = { lat: parsedLat, lng: parsedLng };
+    } else {
+      // Fallback for legacy clients that send only address text.
+      resolvedLocation = await geocodeAddress(shippingAddress);
     }
+
+    if (!resolvedLocation) {
+      return handleResponse(
+        res,
+        400,
+        "Valid delivery location is required. Please pick your location on map and try again.",
+      );
+    }
+
+    const userCoords = {
+      type: "Point",
+      coordinates: [resolvedLocation.lng, resolvedLocation.lat], // GeoJSON: [longitude, latitude]
+    };
 
     // 7. Create Order
     const order = new Order({

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
 import api from '@/lib/axios';
 import { toast } from 'sonner';
 import { getSocket, joinFranchiseRoom } from '@/lib/socket';
@@ -16,11 +16,15 @@ export function FranchiseOrdersProvider({ children }) {
     // Alert State
     const [isAlertOpen, setIsAlertOpen] = useState(false);
     const [newOrderData, setNewOrderData] = useState(null);
+    const audioRef = useRef(null);
+    const hasPrimedAudioRef = useRef(false);
+    const knownOrderIdsRef = useRef(new Set());
 
     // Play sound helper when new order arrives.
     // Preferred: play seller_alert.mp3. Fallback: oscillator "beeps".
     const playNotificationSound = () => {
         const fallbackBeep = () => {
+            if (!hasPrimedAudioRef.current) return;
             try {
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 if (!AudioContext) return;
@@ -63,7 +67,8 @@ export function FranchiseOrdersProvider({ children }) {
         };
 
         try {
-            const audio = new Audio(sellerAlert);
+            const audio = audioRef.current || new Audio(sellerAlert);
+            audioRef.current = audio;
             audio.volume = 1.0;
             audio.currentTime = 0;
             const playPromise = audio.play();
@@ -76,12 +81,68 @@ export function FranchiseOrdersProvider({ children }) {
         }
     };
 
+    // Prime audio on first user interaction so browser autoplay policies don't block alerts later.
+    useEffect(() => {
+        if (hasPrimedAudioRef.current) return;
+        const prime = () => {
+            try {
+                hasPrimedAudioRef.current = true;
+                const audio = audioRef.current || new Audio(sellerAlert);
+                audioRef.current = audio;
+                audio.volume = 0;
+                const p = audio.play();
+                if (p && typeof p.finally === 'function') {
+                    p.finally(() => {
+                        audio.pause();
+                        audio.currentTime = 0;
+                        audio.volume = 1;
+                    });
+                } else {
+                    audio.pause();
+                    audio.currentTime = 0;
+                    audio.volume = 1;
+                }
+            } catch (_) {
+                // Keep silent; fallback beep still exists.
+            } finally {
+                window.removeEventListener('click', prime);
+                window.removeEventListener('touchstart', prime);
+                window.removeEventListener('keydown', prime);
+            }
+        };
+
+        window.addEventListener('click', prime, { once: true });
+        window.addEventListener('touchstart', prime, { once: true });
+        window.addEventListener('keydown', prime, { once: true });
+
+        return () => {
+            window.removeEventListener('click', prime);
+            window.removeEventListener('touchstart', prime);
+            window.removeEventListener('keydown', prime);
+        };
+    }, []);
+
     const fetchOrders = async () => {
         setLoading(true);
         try {
             const response = await api.get('/orders/franchise/all');
             if (response.data.success) {
-                setLiveOrders(response.data.results || []);
+                const incomingOrders = response.data.results || [];
+                const incomingIds = new Set(incomingOrders.map((o) => String(o._id)));
+                const knownIds = knownOrderIdsRef.current;
+
+                // For polling fallback: alert only when a truly new order appears after initial load.
+                if (knownIds.size > 0) {
+                    const newlyAddedOrder = incomingOrders.find((o) => !knownIds.has(String(o._id)));
+                    if (newlyAddedOrder) {
+                        setNewOrderData(newlyAddedOrder);
+                        setIsAlertOpen(true);
+                        playNotificationSound();
+                    }
+                }
+
+                knownOrderIdsRef.current = incomingIds;
+                setLiveOrders(incomingOrders);
             }
         } catch (error) {
             console.error('Fetch franchise orders error:', error);
