@@ -30,6 +30,13 @@ import { toast } from 'sonner'
 import { geocodeAddressFrontend } from '@/lib/geo'
 import { useLocation } from '../contexts/LocationContext'
 
+const SAVED_ADDRESSES_KEY = 'kk_user_saved_addresses'
+const ADDRESS_TAGS = [
+    { value: 'home', label: 'Home' },
+    { value: 'work', label: 'Work' },
+    { value: 'other', label: 'Other' }
+]
+
 export default function CheckoutScreen() {
     const navigate = useNavigate()
     const { cartItems, cartTotal, clearCart, deliveryConstraints } = useCart()
@@ -56,6 +63,8 @@ export default function CheckoutScreen() {
 
     const [user, setUser] = useState(null)
     const [deliveryAddress, setDeliveryAddress] = useState('')
+    const [savedAddresses, setSavedAddresses] = useState([])
+    const [addressTag, setAddressTag] = useState('home')
     const [addressDetails, setAddressDetails] = useState({
         flat: '',
         floor: '',
@@ -65,14 +74,6 @@ export default function CheckoutScreen() {
         state: 'Madhya Pradesh'
     });
     const [deliveryShift, setDeliveryShift] = useState('');
-
-    const ensureDeliveryLocationPinned = () => {
-        if (ctxHasDeliveryPinned) return true;
-        toast.error('Please pin your exact delivery location on the map.');
-        // Return to this screen after picking
-        navigate('/location-picker?type=delivery&returnTo=/checkout');
-        return false;
-    }
 
     const handlePinCurrentLocation = async () => {
         if (!ctxUpdateDeliveryLocation) {
@@ -139,9 +140,55 @@ export default function CheckoutScreen() {
         setDeliveryAddress(fullAddress)
     }
 
+    const persistSavedAddresses = (addresses) => {
+        setSavedAddresses(addresses)
+        localStorage.setItem(SAVED_ADDRESSES_KEY, JSON.stringify(addresses))
+    }
+
+    const upsertAddressByTag = (tag, details) => {
+        const normalizedTag = tag || 'other'
+        const fullAddress = buildFullAddress(details)
+        const label = ADDRESS_TAGS.find((item) => item.value === normalizedTag)?.label || 'Other'
+        const next = [
+            ...(savedAddresses.filter((entry) => entry.tag !== normalizedTag)),
+            {
+                id: normalizedTag,
+                tag: normalizedTag,
+                label,
+                details,
+                fullAddress,
+                updatedAt: new Date().toISOString()
+            }
+        ]
+        persistSavedAddresses(next)
+        return fullAddress
+    }
+
+    const handleSelectSavedAddress = (saved) => {
+        if (!saved?.details) return
+        setAddressTag(saved.tag || 'other')
+        setAddressDetails(saved.details)
+        const fullAddress = saved.fullAddress || buildFullAddress(saved.details)
+        setDeliveryAddress(fullAddress)
+        toast.success(`${saved.label || 'Address'} selected`)
+    }
+
     useEffect(() => {
         fetchProfile()
         fetchAvailableCoupons()
+    }, [])
+
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem(SAVED_ADDRESSES_KEY)
+            if (!raw) return
+            const parsed = JSON.parse(raw)
+            if (Array.isArray(parsed)) {
+                setSavedAddresses(parsed)
+            }
+        } catch (error) {
+            console.error('Failed to parse saved addresses:', error)
+        }
     }, [])
 
     useEffect(() => {
@@ -320,11 +367,6 @@ export default function CheckoutScreen() {
         }
         if (!deliveryShift) {
             toast.error("Please select a delivery shift timing");
-            return;
-        }
-
-        // Ensure user has pinned an exact delivery location on the map at least once
-        if (!ensureDeliveryLocationPinned()) {
             return;
         }
 
@@ -514,6 +556,27 @@ export default function CheckoutScreen() {
                                             <Edit3 size={16} />
                                         </button>
                                     </div>
+                                    {savedAddresses.length > 0 && (
+                                        <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap gap-2">
+                                            {savedAddresses
+                                                .slice()
+                                                .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+                                                .map((saved) => (
+                                                    <button
+                                                        key={saved.id || saved.tag}
+                                                        onClick={() => handleSelectSavedAddress(saved)}
+                                                        className={cn(
+                                                            "px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all",
+                                                            addressTag === saved.tag
+                                                                ? "bg-primary/10 border-primary/30 text-primary"
+                                                                : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
+                                                        )}
+                                                    >
+                                                        {saved.label}
+                                                    </button>
+                                                ))}
+                                        </div>
+                                    )}
                                 </div>
                             </section>
 
@@ -818,6 +881,26 @@ export default function CheckoutScreen() {
                                     </button>
                                 </div>
                                 <div className="space-y-4 max-h-[60vh] overflow-y-auto px-1">
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Save as</label>
+                                        <div className="flex gap-2">
+                                            {ADDRESS_TAGS.map((tag) => (
+                                                <button
+                                                    key={tag.value}
+                                                    type="button"
+                                                    onClick={() => setAddressTag(tag.value)}
+                                                    className={cn(
+                                                        "px-3 py-2 rounded-xl border text-xs font-bold transition-all",
+                                                        addressTag === tag.value
+                                                            ? "border-primary bg-primary/5 text-primary"
+                                                            : "border-slate-200 text-slate-500 hover:border-slate-300"
+                                                    )}
+                                                >
+                                                    {tag.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
                                     <div className="space-y-3">
                                         <input
                                             type="text"
@@ -873,6 +956,7 @@ export default function CheckoutScreen() {
                                             const fullAddress = buildFullAddress(addressDetails)
                                             try {
                                                 await persistAddressToProfile(fullAddress)
+                                                upsertAddressByTag(addressTag, addressDetails)
                                                 toast.success('Address saved')
                                             } catch (error) {
                                                 console.error('Save address error:', error)

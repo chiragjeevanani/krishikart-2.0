@@ -22,7 +22,7 @@ export default function DesktopNavbar() {
     const navigate = useNavigate()
     const { cartCount } = useCart()
     const { wishlistCount } = useWishlist()
-    const { address, updateLocation, loading } = useLocation()
+    const { address, updateFranchiseLocation, loading } = useLocation()
 
     const [index, setIndex] = useState(0)
     const routeLocation = useRouteLocation()
@@ -70,10 +70,15 @@ export default function DesktopNavbar() {
     const handleLocationClick = async () => {
         toast.info("Fetching real-time location...")
         try {
-            await updateLocation(true)
+            if (typeof updateFranchiseLocation !== 'function') {
+                navigate('/location-picker?type=franchise&returnTo=/home')
+                return
+            }
+            await updateFranchiseLocation(true)
             toast.success("Location updated successfully!")
         } catch (error) {
-            toast.error("Failed to fetch location. Please enable location access.")
+            toast.error("Failed to fetch location. Please enable location access or pick on map.")
+            navigate('/location-picker?type=franchise&returnTo=/home')
         }
     }
 
