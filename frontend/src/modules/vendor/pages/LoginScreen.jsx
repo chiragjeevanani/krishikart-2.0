@@ -18,7 +18,6 @@ export default function LoginScreen() {
         setIsLoading(true);
         try {
             const response = await api.post('/vendor/login', { email, password });
-            console.log('[Vendor Login Response]:', response.data);
 
             const result = response.data.result;
             if (result && result.token) {
@@ -27,8 +26,6 @@ export default function LoginScreen() {
                 // Explicitly save to storage BEFORE navigation
                 localStorage.setItem('vendorToken', token);
                 localStorage.setItem('vendorData', JSON.stringify(vendorData));
-
-                console.log('[Vendor Login Success] Storage Updated. Token:', token.substring(0, 10) + '...');
 
                 loginSuccess(vendorData, token);
 

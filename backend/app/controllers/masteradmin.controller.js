@@ -1276,11 +1276,19 @@ export const getAllDeliveryPartners = async (req, res) => {
         const { status } = req.query;
         let query = {};
         if (status === 'pending') {
-            // Only show awaiting review; exclude rejected
-            query.$or = [
-                { approvalStatus: 'pending' },
-                { approvalStatus: { $exists: false }, isApproved: false }
-            ];
+            // Only show awaiting review; exclude approved and rejected
+            query = {
+                $and: [
+                    { approvalStatus: { $nin: ['approved', 'rejected'] } },
+                    { isApproved: { $ne: true } },
+                    {
+                        $or: [
+                            { approvalStatus: 'pending' },
+                            { approvalStatus: { $exists: false } }
+                        ]
+                    }
+                ]
+            };
         } else if (status === 'verified') {
             query.$or = [
                 { approvalStatus: 'approved' },

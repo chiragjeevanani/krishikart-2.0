@@ -9,7 +9,7 @@ export default function Breadcrumbs() {
     if (pathnames.length === 0) return null
 
     return (
-        <nav className="hidden md:flex items-center gap-2 py-4 text-[13px] text-slate-400 font-medium">
+        <nav className="hidden md:flex items-center gap-2 py-2 text-[13px] text-slate-400 font-medium">
             <Link
                 to="/home"
                 className="flex items-center gap-1 hover:text-primary transition-colors"

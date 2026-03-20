@@ -718,6 +718,7 @@
     overflow-x: auto;
     padding-bottom: 8px;
     scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
 }
 
 .lp-rail-scroll::-webkit-scrollbar {
@@ -757,6 +758,7 @@
     margin-bottom: 4px;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -1226,7 +1228,25 @@
     }
 
     .lp-quality-grid {
-        grid-template-columns: repeat(2, 1fr);
+        display: flex;
+        overflow-x: auto;
+        gap: 16px;
+        padding: 4px 20px 24px;
+        margin: 0 -24px; /* bleed into side padding */
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        -webkit-overflow-scrolling: touch;
+        flex-wrap: nowrap;
+    }
+
+    .lp-quality-grid::-webkit-scrollbar {
+        display: none;
+    }
+
+    .lp-quality-card {
+        flex: 0 0 280px;
+        min-width: 280px;
+        overflow: visible;
     }
 
     .lp-network {
@@ -1257,7 +1277,23 @@
     }
 
     .lp-categories-grid {
-        grid-template-columns: repeat(4, 1fr);
+        display: flex;
+        overflow-x: auto;
+        gap: 16px;
+        padding: 4px 20px 20px;
+        margin: 0 -24px;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+        flex-wrap: nowrap;
+    }
+
+    .lp-categories-grid::-webkit-scrollbar {
+        display: none;
+    }
+
+    .lp-category-item {
+        flex: 0 0 120px;
+        min-width: 120px;
     }
 
     .lp-product-rails {
@@ -1341,15 +1377,11 @@
         font-size: 24px;
     }
 
-    .lp-quality-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-    }
-
-    /* Mobile: flip card — show headline first, flip on scroll (one by one) or click */
     .lp-quality-card {
+        flex: 0 0 260px;
+        min-width: 260px;
         overflow: visible;
-        min-height: 160px;
+        min-height: 180px;
     }
 
     .lp-quality-card-inner {

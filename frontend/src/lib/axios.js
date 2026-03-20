@@ -61,7 +61,6 @@ api.interceptors.request.use((config) => {
 
     // EXTRA SECURITY: Never send a Master Admin token to a Vendor-specific dashboard path
     if (token && currentPath.startsWith('/vendor') && token === localStorage.getItem('masterAdminToken') && !isAdminRequest) {
-        console.warn('[Security Guard] Blocking Admin token leakage into Vendor context');
         token = localStorage.getItem('vendorToken');
     }
 
@@ -78,6 +77,7 @@ api.interceptors.response.use(
     (error) => {
         if (error.response?.status === 401) {
             const currentPath = window.location.pathname.toLowerCase();
+            const requestUrl = String(error.config?.url || '').toLowerCase();
 
             // Only wipe token if we are actually in that section of the app
             if (currentPath.startsWith('/masteradmin') && !currentPath.includes('/login')) {
@@ -86,14 +86,30 @@ api.interceptors.response.use(
                 // Optional: redirect to login if session is truly dead
                 // window.location.href = '/masteradmin/login';
             } else if (currentPath.startsWith('/franchise')) {
-                localStorage.removeItem('franchiseToken');
-                localStorage.removeItem('franchiseData');
+                /**
+                 * IMPORTANT:
+                 * Do NOT auto-wipe franchise auth on every 401.
+                 * A single unrelated 401 (validation, permissions, wrong endpoint, etc.)
+                 * would otherwise delete `franchiseToken` and cause refresh → login loops.
+                 *
+                 * Franchise session validity is enforced by `GET /franchise/me`
+                 * in `FranchiseAuthContext`, which will clean up and redirect only
+                 * when the token is actually invalid/expired.
+                 */
+                if (requestUrl.includes('/franchise/me')) {
+                    localStorage.removeItem('franchiseToken');
+                    localStorage.removeItem('franchiseData');
+                }
             } else if (currentPath.startsWith('/vendor')) {
                 localStorage.removeItem('vendorToken');
                 localStorage.removeItem('vendorData');
             } else if (currentPath.startsWith('/delivery')) {
-                localStorage.removeItem('deliveryToken');
-                localStorage.removeItem('deliveryData');
+                // Same principle as franchise: only clear auth when session validation fails.
+                // Otherwise any unrelated 401 would wipe auth and cause refresh → login loops.
+                if (requestUrl.includes('/delivery/me')) {
+                    localStorage.removeItem('deliveryToken');
+                    localStorage.removeItem('deliveryData');
+                }
             }
         }
         return Promise.reject(error);

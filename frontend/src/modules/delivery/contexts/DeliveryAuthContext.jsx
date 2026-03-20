@@ -5,6 +5,16 @@ import { useFCM } from '@/hooks/useFCM';
 const DeliveryAuthContext = createContext();
 
 export function DeliveryAuthProvider({ children }) {
+    const normalizeToken = (t) => {
+        if (!t) return null;
+        let s = String(t).trim();
+        if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+            s = s.slice(1, -1).trim();
+        }
+        return s || null;
+    };
+
+    const [token, setToken] = useState(() => normalizeToken(localStorage.getItem('deliveryToken')));
     const [delivery, setDelivery] = useState(() => {
         const saved = localStorage.getItem('deliveryData');
         return saved ? JSON.parse(saved) : null;
@@ -12,21 +22,31 @@ export function DeliveryAuthProvider({ children }) {
     const [loading, setLoading] = useState(true);
 
     // Register FCM Token
-    useFCM(!!delivery, 'delivery');
+    useFCM(!!token, 'delivery');
 
     useEffect(() => {
         const loadUser = async () => {
-            const token = localStorage.getItem('deliveryToken');
-            if (token) {
+            const storedToken = normalizeToken(localStorage.getItem('deliveryToken'));
+            setToken(storedToken);
+            if (storedToken) {
                 try {
-                    const { data } = await api.get('/delivery/me');
+                    // Explicit token avoids any interceptor timing/context issues on refresh
+                    const { data } = await api.get('/delivery/me', {
+                        headers: { Authorization: `Bearer ${storedToken}` },
+                    });
                     setDelivery(data.result);
                     localStorage.setItem('deliveryData', JSON.stringify(data.result));
                 } catch (error) {
                     console.error("Failed to load delivery profile", error);
                     if (error.response?.status === 401) {
-                        logout();
+                        setDelivery(null);
+                        setToken(null);
+                        localStorage.removeItem('deliveryToken');
+                        localStorage.removeItem('deliveryData');
+                        window.location.href = '/delivery/login';
+                        return;
                     }
+                    // Non-401 errors should NOT force logout; keep token for refresh stability.
                 }
             }
             setLoading(false);
@@ -43,13 +63,16 @@ export function DeliveryAuthProvider({ children }) {
     }, []);
 
     const loginSuccess = (data, token) => {
+        const normalized = normalizeToken(token);
         setDelivery(data);
-        localStorage.setItem('deliveryToken', token);
+        setToken(normalized);
+        if (normalized) localStorage.setItem('deliveryToken', normalized);
         localStorage.setItem('deliveryData', JSON.stringify(data));
     };
 
     const logout = () => {
         setDelivery(null);
+        setToken(null);
         localStorage.removeItem('deliveryToken');
         localStorage.removeItem('deliveryData');
         window.location.href = '/delivery/login';
@@ -61,7 +84,7 @@ export function DeliveryAuthProvider({ children }) {
             setDelivery,
             loginSuccess,
             logout,
-            isAuthenticated: !!delivery,
+            isAuthenticated: !!token,
             loading
         }}>
             {children}

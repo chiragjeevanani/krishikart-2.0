@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { useCart } from '../contexts/CartContext'
 import { useWishlist } from '../contexts/WishlistContext'
 import api from '@/lib/axios'
+import { useDebounce } from '@/hooks/useDebounce'
 import { toast } from 'sonner'
 import {
     Sheet,
@@ -40,6 +41,8 @@ export default function ProductListScreen() {
         inStock: false,
         sort: 'none' // 'price-low', 'price-high'
     })
+    const [showSearch, setShowSearch] = useState(false)
+    const debouncedSearch = useDebounce(searchQuery, 500)
     const activeSidebarRef = useRef(null)
     const sidebarListRef = useRef(null)
     const [activeBarTop, setActiveBarTop] = useState(19)
@@ -188,83 +191,148 @@ export default function ProductListScreen() {
         return result
     }, [products, searchQuery, activeFilters])
 
+    // Sync URL with debounced search
+    useEffect(() => {
+        const currentSearch = searchParams.get('search') || '';
+        if (debouncedSearch !== currentSearch) {
+            const params = new URLSearchParams(searchParams);
+            if (debouncedSearch) {
+                params.set('search', debouncedSearch);
+            } else {
+                params.delete('search');
+            }
+            navigate(`?${params.toString()}`, { replace: true });
+        }
+    }, [debouncedSearch]);
+
     return (
         <PageTransition>
             <div className="bg-white min-h-screen pb-32 flex flex-col">
                 {/* Unified Header - Mobile Redesign */}
                 <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b border-slate-100/80 shadow-[0_1px_10px_rgba(0,0,0,0.04)] md:hidden">
                     <div className="flex items-center justify-between px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-3 h-16">
-                        <div className="flex items-center gap-3">
-                            <button onClick={() => navigate(-1)} className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white border border-slate-100 shadow-sm text-slate-900 active:scale-95 transition-transform">
-                                <ArrowLeft size={22} />
-                            </button>
-                            <div className="flex flex-col">
-                                <h1 className="text-[17px] font-bold text-slate-900 leading-tight">
-                                    {currentCategoryData.name}
-                                </h1>
-                                <Sheet>
-                                    <SheetTrigger asChild>
-                                        <button className="flex items-center gap-1 text-[13px] font-bold text-emerald-600 leading-tight">
-                                            Change category <ChevronDown size={14} strokeWidth={3} />
+                        <AnimatePresence mode="wait">
+                            {showSearch ? (
+                                <motion.div
+                                    key="search-bar"
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: 20 }}
+                                    className="flex items-center gap-2 flex-1"
+                                >
+                                    <button
+                                        onClick={() => {
+                                            setShowSearch(false)
+                                            setSearchQuery('')
+                                        }}
+                                        className="p-2 text-slate-400"
+                                    >
+                                        <ArrowLeft size={20} />
+                                    </button>
+                                    <div className="relative flex-1">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                        <input
+                                            autoFocus
+                                            type="text"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            placeholder="Search products..."
+                                            className="w-full h-10 bg-slate-50 border-none rounded-full pl-10 pr-10 text-sm font-medium focus:ring-2 focus:ring-emerald-500/20 outline-none"
+                                        />
+                                        {searchQuery && (
+                                            <button
+                                                onClick={() => setSearchQuery('')}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+                                            >
+                                                <X size={16} />
+                                            </button>
+                                        )}
+                                    </div>
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    key="header-default"
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -20 }}
+                                    className="flex items-center justify-between w-full"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <button onClick={() => navigate(-1)} className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white border border-slate-100 shadow-sm text-slate-900 active:scale-95 transition-transform">
+                                            <ArrowLeft size={22} />
                                         </button>
-                                    </SheetTrigger>
-                                    <SheetContent side="bottom" className="rounded-t-[32px] max-h-[80vh] overflow-y-auto">
-                                        <SheetHeader className="mb-6">
-                                            <SheetTitle className="text-xl font-black">All Categories</SheetTitle>
-                                        </SheetHeader>
-                                        <div className="grid grid-cols-4 gap-4 py-4">
-                                            {sidebarCategories.map((cat) => (
-                                                <SheetClose asChild key={cat.id}>
-                                                    <button
-                                                        onClick={() => {
-                                                            setSelectedCategory(cat.id)
-                                                            navigate(`/products/${cat.id}`, { replace: true })
-                                                        }}
-                                                        className="flex flex-col items-center gap-2"
-                                                    >
-                                                        <div className={cn(
-                                                            "w-14 h-14 rounded-2xl flex items-center justify-center border border-slate-100 shadow-sm",
-                                                            cat.color || "bg-slate-50"
-                                                        )}>
-                                                            {cat.icon && typeof cat.icon === 'function' ? (
-                                                                <cat.icon size={24} />
-                                                            ) : (
-                                                                <img src={cat.image} className="w-full h-full object-cover rounded-2xl" />
-                                                            )}
-                                                        </div>
-                                                        <span className="text-[10px] font-bold text-center leading-tight">{cat.name}</span>
+                                        <div className="flex flex-col">
+                                            <h1 className="text-[17px] font-bold text-slate-900 leading-tight">
+                                                {queryFromUrl ? `Results for "${queryFromUrl}"` : currentCategoryData.name}
+                                            </h1>
+                                            <Sheet>
+                                                <SheetTrigger asChild>
+                                                    <button className="flex items-center gap-1 text-[13px] font-bold text-emerald-600 leading-tight">
+                                                        Change category <ChevronDown size={14} strokeWidth={3} />
                                                     </button>
-                                                </SheetClose>
-                                            ))}
+                                                </SheetTrigger>
+                                                <SheetContent side="bottom" className="rounded-t-[32px] max-h-[80vh] overflow-y-auto">
+                                                    <SheetHeader className="mb-6">
+                                                        <SheetTitle className="text-xl font-black">All Categories</SheetTitle>
+                                                    </SheetHeader>
+                                                    <div className="grid grid-cols-4 gap-4 py-4">
+                                                        {sidebarCategories.map((cat) => (
+                                                            <SheetClose asChild key={cat.id}>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setSelectedCategory(cat.id)
+                                                                    }}
+                                                                    className="flex flex-col items-center gap-2"
+                                                                >
+                                                                    <div className={cn(
+                                                                        "w-14 h-14 rounded-2xl flex items-center justify-center border border-slate-100 shadow-sm",
+                                                                        cat.color || "bg-slate-50"
+                                                                    )}>
+                                                                        {cat.icon && typeof cat.icon === 'function' ? (
+                                                                            <cat.icon size={24} />
+                                                                        ) : (
+                                                                            <img src={cat.image} className="w-full h-full object-cover rounded-2xl" />
+                                                                        )}
+                                                                    </div>
+                                                                    <span className="text-[10px] font-bold text-center leading-tight">{cat.name}</span>
+                                                                </button>
+                                                            </SheetClose>
+                                                        ))}
+                                                    </div>
+                                                </SheetContent>
+                                            </Sheet>
                                         </div>
-                                    </SheetContent>
-                                </Sheet>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <button className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 border border-slate-100">
-                                <Search size={20} strokeWidth={2.5} />
-                            </button>
-                            <button
-                                onClick={() => navigate('/cart')}
-                                className="relative w-10 h-10 flex items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-100"
-                            >
-                                <ShoppingCart size={18} strokeWidth={2.5} />
-                                {cartCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-black text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white">
-                                        {cartCount}
-                                    </span>
-                                )}
-                            </button>
-                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => setShowSearch(true)}
+                                            className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 border border-slate-100"
+                                        >
+                                            <Search size={20} strokeWidth={2.5} />
+                                        </button>
+                                        <button
+                                            onClick={() => navigate('/cart')}
+                                            className="relative w-10 h-10 flex items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-100"
+                                        >
+                                            <ShoppingCart size={18} strokeWidth={2.5} />
+                                            {cartCount > 0 && (
+                                                <span className="absolute -top-1 -right-1 w-5 h-5 bg-black text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white">
+                                                    {cartCount}
+                                                </span>
+                                            )}
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 </div>
 
                 {/* Main Content Area - Split View on Mobile */}
                 <div className="flex flex-1 overflow-hidden">
-                    {/* Mobile Sidebar - LEFT COL */}
-                    <aside className="w-[85px] border-r border-slate-50 h-[calc(100vh-120px)] overflow-y-auto no-scrollbar md:hidden bg-white shrink-0">
-                        <div ref={sidebarListRef} className="flex flex-col py-2 relative">
+                    {/* Mobile Sidebar - LEFT COL (fixed, independent of products scroll) */}
+                    <aside className="w-[85px] border-r border-slate-50 md:hidden bg-white shrink-0 fixed left-0 top-[80px] h-[calc(100vh-96px)] overflow-y-auto no-scrollbar z-20">
+                        <div ref={sidebarListRef} className="flex flex-col py-2 pb-24 relative">
                             {sidebarCategories.map((cat) => {
                                 const isActive = selectedCategory === cat.id
                                 return (
@@ -274,27 +342,34 @@ export default function ProductListScreen() {
                                         onClick={() => {
                                             const idx = sidebarCategories.findIndex((c) => c.id === cat.id)
                                             if (idx >= 0) setActiveBarTop(idx * SIDEBAR_ITEM_HEIGHT + 19)
+                                            // Only update local state to avoid route-change animation
                                             setSelectedCategory(cat.id)
-                                            navigate(`/products/${cat.id}`, { replace: true })
                                         }}
                                         className={cn(
-                                            "relative flex flex-col items-center gap-1.5 py-4 px-1 transition-all",
+                                            "relative flex flex-col items-center gap-1 py-3 px-1 transition-all",
                                             isActive ? "bg-white" : "hover:bg-slate-50/50"
                                         )}
                                     >
                                         <div className={cn(
-                                            "w-[54px] h-[54px] rounded-full overflow-hidden flex items-center justify-center shrink-0 border border-slate-50 transition-all shadow-sm",
+                                            "w-[50px] h-[50px] rounded-full overflow-hidden flex items-center justify-center shrink-0 border border-slate-50 transition-all shadow-sm",
                                             isActive ? "ring-2 ring-emerald-500 ring-offset-2 scale-105" : "bg-slate-50",
                                             cat.color
                                         )}>
                                             {cat.icon && typeof cat.icon === 'function' ? (
                                                 <cat.icon size={22} strokeWidth={2.5} />
                                             ) : (
-                                                <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
+                                                <img
+                                                    src={cat.image}
+                                                    alt={cat.name}
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => {
+                                                        e.target.src = 'https://images.unsplash.com/photo-1603297638322-c9fdb12905c9?w=400&q=80'
+                                                    }}
+                                                />
                                             )}
                                         </div>
                                         <span className={cn(
-                                            "text-[10px] font-bold text-center leading-tight transition-colors px-1",
+                                            "text-[9px] font-bold text-center leading-tight transition-colors px-1",
                                             isActive ? "text-slate-900" : "text-slate-500"
                                         )}>
                                             {cat.name}
@@ -312,10 +387,10 @@ export default function ProductListScreen() {
                     </aside>
 
                     {/* Right Side - Products Area */}
-                    <main className="flex-1 h-[calc(100vh-120px)] overflow-y-auto no-scrollbar bg-white">
+                    <main className="flex-1 bg-white ml-[85px] md:ml-0">
                         {/* Horizontal Filters & Subcategories Row */}
                         <div className="flex flex-col gap-3 px-4 py-4 border-b border-slate-50/50 sticky top-0 bg-white/95 backdrop-blur-sm z-30 md:hidden">
-                            <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar py-1">
+                            <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar py-1 pr-2">
                                 <div
                                     onClick={() => setActiveFilters(prev => ({ ...prev, rating: !prev.rating }))}
                                     className={cn(
@@ -363,6 +438,8 @@ export default function ProductListScreen() {
                                         {activeFilters.sort === 'price-low' ? 'Price: Low' : activeFilters.sort === 'price-high' ? 'Price: High' : 'Sort'}
                                     </span>
                                 </div>
+                                {/* Spacer so last chip can scroll fully into view */}
+                                <div className="shrink-0 w-10" />
                             </div>
 
                             {/* Subcategories */}
@@ -394,7 +471,7 @@ export default function ProductListScreen() {
                         </div>
 
                         {/* Product Grid - Mobile */}
-                        <div className="p-4 flex flex-col gap-6 md:hidden min-h-[400px]">
+                        <div className="p-4 flex flex-col gap-6 items-stretch md:hidden min-h-[400px]">
                             {isLoading ? (
                                 <div className="flex items-center justify-center py-20">
                                     <Loader2 className="w-8 h-8 animate-spin text-primary opacity-40" />
@@ -402,6 +479,17 @@ export default function ProductListScreen() {
                             ) : (
                                 <>
                                     <AnimatePresence mode="popLayout">
+                                        {searchQuery !== debouncedSearch && (
+                                            <motion.div
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                exit={{ opacity: 0 }}
+                                                className="flex items-center justify-center py-4 text-slate-400 text-xs font-bold uppercase tracking-widest gap-2"
+                                            >
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                Searching...
+                                            </motion.div>
+                                        )}
                                         {filteredProducts.map((product, index) => (
                                             <motion.div
                                                 key={product._id || product.id || index}
@@ -409,6 +497,7 @@ export default function ProductListScreen() {
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 exit={{ opacity: 0, scale: 0.95 }}
+                                                className="w-full max-w-[270px] mr-auto"
                                             >
                                                 <ProductCard product={product} />
                                             </motion.div>
@@ -425,10 +514,10 @@ export default function ProductListScreen() {
                             )}
                         </div>
 
-                        {/* DESKTOP VIEW */}
-                        <div className="hidden md:block max-w-[1400px] mx-auto px-8 w-full mt-10">
-                            <div className="flex gap-8">
-                                <aside className="w-72 shrink-0">
+                        {/* TABLET + DESKTOP VIEW */}
+                        <div className="hidden md:block max-w-3xl lg:max-w-[1400px] mx-auto px-4 lg:px-8 w-full mt-6 lg:mt-10">
+                            <div className="flex gap-6 lg:gap-8">
+                                <aside className="w-60 lg:w-72 shrink-0">
                                     <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden py-2 sticky top-32">
                                         <button onClick={() => setSelectedCategory('all')} className={cn("w-full px-6 py-4 text-[15px] font-bold text-left flex items-center gap-4 transition-all", selectedCategory === 'all' ? "bg-slate-50 text-slate-900" : "text-slate-500 hover:text-slate-900")}>
                                             <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center"><LayoutGrid size={20} /></div>
@@ -436,16 +525,45 @@ export default function ProductListScreen() {
                                         </button>
                                         {categories.map(cat => (
                                             <button key={cat._id} onClick={() => setSelectedCategory(cat._id)} className={cn("w-full px-6 py-4 text-[15px] font-bold text-left flex items-center gap-4 transition-all", selectedCategory === cat._id ? "bg-emerald-50 text-emerald-900" : "text-slate-500 hover:text-slate-900")}>
-                                                <div className="w-10 h-10 rounded-full bg-slate-100 overflow-hidden text-center"><img src={cat.image} alt={cat.name} className="w-full h-full object-cover" /></div>
+                                                <div className="w-10 h-10 rounded-full bg-slate-100 overflow-hidden text-center">
+                                                    <img
+                                                        src={cat.image}
+                                                        alt={cat.name}
+                                                        className="w-full h-full object-cover"
+                                                        onError={(e) => {
+                                                            e.target.src = 'https://images.unsplash.com/photo-1603297638322-c9fdb12905c9?w=400&q=80'
+                                                        }}
+                                                    />
+                                                </div>
                                                 {cat.name}
                                             </button>
                                         ))}
                                     </div>
                                 </aside>
-                                <div className="flex-1">
+                                <div className="flex-1 min-w-0">
                                     <div className="flex flex-col gap-6 mb-8">
                                         <div className="flex items-center justify-between">
-                                            <h2 className="text-3xl font-black text-slate-900 tracking-tight">{currentCategoryData.name}</h2>
+                                        <div className="flex flex-col gap-1">
+                                            <h2 className="text-3xl font-black text-slate-900 tracking-tight">
+                                                {queryFromUrl ? `Search Results: "${queryFromUrl}"` : currentCategoryData.name}
+                                            </h2>
+                                            <div className="flex items-center gap-2 text-slate-500 text-sm font-medium">
+                                                <span>{filteredProducts.length} Products Found</span>
+                                                {queryFromUrl && (
+                                                    <button 
+                                                        onClick={() => {
+                                                            setSearchQuery('')
+                                                            const params = new URLSearchParams(searchParams)
+                                                            params.delete('search')
+                                                            navigate(`?${params.toString()}`, { replace: true })
+                                                        }}
+                                                        className="text-emerald-600 font-bold hover:underline ml-2"
+                                                    >
+                                                        Clear Search
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
 
                                             {/* Filters Row for Desktop */}
                                             <div className="flex items-center gap-3">
@@ -525,8 +643,16 @@ export default function ProductListScreen() {
                                             <Loader2 className="w-12 h-12 animate-spin text-primary opacity-20" />
                                         </div>
                                     ) : (
-                                        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                            {filteredProducts.map((product, index) => <ProductCard key={product._id || product.id || index} product={product} />)}
+                                        <div className="space-y-6">
+                                            {searchQuery !== debouncedSearch && (
+                                                <div className="flex items-center gap-3 text-slate-400 text-sm font-bold uppercase tracking-widest bg-slate-50 p-4 rounded-2xl border border-slate-100 animate-pulse">
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                    Searching Network SKUs...
+                                                </div>
+                                            )}
+                                            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
+                                                {filteredProducts.map((product, index) => <ProductCard key={product._id || product.id || index} product={product} />)}
+                                            </div>
                                         </div>
                                     )}
                                 </div>

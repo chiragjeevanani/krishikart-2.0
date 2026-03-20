@@ -26,7 +26,6 @@ export const geocodeAddressFrontend = async (query) => {
                 lng: parseFloat(lng)
             };
         }
-        console.warn('Geocoding status:', data.status);
         return null;
     } catch (error) {
         console.error('Geocoding error:', error.message);

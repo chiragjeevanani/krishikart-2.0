@@ -28,7 +28,8 @@ export default function OrderDetailScreen() {
         <div className="h-screen w-full flex items-center justify-center bg-slate-50">
             <div className="text-center">
                 <p className="text-slate-400 font-bold mb-4 italic">Order not found.</p>
-                <Button onClick={() => navigate('/orders')} className="rounded-full px-8">Back to Orders</Button>
+                <Button onClick={() => navigate('/orders')} className="rounded-full px-8">B
+                ack to Orders</Button>
             </div>
         </div>
     );

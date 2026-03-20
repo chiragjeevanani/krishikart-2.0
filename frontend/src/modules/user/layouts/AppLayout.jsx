@@ -19,56 +19,15 @@ export default function AppLayout() {
 
     // Scroll to top on route change
     useEffect(() => {
-        window.scrollTo(0, 0)
+        // Scroll the app shell, not the window
+        const root = document.querySelector('.user-app-theme')
+        if (root) {
+            root.scrollTo(0, 0)
+        } else if (typeof window !== 'undefined') {
+            window.scrollTo(0, 0)
+        }
     }, [location.pathname])
 
-    // Mobile: prevent pull-down overscroll only when at top (so top section doesn’t scroll down)
-    useEffect(() => {
-        if (typeof window === 'undefined') return
-        const isMobile = () => window.innerWidth < 768
-        let touchStartY = 0
-        let rafId = null
-
-        const onTouchStart = (e) => {
-            touchStartY = e.touches[0].clientY
-        }
-        const onTouchMove = (e) => {
-            if (!isMobile()) return
-            if (window.scrollY <= 2 && e.touches[0].clientY > touchStartY) {
-                e.preventDefault()
-            }
-        }
-        const onWheel = (e) => {
-            if (!isMobile()) return
-            if (window.scrollY <= 2 && e.deltaY < 0) {
-                e.preventDefault()
-            }
-        }
-
-        const clampScrollTop = () => {
-            if (!isMobile()) return
-            if (window.scrollY <= 0) {
-                window.scrollTo(0, 0)
-            }
-        }
-        const onScroll = () => {
-            if (rafId) cancelAnimationFrame(rafId)
-            rafId = requestAnimationFrame(clampScrollTop)
-        }
-
-        document.addEventListener('touchstart', onTouchStart, { passive: true })
-        document.addEventListener('touchmove', onTouchMove, { passive: false })
-        document.addEventListener('wheel', onWheel, { passive: false })
-        window.addEventListener('scroll', onScroll, { passive: true })
-
-        return () => {
-            document.removeEventListener('touchstart', onTouchStart)
-            document.removeEventListener('touchmove', onTouchMove)
-            document.removeEventListener('wheel', onWheel)
-            window.removeEventListener('scroll', onScroll)
-            if (rafId) cancelAnimationFrame(rafId)
-        }
-    }, [])
 
     const isHomeScreen = location.pathname === '/home'
 
@@ -90,13 +49,13 @@ export default function AppLayout() {
     ].some(path => location.pathname.startsWith(path))
 
     return (
-        <div className="user-app-theme min-h-screen bg-background md:bg-white relative overflow-x-hidden">
+        <div className="user-app-theme h-screen bg-background md:bg-white relative overflow-x-hidden overflow-y-auto overscroll-y-none no-scrollbar">
             {/* Desktop Navigation */}
             <div className="hidden md:block fixed top-0 left-0 right-0 z-50 bg-white">
                 <DesktopNavbar />
             </div>
 
-            <main className="w-full max-w-md mx-auto min-h-screen bg-background md:bg-white shadow-[0_0_20px_rgba(0,0,0,0.03)] md:shadow-none md:max-w-none md:mx-0 relative md:pt-32">
+            <main className="w-full max-w-md mx-auto min-h-screen bg-background md:bg-white shadow-[0_0_20px_rgba(0,0,0,0.03)] md:shadow-none md:max-w-none md:mx-0 relative md:pt-24">
                 {/* Breadcrumbs for Desktop - Hidden on Home */}
                 {!isHomeScreen && (
                     <div className="max-w-7xl mx-auto px-8 hidden md:block">

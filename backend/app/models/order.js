@@ -226,7 +226,7 @@ const orderSchema = new mongoose.Schema({
         {
             franchiseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Franchise' },
             attemptedAt: { type: Date, default: Date.now },
-            reason: { type: String, enum: ['unresponsive', 'rejected'], default: 'unresponsive' }
+            reason: { type: String, enum: ['unresponsive', 'rejected', 'auto-assigned'], default: 'unresponsive' }
         }
     ],
     deliveryShift: {

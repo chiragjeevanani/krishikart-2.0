@@ -78,6 +78,7 @@ export function OrderProvider({ children }) {
         try {
             const response = await api.post('/orders/place', {
                 shippingAddress: orderData.shippingAddress,
+                shippingLocation: orderData.shippingLocation || null,
                 paymentMethod: orderData.paymentMethod,
                 deliveryShift: orderData.deliveryShift,
                 couponCode: orderData.couponCode || '',

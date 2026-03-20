@@ -7,6 +7,7 @@ import { useWishlist } from '../../contexts/WishlistContext'
 import { useLocation } from '../../contexts/LocationContext'
 import { cn } from '@/lib/utils'
 import MobileProfileDrawer from './MobileProfileDrawer'
+import { useDebounce } from '@/hooks/useDebounce'
 import { toast } from 'sonner'
 
 const PLACEHOLDERS = [
@@ -21,10 +22,12 @@ export default function DesktopNavbar() {
     const navigate = useNavigate()
     const { cartCount } = useCart()
     const { wishlistCount } = useWishlist()
-    const { address, updateLocation, loading } = useLocation()
+    const { address, updateFranchiseLocation, loading } = useLocation()
 
     const [index, setIndex] = useState(0)
-    const [searchValue, setSearchValue] = useState("")
+    const routeLocation = useRouteLocation()
+    const urlParams = new URLSearchParams(routeLocation.search)
+    const [searchValue, setSearchValue] = useState(urlParams.get('search') || "")
     const [isScrolled, setIsScrolled] = useState(false)
 
     useEffect(() => {
@@ -43,31 +46,39 @@ export default function DesktopNavbar() {
         }
     }, [])
 
-    const routeLocation = useRouteLocation()
-    const [isInitial, setIsInitial] = useState(true)
+    const debouncedSearch = useDebounce(searchValue, 500)
+    // routeLocation already declared above
 
     useEffect(() => {
-        if (isInitial) {
-            setIsInitial(false)
-            return
-        }
-        const timer = setTimeout(() => {
-            if (searchValue.trim()) {
-                navigate(`/products/all?search=${encodeURIComponent(searchValue.trim())}`)
-            } else if (routeLocation.pathname.includes('/products/all')) {
-                navigate(`/products/all`)
+        const currentSearch = new URLSearchParams(routeLocation.search).get('search') || ""
+        if (debouncedSearch.trim() !== currentSearch) {
+            const currentPath = routeLocation.pathname
+            const targetPath = currentPath.startsWith('/products/') ? currentPath : '/products/all'
+            
+            if (debouncedSearch.trim()) {
+                navigate(`${targetPath}?search=${encodeURIComponent(debouncedSearch.trim())}`)
+            } else if (currentPath.startsWith('/products/')) {
+                navigate(targetPath)
             }
-        }, 500)
-        return () => clearTimeout(timer)
-    }, [searchValue, navigate, routeLocation.pathname, isInitial])
+        }
+    }, [debouncedSearch, navigate, routeLocation.pathname, routeLocation.search])
+
+    const handleSearchChange = (e) => {
+        setSearchValue(e.target.value)
+    }
 
     const handleLocationClick = async () => {
         toast.info("Fetching real-time location...")
         try {
-            await updateLocation(true)
+            if (typeof updateFranchiseLocation !== 'function') {
+                navigate('/location-picker?type=franchise&returnTo=/home')
+                return
+            }
+            await updateFranchiseLocation(true)
             toast.success("Location updated successfully!")
         } catch (error) {
-            toast.error("Failed to fetch location. Please enable location access.")
+            toast.error("Failed to fetch location. Please enable location access or pick on map.")
+            navigate('/location-picker?type=franchise&returnTo=/home')
         }
     }
 
@@ -102,7 +113,7 @@ export default function DesktopNavbar() {
                             <MapPin size={18} strokeWidth={2.5} />
                         </div>
                         <div className="flex flex-col max-w-[150px]">
-                            <span className="text-[14px] font-bold text-slate-900 leading-tight">Deliver to</span>
+                            <span className="text-[14px] font-bold text-slate-900 leading-tight">Delivery tomorrow</span>
                             <span className="text-[12px] font-medium text-slate-400 leading-tight truncate">
                                 {loading ? "Fetching..." : (address || "Set Location")}
                             </span>
@@ -114,8 +125,12 @@ export default function DesktopNavbar() {
                     <form
                         onSubmit={(e) => {
                             e.preventDefault();
+                            const currentPath = routeLocation.pathname
+                            const targetPath = currentPath.startsWith('/products/') ? currentPath : '/products/all'
                             if (searchValue.trim()) {
-                                navigate(`/products/all?search=${encodeURIComponent(searchValue.trim())}`);
+                                navigate(`${targetPath}?search=${encodeURIComponent(searchValue.trim())}`);
+                            } else if (currentPath.startsWith('/products/')) {
+                                navigate(targetPath)
                             }
                         }}
                         className="relative group"
@@ -126,7 +141,7 @@ export default function DesktopNavbar() {
                         <input
                             type="text"
                             value={searchValue}
-                            onChange={(e) => setSearchValue(e.target.value.trim())}
+                            onChange={handleSearchChange}
                             placeholder=""
                             className="w-full h-[44px] pl-12 pr-4 bg-slate-50/50 border border-slate-100 rounded-full text-[14px] font-medium placeholder:text-slate-400 focus:bg-white focus:border-slate-200 focus:ring-4 focus:ring-slate-100 transition-all outline-none"
                         />

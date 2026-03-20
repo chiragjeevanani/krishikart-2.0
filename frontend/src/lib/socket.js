@@ -12,11 +12,11 @@ export const initSocket = () => {
         });
 
         socket.on("connect", () => {
-            console.log("Connected to Socket.io server");
+            // silent in production
         });
 
         socket.on("disconnect", () => {
-            console.log("Disconnected from Socket.io server");
+            // silent in production
         });
     }
     return socket;
@@ -38,15 +38,25 @@ export const joinOrderRoom = (orderId) => {
     const s = getSocket();
     s.emit("join_order_room", orderId);
 };
-export const joinFranchiseRoom = (franchiseId) => {
+export const joinFranchiseRoom = () => {
     const s = getSocket();
-    s.emit("join_franchise_room", franchiseId);
+    const token = localStorage.getItem("franchiseToken");
+    if (!token) {
+        return;
+    }
+    s.emit("join_franchise_room", { token });
 };
 export const joinDeliveryRoom = (deliveryId) => {
     const s = getSocket();
     s.emit("join_delivery_room", deliveryId);
 };
-export const joinVendorRoom = (vendorId) => {
+export const joinVendorRoom = () => {
     const s = getSocket();
-    s.emit("join_vendor_room", vendorId);
+    const token = localStorage.getItem("vendorToken");
+
+    if (!token) {
+        return;
+    }
+
+    s.emit("join_vendor_room", { token });
 };

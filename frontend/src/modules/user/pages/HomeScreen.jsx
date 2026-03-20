@@ -33,7 +33,6 @@ import PageTransition from '../components/layout/PageTransition'
 import ProductCard from '../components/common/ProductCard'
 import api from '@/lib/axios'
 import { Button } from '@/components/ui/button'
-import { MapPin } from 'lucide-react'
 import { useLocation } from '../contexts/LocationContext'
 import LocationPermissionPopup from '../components/common/LocationPermissionPopup'
 
@@ -109,6 +108,7 @@ export default function HomeScreen() {
     const [loading, setLoading] = useState(true)
     const [showLocationPopup, setShowLocationPopup] = useState(false)
     const navigate = useNavigate()
+    const flashDealsScrollRef = useRef(null)
 
     useEffect(() => {
         const fetchData = async () => {
@@ -163,15 +163,41 @@ export default function HomeScreen() {
         localStorage.setItem('kk_location_declined', 'true');
     };
 
+    // Auto-scroll Flash Deals cards on mobile (horizontal marquee-style)
+    useEffect(() => {
+        if (!isMobile()) return;
+        const container = flashDealsScrollRef.current;
+        if (!container) return;
+
+        const step = 180; // pixels per tick
+        const intervalMs = 2500;
+
+        const id = setInterval(() => {
+            if (!container) return;
+            const { scrollLeft, scrollWidth, clientWidth } = container;
+            const maxScroll = scrollWidth - clientWidth;
+            if (maxScroll <= 0) return;
+
+            const next = scrollLeft + step;
+            if (next >= maxScroll - 4) {
+                container.scrollTo({ left: 0, behavior: 'smooth' });
+            } else {
+                container.scrollTo({ left: next, behavior: 'smooth' });
+            }
+        }, intervalMs);
+
+        return () => clearInterval(id);
+    }, []);
+
 
     return (
         <>
-            {/* Header outside PageTransition so sticky works (transform on motion breaks sticky) */}
+            {/* Global fixed header + search overlay (mobile only) */}
             <div className="md:hidden">
                 <StickySearchBar />
             </div>
             <PageTransition>
-                <div className="bg-transparent md:bg-white pb-32 min-h-screen pt-16 md:pt-0">
+                <div className="bg-[var(--color-brand-subtle)] md:bg-white pb-32 min-h-screen pt-24 md:pt-0">
                     {/* Categories Row - Full width background, centered content */}
                     <div className="bg-[var(--color-brand-subtle)]/75 md:bg-white shadow-sm md:shadow-none">
                         <div className="max-w-7xl mx-auto px-5 md:px-8 pt-5 md:pt-4 pb-10 md:pb-16">
@@ -203,24 +229,21 @@ export default function HomeScreen() {
                     {/* Main Content Wrapper */}
                     <div className="max-w-7xl mx-auto md:px-8">
                         {/* Hero Promotion */}
-                        <div className="px-5 mt-8 md:px-0 md:mt-4">
+                        <div className="px-5 mt-6 md:px-0 md:mt-4">
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
-                                className="w-full rounded-[40px] md:rounded-2xl p-8 md:p-12 relative overflow-hidden shadow-xl bg-gradient-to-br from-[var(--color-brand-dark)] via-[var(--color-brand-primary)] to-[var(--color-brand-yellow)]/20"
+                                className="w-full rounded-[32px] md:rounded-2xl px-6 py-4 md:px-10 md:py-6 relative overflow-hidden shadow-xl bg-gradient-to-br from-[var(--color-brand-dark)] via-[var(--color-brand-primary)] to-[var(--color-brand-yellow)]/20"
                             >
                                 <div className="relative z-10 max-w-lg">
-                                    <h2 className="text-3xl md:text-5xl font-black text-white leading-tight tracking-tight md:normal-case md:font-bold">
+                                    <h2 className="text-[24px] md:text-4xl font-black text-white leading-tight tracking-tight md:normal-case md:font-bold">
                                         Wholesale <span className="text-[var(--color-brand-yellow)] md:text-primary">B2B</span> <br />
                                         Direct from Farms
                                     </h2>
-                                    <p className="text-slate-400 mt-2 text-xs md:text-sm font-bold uppercase tracking-widest md:normal-case md:font-medium">Pricing starts from 10kg+</p>
-                                    <Button className="mt-6 md:mt-10 bg-primary hover:bg-primary/90 text-white rounded-2xl md:rounded-lg min-h-[48px] h-12 md:h-14 px-8 md:px-10 font-black md:font-bold shadow-lg shadow-primary/25">
-                                        Order Now
-                                    </Button>
+                                    <p className="text-slate-300 mt-1 text-[11px] md:text-sm font-bold uppercase tracking-widest md:normal-case md:font-medium">Pricing starts from 10kg+</p>
                                 </div>
-                                <div className="absolute right-[-20px] bottom-[-20px] opacity-15 md:opacity-25 text-[var(--color-brand-primary)]">
-                                    <Sprout size={180} className="md:w-[320px] md:h-[320px]" />
+                                <div className="absolute right-[-20px] bottom-[-30px] opacity-15 md:opacity-25 text-[var(--color-brand-primary)]">
+                                    <Sprout size={140} className="md:w-[240px] md:h-[240px]" />
                                 </div>
                             </motion.div>
                         </div>
@@ -242,15 +265,17 @@ export default function HomeScreen() {
                                 </div>
                                 <button onClick={() => navigate('/products/all')} className="text-primary text-[11px] font-black uppercase tracking-widest bg-primary/5 px-4 py-2 rounded-full md:normal-case md:font-semibold md:text-sm hover:bg-primary/10 transition-colors">See All</button>
                             </div>
-                            <div className="relative overflow-x-auto no-scrollbar md:overflow-visible px-5 md:px-0">
+                        <div
+                            ref={flashDealsScrollRef}
+                            className="relative overflow-x-auto no-scrollbar md:overflow-visible px-5 md:px-0"
+                        >
                                 <div className="flex gap-4 w-max md:w-full md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 pb-2 md:pb-0 pr-4 md:pr-0">
-                                    {(products || []).slice(0, 5).map((product) => (
+                                    {(products || []).filter(p => p.homeSections?.includes('flash_deals')).slice(0, 5).map((product) => (
                                         <div key={product._id} className="w-[164px] md:w-full cursor-pointer">
                                             <ProductCard product={product} />
                                         </div>
                                     ))}
                                 </div>
-                                <div className="pointer-events-none absolute right-0 top-0 bottom-2 w-12 bg-gradient-to-l from-[var(--color-background)] to-transparent md:hidden" aria-hidden="true" />
                             </div>
                         </div>
                     </div>
@@ -272,13 +297,12 @@ export default function HomeScreen() {
                             </div>
                             <div className="relative overflow-x-auto no-scrollbar md:overflow-visible px-5 md:px-0">
                                 <div className="flex gap-4 w-max md:w-full md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 pb-4 pr-4 md:pr-0">
-                                    {(products || []).filter(p => p.bulkPricing || p.wholesalePrice).slice(0, 5).map((product) => (
+                                    {(products || []).filter(p => p.homeSections?.includes('bulk_saving') || p.bulkPricing?.length > 0).slice(0, 5).map((product) => (
                                         <div key={product._id} className="w-[155px] md:w-full cursor-pointer">
                                             <ProductCard product={product} />
                                         </div>
                                     ))}
                                 </div>
-                                <div className="pointer-events-none absolute right-0 top-0 bottom-4 w-12 bg-gradient-to-l from-[var(--color-brand-yellow-subtle)]/90 to-transparent md:hidden" aria-hidden="true" />
                             </div>
                         </div>
                     </div>
@@ -297,7 +321,7 @@ export default function HomeScreen() {
                                 <button onClick={() => navigate('/products/all')} className="text-primary text-[11px] font-black uppercase tracking-widest bg-primary/5 px-4 py-2 rounded-full md:normal-case md:font-semibold md:text-sm hover:bg-primary/10 transition-colors">See All</button>
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-5 gap-4">
-                                {(products || []).slice(0, 5).map((product) => (
+                                {(products || []).filter(p => p.homeSections?.includes('seasonal_picks')).slice(0, 5).map((product) => (
                                     <ProductCard key={product._id} product={product} />
                                 ))}
                             </div>
@@ -316,13 +340,12 @@ export default function HomeScreen() {
                             </div>
                             <div className="relative overflow-x-auto no-scrollbar md:overflow-visible px-5 md:px-0">
                                 <div className="flex gap-4 w-max md:w-full md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 pb-6 pr-4 md:pr-0">
-                                    {(products || []).filter(p => p.category?.name?.toLowerCase() === 'exotic').slice(0, 5).map((product) => (
+                                    {(products || []).filter(p => p.homeSections?.includes('exotic_finds') || p.category?.name?.toLowerCase() === 'exotic').slice(0, 5).map((product) => (
                                         <div key={product._id} className="w-[164px] md:w-full cursor-pointer">
                                             <ProductCard product={product} />
                                         </div>
                                     ))}
                                 </div>
-                                <div className="pointer-events-none absolute right-0 top-0 bottom-6 w-12 bg-gradient-to-l from-[var(--color-background)] to-transparent md:hidden" aria-hidden="true" />
                             </div>
                         </div>
 
@@ -335,7 +358,7 @@ export default function HomeScreen() {
                                 <h2 className="text-[22px] md:text-3xl font-black text-slate-900 tracking-tight md:font-bold">Daily Essentials</h2>
                             </div>
                             <div className="space-y-4 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-4 md:space-y-0">
-                                {(products || []).slice(0, 3).map((product, idx) => (
+                                {(products || []).filter(p => p.homeSections?.includes('daily_essentials')).slice(0, 3).map((product, idx) => (
                                     <div key={product._id} onClick={() => navigate(`/product/${product._id}`)} className="cursor-pointer">
                                         <ProductCard product={product} layout="list" index={idx} />
                                     </div>
@@ -351,7 +374,7 @@ export default function HomeScreen() {
                                 <div className="w-16 h-1 bg-primary rounded-full mx-auto mt-4" />
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                                {(products || []).map((product, idx) => (
+                                {(products || []).filter(p => p.homeSections?.includes('best_sellers')).map((product, idx) => (
                                     <div key={product._id} onClick={() => navigate(`/product/${product._id}`)} className="cursor-pointer">
                                         <ProductCard product={product} index={idx} />
                                     </div>

@@ -15,8 +15,18 @@ export const protectFranchise = async (req, res, next) => {
       return handleResponse(res, 401, "Unauthorized");
 
     req.franchise = franchise;
+    // Isolation: never trust client-supplied franchiseId; only req.franchise._id is valid
+    if (req.body) delete req.body.franchiseId;
+    if (req.query) delete req.query.franchiseId;
     next();
   } catch (err) {
+    const raw = req.headers.authorization || "";
+    const short = raw ? String(raw).slice(0, 24) : "";
+    console.error("[protectFranchise] JWT verify failed:", {
+      message: err?.message,
+      name: err?.name,
+      authHeaderPrefix: short,
+    });
     return handleResponse(res, 401, "Invalid token");
   }
 };

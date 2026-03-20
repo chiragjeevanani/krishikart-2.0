@@ -154,7 +154,7 @@ export default function ProductCard({ product, layout = 'grid' }) {
                         <img
                             src={productImage}
                             alt={product.name}
-                            className="w-full h-full object-contain p-2.5 mix-blend-multiply transition-transform duration-700 group-hover:scale-105 md:p-4"
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                             onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=80' }}
                         />
 

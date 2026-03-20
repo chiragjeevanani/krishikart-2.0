@@ -49,8 +49,6 @@ export default function OrderDetailScreen() {
             const response = await api.get(`/orders/franchise/${id}`);
             if (response.data.success) {
                 const o = response.data.result;
-                console.log('Order API Data:', o);
-                console.log('Fields:', { subtotal: o.subtotal, deliveryFee: o.deliveryFee, tax: o.tax, total: o.totalAmount, paymentStatus: o.paymentStatus });
                 setOrder({
                     id: o._id,
                     customer: o.userId?.legalEntityName || o.userId?.fullName || o.user?.legalEntityName || o.user?.fullName || 'Guest Client',

@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { capitalizeFirst } from '../utils/helper.js';
 
 const bulkPricingSchema = new mongoose.Schema({
     minQty: {
@@ -15,7 +16,8 @@ const productSchema = new mongoose.Schema({
     name: {
         type: String,
         required: [true, 'Product name is required'],
-        trim: true
+        trim: true,
+        set: capitalizeFirst
     },
     skuCode: {
         type: String,
@@ -104,7 +106,12 @@ const productSchema = new mongoose.Schema({
     showOnStorefront: {
         type: Boolean,
         default: true
-    }
+    },
+    homeSections: [{
+        type: String,
+        enum: ['flash_deals', 'bulk_saving', 'seasonal_picks', 'exotic_finds', 'daily_essentials', 'best_sellers'],
+        trim: true
+    }]
 }, {
     timestamps: true
 });

@@ -89,7 +89,7 @@ export default function CommissionControlScreen() {
                                 <CommissionForm
                                     label="Vendor Commission"
                                     initialRate={currentRates.vendorCommission}
-                                    onSave={(rate) => console.log('Vendor rate:', rate)}
+                                    onSave={() => {}}
                                 />
                             </div>
                         </div>
@@ -101,7 +101,7 @@ export default function CommissionControlScreen() {
                                 <CommissionForm
                                     label="Franchise Commission"
                                     initialRate={currentRates.franchiseCommission}
-                                    onSave={(rate) => console.log('Franchise rate:', rate)}
+                                    onSave={() => {}}
                                 />
                             </div>
                         </div>

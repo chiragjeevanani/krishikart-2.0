@@ -21,7 +21,10 @@ import {
     Trash2,
     Check,
     Zap,
-    ChevronDown
+    ChevronDown,
+    Sparkles,
+    Gem,
+    TrendingDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCatalog } from '../contexts/CatalogContext';
@@ -49,7 +52,8 @@ const INITIAL_FORM_DATA = {
     bestPrice: '',
     dietaryType: 'veg',
     showOnPOS: true,
-    showOnStorefront: true
+    showOnStorefront: true,
+    homeSections: []
 };
 
 export default function AddProductScreen() {
@@ -178,7 +182,11 @@ export default function AddProductScreen() {
 
         setIsSaving(true);
         try {
-            await addProduct(formData);
+            const payload = { ...formData };
+            if (!payload.subcategory || payload.subcategory === "") payload.subcategory = null;
+            if (!payload.category || payload.category === "") payload.category = null;
+
+            await addProduct(payload);
             setTimeout(() => {
                 navigate('/masteradmin/products/manage');
             }, 1000);
@@ -756,6 +764,69 @@ export default function AddProductScreen() {
 
                     {/* Sidebar Area */}
                     <div className="lg:col-span-4 space-y-8">
+
+                        {/* 5. Homepage Sections Allocation */}
+                        <div className="bg-white border border-slate-200 rounded-sm shadow-sm overflow-hidden group">
+                            <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
+                                <div className="w-8 h-8 bg-amber-50 text-amber-600 flex items-center justify-center rounded-sm group-hover:bg-amber-600 group-hover:text-white transition-colors duration-300">
+                                    <Zap size={16} />
+                                </div>
+                                <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Homepage Allocation</h3>
+                            </div>
+                            <div className="p-6">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Select sections where this product should appear:</p>
+                                <div className="space-y-3">
+                                    {[
+                                        { id: 'flash_deals', label: 'Flash Deals', icon: Zap },
+                                        { id: 'bulk_saving', label: 'Bulk Saving', icon: IndianRupee },
+                                        { id: 'seasonal_picks', label: 'Seasonal Picks', icon: Sparkles },
+                                        { id: 'exotic_finds', label: 'Exotic Finds', icon: Gem },
+                                        { id: 'daily_essentials', label: 'Daily Essentials', icon: Package },
+                                        { id: 'best_sellers', label: 'Best Sellers', icon: TrendingDown },
+                                    ].map((section) => {
+                                        const isSelected = formData.homeSections?.includes(section.id);
+                                        return (
+                                            <div
+                                                key={section.id}
+                                                onClick={() => {
+                                                    const newSections = isSelected
+                                                        ? formData.homeSections.filter(s => s !== section.id)
+                                                        : [...(formData.homeSections || []), section.id];
+                                                    setFormData(prev => ({ ...prev, homeSections: newSections }));
+                                                }}
+                                                className={cn(
+                                                    "flex items-center justify-between p-3 rounded-sm border transition-all cursor-pointer select-none",
+                                                    isSelected 
+                                                        ? "bg-emerald-50 border-emerald-200 shadow-sm" 
+                                                        : "bg-slate-50/50 border-slate-100 hover:bg-white hover:border-slate-200"
+                                                )}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className={cn(
+                                                        "p-1.5 rounded-sm transition-colors",
+                                                        isSelected ? "bg-emerald-600 text-white" : "bg-slate-200 text-slate-400"
+                                                    )}>
+                                                        <section.icon size={12} />
+                                                    </div>
+                                                    <span className={cn(
+                                                        "text-[10px] font-black uppercase tracking-widest",
+                                                        isSelected ? "text-emerald-900" : "text-slate-500"
+                                                    )}>
+                                                        {section.label}
+                                                    </span>
+                                                </div>
+                                                <div className={cn(
+                                                    "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all",
+                                                    isSelected ? "bg-emerald-600 border-emerald-600" : "bg-white border-slate-200"
+                                                )}>
+                                                    {isSelected && <Check size={10} className="text-white" strokeWidth={4} />}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
 
                         {/* 4. Principal Media */}
                         <div className="bg-white border border-slate-200 rounded-sm shadow-sm overflow-hidden group">

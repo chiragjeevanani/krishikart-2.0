@@ -208,7 +208,9 @@ export const CatalogProvider = ({ children }) => {
                     if (productData[key]) {
                         productData[key].forEach(file => formData.append('images', file));
                     }
-                } else {
+                } else if (key === 'homeSections') {
+                    formData.append(key, JSON.stringify(productData[key] || []));
+                } else if (productData[key] !== null && productData[key] !== undefined && productData[key] !== "") {
                     formData.append(key, productData[key]);
                 }
             });
@@ -260,8 +262,13 @@ export const CatalogProvider = ({ children }) => {
                     formData.append('primaryImage', updateData[key]);
                 } else if (key === 'galleryFiles' && updateData[key]) {
                     updateData[key].forEach(file => formData.append('images', file));
+                } else if (key === 'homeSections') {
+                    formData.append(key, JSON.stringify(updateData[key] || []));
                 } else if (key !== 'primaryImage' && key !== 'images' && key !== '_id') {
-                    formData.append(key, updateData[key]);
+                    // Only append if value is valid to avoid "null"/"undefined" strings in multipart/form-data
+                    if (updateData[key] !== null && updateData[key] !== undefined && updateData[key] !== "") {
+                        formData.append(key, updateData[key]);
+                    }
                 }
             });
 

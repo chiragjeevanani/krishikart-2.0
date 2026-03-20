@@ -249,7 +249,6 @@ export default function POSScreen() {
                                                 alt={item.name}
                                                 loading="lazy"
                                                 onError={(e) => {
-                                                    console.log("Image load error for:", item.name);
                                                     e.target.onerror = null;
                                                     e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600';
                                                 }}
@@ -622,7 +621,15 @@ export default function POSScreen() {
             <AnimatePresence>
                 {isReceiptShown && (
                     <div className="fixed inset-0 z-[110] flex items-center justify-center p-6">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/90 backdrop-blur-md" />
+                        <motion.div
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-slate-900/90 backdrop-blur-md cursor-pointer"
+                            onClick={() => {
+                                localStorage.removeItem('pos_cart');
+                                setCart([]);
+                                setIsReceiptShown(false);
+                            }}
+                        />
                         <motion.div
                             initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
                             className="bg-white w-[380px] rounded-sm p-0 shadow-2xl relative z-10 overflow-hidden"

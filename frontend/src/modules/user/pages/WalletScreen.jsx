@@ -13,7 +13,8 @@ import {
     Info,
     CheckCircle2,
     RefreshCcw,
-    Zap
+    Zap,
+    X
 } from 'lucide-react'
 import PageTransition from '../components/layout/PageTransition'
 import { Button } from '@/components/ui/button'
@@ -30,6 +31,7 @@ export default function WalletScreen() {
     const [showSuccess, setShowSuccess] = useState(false)
     const [activeFilter, setActiveFilter] = useState('All')
     const [successMessage, setSuccessMessage] = useState('')
+    const [isAddMoneyModalOpen, setIsAddMoneyModalOpen] = useState(false)
 
     const filters = [
         'All', 'Expiring', 'Recharge', 'Refund', 'Loyalty'
@@ -86,20 +88,27 @@ export default function WalletScreen() {
                         {/* Main Content Area */}
                         <div className="lg:col-span-2 space-y-8">
                             {/* Balance Card - The Big One */}
-                            <div className="bg-[#eff6ff] rounded-2xl p-8 flex items-center justify-between border border-blue-100 relative overflow-hidden group shadow-sm">
+                            <div className="bg-[#eff6ff] rounded-2xl p-5 md:p-8 flex items-center justify-between border border-blue-100 relative overflow-hidden group shadow-sm">
                                 <div className="absolute top-0 right-0 w-48 h-48 bg-white/40 rounded-full -mr-24 -mt-24 blur-3xl opacity-50" />
-                                <div className="flex items-center gap-8 relative z-10">
-                                    <div className="w-20 h-20 bg-white rounded-2xl shadow-sm border border-blue-50 flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
+                                <div className="flex items-center gap-5 md:gap-8 relative z-10">
+                                    <div className="w-16 h-16 md:w-20 md:h-20 bg-white rounded-2xl shadow-sm border border-blue-50 flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
                                         <Wallet size={40} className="text-[#3b82f6]" strokeWidth={1.5} />
                                     </div>
                                     <div className="space-y-1">
-                                        <h2 className="text-5xl font-bold text-[#1e40af] tracking-tight tabular-nums">
+                                        <h2 className="text-3xl md:text-5xl font-bold text-[#1e40af] tracking-tight tabular-nums leading-tight">
                                             ₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                         </h2>
-                                        <div className="flex flex-col">
+                                        <div className="flex items-center justify-between gap-3">
                                             <p className="text-[11px] font-black text-[#60a5fa] uppercase tracking-[0.15em] ml-1">
                                                 Your Wallet Balance
                                             </p>
+                                            <Button
+                                                size="sm"
+                                                onClick={() => setIsAddMoneyModalOpen(true)}
+                                                className="h-8 px-3 rounded-full bg-[#1e40af] hover:bg-[#1d4ed8] text-white text-xs font-bold tracking-tight shadow-sm active:scale-[0.97]"
+                                            >
+                                                Add Money
+                                            </Button>
                                         </div>
                                     </div>
                                 </div>
@@ -208,56 +217,6 @@ export default function WalletScreen() {
 
                         {/* Sidebar */}
                         <div className="space-y-6">
-                            {/* Add Money Card */}
-                            <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-6 sticky top-28">
-                                <div className="space-y-1">
-                                    <h3 className="text-base font-bold text-slate-800">Add money</h3>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Instant Recharge via UPI/Nexus</p>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div className="relative group">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 font-bold">₹</span>
-                                        <Input
-                                            type="number"
-                                            placeholder="Enter amount"
-                                            className="h-12 pl-8 bg-slate-50/50 border-slate-100 focus:bg-white transition-all text-sm font-bold placeholder:text-slate-300 rounded-xl"
-                                            value={amountToAdd}
-                                            onChange={(e) => setAmountToAdd(e.target.value)}
-                                        />
-                                    </div>
-
-                                    <Button
-                                        onClick={() => handleAddMoney()}
-                                        disabled={!amountToAdd || isProcessing}
-                                        className={cn(
-                                            "w-full h-12 bg-[#d1d5db] text-[#4b5563] font-bold tracking-tight rounded-xl hover:bg-slate-300 transition-all",
-                                            amountToAdd && "bg-slate-900 text-white hover:bg-slate-800 shadow-lg shadow-slate-200 active:scale-[0.98]"
-                                        )}
-                                    >
-                                        {isProcessing ? (
-                                            <RefreshCcw className="animate-spin mr-2" size={16} />
-                                        ) : "Add"}
-                                    </Button>
-
-                                    <div className="grid grid-cols-1 gap-2 pt-2">
-                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Quick Recharge</p>
-                                        <div className="grid grid-cols-3 gap-2">
-                                            {quickAddAmounts.map((amt) => (
-                                                <button
-                                                    key={amt}
-                                                    onClick={() => handleAddMoney(amt)}
-                                                    className="py-2.5 border border-slate-100 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-200 transition-all active:scale-95 flex flex-col items-center justify-center gap-0.5"
-                                                >
-                                                    <span className="leading-none text-[10px]">+₹{amt.toLocaleString('en-IN')}</span>
-                                                    {amt === 2000 && <span className="text-[7px] text-[#3b82f6] font-black uppercase tracking-tighter">Popular</span>}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
                             {/* Loyalty Points Redemption Card */}
                             <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-6">
                                 <div className="flex items-center justify-between">
@@ -309,6 +268,83 @@ export default function WalletScreen() {
                         </div>
                     </div>
                 </div>
+
+                {/* Add Money Modal */}
+                <AnimatePresence>
+                    {isAddMoneyModalOpen && (
+                        <>
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 0.5 }}
+                                exit={{ opacity: 0 }}
+                                className="fixed inset-0 bg-black/60 z-[120]"
+                                onClick={() => !isProcessing && setIsAddMoneyModalOpen(false)}
+                            />
+                            <motion.div
+                                initial={{ y: 40, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                exit={{ y: 40, opacity: 0 }}
+                                transition={{ type: 'spring', damping: 22, stiffness: 260 }}
+                                className="fixed inset-x-4 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 top-1/2 -translate-y-1/2 md:w-full md:max-w-md bg-white rounded-2xl shadow-2xl z-[130] border border-slate-100"
+                            >
+                                <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                                    <div>
+                                        <h3 className="text-base font-bold text-slate-900">Add money</h3>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Instant Recharge via UPI/Nexus</p>
+                                    </div>
+                                    <button
+                                        onClick={() => !isProcessing && setIsAddMoneyModalOpen(false)}
+                                        className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                                    >
+                                        <X size={16} strokeWidth={2.5} />
+                                    </button>
+                                </div>
+
+                                <div className="p-5 space-y-4">
+                                    <div className="relative group">
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 font-bold">₹</span>
+                                        <Input
+                                            type="number"
+                                            placeholder="Enter amount"
+                                            className="h-12 pl-8 bg-slate-50/50 border-slate-100 focus:bg-white transition-all text-sm font-bold placeholder:text-slate-300 rounded-xl"
+                                            value={amountToAdd}
+                                            onChange={(e) => setAmountToAdd(e.target.value)}
+                                        />
+                                    </div>
+
+                                    <Button
+                                        onClick={() => handleAddMoney()}
+                                        disabled={!amountToAdd || isProcessing}
+                                        className={cn(
+                                            "w-full h-12 bg-[#d1d5db] text-[#4b5563] font-bold tracking-tight rounded-xl hover:bg-slate-300 transition-all",
+                                            amountToAdd && "bg-slate-900 text-white hover:bg-slate-800 shadow-lg shadow-slate-200 active:scale-[0.98]"
+                                        )}
+                                    >
+                                        {isProcessing ? (
+                                            <RefreshCcw className="animate-spin mr-2" size={16} />
+                                        ) : "Add"}
+                                    </Button>
+
+                                    <div className="grid grid-cols-1 gap-2 pt-2">
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Quick Recharge</p>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {quickAddAmounts.map((amt) => (
+                                                <button
+                                                    key={amt}
+                                                    onClick={() => setAmountToAdd(String(amt))}
+                                                    className="py-2.5 border border-slate-100 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-200 transition-all active:scale-95 flex flex-col items-center justify-center gap-0.5"
+                                                >
+                                                    <span className="leading-none text-[10px]">+₹{amt.toLocaleString('en-IN')}</span>
+                                                    {amt === 2000 && <span className="text-[7px] text-[#3b82f6] font-black uppercase tracking-tighter">Popular</span>}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        </>
+                    )}
+                </AnimatePresence>
 
                 {/* Success Notification Toast */}
                 <AnimatePresence>

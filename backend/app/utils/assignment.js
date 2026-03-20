@@ -53,12 +53,13 @@ export const findNearestFranchise = async (location, excludeIds = []) => {
             });
         }
 
-        // Convert UTC to IST (+5:30) for India-based working hours
-        const now = new Date();
-        const istOffset = 5.5 * 60 * 60 * 1000;
-        const istTime = new Date(now.getTime() + istOffset);
-
-        const currentTime = `${istTime.getUTCHours().toString().padStart(2, '0')}:${istTime.getUTCMinutes().toString().padStart(2, '0')}`;
+        // Always compute business time in India timezone, independent of server timezone.
+        const currentTime = new Intl.DateTimeFormat("en-GB", {
+            timeZone: "Asia/Kolkata",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+        }).format(new Date());
 
         console.log(`[Assignment] Found ${nearestFranchises.length} nearest franchises at ${currentTime} (IST).`);
 
@@ -90,10 +91,26 @@ export const assignOrderToFranchise = async (orderId) => {
 
         const excludeIds = order.assignmentAttempts.map(a => a.franchiseId);
 
-        // Convert shippingLocation to lat/lng format if it's GeoJSON
+        const coords = order?.shippingLocation?.coordinates;
+        const hasValidCoords =
+            Array.isArray(coords) &&
+            coords.length >= 2 &&
+            Number.isFinite(Number(coords[0])) &&
+            Number.isFinite(Number(coords[1])) &&
+            !(Number(coords[0]) === 0 && Number(coords[1]) === 0);
+
+        if (!hasValidCoords) {
+            console.warn(
+                `[Assignment] Skipping order ${orderId}: invalid shipping coordinates`,
+                coords
+            );
+            return false;
+        }
+
+        // Convert GeoJSON [lng, lat] to { lat, lng }
         const location = {
-            lat: order.shippingLocation.coordinates[1],
-            lng: order.shippingLocation.coordinates[0]
+            lat: Number(coords[1]),
+            lng: Number(coords[0])
         };
 
         const franchise = await findNearestFranchise(location, excludeIds);

@@ -224,14 +224,37 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    // 6. Coordinates for Order
-    let userCoords = null;
-    if (shippingLocation && shippingLocation.lat && shippingLocation.lng) {
-      userCoords = {
-        type: 'Point',
-        coordinates: [shippingLocation.lng, shippingLocation.lat] // GeoJSON: [longitude, latitude]
-      };
+    // 6. Coordinates for Order (required for nearest-franchise assignment)
+    const parsedLat = Number(shippingLocation?.lat);
+    const parsedLng = Number(shippingLocation?.lng);
+    const hasValidClientCoords =
+      Number.isFinite(parsedLat) &&
+      Number.isFinite(parsedLng) &&
+      parsedLat >= -90 &&
+      parsedLat <= 90 &&
+      parsedLng >= -180 &&
+      parsedLng <= 180;
+
+    let resolvedLocation = null;
+    if (hasValidClientCoords) {
+      resolvedLocation = { lat: parsedLat, lng: parsedLng };
+    } else {
+      // Fallback for legacy clients that send only address text.
+      resolvedLocation = await geocodeAddress(shippingAddress);
     }
+
+    if (!resolvedLocation) {
+      return handleResponse(
+        res,
+        400,
+        "Valid delivery location is required. Please pick your location on map and try again.",
+      );
+    }
+
+    const userCoords = {
+      type: "Point",
+      coordinates: [resolvedLocation.lng, resolvedLocation.lat], // GeoJSON: [longitude, latitude]
+    };
 
     // 7. Create Order
     const order = new Order({
@@ -1144,23 +1167,18 @@ export const getAdminDeliveryTracking = async (req, res) => {
 export const getFranchiseOrders = async (req, res) => {
   try {
     const franchiseId = new mongoose.Types.ObjectId(req.franchise._id);
-    const franchiseCity = req.franchise.city;
-    const { date } = req.query;
+    const { date, includeOpen } = req.query;
 
-    console.log(`[Orders] Franchise City: ${franchiseCity}, ID: ${franchiseId}`);
-    let query = {
-      $or: [
-        { franchiseId: franchiseId },
-        {
-          franchiseId: null,
+    // Strict isolation: a franchise sees ONLY its own assigned orders.
+    // Optional: include "open" orders (franchiseId === null) so the franchise portal can claim them.
+    const query = includeOpen
+      ? {
           $or: [
-            { "shippingLocation.city": new RegExp(franchiseCity, 'i') },
-            { shippingAddress: new RegExp(franchiseCity, 'i') }
+            { franchiseId },
+            { franchiseId: null, orderStatus: { $in: ["Placed", "Assigned", "pending"] } },
           ],
-          orderStatus: { $in: ["Placed", "pending", "new"] }
         }
-      ]
-    };
+      : { franchiseId };
 
     if (date) {
       const startOfDay = new Date(date);
@@ -1179,8 +1197,10 @@ export const getFranchiseOrders = async (req, res) => {
       )
       .sort({ createdAt: -1 });
 
-    const debugInfo = `\n[${new Date().toISOString()}] Fetching Orders for ${franchiseId} (${franchiseCity})\nQuery: ${JSON.stringify(query)}\nFound: ${orders.length} orders\n`;
-    fs.appendFileSync("debug_log.txt", debugInfo);
+    if (process.env.DEBUG_LOG_TO_FILE === "true") {
+      const debugInfo = `\n[${new Date().toISOString()}] Fetching Orders for ${franchiseId}\nQuery: ${JSON.stringify(query)}\nFound: ${orders.length} orders\n`;
+      fs.appendFileSync("debug_log.txt", debugInfo);
+    }
 
     const formattedOrders = orders.map((order) => {
       const dateObj = new Date(order.createdAt || Date.now());
@@ -1210,19 +1230,20 @@ export const getFranchiseOrders = async (req, res) => {
       formattedOrders,
     );
   } catch (error) {
-    const errInfo = `\n[${new Date().toISOString()}] ERROR in getFranchiseOrders: ${error.message}\nStack: ${error.stack}\n`;
-    fs.appendFileSync("debug_log.txt", errInfo);
+    if (process.env.DEBUG_LOG_TO_FILE === "true") {
+      const errInfo = `\n[${new Date().toISOString()}] ERROR in getFranchiseOrders: ${error.message}\nStack: ${error.stack}\n`;
+      fs.appendFileSync("debug_log.txt", errInfo);
+    }
     console.error("Fetch franchise orders error:", error);
     return handleResponse(res, 500, "Server error");
   }
 };
 
-// Get franchise order by ID (same eligibility as list: assigned to this franchise OR open-pool order in their city)
+// Get franchise order by ID (only if it belongs to this franchise)
 export const getFranchiseOrderById = async (req, res) => {
   try {
     const { id } = req.params;
     const franchiseId = req.franchise._id;
-    const franchiseCity = req.franchise.city || "";
 
     const order = await Order.findById(id)
       .populate("userId", "fullName mobile address legalEntityName")
@@ -1239,19 +1260,10 @@ export const getFranchiseOrderById = async (req, res) => {
       return handleResponse(res, 404, "Order not found");
     }
 
-    const assignedToThisFranchise =
-      order.franchiseId && order.franchiseId.toString() === franchiseId.toString();
-
-    const openPoolEligible =
-      !order.franchiseId &&
-      ["Placed", "pending", "new"].includes(order.orderStatus) &&
-      franchiseCity &&
-      (
-        (order.shippingLocation?.city && new RegExp(franchiseCity, "i").test(order.shippingLocation.city)) ||
-        (order.shippingAddress && new RegExp(franchiseCity, "i").test(order.shippingAddress))
-      );
-
-    if (!assignedToThisFranchise && !openPoolEligible) {
+    if (
+      !order.franchiseId ||
+      order.franchiseId.toString() !== franchiseId.toString()
+    ) {
       return handleResponse(res, 403, "Not authorized to view this order");
     }
 

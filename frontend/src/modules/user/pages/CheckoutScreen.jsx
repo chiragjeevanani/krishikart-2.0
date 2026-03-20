@@ -28,10 +28,23 @@ import { cn } from '@/lib/utils'
 import api from '@/lib/axios'
 import { toast } from 'sonner'
 import { geocodeAddressFrontend } from '@/lib/geo'
+import { useLocation } from '../contexts/LocationContext'
+
+const SAVED_ADDRESSES_KEY = 'kk_user_saved_addresses'
+const ADDRESS_TAGS = [
+    { value: 'home', label: 'Home' },
+    { value: 'work', label: 'Work' },
+    { value: 'other', label: 'Other' }
+]
 
 export default function CheckoutScreen() {
     const navigate = useNavigate()
     const { cartItems, cartTotal, clearCart, deliveryConstraints } = useCart()
+    const locationCtx = useLocation()
+    const ctxDeliveryAddress = locationCtx?.deliveryAddress
+    const ctxDeliveryLocation = locationCtx?.deliveryLocation
+    const ctxHasDeliveryPinned = locationCtx?.hasDeliveryPinned
+    const ctxUpdateDeliveryLocation = locationCtx?.updateDeliveryLocation
     const { placeOrder } = useOrders()
     const { balance, payWithWallet, creditLimit, creditUsed, availableCredit } = useWallet()
 
@@ -50,6 +63,8 @@ export default function CheckoutScreen() {
 
     const [user, setUser] = useState(null)
     const [deliveryAddress, setDeliveryAddress] = useState('')
+    const [savedAddresses, setSavedAddresses] = useState([])
+    const [addressTag, setAddressTag] = useState('home')
     const [addressDetails, setAddressDetails] = useState({
         flat: '',
         floor: '',
@@ -59,6 +74,20 @@ export default function CheckoutScreen() {
         state: 'Madhya Pradesh'
     });
     const [deliveryShift, setDeliveryShift] = useState('');
+
+    const handlePinCurrentLocation = async () => {
+        if (!ctxUpdateDeliveryLocation) {
+            navigate('/location-picker?type=delivery&returnTo=/checkout');
+            return;
+        }
+        try {
+            await ctxUpdateDeliveryLocation(true);
+            toast.success('Current location pinned for delivery.');
+        } catch (error) {
+            console.error('Pin current location error:', error);
+            toast.error(error?.message || 'Unable to fetch your current location.');
+        }
+    }
 
     const buildFullAddress = (details) => (
         `Flat: ${details.flat}, Floor: ${details.floor}, ${details.colony}, Landmark: ${details.landmark}, ${details.city}, ${details.state}`
@@ -111,10 +140,65 @@ export default function CheckoutScreen() {
         setDeliveryAddress(fullAddress)
     }
 
+    const persistSavedAddresses = (addresses) => {
+        setSavedAddresses(addresses)
+        localStorage.setItem(SAVED_ADDRESSES_KEY, JSON.stringify(addresses))
+    }
+
+    const upsertAddressByTag = (tag, details) => {
+        const normalizedTag = tag || 'other'
+        const fullAddress = buildFullAddress(details)
+        const label = ADDRESS_TAGS.find((item) => item.value === normalizedTag)?.label || 'Other'
+        const next = [
+            ...(savedAddresses.filter((entry) => entry.tag !== normalizedTag)),
+            {
+                id: normalizedTag,
+                tag: normalizedTag,
+                label,
+                details,
+                fullAddress,
+                updatedAt: new Date().toISOString()
+            }
+        ]
+        persistSavedAddresses(next)
+        return fullAddress
+    }
+
+    const handleSelectSavedAddress = (saved) => {
+        if (!saved?.details) return
+        setAddressTag(saved.tag || 'other')
+        setAddressDetails(saved.details)
+        const fullAddress = saved.fullAddress || buildFullAddress(saved.details)
+        setDeliveryAddress(fullAddress)
+        toast.success(`${saved.label || 'Address'} selected`)
+    }
+
     useEffect(() => {
         fetchProfile()
         fetchAvailableCoupons()
     }, [])
+
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem(SAVED_ADDRESSES_KEY)
+            if (!raw) return
+            const parsed = JSON.parse(raw)
+            if (Array.isArray(parsed)) {
+                setSavedAddresses(parsed)
+            }
+        } catch (error) {
+            console.error('Failed to parse saved addresses:', error)
+        }
+    }, [])
+
+    useEffect(() => {
+        if (!ctxDeliveryAddress) return;
+        setDeliveryAddress(ctxDeliveryAddress);
+        const parsed = parseAddressToDetails(ctxDeliveryAddress);
+        if (parsed) {
+            setAddressDetails(parsed);
+        }
+    }, [ctxDeliveryAddress])
 
     const fetchProfile = async () => {
         try {
@@ -209,18 +293,12 @@ export default function CheckoutScreen() {
                 handler: async (response) => {
                     try {
                         setIsPlacingOrder(true)
-                        console.log("Payment successful, verifying...", {
-                            orderId: response.razorpay_order_id,
-                            paymentId: response.razorpay_payment_id
-                        })
-
                         const verifyRes = await api.post('/payment/verify', {
                             ...response,
                             orderData
                         })
 
                         if (verifyRes.data.success) {
-                            console.log("Verification successful, order created:", verifyRes.data.result._id)
                             setLastOrder(verifyRes.data.result)
                             setStep(3)
                             setTimeout(() => {
@@ -311,11 +389,15 @@ export default function CheckoutScreen() {
             toast.error('Could not save address to profile')
         }
 
-        let coords = null;
-        try {
-            coords = await geocodeAddressFrontend(fullAddress);
-        } catch (geoErr) {
-            console.warn("Geocoding failed on frontend:", geoErr);
+        // Prefer the exact pinned delivery coordinates from the map.
+        // Fallback to geocoding the typed address if coordinates are unavailable.
+        let coords = ctxDeliveryLocation || null;
+        if (!coords) {
+            try {
+                coords = await geocodeAddressFrontend(fullAddress);
+            } catch (geoErr) {
+                // non-fatal
+            }
         }
 
         const orderData = {
@@ -427,12 +509,34 @@ export default function CheckoutScreen() {
                             <section>
                                 <div className="flex items-center justify-between mb-4">
                                     <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest md:normal-case md:tracking-normal md:text-slate-900 md:text-base">Delivery Address</h2>
-                                    <button
-                                        onClick={() => setIsEditingAddress(true)}
-                                        className="text-primary text-[11px] font-bold uppercase transition-colors hover:text-primary/80"
-                                    >
-                                        Change
-                                    </button>
+                                    <div className="flex items-center gap-3">
+                                        {ctxHasDeliveryPinned && (
+                                            <div className="hidden md:flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 px-3 py-1">
+                                                <CheckCircle2 size={12} />
+                                                <span className="text-[10px] font-bold uppercase tracking-widest">Location pinned</span>
+                                            </div>
+                                        )}
+                                        <button
+                                            onClick={handlePinCurrentLocation}
+                                            className="flex items-center gap-1 text-[11px] font-bold uppercase text-slate-400 hover:text-primary transition-colors"
+                                        >
+                                            <MapPin size={12} className="hidden md:inline-block" />
+                                            <span>{ctxHasDeliveryPinned ? 'Re-pin my location' : 'Pin my location'}</span>
+                                        </button>
+                                        <button
+                                            onClick={() => navigate('/location-picker?type=delivery&returnTo=/checkout')}
+                                            className="hidden md:flex items-center gap-1 text-[11px] font-bold uppercase text-slate-400 hover:text-primary transition-colors"
+                                        >
+                                            <MapPin size={12} />
+                                            <span>Pin on map</span>
+                                        </button>
+                                        <button
+                                            onClick={() => setIsEditingAddress(true)}
+                                            className="text-primary text-[11px] font-bold uppercase transition-colors hover:text-primary/80"
+                                        >
+                                            Change
+                                        </button>
+                                    </div>
                                 </div>
                                 <div className="bg-white rounded-4xl md:rounded-xl p-6 border border-slate-100 shadow-sm">
                                     <div className="flex items-start gap-4">
@@ -452,6 +556,27 @@ export default function CheckoutScreen() {
                                             <Edit3 size={16} />
                                         </button>
                                     </div>
+                                    {savedAddresses.length > 0 && (
+                                        <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap gap-2">
+                                            {savedAddresses
+                                                .slice()
+                                                .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+                                                .map((saved) => (
+                                                    <button
+                                                        key={saved.id || saved.tag}
+                                                        onClick={() => handleSelectSavedAddress(saved)}
+                                                        className={cn(
+                                                            "px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all",
+                                                            addressTag === saved.tag
+                                                                ? "bg-primary/10 border-primary/30 text-primary"
+                                                                : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
+                                                        )}
+                                                    >
+                                                        {saved.label}
+                                                    </button>
+                                                ))}
+                                        </div>
+                                    )}
                                 </div>
                             </section>
 
@@ -756,6 +881,26 @@ export default function CheckoutScreen() {
                                     </button>
                                 </div>
                                 <div className="space-y-4 max-h-[60vh] overflow-y-auto px-1">
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Save as</label>
+                                        <div className="flex gap-2">
+                                            {ADDRESS_TAGS.map((tag) => (
+                                                <button
+                                                    key={tag.value}
+                                                    type="button"
+                                                    onClick={() => setAddressTag(tag.value)}
+                                                    className={cn(
+                                                        "px-3 py-2 rounded-xl border text-xs font-bold transition-all",
+                                                        addressTag === tag.value
+                                                            ? "border-primary bg-primary/5 text-primary"
+                                                            : "border-slate-200 text-slate-500 hover:border-slate-300"
+                                                    )}
+                                                >
+                                                    {tag.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
                                     <div className="space-y-3">
                                         <input
                                             type="text"
@@ -811,6 +956,7 @@ export default function CheckoutScreen() {
                                             const fullAddress = buildFullAddress(addressDetails)
                                             try {
                                                 await persistAddressToProfile(fullAddress)
+                                                upsertAddressByTag(addressTag, addressDetails)
                                                 toast.success('Address saved')
                                             } catch (error) {
                                                 console.error('Save address error:', error)

@@ -5,6 +5,17 @@ import { useFCM } from '@/hooks/useFCM';
 const FranchiseAuthContext = createContext();
 
 export function FranchiseAuthProvider({ children }) {
+    const normalizeToken = (t) => {
+        if (!t) return null;
+        let s = String(t).trim();
+        // If something stored the token as JSON string (with quotes), strip them.
+        if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+            s = s.slice(1, -1).trim();
+        }
+        return s || null;
+    };
+
+    const [token, setToken] = useState(() => normalizeToken(localStorage.getItem('franchiseToken')));
     const [franchise, setFranchise] = useState(() => {
         const savedData = localStorage.getItem('franchiseData');
         const savedToken = localStorage.getItem('franchiseToken');
@@ -18,22 +29,38 @@ export function FranchiseAuthProvider({ children }) {
     const [loading, setLoading] = useState(true);
 
     // Register FCM Token
-    useFCM(!!franchise, 'franchise');
+    useFCM(!!token, 'franchise');
 
     useEffect(() => {
         const loadUser = async () => {
-            const token = localStorage.getItem('franchiseToken');
-            if (token) {
-                try {
-                    const { data } = await api.get('/franchise/me');
+            const storedToken = normalizeToken(localStorage.getItem('franchiseToken'));
+            setToken(storedToken);
+            if (!storedToken) {
+                setLoading(false);
+                return;
+            }
+            try {
+                // Explicit token so session restores reliably on refresh (no interceptor timing issues)
+                const { data } = await api.get('/franchise/me', {
+                    headers: { Authorization: `Bearer ${storedToken}` },
+                });
+                if (data?.result) {
                     setFranchise(data.result);
                     localStorage.setItem('franchiseData', JSON.stringify(data.result));
-                } catch (error) {
-                    console.error("Failed to load franchise profile", error);
-                    if (error.response?.status === 401) {
-                        logout();
-                    }
                 }
+            } catch (error) {
+                console.error("Failed to load franchise profile", error);
+                if (error.response?.status === 401) {
+                    setFranchise(null);
+                    setLoading(false);
+                    localStorage.removeItem('franchiseToken');
+                    localStorage.removeItem('franchiseData');
+                    setToken(null);
+                    window.location.href = '/franchise/login';
+                    return;
+                }
+                // Non-401 errors (network/server) should NOT force logout.
+                // Keep existing token + cached franchiseData so refresh doesn't bounce to login.
             }
             setLoading(false);
         };
@@ -49,8 +76,10 @@ export function FranchiseAuthProvider({ children }) {
     }, []);
 
     const loginSuccess = (data, token) => {
+        const normalized = normalizeToken(token);
         setFranchise(data);
-        localStorage.setItem('franchiseToken', token);
+        setToken(normalized);
+        if (normalized) localStorage.setItem('franchiseToken', normalized);
         localStorage.setItem('franchiseData', JSON.stringify(data));
     };
 
@@ -79,6 +108,7 @@ export function FranchiseAuthProvider({ children }) {
 
     const logout = () => {
         setFranchise(null);
+        setToken(null);
         localStorage.removeItem('franchiseToken');
         localStorage.removeItem('franchiseData');
         localStorage.removeItem('kk_franchise'); // Cleanup old
@@ -92,7 +122,8 @@ export function FranchiseAuthProvider({ children }) {
             logout,
             updateProfile,
             updatePassword,
-            isAuthenticated: !!franchise,
+            // Auth should be based on JWT presence; profile may still be loading/refetching.
+            isAuthenticated: !!token,
             loading
         }}>
             {children}

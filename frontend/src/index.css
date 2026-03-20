@@ -191,7 +191,8 @@ body {
         }
     }
 
-    /* Mobile: hide vertical scrollbar in user app (keep scrolling) */
+    /* Mobile: hide vertical scrollbar in user app (keep scrolling).
+       Note: :has() may not be supported everywhere, but it’s progressive enhancement only. */
     @media (max-width: 767px) {
         html:has(.user-app-theme),
         body:has(.user-app-theme) {
@@ -206,20 +207,14 @@ body {
         }
     }
 
-    /* Mobile user app: if overscroll at top shows, use header color instead of white */
-    @media (max-width: 767px) {
-        html:has(.user-app-theme) {
-            background: #16a34a;
-        }
-        body:has(.user-app-theme) {
-            background: #16a34a;
-        }
-    }
 
     body {
         @apply bg-background text-foreground;
     }
 }
+
+/* The app shell (.user-app-theme) is now the main scroll container (html/body are fixed).
+   We don't set overscroll-behavior here; AppLayout uses Tailwind overscroll-y-none. */
 
 /* Header alive effect (mobile) – full sweep across header */
 @keyframes header-shimmer {

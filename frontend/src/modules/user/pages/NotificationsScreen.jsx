@@ -57,12 +57,12 @@ export default function NotificationsScreen() {
         <PageTransition>
             <div className="bg-[#f8fafd] min-h-screen">
                 {/* Header */}
-                <div className="bg-white px-6 py-6 border-b border-slate-50 flex items-center justify-between sticky top-0 z-30">
-                    <div className="flex items-center gap-4">
-                        <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-600 active:scale-90 transition-transform">
-                            <ArrowLeft size={20} />
+                <div className="bg-white px-4 py-4 md:px-6 md:py-6 border-b border-slate-50 flex items-center justify-between sticky top-0 z-30">
+                    <div className="flex items-center gap-3 md:gap-4">
+                        <button onClick={() => navigate(-1)} className="w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-600 active:scale-90 transition-transform">
+                            <ArrowLeft size={18} className="md:w-5 md:h-5" />
                         </button>
-                        <h1 className="text-xl font-black text-slate-900 tracking-tight">Notifications</h1>
+                        <h1 className="text-[16px] md:text-xl font-black text-slate-900 tracking-tight">Notifications</h1>
                     </div>
                     <button
                         onClick={handleMarkAllRead}

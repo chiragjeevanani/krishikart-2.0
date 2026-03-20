@@ -16,7 +16,7 @@ import api from '@/lib/axios';
 import { toast } from 'sonner';
 
 const Dashboard = () => {
-    const { delivery, setDelivery } = useDeliveryAuth();
+    const { delivery, setDelivery, loading: authLoading, isAuthenticated, logout } = useDeliveryAuth();
     const { dispatchedOrders } = useDeliveryOrders();
     const [isOnline, setIsOnline] = useState(delivery?.isOnline ?? true);
     const [history, setHistory] = useState([]);
@@ -36,8 +36,6 @@ const Dashboard = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const token = localStorage.getItem('deliveryToken');
-
                 const response = await api.get('/orders/delivery/history');
                 if (response.data.success) {
                     setHistory(response.data.results || []);
@@ -45,18 +43,22 @@ const Dashboard = () => {
             } catch (error) {
                 console.error('Fetch history error:', error);
                 if (error.response?.status === 401) {
-                    console.warn('Unauthorized access. Clearing token and redirecting...');
-                    localStorage.removeItem('deliveryToken');
-                    localStorage.removeItem('deliveryData');
-                    window.location.href = '/delivery/login';
+                    // Only logout if session is truly invalid; centralize cleanup in auth context.
+                    logout?.();
+                    return;
                 }
                 // alert('Fetch failed: ' + (error.response?.status || error.message)); // Optional alert for user feedback
             } finally {
                 setLoading(false);
             }
         };
+        if (authLoading) return;
+        if (!isAuthenticated) {
+            setLoading(false);
+            return;
+        }
         fetchData();
-    }, []);
+    }, [authLoading, isAuthenticated, logout]);
 
     const toggleOnline = async () => {
         if (isUpdating) return;
