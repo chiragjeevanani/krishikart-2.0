@@ -11,6 +11,7 @@ import {
     vendorUpdateStatus,
     getVendorReports,
     getVendorDashboardStats,
+    getVendorReceivablesReport,
     franchiseConfirmReceipt,
     createProcurementFromOrder
 } from "../controllers/procurement.controller.js";
@@ -29,6 +30,7 @@ router.put("/franchise/:requestId/receive", protectFranchise, franchiseConfirmRe
 router.get("/vendor/my-assignments", protectVendor, getVendorAssignments);
 router.get("/vendor/active-dispatch", protectVendor, getVendorActiveDispatch);
 router.get("/vendor/dashboard-stats", protectVendor, getVendorDashboardStats);
+router.get("/vendor/receivables-report", protectVendor, getVendorReceivablesReport);
 router.get("/vendor/:requestId", protectVendor, getVendorProcurementById);
 router.post("/vendor/:requestId/quote", protectVendor, vendorSubmitQuotation);
 router.put("/vendor/:requestId/status", protectVendor, vendorUpdateStatus);

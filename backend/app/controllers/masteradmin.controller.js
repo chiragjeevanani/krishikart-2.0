@@ -16,6 +16,7 @@ import { uploadToCloudinary } from "../utils/cloudinary.js";
 import { geocodeAddress } from "../utils/geo.js";
 import { sendNotificationToUser } from "../utils/pushNotificationHelper.js";
 import FAQ from "../models/faq.js";
+import { syncInventoryToAssignedProducts } from "../utils/vendorInventorySync.js";
 
 /* ================= VENDOR MANAGEMENT ================= */
 
@@ -125,6 +126,8 @@ export const assignProductsToVendor = async (req, res) => {
     if (!vendor) {
       return handleResponse(res, 404, "Vendor not found");
     }
+
+    await syncInventoryToAssignedProducts(id);
 
     return handleResponse(
       res,

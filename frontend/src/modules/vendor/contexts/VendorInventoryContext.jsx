@@ -15,16 +15,18 @@ export const VendorInventoryProvider = ({ children }) => {
             if (response.data.success) {
                 const results = response.data.results || [];
                 // Map the results to flatten the productId structure for easier use in components
-                const mappedResults = results.map(item => ({
-                    id: item.productId?._id,
-                    name: item.productId?.name,
-                    category: item.productId?.category?.name || 'General',
-                    quantity: item.currentStock,
-                    available: item.available,
-                    price: item.productId?.price,
-                    image: item.productId?.primaryImage || (item.productId?.images?.[0]) || '',
-                    unit: item.productId?.unit || 'kg'
-                }));
+                const mappedResults = (results || [])
+                    .filter(item => item.productId)
+                    .map(item => ({
+                        id: item.productId?._id,
+                        name: item.productId?.name,
+                        category: item.productId?.category?.name || 'General',
+                        quantity: item.currentStock,
+                        available: item.available,
+                        price: item.productId?.price,
+                        image: item.productId?.primaryImage || (item.productId?.images?.[0]) || '',
+                        unit: item.productId?.unit || 'kg'
+                    }));
                 setInventory(mappedResults);
             }
         } catch (error) {

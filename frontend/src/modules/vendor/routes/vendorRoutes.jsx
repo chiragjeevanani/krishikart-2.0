@@ -1,4 +1,4 @@
-import { Route, Outlet } from 'react-router-dom';
+import { Route, Outlet, Navigate } from 'react-router-dom';
 import VendorLayout from '../components/layout/VendorLayout';
 import { OrderProvider } from '../../user/contexts/OrderContext';
 import DashboardScreen from '../pages/DashboardScreen';
@@ -13,7 +13,7 @@ import StockAlertsScreen from '../pages/StockAlertsScreen';
 import HistoryScreen from '../pages/HistoryScreen';
 import DispatchHistoryScreen from '../pages/DispatchHistoryScreen';
 import ProfileScreen from '../pages/ProfileScreen';
-import PaymentsScreen from '../pages/PaymentsScreen';
+import ReceivablesReportScreen from '../pages/ReceivablesReportScreen';
 import SignupScreen from '../pages/SignupScreen';
 import { VendorInventoryProvider } from '../contexts/VendorInventoryContext';
 import { VendorAuthProvider } from '../contexts/VendorAuthContext';
@@ -46,7 +46,8 @@ export const vendorRoutes = (
             <Route path="dispatch-history" element={<DispatchHistoryScreen />} />
             <Route path="alerts" element={<StockAlertsScreen />} />
             <Route path="history" element={<HistoryScreen />} />
-            <Route path="payments" element={<PaymentsScreen />} />
+            <Route path="reports" element={<ReceivablesReportScreen />} />
+            <Route path="payments" element={<Navigate to="/vendor/reports" replace />} />
             <Route path="profile" element={<ProfileScreen />} />
         </Route>
     </Route>

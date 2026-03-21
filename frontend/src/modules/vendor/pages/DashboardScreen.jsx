@@ -158,14 +158,6 @@ export default function DashboardScreen() {
                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 sm:justify-end sm:shrink-0">
                     <button
                         type="button"
-                        onClick={() => navigate('/vendor/payments')}
-                        className="h-10 sm:h-11 min-h-[44px] px-3 sm:px-4 bg-white border border-slate-200 text-slate-900 rounded-xl sm:rounded-2xl inline-flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm hover:bg-emerald-50/80 hover:border-emerald-200 transition-all font-black text-[9px] sm:text-[10px] uppercase tracking-wide sm:tracking-widest active:scale-[0.98]"
-                    >
-                        <Wallet className="h-4 w-4 sm:h-[17px] sm:w-[17px] text-emerald-600 shrink-0" strokeWidth={2} />
-                        Earnings
-                    </button>
-                    <button
-                        type="button"
                         onClick={() => navigate('/vendor/profile')}
                         className="h-10 sm:h-11 min-h-[44px] px-3 sm:px-4 bg-white border border-slate-200 text-slate-900 rounded-xl sm:rounded-2xl inline-flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm hover:bg-slate-50 transition-all font-black text-[9px] sm:text-[10px] uppercase tracking-wide sm:tracking-widest active:scale-[0.98]"
                     >

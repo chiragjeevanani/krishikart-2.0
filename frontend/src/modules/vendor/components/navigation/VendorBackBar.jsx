@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 /**
- * Shared back control for vendor pages (bottom-nav destinations, Earnings, Settings, etc.).
+ * Shared back control for vendor pages (bottom-nav destinations, Settings, etc.).
  * - With `fallbackPath`: always navigates there (good for order detail / dispatch when history is empty).
  * - Vendor home (`/vendor`, `/vendor/dashboard`): goes to site root `/`.
  * - Else: browser back (`navigate(-1)`).

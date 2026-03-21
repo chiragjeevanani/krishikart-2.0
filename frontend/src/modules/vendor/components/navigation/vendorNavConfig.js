@@ -5,13 +5,12 @@ import {
     Truck,
     History,
     UserCircle,
-    Wallet,
+    FileText,
 } from 'lucide-react';
 
 /**
  * Single source of truth for vendor app navigation.
  * Desktop sidebar shows all; mobile bottom bar scrolls horizontally to fit the same items.
- * Payments is included so small-screen users keep access (was mobile-only before parity work).
  */
 export const vendorNavItems = [
     { id: 'dashboard', path: '/vendor/dashboard', icon: LayoutDashboard, label: 'Dashboard', shortLabel: 'Home' },
@@ -19,7 +18,7 @@ export const vendorNavItems = [
     { id: 'orders', path: '/vendor/orders', icon: ClipboardList, label: 'Manage Orders', shortLabel: 'Orders' },
     { id: 'dispatch', path: '/vendor/dispatch', icon: Truck, label: 'Active Dispatch', shortLabel: 'Dispatch' },
     { id: 'history', path: '/vendor/dispatch-history', icon: History, label: 'Dispatch History', shortLabel: 'History' },
-    { id: 'payments', path: '/vendor/payments', icon: Wallet, label: 'Earnings', shortLabel: 'Earnings' },
+    { id: 'reports', path: '/vendor/reports', icon: FileText, label: 'Reports', shortLabel: 'Reports' },
     {
         id: 'profile',
         path: '/vendor/profile',
@@ -44,6 +43,9 @@ export function isVendorNavActive(pathname, itemPath) {
     }
     if (itemPath === '/vendor/dispatch-history') {
         return pathname === '/vendor/dispatch-history';
+    }
+    if (itemPath === '/vendor/reports') {
+        return pathname === '/vendor/reports';
     }
     return pathname === itemPath;
 }

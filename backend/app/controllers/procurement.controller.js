@@ -861,6 +861,56 @@ export const createProcurementFromOrder = async (req, res) => {
     }
 };
 
+/** Post-delivery only: ready for franchise pickup or franchise receipt completed. */
+const POST_DELIVERY_STATUSES = ["ready_for_pickup", "completed"];
+
+/**
+ * Receivables from admin after delivery/handoff only.
+ * Scoped strictly to req.vendor (JWT) — never accepts client-supplied vendor id.
+ */
+export const getVendorReceivablesReport = async (req, res) => {
+    try {
+        const vendorIdStr = req.vendor._id.toString();
+
+        const requests = await ProcurementRequest.find({
+            assignedVendorId: vendorIdStr,
+            status: { $in: POST_DELIVERY_STATUSES },
+        })
+            .populate("franchiseId", "shopName ownerName cityArea")
+            .sort({ updatedAt: -1 })
+            .lean();
+
+        const totalAmount = requests.reduce(
+            (s, r) => s + (Number(r.totalQuotedAmount) || 0),
+            0
+        );
+
+        const rows = requests.map((r) => {
+            const fr = r.franchiseId;
+            return {
+                requestId: r._id,
+                ref: String(r._id).slice(-6).toUpperCase(),
+                franchiseName: fr?.shopName || fr?.ownerName || "Franchise",
+                cityArea: fr?.cityArea || "",
+                status: r.status,
+                amount: Number(r.totalQuotedAmount) || 0,
+                updatedAt: r.updatedAt,
+            };
+        });
+
+        return handleResponse(res, 200, "Vendor receivables report", {
+            summary: {
+                count: requests.length,
+                totalAmount,
+            },
+            rows,
+        });
+    } catch (error) {
+        console.error("Get vendor receivables report error:", error);
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
 // Get Vendor Dashboard Stats (Vendor)
 export const getVendorDashboardStats = async (req, res) => {
     try {
