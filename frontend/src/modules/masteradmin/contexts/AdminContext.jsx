@@ -176,11 +176,18 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
-    const updateFranchiseServiceArea = async (id, serviceHexagons) => {
+    const updateFranchiseServiceArea = async (id, serviceHexagons, location) => {
         try {
-            const response = await api.put(`/masteradmin/franchises/${id}/service-area`, { serviceHexagons });
+            const response = await api.put(`/masteradmin/franchises/${id}/service-area`, { 
+                serviceHexagons,
+                location: location ? {
+                    type: 'Point',
+                    coordinates: [location.lng, location.lat]
+                } : undefined
+            });
             if (response.data.success) {
                 toast.success('Service area updated successfully');
+                fetchPendingFranchises();
                 return true;
             }
             return false;
@@ -188,6 +195,19 @@ export const AdminProvider = ({ children }) => {
             console.error('Update service area error:', error);
             toast.error(error.response?.data?.message || 'Update failed');
             return false;
+        }
+    };
+
+    const fetchFranchiseServiceMap = async () => {
+        try {
+            const response = await api.get('/masteradmin/franchise-service-map');
+            if (response.data.success) {
+                return response.data.results;
+            }
+            return [];
+        } catch (error) {
+            console.error('Fetch service map error:', error);
+            return [];
         }
     };
 
@@ -205,6 +225,7 @@ export const AdminProvider = ({ children }) => {
             createVendorByAdmin,
             createFranchiseByAdmin,
             updateFranchiseServiceArea,
+            fetchFranchiseServiceMap,
             deliveryPartners,
             fetchDeliveryPartners,
             updateDeliveryPartnerStatus

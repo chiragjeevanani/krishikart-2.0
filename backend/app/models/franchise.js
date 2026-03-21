@@ -27,22 +27,22 @@ const franchiseSchema = new mongoose.Schema(
     },
     area: {
       type: String,
-      default: null
+      default: null,
     },
     state: {
       type: String,
-      default: null
+      default: null,
     },
 
     email: {
       type: String,
       trim: true,
-      lowercase: true
+      lowercase: true,
     },
 
     profilePicture: {
       type: String,
-      default: null
+      default: null,
     },
 
     password: {
@@ -71,7 +71,7 @@ const franchiseSchema = new mongoose.Schema(
       },
       submittedAt: Date,
       verifiedAt: Date,
-      rejectionReason: String
+      rejectionReason: String,
     },
 
     status: {
@@ -91,45 +91,52 @@ const franchiseSchema = new mongoose.Schema(
     location: {
       type: {
         type: String,
-        enum: ['Point'],
-        default: 'Point'
+        enum: ["Point"],
+        default: "Point",
       },
       coordinates: {
         type: [Number], // [longitude, latitude]
         required: true,
-        default: [0, 0]
-      }
+        default: [0, 0],
+      },
     },
+    servedCategories: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Category",
+        default: [],
+      },
+    ],
     serviceHexagons: {
       type: [String],
-      default: []
+      default: [],
     },
     isActive: {
       type: Boolean,
-      default: true
+      default: true,
     },
     isOnline: {
       type: Boolean,
-      default: true
+      default: true,
     },
     capacityAvailable: {
       type: Boolean,
-      default: true
+      default: true,
     },
     workingHours: {
       start: { type: String, default: "09:00" },
-      end: { type: String, default: "21:00" }
+      end: { type: String, default: "21:00" },
     },
     fcmTokens: {
       type: [String],
-      default: []
+      default: [],
     },
     mobile_fcm: {
       type: [String],
-      default: []
-    }
+      default: [],
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 franchiseSchema.index({ location: "2dsphere" });

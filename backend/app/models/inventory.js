@@ -21,6 +21,10 @@ const inventorySchema = new mongoose.Schema({
                 type: Number, // Minimum Base Quantity
                 default: 5,
             },
+            franchisePrice: {
+                type: Number,
+                default: null, // If null, fallback to global product price
+            },
             lastUpdated: {
                 type: Date,
                 default: Date.now,

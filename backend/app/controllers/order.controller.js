@@ -2,7 +2,12 @@ import fs from "fs";
 import mongoose from "mongoose";
 import Order from "../models/order.js";
 import { handleResponse } from "../utils/helper.js";
-import { emitToAdmin, emitToOrderRoom, emitToDelivery, emitToFranchise } from "../lib/socket.js";
+import {
+  emitToAdmin,
+  emitToOrderRoom,
+  emitToDelivery,
+  emitToFranchise,
+} from "../lib/socket.js";
 import { sendNotificationToUser } from "../utils/pushNotificationHelper.js";
 import Product from "../models/product.js";
 import Cart from "../models/cart.js";
@@ -12,7 +17,10 @@ import GlobalSetting from "../models/globalSetting.js";
 import Inventory from "../models/inventory.js";
 import Coupon from "../models/coupon.js";
 import { geocodeAddress, getDistance } from "../utils/geo.js";
-import { assignOrderToFranchise, assignDeliveryToOrder } from "../utils/assignment.js";
+import {
+  assignOrderToFranchise,
+  assignDeliveryToOrder,
+} from "../utils/assignment.js";
 
 /**
  * Helper to calculate price based on quantity and bulk pricing rules
@@ -48,9 +56,9 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-    Math.cos((lat2 * Math.PI) / 180) *
-    Math.sin(dLon / 2) *
-    Math.sin(dLon / 2);
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 };
@@ -58,7 +66,8 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 export const createOrder = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { shippingAddress, shippingLocation, paymentMethod, deliveryShift } = req.body;
+    const { shippingAddress, shippingLocation, paymentMethod, deliveryShift } =
+      req.body;
 
     if (!shippingAddress || !paymentMethod || !deliveryShift) {
       return handleResponse(
@@ -92,14 +101,43 @@ export const createOrder = async (req, res) => {
     let subtotal = 0;
     const orderItems = [];
 
+    // Fetch franchise inventory to get potential price overrides
+    const nearestFranchiseId = req.body.franchiseId; // Assuming client might send it, or we resolve it
+    let inventoryMap = new Map();
+    if (nearestFranchiseId) {
+      const inventory = await Inventory.findOne({
+        franchiseId: nearestFranchiseId,
+      }).lean();
+      if (inventory?.items) {
+        inventoryMap = new Map(
+          inventory.items.map((i) => [i.productId.toString(), i]),
+        );
+      }
+    }
+
     for (const item of cart.items) {
       const product = item.productId;
       if (!product) {
-        console.warn(`[Order] Skipping a product in cart for user ${userId} because it no longer exists in DB.`);
+        console.warn(
+          `[Order] Skipping a product in cart for user ${userId} because it no longer exists in DB.`,
+        );
         continue; // Skip items that are missing from products collection instead of failing
       }
 
-      const { price, isBulkRate } = calculateItemPrice(product, item.quantity);
+      // Check for franchise-specific price override
+      const invItem = inventoryMap.get(product._id.toString());
+      const basePrice = invItem?.franchisePrice || product.price;
+
+      // Temporary override product price for calculation helper if needed
+      const productWithResolvedPrice = {
+        ...product.toObject(),
+        price: basePrice,
+      };
+
+      const { price, isBulkRate } = calculateItemPrice(
+        productWithResolvedPrice,
+        item.quantity,
+      );
       const itemSubtotal = price * item.quantity;
 
       orderItems.push({
@@ -118,14 +156,17 @@ export const createOrder = async (req, res) => {
 
     // 4. Handle Coupon Validation and Discounts
     let discountAmount = 0;
-    let finalDeliveryFee = subtotal >= parseFloat(constraints.freeMov) ? 0 : parseFloat(constraints.baseFee);
+    let finalDeliveryFee =
+      subtotal >= parseFloat(constraints.freeMov)
+        ? 0
+        : parseFloat(constraints.baseFee);
     let appliedCouponCode = "";
 
     if (req.body.couponCode) {
       try {
         const coupon = await Coupon.findOne({
           code: req.body.couponCode.toUpperCase(),
-          status: "active"
+          status: "active",
         });
 
         if (coupon) {
@@ -137,7 +178,8 @@ export const createOrder = async (req, res) => {
           if (coupon.endDate && now > coupon.endDate) isValid = false;
 
           // 2. Usage Limit Check
-          if (coupon.usageLimit && coupon.timesUsed >= coupon.usageLimit) isValid = false;
+          if (coupon.usageLimit && coupon.timesUsed >= coupon.usageLimit)
+            isValid = false;
 
           // 3. Min Order Value Check
           if (subtotal < coupon.minOrderValue) isValid = false;
@@ -146,17 +188,27 @@ export const createOrder = async (req, res) => {
           const userUsage = await Order.countDocuments({
             userId,
             couponCode: coupon.code,
-            orderStatus: { $ne: 'Cancelled' }
+            orderStatus: { $ne: "Cancelled" },
           });
           if (userUsage >= coupon.usageLimitPerUser) isValid = false;
 
           if (isValid) {
-            if (coupon.type === 'free_delivery') {
+            if (coupon.type === "free_delivery") {
               finalDeliveryFee = 0;
-            } else if (['percentage', 'bulk_discount', 'category_based', 'new_partner', 'min_order_value', 'monthly_volume'].includes(coupon.type)) {
+            } else if (
+              [
+                "percentage",
+                "bulk_discount",
+                "category_based",
+                "new_partner",
+                "min_order_value",
+                "monthly_volume",
+              ].includes(coupon.type)
+            ) {
               discountAmount = (subtotal * coupon.value) / 100;
-              if (coupon.maxDiscount > 0 && discountAmount > coupon.maxDiscount) discountAmount = coupon.maxDiscount;
-            } else if (coupon.type === 'fixed') {
+              if (coupon.maxDiscount > 0 && discountAmount > coupon.maxDiscount)
+                discountAmount = coupon.maxDiscount;
+            } else if (coupon.type === "fixed") {
               discountAmount = coupon.value;
             }
 
@@ -176,12 +228,22 @@ export const createOrder = async (req, res) => {
     // Dynamic Tax applied to the entire order (Subtotal + Fees)
     const taxRate = parseFloat(constraints.tax || 0) / 100;
     const tax = Number(((subtotal + finalDeliveryFee) * taxRate).toFixed(2));
-    const totalAmount = Number((subtotal + finalDeliveryFee + tax - discountAmount).toFixed(2));
+    const totalAmount = Number(
+      (subtotal + finalDeliveryFee + tax - discountAmount).toFixed(2),
+    );
 
     // 5. Handle Payments (Wallet/Credit)
     // BLOCK IF PREVIOUS CREDIT OVERDUE (STRICT 7 DAYS CHECK)
-    if (user.usedCredit > 0 && user.creditOverdueDate && new Date() > new Date(user.creditOverdueDate)) {
-      return handleResponse(res, 403, "Payment Overdue: Please clear your KK Credit balance to continue shopping.");
+    if (
+      user.usedCredit > 0 &&
+      user.creditOverdueDate &&
+      new Date() > new Date(user.creditOverdueDate)
+    ) {
+      return handleResponse(
+        res,
+        403,
+        "Payment Overdue: Please clear your KK Credit balance to continue shopping.",
+      );
     }
 
     if (paymentMethod === "Wallet") {
@@ -195,7 +257,7 @@ export const createOrder = async (req, res) => {
         type: "Paid",
         amount: totalAmount,
         status: "Success",
-        note: `Order paid via wallet ${appliedCouponCode ? '(Coupon: ' + appliedCouponCode + ')' : ''}`,
+        note: `Order paid via wallet ${appliedCouponCode ? "(Coupon: " + appliedCouponCode + ")" : ""}`,
         createdAt: new Date(),
       });
     } else if (paymentMethod === "Credit") {
@@ -219,7 +281,7 @@ export const createOrder = async (req, res) => {
         type: "Credit Used",
         amount: totalAmount,
         status: "Success",
-        note: `Order paid via business credit ${appliedCouponCode ? '(Coupon: ' + appliedCouponCode + ')' : ''}`,
+        note: `Order paid via business credit ${appliedCouponCode ? "(Coupon: " + appliedCouponCode + ")" : ""}`,
         createdAt: new Date(),
       });
     }
@@ -292,11 +354,11 @@ export const createOrder = async (req, res) => {
     await cart.save();
 
     // 10. Real-time Notification to Admin
-    emitToAdmin('new_order_placed', {
+    emitToAdmin("new_order_placed", {
       orderId: order._id,
       customerName: user.fullName,
       amount: totalAmount,
-      message: `New order placed by ${user.fullName}: ₹${totalAmount}`
+      message: `New order placed by ${user.fullName}: ₹${totalAmount}`,
     });
 
     return handleResponse(res, 201, "Order placed successfully", order);
@@ -359,7 +421,11 @@ export const createReturnRequest = async (req, res) => {
     }
 
     if (!reason || typeof reason !== "string" || reason.trim().length < 10) {
-      return handleResponse(res, 400, "Please provide a valid return reason (minimum 10 characters)");
+      return handleResponse(
+        res,
+        400,
+        "Please provide a valid return reason (minimum 10 characters)",
+      );
     }
 
     const order = await Order.findById(id);
@@ -370,12 +436,20 @@ export const createReturnRequest = async (req, res) => {
     }
 
     if ((order.returnRequests || []).length > 0) {
-      return handleResponse(res, 400, "Return request already submitted for this order");
+      return handleResponse(
+        res,
+        400,
+        "Return request already submitted for this order",
+      );
     }
 
     const eligibleStatuses = ["Delivered", "Received"];
     if (!eligibleStatuses.includes(order.orderStatus)) {
-      return handleResponse(res, 400, "Returns are allowed only for delivered/received orders");
+      return handleResponse(
+        res,
+        400,
+        "Returns are allowed only for delivered/received orders",
+      );
     }
 
     const deliveredOrReceivedHistory = (order.statusHistory || [])
@@ -391,14 +465,21 @@ export const createReturnRequest = async (req, res) => {
 
     const returnWindowMs = 2 * 24 * 60 * 60 * 1000;
     if (Date.now() - referenceDate.getTime() > returnWindowMs) {
-      return handleResponse(res, 400, "Return window has expired. You can request return within 2 days only.");
+      return handleResponse(
+        res,
+        400,
+        "Return window has expired. You can request return within 2 days only.",
+      );
     }
 
     const orderedQtyByProduct = new Map();
     for (const item of order.items || []) {
       if (!item.productId) continue;
       const pid = item.productId.toString();
-      orderedQtyByProduct.set(pid, (orderedQtyByProduct.get(pid) || 0) + Number(item.quantity || 0));
+      orderedQtyByProduct.set(
+        pid,
+        (orderedQtyByProduct.get(pid) || 0) + Number(item.quantity || 0),
+      );
     }
 
     const alreadyRequestedByProduct = new Map();
@@ -408,7 +489,11 @@ export const createReturnRequest = async (req, res) => {
       for (const item of request.items || []) {
         const pid = item.productId?.toString?.();
         if (!pid) continue;
-        alreadyRequestedByProduct.set(pid, (alreadyRequestedByProduct.get(pid) || 0) + Number(item.quantity || 0));
+        alreadyRequestedByProduct.set(
+          pid,
+          (alreadyRequestedByProduct.get(pid) || 0) +
+            Number(item.quantity || 0),
+        );
       }
     }
 
@@ -428,16 +513,18 @@ export const createReturnRequest = async (req, res) => {
         return handleResponse(
           res,
           400,
-          `Return quantity for one or more items exceeds allowed quantity`
+          `Return quantity for one or more items exceeds allowed quantity`,
         );
       }
 
-      const orderItem = (order.items || []).find((o) => o.productId?.toString?.() === productId);
+      const orderItem = (order.items || []).find(
+        (o) => o.productId?.toString?.() === productId,
+      );
       validatedItems.push({
         productId,
         name: orderItem?.name || item?.name || "",
         quantity,
-        unit: orderItem?.unit || item?.unit || ""
+        unit: orderItem?.unit || item?.unit || "",
       });
     }
 
@@ -449,12 +536,17 @@ export const createReturnRequest = async (req, res) => {
       items: validatedItems,
       reason: reason.trim(),
       status: "pending",
-      requestedAt: new Date()
+      requestedAt: new Date(),
     });
 
     await order.save();
 
-    return handleResponse(res, 201, "Return request submitted successfully", order);
+    return handleResponse(
+      res,
+      201,
+      "Return request submitted successfully",
+      order,
+    );
   } catch (error) {
     console.error("Create return request error:", error);
     return handleResponse(res, 500, "Server error");
@@ -463,7 +555,8 @@ export const createReturnRequest = async (req, res) => {
 
 const getReturnRequestByIndex = (order, indexParam) => {
   const requestIndex = Number(indexParam);
-  if (!Number.isInteger(requestIndex) || requestIndex < 0) return { request: null, requestIndex: -1 };
+  if (!Number.isInteger(requestIndex) || requestIndex < 0)
+    return { request: null, requestIndex: -1 };
   const request = order?.returnRequests?.[requestIndex] || null;
   return { request, requestIndex };
 };
@@ -473,29 +566,43 @@ export const reviewReturnRequestByFranchise = async (req, res) => {
     const { id, requestIndex } = req.params;
     const franchiseId = req.franchise?._id;
     const { action, reason } = req.body;
-    const cleanedReason =
-      typeof reason === "string" ? reason.trim() : "";
+    const cleanedReason = typeof reason === "string" ? reason.trim() : "";
 
     if (!["approve", "reject"].includes(action)) {
       return handleResponse(res, 400, "Action must be approve or reject");
     }
 
     if (action === "reject" && cleanedReason.length < 5) {
-      return handleResponse(res, 400, "Please provide a valid review reason (minimum 5 characters)");
+      return handleResponse(
+        res,
+        400,
+        "Please provide a valid review reason (minimum 5 characters)",
+      );
     }
 
     const order = await Order.findById(id);
     if (!order) return handleResponse(res, 404, "Order not found");
 
-    if (!order.franchiseId || order.franchiseId.toString() !== franchiseId.toString()) {
-      return handleResponse(res, 403, "This return request does not belong to your franchise");
+    if (
+      !order.franchiseId ||
+      order.franchiseId.toString() !== franchiseId.toString()
+    ) {
+      return handleResponse(
+        res,
+        403,
+        "This return request does not belong to your franchise",
+      );
     }
 
     const { request } = getReturnRequestByIndex(order, requestIndex);
     if (!request) return handleResponse(res, 404, "Return request not found");
 
     if (request.status !== "pending") {
-      return handleResponse(res, 400, `Return request is already ${request.status}`);
+      return handleResponse(
+        res,
+        400,
+        `Return request is already ${request.status}`,
+      );
     }
 
     request.status = action === "approve" ? "approved" : "rejected";
@@ -517,7 +624,12 @@ export const reviewReturnRequestByFranchise = async (req, res) => {
           : "Your return request was approved by franchise.",
     });
 
-    return handleResponse(res, 200, `Return request ${action}d successfully`, order);
+    return handleResponse(
+      res,
+      200,
+      `Return request ${action}d successfully`,
+      order,
+    );
   } catch (error) {
     console.error("Review return request error:", error);
     return handleResponse(res, 500, "Server error");
@@ -537,15 +649,26 @@ export const assignReturnPickupDelivery = async (req, res) => {
     const order = await Order.findById(id);
     if (!order) return handleResponse(res, 404, "Order not found");
 
-    if (!order.franchiseId || order.franchiseId.toString() !== franchiseId.toString()) {
-      return handleResponse(res, 403, "This return request does not belong to your franchise");
+    if (
+      !order.franchiseId ||
+      order.franchiseId.toString() !== franchiseId.toString()
+    ) {
+      return handleResponse(
+        res,
+        403,
+        "This return request does not belong to your franchise",
+      );
     }
 
     const { request } = getReturnRequestByIndex(order, requestIndex);
     if (!request) return handleResponse(res, 404, "Return request not found");
 
     if (!["approved", "pickup_assigned"].includes(request.status)) {
-      return handleResponse(res, 400, "Only approved return requests can be assigned for pickup");
+      return handleResponse(
+        res,
+        400,
+        "Only approved return requests can be assigned for pickup",
+      );
     }
 
     request.pickupDeliveryPartnerId = deliveryPartnerId;
@@ -555,25 +678,34 @@ export const assignReturnPickupDelivery = async (req, res) => {
     await order.save();
 
     // Send Real-time Notification
-    emitToDelivery(deliveryPartnerId, 'new_task', {
+    emitToDelivery(deliveryPartnerId, "new_task", {
       orderId: order._id,
       requestIndex,
-      type: 'RETURN',
-      message: `New return pickup task assigned: #${order._id.toString().slice(-6)}`
+      type: "RETURN",
+      message: `New return pickup task assigned: #${order._id.toString().slice(-6)}`,
     });
 
     // Send Push Notification
-    sendNotificationToUser(deliveryPartnerId, {
-      title: "New Return Pickup Task",
-      body: `You have been assigned a new return pickup task for order #${order._id.toString().slice(-6)}.`,
-      data: {
-        type: "return_pickup",
-        orderId: order._id.toString(),
-        link: "/delivery/returns"
-      }
-    }, 'delivery');
+    sendNotificationToUser(
+      deliveryPartnerId,
+      {
+        title: "New Return Pickup Task",
+        body: `You have been assigned a new return pickup task for order #${order._id.toString().slice(-6)}.`,
+        data: {
+          type: "return_pickup",
+          orderId: order._id.toString(),
+          link: "/delivery/returns",
+        },
+      },
+      "delivery",
+    );
 
-    return handleResponse(res, 200, "Pickup assigned to delivery partner", order);
+    return handleResponse(
+      res,
+      200,
+      "Pickup assigned to delivery partner",
+      order,
+    );
   } catch (error) {
     console.error("Assign return pickup error:", error);
     return handleResponse(res, 500, "Server error");
@@ -586,13 +718,21 @@ export const getFranchiseReturnRequests = async (req, res) => {
 
     const orders = await Order.find({
       franchiseId,
-      "returnRequests.0": { $exists: true }
+      "returnRequests.0": { $exists: true },
     })
       .populate("userId", "fullName mobile")
-      .populate("returnRequests.pickupDeliveryPartnerId", "fullName mobile vehicleNumber vehicleType")
+      .populate(
+        "returnRequests.pickupDeliveryPartnerId",
+        "fullName mobile vehicleNumber vehicleType",
+      )
       .sort({ updatedAt: -1 });
 
-    return handleResponse(res, 200, "Franchise return requests fetched", orders);
+    return handleResponse(
+      res,
+      200,
+      "Franchise return requests fetched",
+      orders,
+    );
   } catch (error) {
     console.error("Get franchise return requests error:", error);
     return handleResponse(res, 500, "Server error");
@@ -602,15 +742,16 @@ export const getFranchiseReturnRequests = async (req, res) => {
 export const getDeliveryReturnPickups = async (req, res) => {
   try {
     const partnerId = req.delivery?._id?.toString();
-    if (!partnerId) return handleResponse(res, 401, "Delivery partner not identified");
+    if (!partnerId)
+      return handleResponse(res, 401, "Delivery partner not identified");
 
     const orders = await Order.find({
       returnRequests: {
         $elemMatch: {
           pickupDeliveryPartnerId: req.delivery._id,
-          status: { $in: ["pickup_assigned", "picked_up"] }
-        }
-      }
+          status: { $in: ["pickup_assigned", "picked_up"] },
+        },
+      },
     })
       .populate("userId", "fullName mobile address")
       .populate("franchiseId", "shopName address location")
@@ -635,7 +776,7 @@ export const getDeliveryReturnPickups = async (req, res) => {
           franchiseName: order.franchiseId?.shopName || "Franchise",
           franchiseAddress: order.franchiseId?.address || "",
           franchiseId: order.franchiseId,
-          userId: order.userId
+          userId: order.userId,
         });
       });
     }
@@ -663,15 +804,25 @@ export const updateReturnPickupStatus = async (req, res) => {
     const { request } = getReturnRequestByIndex(order, requestIndex);
     if (!request) return handleResponse(res, 404, "Return request not found");
 
-    if (!request.pickupDeliveryPartnerId || request.pickupDeliveryPartnerId.toString() !== partnerId) {
+    if (
+      !request.pickupDeliveryPartnerId ||
+      request.pickupDeliveryPartnerId.toString() !== partnerId
+    ) {
       return handleResponse(res, 403, "This pickup is not assigned to you");
     }
 
     if (status === "picked_up" && request.status !== "pickup_assigned") {
-      return handleResponse(res, 400, "Only assigned pickups can be marked picked up");
+      return handleResponse(
+        res,
+        400,
+        "Only assigned pickups can be marked picked up",
+      );
     }
 
-    if (status === "completed" && !["pickup_assigned", "picked_up"].includes(request.status)) {
+    if (
+      status === "completed" &&
+      !["pickup_assigned", "picked_up"].includes(request.status)
+    ) {
       return handleResponse(res, 400, "Pickup is not in a completable state");
     }
 
@@ -689,14 +840,16 @@ export const updateReturnPickupStatus = async (req, res) => {
 
       const refundAmount = (request.items || []).reduce((sum, item) => {
         const pid = item.productId?.toString?.();
-        const price = pid ? (priceByProduct.get(pid) || 0) : 0;
-        return sum + (price * Number(item.quantity || 0));
+        const price = pid ? priceByProduct.get(pid) || 0 : 0;
+        return sum + price * Number(item.quantity || 0);
       }, 0);
 
       if (refundAmount > 0) {
         const user = await User.findById(order.userId);
         if (user) {
-          user.walletBalance = Number((Number(user.walletBalance || 0) + refundAmount).toFixed(2));
+          user.walletBalance = Number(
+            (Number(user.walletBalance || 0) + refundAmount).toFixed(2),
+          );
           user.walletTransactions = user.walletTransactions || [];
           user.walletTransactions.unshift({
             txnId: `RFD-${Date.now()}`,
@@ -719,14 +872,14 @@ export const updateReturnPickupStatus = async (req, res) => {
       orderId: order._id,
       requestIndex: Number(requestIndex),
       status: status,
-      message: `Return pickup is now ${status.replace('_', ' ')}`
+      message: `Return pickup is now ${status.replace("_", " ")}`,
     });
 
     if (order.franchiseId) {
       emitToFranchise(order.franchiseId, "return_status_changed", {
         orderId: order._id,
         requestIndex: Number(requestIndex),
-        status: status
+        status: status,
       });
     }
 
@@ -758,7 +911,7 @@ export const updateOrderStatus = async (req, res) => {
       "Delivered",
       "Received",
       "Cancelled",
-      "pending"
+      "pending",
     ];
 
     console.log(
@@ -801,7 +954,9 @@ export const updateOrderStatus = async (req, res) => {
       (!statusFlow[normalizedCurrent] ||
         !statusFlow[normalizedCurrent].includes(normalizedNew))
     ) {
-      console.warn(`[TRANSITION_ERROR] ${currentStatus} -> ${status} (Normalized: ${normalizedCurrent} -> ${normalizedNew})`);
+      console.warn(
+        `[TRANSITION_ERROR] ${currentStatus} -> ${status} (Normalized: ${normalizedCurrent} -> ${normalizedNew})`,
+      );
       return handleResponse(
         res,
         400,
@@ -813,34 +968,57 @@ export const updateOrderStatus = async (req, res) => {
     if (!isMasterAdmin) {
       if (isFranchise) {
         // If order has a franchise assigned, verify it's the current one
-        if (order.franchiseId && order.franchiseId.toString() !== req.franchise._id.toString()) {
-          return handleResponse(res, 403, "This order is assigned to another franchise");
+        if (
+          order.franchiseId &&
+          order.franchiseId.toString() !== req.franchise._id.toString()
+        ) {
+          return handleResponse(
+            res,
+            403,
+            "This order is assigned to another franchise",
+          );
         }
         // If unassigned but franchise is acting on it, claim ownership
         if (!order.franchiseId) {
           order.franchiseId = req.franchise._id;
         }
 
-        if (['Packed', 'Out for Delivery'].includes(status) && !isFranchise) {
-          return handleResponse(res, 403, "Only franchise can update to Packed/Out for Delivery");
+        if (["Packed", "Out for Delivery"].includes(status) && !isFranchise) {
+          return handleResponse(
+            res,
+            403,
+            "Only franchise can update to Packed/Out for Delivery",
+          );
         }
       }
 
-      if (status === 'Delivered' && !isDelivery && !isFranchise) {
-        return handleResponse(res, 403, "Only delivery partner or franchise can update to Delivered");
+      if (status === "Delivered" && !isDelivery && !isFranchise) {
+        return handleResponse(
+          res,
+          403,
+          "Only delivery partner or franchise can update to Delivered",
+        );
       }
 
       // Delivery Specific: Check if this order is assigned to this partner
-      if (isDelivery && status === 'Delivered') {
+      if (isDelivery && status === "Delivered") {
         const partnerId = req.delivery?._id || req.user?.id;
-        if (!partnerId || !order.deliveryPartnerId || order.deliveryPartnerId.toString() !== partnerId.toString()) {
+        if (
+          !partnerId ||
+          !order.deliveryPartnerId ||
+          order.deliveryPartnerId.toString() !== partnerId.toString()
+        ) {
           return handleResponse(res, 403, "This order is not assigned to you");
         }
       }
       // User Specific: Check if user owns the order
       if (isUser) {
         if (order.userId.toString() !== req.user.id.toString()) {
-          return handleResponse(res, 403, "You can only update your own orders");
+          return handleResponse(
+            res,
+            403,
+            "You can only update your own orders",
+          );
         }
       }
     }
@@ -851,12 +1029,18 @@ export const updateOrderStatus = async (req, res) => {
       const inventory = await Inventory.findOne({ franchiseId });
 
       if (!inventory) {
-        return handleResponse(res, 400, "Franchise inventory not found. Please setup inventory first.");
+        return handleResponse(
+          res,
+          400,
+          "Franchise inventory not found. Please setup inventory first.",
+        );
       }
 
       const insufficientItems = [];
       for (const item of order.items) {
-        const inventoryItem = inventory.items.find(i => i.productId.toString() === item.productId.toString());
+        const inventoryItem = inventory.items.find(
+          (i) => i.productId.toString() === item.productId.toString(),
+        );
         const availableStock = inventoryItem ? inventoryItem.currentStock : 0;
         if (availableStock < item.quantity) {
           insufficientItems.push(item.name || item.productId);
@@ -864,7 +1048,11 @@ export const updateOrderStatus = async (req, res) => {
       }
 
       if (insufficientItems.length > 0) {
-        return handleResponse(res, 400, `Insufficient stock for: ${insufficientItems.join(", ")}. Please procure more stock.`);
+        return handleResponse(
+          res,
+          400,
+          `Insufficient stock for: ${insufficientItems.join(", ")}. Please procure more stock.`,
+        );
       }
     }
 
@@ -892,7 +1080,8 @@ export const updateOrderStatus = async (req, res) => {
       order.deliveredAt = new Date();
 
       if (order.paymentMethod === "COD") {
-        const collectorId = req.delivery?._id || order.deliveryPartnerId || null;
+        const collectorId =
+          req.delivery?._id || order.deliveryPartnerId || null;
         order.codTracking = order.codTracking || {};
         order.codTracking.isCollected = true;
         order.codTracking.collectedAmount = Number(order.totalAmount || 0);
@@ -922,10 +1111,15 @@ export const updateOrderStatus = async (req, res) => {
           );
 
           if (!alreadyAwarded) {
-            const loyaltySetting = await GlobalSetting.findOne({ key: "loyalty_config" });
+            const loyaltySetting = await GlobalSetting.findOne({
+              key: "loyalty_config",
+            });
             const cfg = loyaltySetting?.value || {};
             const awardRate = Math.max(0, Number(cfg.awardRate ?? 5));
-            const points = Math.max(0, Math.floor((Number(order.totalAmount || 0) * awardRate) / 100));
+            const points = Math.max(
+              0,
+              Math.floor((Number(order.totalAmount || 0) * awardRate) / 100),
+            );
 
             if (points > 0) {
               user.loyaltyPoints = Number(user.loyaltyPoints || 0) + points;
@@ -952,7 +1146,10 @@ export const updateOrderStatus = async (req, res) => {
       try {
         const fullOrder = await Order.findById(order._id)
           .populate("userId", "fullName mobile legalEntityName address")
-          .populate("deliveryPartnerId", "fullName mobile vehicleNumber vehicleType")
+          .populate(
+            "deliveryPartnerId",
+            "fullName mobile vehicleNumber vehicleType",
+          )
           .populate("franchiseId", "franchiseName ownerName city");
 
         const biltyNumber = `BLT-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
@@ -961,18 +1158,26 @@ export const updateOrderStatus = async (req, res) => {
           biltyNumber,
           generatedAt: new Date(),
           numberOfPackages: order.numberOfPackages || 0,
-          items: order.items.map(item => ({
+          items: order.items.map((item) => ({
             name: item.name,
             quantity: item.quantity,
-            unit: item.unit
+            unit: item.unit,
           })),
           totalWeight: `${order.items.reduce((acc, i) => acc + (i.quantity || 0), 0)} Units`,
-          fromFranchise: fullOrder.franchiseId?.franchiseName || "Kisaankart Franchise",
-          toCustomer: fullOrder.userId?.legalEntityName || fullOrder.userId?.fullName || "Valued Customer",
-          toAddress: order.shippingAddress || fullOrder.userId?.address || "Delivery Address",
-          deliveryPartner: fullOrder.deliveryPartnerId?.fullName || "Not Assigned",
+          fromFranchise:
+            fullOrder.franchiseId?.franchiseName || "Kisaankart Franchise",
+          toCustomer:
+            fullOrder.userId?.legalEntityName ||
+            fullOrder.userId?.fullName ||
+            "Valued Customer",
+          toAddress:
+            order.shippingAddress ||
+            fullOrder.userId?.address ||
+            "Delivery Address",
+          deliveryPartner:
+            fullOrder.deliveryPartnerId?.fullName || "Not Assigned",
           vehicleNumber: fullOrder.deliveryPartnerId?.vehicleNumber || "N/A",
-          vehicleType: fullOrder.deliveryPartnerId?.vehicleType || "N/A"
+          vehicleType: fullOrder.deliveryPartnerId?.vehicleType || "N/A",
         };
       } catch (biltyErr) {
         console.error("Bilty generation error:", biltyErr);
@@ -988,14 +1193,21 @@ export const updateOrderStatus = async (req, res) => {
         const inventory = await Inventory.findOne({ franchiseId });
         if (inventory) {
           for (const item of order.items) {
-            const inventoryItem = inventory.items.find(i => i.productId.toString() === item.productId.toString());
+            const inventoryItem = inventory.items.find(
+              (i) => i.productId.toString() === item.productId.toString(),
+            );
             if (inventoryItem) {
-              inventoryItem.currentStock = Math.max(0, inventoryItem.currentStock - item.quantity);
+              inventoryItem.currentStock = Math.max(
+                0,
+                inventoryItem.currentStock - item.quantity,
+              );
               inventoryItem.lastUpdated = new Date();
             }
           }
           await inventory.save();
-          console.log(`[Inventory] Stock deducted for order ${order._id} (Franchise: ${franchiseId})`);
+          console.log(
+            `[Inventory] Stock deducted for order ${order._id} (Franchise: ${franchiseId})`,
+          );
         }
       } catch (stockErr) {
         console.error("Stock deduction error during status update:", stockErr);
@@ -1003,20 +1215,28 @@ export const updateOrderStatus = async (req, res) => {
     }
 
     // Return stock if status changed to Cancelled from Packed/Out for Delivery/Delivered
-    if (status === "Cancelled" && (["Packed", "Out for Delivery", "Delivered"].includes(currentStatus)) && isFranchise) {
+    if (
+      status === "Cancelled" &&
+      ["Packed", "Out for Delivery", "Delivered"].includes(currentStatus) &&
+      isFranchise
+    ) {
       try {
         const franchiseId = req.franchise._id;
         const inventory = await Inventory.findOne({ franchiseId });
         if (inventory) {
           for (const item of order.items) {
-            const inventoryItem = inventory.items.find(i => i.productId.toString() === item.productId.toString());
+            const inventoryItem = inventory.items.find(
+              (i) => i.productId.toString() === item.productId.toString(),
+            );
             if (inventoryItem) {
               inventoryItem.currentStock += item.quantity;
               inventoryItem.lastUpdated = new Date();
             }
           }
           await inventory.save();
-          console.log(`[Inventory] Stock returned for cancelled order ${order._id} (Franchise: ${franchiseId})`);
+          console.log(
+            `[Inventory] Stock returned for cancelled order ${order._id} (Franchise: ${franchiseId})`,
+          );
         }
       } catch (stockErr) {
         console.error("Stock return error during status update:", stockErr);
@@ -1040,10 +1260,45 @@ export const updateOrderStatus = async (req, res) => {
             createdAt: new Date(),
           });
           await user.save();
-          console.log(`[Credit] Refunded ₹${order.totalAmount} to user ${order.userId} for cancelled order ${order._id}`);
+          console.log(
+            `[Credit] Refunded ₹${order.totalAmount} to user ${order.userId} for cancelled order ${order._id}`,
+          );
         }
       } catch (creditErr) {
         console.error("Credit refund error during status update:", creditErr);
+      }
+    }
+
+    // Refund wallet if order was paid via Wallet OR any other online method (UPI/Card) if payment was completed
+    if (
+      status === "Cancelled" &&
+      (order.paymentMethod === "Wallet" ||
+        (["UPI", "Card"].includes(order.paymentMethod) &&
+          order.paymentStatus === "Completed"))
+    ) {
+      try {
+        const user = await User.findById(order.userId);
+        if (user) {
+          user.walletBalance = Number(
+            (user.walletBalance + order.totalAmount).toFixed(2),
+          );
+          user.walletTransactions = user.walletTransactions || [];
+          user.walletTransactions.unshift({
+            txnId: `REF-${Date.now()}`,
+            type: "Refund",
+            amount: order.totalAmount,
+            status: "Success",
+            note: `Refund for cancelled order ${order._id} (${order.paymentMethod})`,
+            referenceOrderId: order._id,
+            createdAt: new Date(),
+          });
+          await user.save();
+          console.log(
+            `[Refund] Refunded ₹${order.totalAmount} to user ${order.userId} wallet for cancelled order ${order._id}`,
+          );
+        }
+      } catch (refundErr) {
+        console.error("Wallet refund error during status update:", refundErr);
       }
     }
 
@@ -1120,44 +1375,52 @@ export const getAllOrders = async (req, res) => {
 export const getAdminDeliveryTracking = async (req, res) => {
   try {
     const orders = await Order.find({
-      orderStatus: { $in: ['Packed', 'Dispatched', 'Delivered', 'Received'] }
+      orderStatus: { $in: ["Packed", "Dispatched", "Delivered", "Received"] },
     })
       .populate("userId", "fullName mobile")
       .populate("franchiseId", "shopName ownerName mobile cityArea address")
-      .populate("deliveryPartnerId", "fullName mobile vehicleNumber vehicleType")
+      .populate(
+        "deliveryPartnerId",
+        "fullName mobile vehicleNumber vehicleType",
+      )
       .sort({ updatedAt: -1 });
 
-    const trackingData = orders.map(order => ({
+    const trackingData = orders.map((order) => ({
       _id: order._id,
       status: order.orderStatus,
       amount: order.totalAmount,
       payment: order.paymentMethod,
       customer: {
         id: order.userId?._id,
-        name: order.userId?.fullName || 'Guest User',
+        name: order.userId?.fullName || "Guest User",
         mobile: order.userId?.mobile,
-        address: order.shippingAddress
+        address: order.shippingAddress,
       },
       franchise: {
         id: order.franchiseId?._id,
-        name: order.franchiseId?.shopName || 'Main Hub',
+        name: order.franchiseId?.shopName || "Main Hub",
         location: order.franchiseId?.cityArea,
-        mobile: order.franchiseId?.mobile
+        mobile: order.franchiseId?.mobile,
       },
       rider: {
         id: order.deliveryPartnerId?._id,
-        name: order.deliveryPartnerId?.fullName || 'Self/Not Assigned',
+        name: order.deliveryPartnerId?.fullName || "Self/Not Assigned",
         mobile: order.deliveryPartnerId?.mobile,
-        vehicle: order.deliveryPartnerId?.vehicleNumber
+        vehicle: order.deliveryPartnerId?.vehicleNumber,
       },
       timestamp: {
         created: order.createdAt,
         updated: order.updatedAt,
-        delivered: order.deliveredAt
-      }
+        delivered: order.deliveredAt,
+      },
     }));
 
-    return handleResponse(res, 200, "Delivery tracking data fetched", trackingData);
+    return handleResponse(
+      res,
+      200,
+      "Delivery tracking data fetched",
+      trackingData,
+    );
   } catch (error) {
     console.error("Get delivery tracking error:", error);
     return handleResponse(res, 500, "Internal server error: " + error.message);
@@ -1166,39 +1429,108 @@ export const getAdminDeliveryTracking = async (req, res) => {
 
 export const getFranchiseOrders = async (req, res) => {
   try {
-    const franchiseId = new mongoose.Types.ObjectId(req.franchise._id);
+    const franchise = req.franchise;
+    const franchiseId = new mongoose.Types.ObjectId(franchise._id);
     const { date, includeOpen } = req.query;
 
     // Strict isolation: a franchise sees ONLY its own assigned orders.
-    // Optional: include "open" orders (franchiseId === null) so the franchise portal can claim them.
-    const query = includeOpen
-      ? {
-          $or: [
-            { franchiseId },
-            { franchiseId: null, orderStatus: { $in: ["Placed", "Assigned", "pending"] } },
-          ],
-        }
-      : { franchiseId };
+    // Default to including "open" orders (franchiseId === null) so the franchise portal can claim them.
+    const shouldIncludeOpen = includeOpen === "false" ? false : true;
 
+    // 1. Fetch orders explicitly assigned to this franchise
+    const assignedQuery = { franchiseId };
     if (date) {
       const startOfDay = new Date(date);
       startOfDay.setHours(0, 0, 0, 0);
       const endOfDay = new Date(date);
       endOfDay.setHours(23, 59, 59, 999);
-      query.createdAt = { $gte: startOfDay, $lte: endOfDay };
+      assignedQuery.createdAt = { $gte: startOfDay, $lte: endOfDay };
     }
 
-    const orders = await Order.find(query)
+    let orders = await Order.find(assignedQuery)
       .populate("userId", "fullName mobile legalEntityName")
       .populate("user", "fullName mobile legalEntityName")
+      .populate("items.productId")
       .populate(
         "deliveryPartnerId",
         "fullName mobile vehicleNumber vehicleType",
       )
       .sort({ createdAt: -1 });
 
+    // 2. Fetch unassigned orders within proximity and served categories (Open Pool)
+    if (shouldIncludeOpen) {
+      const coords = franchise.location?.coordinates;
+      const hasValidCoords = coords && coords[0] !== 0 && coords[1] !== 0;
+
+      const openQuery = {
+        franchiseId: null,
+        orderStatus: { $in: ["Placed", "Assigned", "pending"] },
+      };
+
+      if (date) {
+        const startOfDay = new Date(date);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(date);
+        endOfDay.setHours(23, 59, 59, 999);
+        openQuery.createdAt = { $gte: startOfDay, $lte: endOfDay };
+      }
+
+      // If franchise has a valid location, only show unassigned orders within 25km
+      if (hasValidCoords) {
+        openQuery.shippingLocation = {
+          $near: {
+            $geometry: { type: "Point", coordinates: coords },
+            $maxDistance: 25000, // 25km radius
+          },
+        };
+      }
+
+      let openOrders = await Order.find(openQuery)
+        .populate("userId", "fullName mobile legalEntityName")
+        .populate("user", "fullName mobile legalEntityName")
+        .populate("items.productId")
+        .populate(
+          "deliveryPartnerId",
+          "fullName mobile vehicleNumber vehicleType",
+        )
+        .limit(50); // Sanity limit for open pool
+
+      // 3. Filter open orders by category compatibility and rejections
+      const servedCategoryIds = (franchise.servedCategories || []).map((id) =>
+        id.toString(),
+      );
+
+      openOrders = openOrders.filter((order) => {
+        // Skip if already attempted/rejected by this franchise
+        const alreadyAttempted = (order.assignmentAttempts || []).some(
+          (a) => a.franchiseId?.toString() === franchiseId.toString(),
+        );
+        if (alreadyAttempted) return false;
+
+        // An order is compatible if EVERY item's category is in servedCategoryIds
+        // If franchise has NO categories defined, assume they serve all (legacy support)
+        if (servedCategoryIds.length === 0) return true;
+
+        return order.items.every((item) => {
+          const catId = item.productId?.category?.toString();
+          return !catId || servedCategoryIds.includes(catId);
+        });
+      });
+
+      // Merge results
+      const existingIds = new Set(orders.map((o) => o._id.toString()));
+      openOrders.forEach((o) => {
+        if (!existingIds.has(o._id.toString())) {
+          orders.push(o);
+        }
+      });
+
+      // Re-sort combined list by createdAt descending
+      orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+
     if (process.env.DEBUG_LOG_TO_FILE === "true") {
-      const debugInfo = `\n[${new Date().toISOString()}] Fetching Orders for ${franchiseId}\nQuery: ${JSON.stringify(query)}\nFound: ${orders.length} orders\n`;
+      const debugInfo = `\n[${new Date().toISOString()}] Fetching Orders for ${franchiseId}\nAssigned: ${orders.length} orders\n`;
       fs.appendFileSync("debug_log.txt", debugInfo);
     }
 
@@ -1208,18 +1540,22 @@ export const getFranchiseOrders = async (req, res) => {
 
       return {
         ...order.toObject(),
-        date: isValidDate ? dateObj.toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          timeZone: "Asia/Kolkata",
-        }) : "N/A",
-        time: isValidDate ? dateObj.toLocaleTimeString("en-IN", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: true,
-          timeZone: "Asia/Kolkata",
-        }) : "N/A",
+        date: isValidDate
+          ? dateObj.toLocaleDateString("en-IN", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+              timeZone: "Asia/Kolkata",
+            })
+          : "N/A",
+        time: isValidDate
+          ? dateObj.toLocaleTimeString("en-IN", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+              timeZone: "Asia/Kolkata",
+            })
+          : "N/A",
       };
     });
 
@@ -1287,14 +1623,25 @@ export const acceptFranchiseOrder = async (req, res) => {
     }
 
     // Allow status transition from Assigned OR Placed/pending (for open pool orders)
-    const validStates = ['Assigned', 'Placed', 'pending', 'new'];
+    const validStates = ["Assigned", "Placed", "pending", "new"];
     if (!validStates.includes(order.orderStatus)) {
-      return handleResponse(res, 400, "Order is not in a valid state for acceptance");
+      return handleResponse(
+        res,
+        400,
+        "Order is not in a valid state for acceptance",
+      );
     }
 
     // If it's already assigned to someone else
-    if (order.franchiseId && order.franchiseId.toString() !== franchiseId.toString()) {
-      return handleResponse(res, 403, "This order is already assigned to another franchise");
+    if (
+      order.franchiseId &&
+      order.franchiseId.toString() !== franchiseId.toString()
+    ) {
+      return handleResponse(
+        res,
+        403,
+        "This order is already assigned to another franchise",
+      );
     }
 
     // If it's an open order (franchiseId is null), claim it
@@ -1303,14 +1650,14 @@ export const acceptFranchiseOrder = async (req, res) => {
     }
 
     // Change status to Accepted
-    order.orderStatus = 'Accepted';
+    order.orderStatus = "Accepted";
 
     // INVENTORY CHECK: Flag shortages for Admin Procurement
     const inventory = await Inventory.findOne({ franchiseId });
     if (inventory) {
-      order.items = order.items.map(item => {
-        const invItem = inventory.items.find(i =>
-          i.productId.toString() === item.productId.toString()
+      order.items = order.items.map((item) => {
+        const invItem = inventory.items.find(
+          (i) => i.productId.toString() === item.productId.toString(),
         );
         const availableStock = invItem ? invItem.currentStock : 0;
 
@@ -1326,9 +1673,9 @@ export const acceptFranchiseOrder = async (req, res) => {
     }
 
     order.statusHistory.push({
-      status: 'Accepted',
+      status: "Accepted",
       updatedAt: new Date(),
-      updatedBy: 'franchise'
+      updatedBy: "franchise",
     });
 
     await order.save();
@@ -1383,7 +1730,7 @@ export const assignDeliveryPartner = async (req, res) => {
       {
         orderId: order._id.toString(),
         deliveryPartnerId: deliveryPartnerId.toString(),
-      }
+      },
     );
 
     // Note: Stock deduction is now handled in updateOrderStatus when status changes to "Packed"
@@ -1394,24 +1741,28 @@ export const assignDeliveryPartner = async (req, res) => {
     );
 
     // Send Real-time Notification
-    emitToDelivery(deliveryPartnerId, 'new_task', {
+    emitToDelivery(deliveryPartnerId, "new_task", {
       orderId: order._id,
-      type: 'DELIVERY',
-      message: `New delivery task assigned: #${order._id.toString().slice(-6)}`
+      type: "DELIVERY",
+      message: `New delivery task assigned: #${order._id.toString().slice(-6)}`,
     });
 
     // Send Push Notification (standardized payload for delivery assignment)
-    sendNotificationToUser(deliveryPartnerId, {
-      title: "New Delivery Task",
-      body: `You have been assigned a new delivery task for order #${order._id.toString().slice(-6)}.`,
-      data: {
-        type: "new_delivery",
-        notificationCategory: "assignment",
-        source: "franchise",
-        orderId: order._id.toString(),
-        link: `/delivery/assignments/${order._id}`
-      }
-    }, 'delivery');
+    sendNotificationToUser(
+      deliveryPartnerId,
+      {
+        title: "New Delivery Task",
+        body: `You have been assigned a new delivery task for order #${order._id.toString().slice(-6)}.`,
+        data: {
+          type: "new_delivery",
+          notificationCategory: "assignment",
+          source: "franchise",
+          orderId: order._id.toString(),
+          link: `/delivery/assignments/${order._id}`,
+        },
+      },
+      "delivery",
+    );
 
     return handleResponse(res, 200, "Order dispatched successfully", order);
   } catch (error) {
@@ -1440,7 +1791,12 @@ export const getDispatchedOrders = async (req, res) => {
       const fLoc = order.franchiseId?.location?.coordinates;
       const sLoc = order.shippingLocation?.coordinates;
 
-      if (Array.isArray(fLoc) && fLoc.length === 2 && Array.isArray(sLoc) && sLoc.length === 2) {
+      if (
+        Array.isArray(fLoc) &&
+        fLoc.length === 2 &&
+        Array.isArray(sLoc) &&
+        sLoc.length === 2
+      ) {
         const d = getDistance(
           fLoc[1], // latitude
           fLoc[0], // longitude
@@ -1558,4 +1914,3 @@ export const getDeliveryOrderHistory = async (req, res) => {
     return handleResponse(res, 500, "Server error");
   }
 };
-
