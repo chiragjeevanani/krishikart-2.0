@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     History,
     Search,
-    ArrowLeft,
     Truck,
     ChevronRight,
     Calendar,
@@ -14,10 +13,10 @@ import {
     Check,
     X
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import api from '@/lib/axios';
 import { toast } from 'sonner';
+import VendorBackBar from '../components/navigation/VendorBackBar';
 
 const STATUS_OPTIONS = [
     { value: 'all', label: 'All' },
@@ -26,7 +25,6 @@ const STATUS_OPTIONS = [
 ];
 
 export default function DispatchHistoryScreen() {
-    const navigate = useNavigate();
     const [dispatches, setDispatches] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -75,10 +73,8 @@ export default function DispatchHistoryScreen() {
     return (
         <div className="space-y-6 pb-20">
             <header className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <button onClick={() => navigate(-1)} className="p-2 hover:bg-white rounded-xl transition-colors border border-transparent hover:border-slate-100">
-                        <ArrowLeft size={20} />
-                    </button>
+                <div className="flex items-center gap-3 min-w-0">
+                    <VendorBackBar />
                     <div>
                         <h1 className="text-xl font-black text-slate-900 tracking-tight">Dispatch History</h1>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Audit Trail & Logs</p>

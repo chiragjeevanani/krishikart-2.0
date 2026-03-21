@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     AlertTriangle,
-    ArrowLeft,
     Package,
     TrendingDown,
     Clock,
@@ -15,6 +14,7 @@ import {
 import mockProduce from '../data/mockProduce.json';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import VendorBackBar from '../components/navigation/VendorBackBar';
 
 export default function StockAlertsScreen() {
     const navigate = useNavigate();
@@ -38,9 +38,7 @@ export default function StockAlertsScreen() {
     return (
         <div className="space-y-6 pb-20">
             <header className="flex items-center gap-4">
-                <button onClick={() => navigate(-1)} className="p-2 hover:bg-white rounded-xl transition-colors">
-                    <ArrowLeft size={20} />
-                </button>
+                <VendorBackBar />
                 <div>
                     <h1 className="text-xl font-black text-slate-900 tracking-tight">Supply Intelligence</h1>
                     <p className="text-[10px] font-black text-primary uppercase tracking-widest">{alerts.length} Active Anomalies</p>

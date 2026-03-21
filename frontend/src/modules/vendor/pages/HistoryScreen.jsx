@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
     Clock,
-    ArrowLeft,
     TrendingUp,
     CheckCircle2,
     Calendar,
@@ -18,6 +17,7 @@ import {
 import mockOrders from '../data/mockVendorOrders.json';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import VendorBackBar from '../components/navigation/VendorBackBar';
 import { useOrders } from '@/modules/user/contexts/OrderContext';
 
 export default function HistoryScreen() {
@@ -55,9 +55,7 @@ export default function HistoryScreen() {
     return (
         <div className="space-y-6 pb-20">
             <header className="flex items-center gap-4">
-                <button onClick={() => navigate(-1)} className="p-2 hover:bg-white rounded-xl transition-colors">
-                    <ArrowLeft size={20} />
-                </button>
+                <VendorBackBar />
                 <div>
                     <h1 className="text-xl font-black text-slate-900 tracking-tight">Archive & Intel</h1>
                     <p className="text-[10px] font-black text-primary uppercase tracking-widest">Historical Performance</p>

@@ -31,6 +31,7 @@ import { LocationProvider } from './modules/user/contexts/LocationContext'
 import { UserAuthProvider } from './modules/user/contexts/UserAuthContext'
 import UserAuthGuard from './modules/user/components/auth/UserAuthGuard'
 import FranchiseAuthGuard from './modules/franchise/components/auth/FranchiseAuthGuard'
+import FranchiseVerificationGuard from './modules/franchise/components/auth/FranchiseVerificationGuard'
 
 import { FranchiseAuthProvider } from './modules/franchise/contexts/FranchiseAuthContext'
 import { FranchiseOrdersProvider } from './modules/franchise/contexts/FranchiseOrdersContext'
@@ -160,6 +161,7 @@ function App() {
             <Route path="login" element={<FranchiseLogin />} />
             <Route path="signup" element={<FranchiseSignup />} />
             <Route element={<FranchiseAuthGuard />}>
+              <Route element={<FranchiseVerificationGuard />}>
               <Route element={<FranchiseLayout />}>
                 <Route path="dashboard" element={<FranchiseDashboard />} />
                 <Route path="orders" element={<FranchiseOrders />} />
@@ -174,6 +176,7 @@ function App() {
                 <Route path="profile" element={<FranchiseProfile />} />
                 <Route path="payment-settings" element={<FranchisePaymentSettings />} />
                 <Route path="documentation" element={<DocumentationScreen />} />
+              </Route>
               </Route>
             </Route>
           </Route>

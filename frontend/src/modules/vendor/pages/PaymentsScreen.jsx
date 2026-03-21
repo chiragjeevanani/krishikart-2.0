@@ -18,6 +18,7 @@ import mockPayments from '../data/mockPayments.json';
 import { cn } from '@/lib/utils';
 import MetricCard from '../components/cards/MetricCard';
 import DataGrid from '../components/tables/DataGrid';
+import VendorBackBar from '../components/navigation/VendorBackBar';
 
 export default function PaymentsScreen() {
     const navigate = useNavigate();
@@ -82,12 +83,15 @@ export default function PaymentsScreen() {
 
     return (
         <div className="space-y-8 pb-32">
-            <header className="flex items-center justify-between">
-                <div>
-                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-1">Financial Intelligence</p>
-                    <h1 className="text-2xl font-black text-slate-900 tracking-tight">Earnings Intel</h1>
+            <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex items-start gap-3 min-w-0">
+                    <VendorBackBar className="mt-0.5" />
+                    <div className="min-w-0">
+                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-1">Financial Intelligence</p>
+                        <h1 className="text-2xl font-black text-slate-900 tracking-tight">Earnings Intel</h1>
+                    </div>
                 </div>
-                <button className="flex items-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 active:scale-95">
+                <button className="flex items-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 active:scale-95 sm:self-start shrink-0 min-h-[44px]">
                     <Download size={16} />
                     Export Ledger
                 </button>

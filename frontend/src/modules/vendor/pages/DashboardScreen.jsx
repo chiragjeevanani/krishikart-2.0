@@ -7,7 +7,8 @@ import {
     IndianRupee,
     Wallet,
     ChevronRight,
-    ArrowUpRight
+    ArrowUpRight,
+    Settings
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -141,33 +142,50 @@ export default function DashboardScreen() {
 
     return (
         <div className="space-y-8">
-            <header className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-black text-slate-900 tracking-tight">Procurement Pulse</h1>
-                    <div className="flex items-center gap-2 mt-1">
-                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Operational Status: Active</p>
+            <header className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                    <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-tight">Procurement Pulse</h1>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <p className="text-[9px] sm:text-[10px] font-black text-slate-300 uppercase tracking-[0.15em] sm:tracking-[0.2em]">Operational Status: Active</p>
                         {activeOps > 0 && (
-                            <span className="flex items-center gap-1.5 px-3 py-0.5 bg-primary/10 text-primary rounded-full text-[9px] font-black uppercase tracking-widest animate-pulse border border-primary/20">
+                            <span className="flex items-center gap-1.5 px-2.5 sm:px-3 py-0.5 bg-primary/10 text-primary rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-widest animate-pulse border border-primary/20">
                                 <div className="w-1 h-1 rounded-full bg-primary" />
                                 {activeOps} Live Ops
                             </span>
                         )}
                     </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 sm:justify-end sm:shrink-0">
                     <button
+                        type="button"
+                        onClick={() => navigate('/vendor/payments')}
+                        className="h-10 sm:h-11 min-h-[44px] px-3 sm:px-4 bg-white border border-slate-200 text-slate-900 rounded-xl sm:rounded-2xl inline-flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm hover:bg-emerald-50/80 hover:border-emerald-200 transition-all font-black text-[9px] sm:text-[10px] uppercase tracking-wide sm:tracking-widest active:scale-[0.98]"
+                    >
+                        <Wallet className="h-4 w-4 sm:h-[17px] sm:w-[17px] text-emerald-600 shrink-0" strokeWidth={2} />
+                        Earnings
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => navigate('/vendor/profile')}
+                        className="h-10 sm:h-11 min-h-[44px] px-3 sm:px-4 bg-white border border-slate-200 text-slate-900 rounded-xl sm:rounded-2xl inline-flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm hover:bg-slate-50 transition-all font-black text-[9px] sm:text-[10px] uppercase tracking-wide sm:tracking-widest active:scale-[0.98]"
+                    >
+                        <Settings className="h-4 w-4 sm:h-[17px] sm:w-[17px] text-slate-600 shrink-0" strokeWidth={2} />
+                        Settings
+                    </button>
+                    <button
+                        type="button"
                         onClick={handleTestPush}
                         disabled={sendingPush}
-                        className="h-12 px-6 bg-white border border-slate-200 text-slate-900 rounded-2xl flex items-center justify-center gap-2 shadow-xl shadow-slate-100 hover:bg-slate-50 transition-all font-black text-[10px] uppercase tracking-widest disabled:opacity-50"
+                        className="h-10 sm:h-11 min-h-[44px] px-3 sm:px-5 bg-white border border-slate-200 text-slate-900 rounded-xl sm:rounded-2xl inline-flex items-center justify-center gap-1.5 sm:gap-2 shadow-xl shadow-slate-100 hover:bg-slate-50 transition-all font-black text-[9px] sm:text-[10px] uppercase tracking-wide sm:tracking-widest disabled:opacity-50 active:scale-[0.98]"
                     >
-                        <Bell size={18} className={sendingPush ? "animate-pulse text-indigo-500" : "text-indigo-500"} />
+                        <Bell className={`h-4 w-4 sm:h-[18px] sm:w-[18px] ${sendingPush ? 'animate-pulse text-indigo-500' : 'text-indigo-500'}`} strokeWidth={2} />
                         {sendingPush ? 'Testing...' : 'Test Push'}
                     </button>
                 </div>
             </header>
 
             {/* Quick Stats Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 <MetricCard
                     label="Escrow Settlement"
                     value={`₹${(pendingSettlement || 124000).toLocaleString()}`}
@@ -207,24 +225,24 @@ export default function DashboardScreen() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.4 }}
-                    className="lg:col-span-2 bg-slate-900 rounded-[40px] p-8 text-white relative overflow-hidden group shadow-2xl shadow-slate-900/20"
+                    className="lg:col-span-2 bg-slate-900 rounded-2xl sm:rounded-[40px] p-5 sm:p-8 text-white relative overflow-hidden group shadow-2xl shadow-slate-900/20"
                 >
                     <div className="relative z-10">
-                        <div className="flex justify-between items-start mb-10">
-                            <div>
-                                <h3 className="text-xl font-black tracking-tight mb-2">Network Efficiency</h3>
-                                <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">Enterprise Standard Alignment</p>
+                        <div className="flex justify-between items-start gap-3 mb-6 sm:mb-10">
+                            <div className="min-w-0">
+                                <h3 className="text-lg sm:text-xl font-black tracking-tight mb-1 sm:mb-2">Network Efficiency</h3>
+                                <p className="text-slate-400 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em]">Enterprise Standard Alignment</p>
                             </div>
-                            <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-xl backdrop-blur-md border border-white/5">
-                                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_#10b981]" />
-                                <span className="text-[10px] font-black uppercase tracking-widest">Alpha Verified</span>
+                            <div className="flex items-center gap-1.5 sm:gap-2 bg-white/10 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl backdrop-blur-md border border-white/5 shrink-0">
+                                <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_#10b981]" />
+                                <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-widest">Alpha Verified</span>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-8">
-                            <div>
-                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Fulfillment</p>
-                                <p className="text-3xl font-black tabular-nums">{performance.fulfillmentRate}%</p>
+                        <div className="grid grid-cols-3 gap-3 sm:gap-8">
+                            <div className="min-w-0">
+                                <p className="text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-wider sm:tracking-widest mb-1 sm:mb-2">Fulfillment</p>
+                                <p className="text-xl sm:text-2xl md:text-3xl font-black tabular-nums leading-none">{performance.fulfillmentRate}%</p>
                                 <div className="mt-4 w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
                                     <motion.div
                                         initial={{ width: 0 }}
@@ -233,17 +251,17 @@ export default function DashboardScreen() {
                                     />
                                 </div>
                             </div>
-                            <div>
-                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Cycle Rate</p>
-                                <p className="text-3xl font-black tabular-nums">{performance.avgPrepTime}</p>
+                            <div className="min-w-0">
+                                <p className="text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-wider sm:tracking-widest mb-1 sm:mb-2">Cycle Rate</p>
+                                <p className="text-xl sm:text-2xl md:text-3xl font-black tabular-nums leading-none break-words">{performance.avgPrepTime}</p>
                                 <div className="mt-4 w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
                                     <div className="h-full bg-blue-500 w-3/4" />
                                 </div>
                             </div>
-                            <div>
-                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Archive Vol</p>
-                                <p className="text-3xl font-black tabular-nums">{performance.archiveVol}</p>
-                                <p className="text-[9px] text-emerald-400 font-black mt-2 uppercase tracking-wide">Ready for Settlement</p>
+                            <div className="min-w-0">
+                                <p className="text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-wider sm:tracking-widest mb-1 sm:mb-2">Archive Vol</p>
+                                <p className="text-xl sm:text-2xl md:text-3xl font-black tabular-nums leading-none">{performance.archiveVol}</p>
+                                <p className="text-[8px] sm:text-[9px] text-emerald-400 font-black mt-1.5 sm:mt-2 uppercase tracking-wide">Ready for Settlement</p>
                             </div>
                         </div>
                     </div>
@@ -253,21 +271,21 @@ export default function DashboardScreen() {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.5 }}
-                    className="bg-white rounded-[40px] p-8 border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-xl hover:shadow-slate-200/50 transition-all border-b-4 border-b-slate-900"
+                    className="bg-white rounded-2xl sm:rounded-[40px] p-5 sm:p-8 border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-xl hover:shadow-slate-200/50 transition-all border-b-4 border-b-slate-900"
                 >
                     <div>
-                        <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-900 mb-6 border border-slate-100 shadow-sm">
-                            <Truck size={24} />
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-slate-50 rounded-xl sm:rounded-2xl flex items-center justify-center text-slate-900 mb-4 sm:mb-6 border border-slate-100 shadow-sm">
+                            <Truck className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2} />
                         </div>
-                        <h4 className="text-lg font-black text-slate-900 tracking-tight leading-none uppercase">Dispatch <br /> Workflow</h4>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-6">Matrix Sync in 22m</p>
+                        <h4 className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-tight uppercase">Dispatch <br /> Workflow</h4>
+                        <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4 sm:mt-6">Matrix Sync in 22m</p>
                     </div>
 
                     <button
                         onClick={() => navigate('/vendor/dispatch')}
-                        className="mt-8 group w-full bg-slate-900 text-white rounded-2xl py-4 flex items-center justify-center gap-3 transition-all hover:bg-slate-800"
+                        className="mt-6 sm:mt-8 group w-full bg-slate-900 text-white rounded-xl sm:rounded-2xl py-3.5 sm:py-4 flex items-center justify-center gap-2 sm:gap-3 transition-all hover:bg-slate-800"
                     >
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em]">Enter Fleet Matrix</span>
+                        <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em]">Enter Fleet Matrix</span>
                         <ArrowUpRight size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                     </button>
                 </motion.div>
@@ -275,15 +293,15 @@ export default function DashboardScreen() {
 
             {/* Quick Actions & Recent Activity */}
             <div className="grid grid-cols-1 gap-6">
-                <div className="bg-white rounded-[40px] p-8 border border-slate-100 shadow-sm">
-                    <div className="flex items-center justify-between mb-8">
-                        <div>
-                            <h3 className="text-lg font-black text-slate-900 tracking-tight">Operations Ledger</h3>
-                            <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mt-1">Real-time Batch Tracking</p>
+                <div className="bg-white rounded-2xl sm:rounded-[40px] p-5 sm:p-8 border border-slate-100 shadow-sm">
+                    <div className="flex items-center justify-between gap-3 mb-6 sm:mb-8">
+                        <div className="min-w-0">
+                            <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">Operations Ledger</h3>
+                            <p className="text-[9px] sm:text-[10px] font-black text-slate-300 uppercase tracking-[0.15em] sm:tracking-[0.2em] mt-1">Real-time Batch Tracking</p>
                         </div>
                         <button
                             onClick={() => navigate('/vendor/dispatch-history')}
-                            className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] flex items-center gap-2 hover:translate-x-1 transition-transform"
+                            className="text-[9px] sm:text-[10px] font-black text-slate-900 uppercase tracking-[0.15em] sm:tracking-[0.2em] flex items-center gap-1.5 sm:gap-2 hover:translate-x-1 transition-transform shrink-0"
                         >
                             History Access <ChevronRight size={14} />
                         </button>

@@ -15,6 +15,7 @@ import { useVendorInventory } from '../contexts/VendorInventoryContext';
 import { cn } from '@/lib/utils';
 import FilterBar from '../components/tables/FilterBar';
 import DataGrid from '../components/tables/DataGrid';
+import VendorBackBar from '../components/navigation/VendorBackBar';
 
 export default function InventoryScreen() {
     const { inventory, loading, updateStock, toggleAvailability } = useVendorInventory();
@@ -104,10 +105,13 @@ export default function InventoryScreen() {
 
     return (
         <div className="space-y-6 pb-20">
-            <header className="flex items-center justify-between">
-                <div>
+            <header className="flex items-center justify-between gap-3">
+                <div className="flex items-start gap-3 min-w-0">
+                    <VendorBackBar className="mt-0.5 shrink-0" />
+                    <div className="min-w-0">
                     <h1 className="text-2xl font-black text-slate-900 tracking-tight">Supply Inventory</h1>
                     <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mt-1">Matrix Verified: {inventory.length} Stock SKU</p>
+                    </div>
                 </div>
                 <div className="flex items-center gap-3">
                     <div className="flex bg-white border border-slate-100 rounded-2xl p-1 shadow-sm">

@@ -124,7 +124,9 @@ export function FranchiseAuthProvider({ children }) {
             updatePassword,
             // Auth should be based on JWT presence; profile may still be loading/refetching.
             isAuthenticated: !!token,
-            loading
+            loading,
+            /** When false, franchise UI should only allow Documentation until admin approves the franchise. */
+            isFranchiseVerified: !!franchise?.isVerified,
         }}>
             {children}
         </FranchiseAuthContext.Provider>

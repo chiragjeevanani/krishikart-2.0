@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/lib/axios';
 import {
     Package,
-    ArrowLeft,
     ArrowRight,
     CheckCircle2,
     Truck,
@@ -22,6 +21,7 @@ import mockOrders from '../data/mockVendorOrders.json';
 import { cn } from '@/lib/utils';
 import { useOrders } from '@/modules/user/contexts/OrderContext';
 import DocumentViewer from '../components/documents/DocumentViewer';
+import VendorBackBar from '../components/navigation/VendorBackBar';
 import { toast } from 'sonner';
 
 export default function PackingScreen() {
@@ -196,13 +196,18 @@ export default function PackingScreen() {
     return (
         <div className="space-y-6 pb-20 max-w-2xl mx-auto">
             {step < 4 && (
-                <header className="space-y-1">
-                    <div className="flex items-center gap-2 text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">
-                        <button onClick={() => navigate(-1)} className="hover:text-slate-900 transition-colors">Order {order.id}</button>
-                        <ChevronRight size={10} />
-                        <span className="text-primary">Fulfillment Cycle</span>
+                <header className="space-y-3">
+                    <div className="flex items-start gap-3">
+                        <VendorBackBar fallbackPath="/vendor/orders" className="shrink-0" />
+                        <div className="flex-1 min-w-0 space-y-1 pt-0.5">
+                            <div className="flex items-center gap-2 text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] flex-wrap">
+                                <span className="truncate text-slate-400">Order {order.id}</span>
+                                <ChevronRight size={10} className="shrink-0 opacity-60" />
+                                <span className="text-primary shrink-0">Fulfillment Cycle</span>
+                            </div>
+                            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Assembly & Dispatch</h1>
+                        </div>
                     </div>
-                    <h1 className="text-2xl font-black text-slate-900 tracking-tight">Assembly & Dispatch</h1>
                 </header>
             )}
 
@@ -434,8 +439,12 @@ export default function PackingScreen() {
                         key="step4"
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="bg-white p-10 rounded-[48px] border border-slate-100 shadow-2xl text-center space-y-10"
+                        className="space-y-6"
                     >
+                        <div className="flex justify-start">
+                            <VendorBackBar fallbackPath="/vendor/orders" />
+                        </div>
+                        <div className="bg-white p-10 rounded-[48px] border border-slate-100 shadow-2xl text-center space-y-10">
                         <div className="w-24 h-24 bg-emerald-600 text-white rounded-[32px] flex items-center justify-center mx-auto shadow-2xl shadow-emerald-100 rotate-12">
                             <CheckCircle2 size={48} />
                         </div>
@@ -504,6 +513,7 @@ export default function PackingScreen() {
                                     History
                                 </button>
                             </div>
+                        </div>
                         </div>
                     </motion.div>
                 )}

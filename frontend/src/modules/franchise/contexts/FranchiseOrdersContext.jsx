@@ -181,7 +181,13 @@ export function FranchiseOrdersProvider({ children }) {
         joinFranchiseRoom();
 
         const handleNewOrder = (data) => {
-            setNewOrderData(data);
+            const oid = data?.orderId ?? data?._id;
+            setNewOrderData({
+                ...data,
+                orderId: oid,
+                autoAccepted: data?.autoAccepted === true,
+                showRejectOnly: data?.showRejectOnly === true,
+            });
             setIsAlertOpen(true);
             playNotificationSound();
             fetchOrders(); // Immediate refresh
@@ -271,6 +277,23 @@ export function FranchiseOrdersProvider({ children }) {
         }
     };
 
+    /** Reject auto-assigned order → backend reassigns to next nearest franchise (same category rules). */
+    const rejectFranchiseOrder = async (orderId, reason = '') => {
+        try {
+            const response = await api.put(`/orders/franchise/${orderId}/reject`, { reason });
+            if (response.data.success) {
+                toast.success(response.data.message || 'Order rejected');
+                fetchOrders();
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Reject franchise order error:', error);
+            toast.error(error.response?.data?.message || 'Failed to reject order');
+            return false;
+        }
+    };
+
     const assignDeliveryPartner = async (orderId, deliveryPartnerId) => {
         try {
             const response = await api.put(`/orders/franchise/${orderId}/assign-delivery`, { deliveryPartnerId });
@@ -301,6 +324,7 @@ export function FranchiseOrdersProvider({ children }) {
             orders,
             updateOrderStatus,
             acceptOrder,
+            rejectFranchiseOrder,
             assignDeliveryPartner,
             deliveryPartners,
             stats,

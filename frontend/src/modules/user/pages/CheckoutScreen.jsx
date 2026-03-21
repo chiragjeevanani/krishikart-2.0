@@ -37,6 +37,36 @@ const ADDRESS_TAGS = [
     { value: 'other', label: 'Other' }
 ]
 
+/** Start time of each delivery window (local time). Only slots whose window hasn't started yet are selectable. */
+const DELIVERY_SHIFT_SLOTS = [
+    { label: '6 AM - 8 AM', start: [6, 0] },
+    { label: '8 AM - 10 AM', start: [8, 0] },
+    { label: '10 AM - 12 PM', start: [10, 0] },
+    { label: '12 PM - 2 PM', start: [12, 0] },
+    { label: '2 PM - 4 PM', start: [14, 0] },
+    { label: '4 PM - 6 PM', start: [16, 0] }
+]
+
+function getShiftStartDate(shiftLabel, baseDate = new Date()) {
+    const slot = DELIVERY_SHIFT_SLOTS.find((s) => s.label === shiftLabel)
+    if (!slot) return null
+    const d = new Date(baseDate)
+    d.setHours(slot.start[0], slot.start[1], 0, 0)
+    return d
+}
+
+/** True if this slot can be selected. Before 6 PM: only future windows. From 6 PM onward: all slots (e.g. next-day). */
+function isDeliveryShiftSelectable(shiftLabel, now = new Date()) {
+    const hour = now.getHours()
+    // From 6 PM (18:00) onwards — all slots enabled for ordering (typically next-day delivery)
+    if (hour >= 18) {
+        return true
+    }
+    const start = getShiftStartDate(shiftLabel, now)
+    if (!start) return false
+    return now.getTime() < start.getTime()
+}
+
 export default function CheckoutScreen() {
     const navigate = useNavigate()
     const { cartItems, cartTotal, clearCart, deliveryConstraints } = useCart()
@@ -74,6 +104,20 @@ export default function CheckoutScreen() {
         state: 'Madhya Pradesh'
     });
     const [deliveryShift, setDeliveryShift] = useState('');
+    /** Re-render every minute so past slots become disabled without refresh */
+    const [shiftTimeTick, setShiftTimeTick] = useState(0)
+
+    useEffect(() => {
+        const id = setInterval(() => setShiftTimeTick((n) => n + 1), 60000)
+        return () => clearInterval(id)
+    }, [])
+
+    useEffect(() => {
+        if (!deliveryShift) return
+        if (!isDeliveryShiftSelectable(deliveryShift)) {
+            setDeliveryShift('')
+        }
+    }, [deliveryShift, shiftTimeTick])
 
     const handlePinCurrentLocation = async () => {
         if (!ctxUpdateDeliveryLocation) {
@@ -369,6 +413,11 @@ export default function CheckoutScreen() {
             toast.error("Please select a delivery shift timing");
             return;
         }
+        if (!isDeliveryShiftSelectable(deliveryShift)) {
+            toast.error("This delivery slot is no longer available. Please pick a later time.");
+            setDeliveryShift('');
+            return;
+        }
 
         setIsPlacingOrder(true)
 
@@ -478,20 +527,20 @@ export default function CheckoutScreen() {
 
     return (
         <PageTransition>
-            <div className="bg-[#f8fafd] min-h-screen pb-40 md:pb-20">
+            <div className="bg-[#f8fafd] min-h-screen overflow-x-hidden pb-[calc(8.5rem+env(safe-area-inset-bottom))] md:pb-20">
                 {/* Mobile Header */}
-                <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] border-b border-slate-100/80 shadow-[0_1px_10px_rgba(0,0,0,0.04)] flex items-center justify-between md:hidden">
-                    <div className="flex items-center gap-4">
-                        <button onClick={() => navigate(-1)} className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white border border-slate-100 shadow-sm text-slate-600 active:scale-95 transition-transform">
+                <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl px-3 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] border-b border-slate-100/80 shadow-[0_1px_10px_rgba(0,0,0,0.04)] flex items-center justify-between md:hidden">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <button onClick={() => navigate(-1)} className="min-h-[40px] min-w-[40px] shrink-0 flex items-center justify-center rounded-full bg-white border border-slate-100 shadow-sm text-slate-600 active:scale-95 transition-transform">
                             <ArrowLeft size={20} />
                         </button>
-                        <h1 className="text-xl font-black text-slate-900 tracking-tight">Checkout</h1>
+                        <h1 className="text-lg font-black text-slate-900 tracking-tight truncate">Checkout</h1>
                     </div>
                 </div>
 
                 <div className="max-w-7xl mx-auto md:px-8">
                     <div className="md:flex md:gap-8 md:py-12">
-                        <div className="flex-1 space-y-10 px-6 md:px-0">
+                        <div className="flex-1 space-y-10 md:space-y-10 px-4 md:px-0 min-w-0">
                             <div className="hidden md:flex items-center justify-between mb-4">
                                 <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Checkout</h1>
                                 <div className="flex items-center gap-3">
@@ -507,51 +556,85 @@ export default function CheckoutScreen() {
 
                             {/* Delivery Address */}
                             <section>
-                                <div className="flex items-center justify-between mb-4">
-                                    <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest md:normal-case md:tracking-normal md:text-slate-900 md:text-base">Delivery Address</h2>
-                                    <div className="flex items-center gap-3">
+                                <div className="mb-3 md:mb-4">
+                                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                                        <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest md:text-sm md:normal-case md:tracking-normal md:text-slate-900 md:text-base md:font-bold">
+                                            Delivery Address
+                                        </h2>
+                                        <div className="hidden md:flex items-center gap-3 flex-wrap justify-end">
+                                            {ctxHasDeliveryPinned && (
+                                                <div className="flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 px-3 py-1">
+                                                    <CheckCircle2 size={12} />
+                                                    <span className="text-[10px] font-bold uppercase tracking-widest">Location pinned</span>
+                                                </div>
+                                            )}
+                                            <button
+                                                type="button"
+                                                onClick={handlePinCurrentLocation}
+                                                className="flex items-center gap-1 text-[11px] font-bold uppercase text-slate-400 hover:text-primary transition-colors"
+                                            >
+                                                <MapPin size={12} />
+                                                <span>{ctxHasDeliveryPinned ? 'Re-pin my location' : 'Pin my location'}</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => navigate('/location-picker?type=delivery&returnTo=/checkout')}
+                                                className="flex items-center gap-1 text-[11px] font-bold uppercase text-slate-400 hover:text-primary transition-colors"
+                                            >
+                                                <MapPin size={12} />
+                                                <span>Pin on map</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsEditingAddress(true)}
+                                                className="text-primary text-[11px] font-bold uppercase transition-colors hover:text-primary/80"
+                                            >
+                                                Change
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {/* Mobile: actions on second row — avoids cramped single line */}
+                                    <div className="flex flex-wrap items-center gap-2 mt-1 md:hidden">
                                         {ctxHasDeliveryPinned && (
-                                            <div className="hidden md:flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 px-3 py-1">
-                                                <CheckCircle2 size={12} />
-                                                <span className="text-[10px] font-bold uppercase tracking-widest">Location pinned</span>
-                                            </div>
+                                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide">
+                                                <CheckCircle2 size={11} className="shrink-0" />
+                                                Pinned
+                                            </span>
                                         )}
                                         <button
+                                            type="button"
                                             onClick={handlePinCurrentLocation}
-                                            className="flex items-center gap-1 text-[11px] font-bold uppercase text-slate-400 hover:text-primary transition-colors"
+                                            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-700 shadow-sm active:scale-[0.98] transition-transform"
                                         >
-                                            <MapPin size={12} className="hidden md:inline-block" />
-                                            <span>{ctxHasDeliveryPinned ? 'Re-pin my location' : 'Pin my location'}</span>
+                                            <MapPin size={12} className="text-primary shrink-0" />
+                                            {ctxHasDeliveryPinned ? 'Re-pin location' : 'Pin my location'}
                                         </button>
                                         <button
+                                            type="button"
                                             onClick={() => navigate('/location-picker?type=delivery&returnTo=/checkout')}
-                                            className="hidden md:flex items-center gap-1 text-[11px] font-bold uppercase text-slate-400 hover:text-primary transition-colors"
+                                            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-700 shadow-sm active:scale-[0.98] transition-transform"
                                         >
-                                            <MapPin size={12} />
-                                            <span>Pin on map</span>
-                                        </button>
-                                        <button
-                                            onClick={() => setIsEditingAddress(true)}
-                                            className="text-primary text-[11px] font-bold uppercase transition-colors hover:text-primary/80"
-                                        >
-                                            Change
+                                            <MapPin size={12} className="text-blue-500 shrink-0" />
+                                            Pick on map
                                         </button>
                                     </div>
                                 </div>
-                                <div className="bg-white rounded-4xl md:rounded-xl p-6 border border-slate-100 shadow-sm">
-                                    <div className="flex items-start gap-4">
-                                        <div className="w-12 h-12 rounded-2xl md:rounded-lg bg-primary/5 flex items-center justify-center text-primary shrink-0">
+                                <div className="bg-white rounded-2xl md:rounded-xl p-4 md:p-6 border border-slate-100 shadow-sm">
+                                    <div className="flex items-start gap-3 md:gap-4 min-w-0">
+                                        <div className="w-11 h-11 md:w-12 md:h-12 rounded-xl md:rounded-lg bg-primary/5 flex items-center justify-center text-primary shrink-0">
                                             <MapPin size={24} />
                                         </div>
-                                        <div className="flex-1">
-                                            <h3 className="text-base font-black text-slate-900 md:font-bold">{user?.fullName || 'My Home'}</h3>
-                                            <p className="text-sm text-slate-400 font-medium leading-relaxed mt-1">
-                                                {displayAddress || 'No address provided. Click change to add one.'}
+                                        <div className="flex-1 min-w-0 pr-1">
+                                            <h3 className="text-sm md:text-base font-black text-slate-900 md:font-bold">{user?.fullName || 'My Home'}</h3>
+                                            <p className="text-xs md:text-sm text-slate-500 font-medium leading-relaxed mt-1 break-words">
+                                                {displayAddress || 'No address provided. Tap the pencil to add your address.'}
                                             </p>
                                         </div>
                                         <button
+                                            type="button"
                                             onClick={() => setIsEditingAddress(true)}
-                                            className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-primary transition-all"
+                                            className="w-9 h-9 shrink-0 rounded-full bg-slate-50 flex items-center justify-center text-slate-500 hover:text-primary hover:bg-primary/5 transition-all border border-slate-100"
+                                            aria-label="Edit delivery address"
                                         >
                                             <Edit3 size={16} />
                                         </button>
@@ -582,25 +665,55 @@ export default function CheckoutScreen() {
 
 
                             {/* Shift Timing */}
-                            <section>
-                                <div className="flex items-center justify-between mb-4 mt-8">
-                                    <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest md:normal-case md:tracking-normal md:text-slate-900 md:text-base">Delivery Shift Timing</h2>
+                            <section className="mt-12 md:mt-0 pt-2 md:pt-0 border-t border-slate-200/60 md:border-0">
+                                <div className="mb-3 md:mb-4 space-y-1">
+                                    <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest md:text-sm md:normal-case md:tracking-normal md:text-slate-900 md:text-base md:font-bold">
+                                        Delivery Shift Timing
+                                    </h2>
+                                    <p className="text-[10px] md:text-xs text-slate-400 font-medium leading-snug">
+                                        During the day, only upcoming time windows are selectable. After 6 PM, all slots
+                                        open for the next delivery day.
+                                    </p>
                                 </div>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                    {['6 AM - 8 AM', '8 AM - 10 AM', '10 AM - 12 PM', '12 PM - 2 PM', '2 PM - 4 PM', '4 PM - 6 PM'].map(shift => (
-                                        <button
-                                            key={shift}
-                                            onClick={() => setDeliveryShift(shift)}
-                                            className={cn(
-                                                "p-3 rounded-xl border flex items-center justify-center text-sm font-bold transition-all",
-                                                deliveryShift === shift ? "border-primary bg-primary/5 text-primary" : "border-slate-100 hover:border-slate-200 text-slate-600"
-                                            )}
-                                        >
-                                            <Clock size={14} className="mr-2" />
-                                            {shift}
-                                        </button>
-                                    ))}
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
+                                    {DELIVERY_SHIFT_SLOTS.map(({ label: shift }) => {
+                                        const selectable = isDeliveryShiftSelectable(shift)
+                                        const selected = deliveryShift === shift
+                                        return (
+                                            <button
+                                                key={shift}
+                                                type="button"
+                                                disabled={!selectable}
+                                                aria-disabled={!selectable}
+                                                onClick={() => {
+                                                    if (!selectable) return
+                                                    setDeliveryShift(shift)
+                                                }}
+                                                className={cn(
+                                                    'rounded-lg md:rounded-xl border flex items-center justify-center gap-1.5 px-2 py-2.5 md:p-3 text-[11px] md:text-sm font-bold leading-tight text-center transition-all min-h-[2.75rem] md:min-h-0',
+                                                    !selectable &&
+                                                        'cursor-not-allowed opacity-45 border-slate-100 bg-slate-50 text-slate-400 shadow-none',
+                                                    selectable &&
+                                                        !selected &&
+                                                        'border-slate-100 hover:border-slate-200 text-slate-600 bg-white',
+                                                    selectable && selected && 'border-primary bg-primary/5 text-primary shadow-sm'
+                                                )}
+                                            >
+                                                <Clock
+                                                    size={12}
+                                                    className="shrink-0 md:w-[14px] md:h-[14px]"
+                                                    strokeWidth={2.25}
+                                                />
+                                                <span className="leading-snug">{shift}</span>
+                                            </button>
+                                        )
+                                    })}
                                 </div>
+                                {DELIVERY_SHIFT_SLOTS.every(({ label }) => !isDeliveryShiftSelectable(label)) && (
+                                    <p className="mt-3 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+                                        No delivery slots are left for today. Please try again tomorrow.
+                                    </p>
+                                )}
                             </section>
 
                             <div className="h-4"></div>
@@ -776,7 +889,7 @@ export default function CheckoutScreen() {
                         </div>
 
                         {/* Order Summary Sidebar */}
-                        <div className="w-full md:w-100 shrink-0 mt-10 md:mt-0 px-6 md:px-0">
+                        <div className="w-full md:w-100 shrink-0 mt-10 md:mt-0 px-4 md:px-0">
                             <div className="bg-white rounded-[40px] md:rounded-xl p-8 space-y-6 border border-slate-100 shadow-sm sticky top-24">
                                 <h3 className="text-base font-bold text-slate-900 mb-4">Checkout Summary</h3>
 
@@ -840,18 +953,18 @@ export default function CheckoutScreen() {
 
                 {/* Integrated Sticky Proceed Bar - Mobile Only */}
                 <div className="fixed bottom-0 left-0 right-0 z-60 bg-white/95 backdrop-blur-xl border-t border-slate-100/80 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] max-w-md mx-auto md:hidden">
-                    <div className="flex items-center gap-4 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] px-5">
-                        <div className="shrink-0 flex flex-col">
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Final Amount</span>
-                            <span className="text-[22px] font-black text-slate-900 leading-none tracking-tighter">₹{total}</span>
+                    <div className="flex items-center gap-3 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                        <div className="shrink-0 flex flex-col justify-center min-w-0 max-w-[42%]">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Final Amount</span>
+                            <span className="text-lg font-black text-slate-900 leading-none tracking-tight tabular-nums truncate">₹{total}</span>
                         </div>
 
                         <Button
                             onClick={handlePlaceOrder}
                             disabled={isPlacingOrder || cartItems.length === 0}
-                            className="flex-1 min-h-[52px] h-12 rounded-2xl bg-primary hover:bg-primary/90 text-[15px] font-black shadow-lg shadow-primary/20 transition-all active:scale-[0.98]"
+                            className="flex-1 min-h-[48px] h-11 rounded-xl bg-primary hover:bg-primary/90 text-sm font-bold shadow-md shadow-primary/15 transition-all active:scale-[0.98] flex items-center justify-center px-3"
                         >
-                            {isPlacingOrder ? <Loader2 className="animate-spin mr-2" /> : 'Place Order Now'}
+                            {isPlacingOrder ? <Loader2 className="animate-spin mr-2 size-4" /> : 'Place Order Now'}
                         </Button>
                     </div>
                 </div>

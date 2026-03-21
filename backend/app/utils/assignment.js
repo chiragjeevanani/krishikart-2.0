@@ -1,16 +1,118 @@
+import mongoose from "mongoose";
 import Franchise from "../models/franchise.js";
 import Order from "../models/order.js";
 import Delivery from "../models/delivery.js";
 import { sendNotificationToUser } from "./pushNotificationHelper.js";
 import { emitToFranchise, emitToDelivery } from "../lib/socket.js";
-import { latLngToCell, gridDisk } from "h3-js";
+import { latLngToCell } from "h3-js";
+import { getDistance } from "./geo.js";
 
 /**
- * Finds the nearest eligible franchise for an order
- * @param {Object} location Customer location {lat, lng}
- * @param {Array} excludeIds List of franchise IDs to exclude (already tried)
- * @param {Array} categoryIds List of category IDs in the order
- * @returns {Promise<Object|null>}
+ * Sort franchises by straight-line distance from customer (nearest first).
+ */
+function sortFranchisesByDistance(franchises, customerLat, customerLng) {
+  return [...franchises].sort((a, b) => {
+    const ca = a.location?.coordinates;
+    const cb = b.location?.coordinates;
+    if (!Array.isArray(ca) || ca.length < 2 || !Number.isFinite(ca[0]) || !Number.isFinite(ca[1]))
+      return 1;
+    if (!Array.isArray(cb) || cb.length < 2 || !Number.isFinite(cb[0]) || !Number.isFinite(cb[1]))
+      return -1;
+    const da = getDistance(customerLat, customerLng, ca[1], ca[0]);
+    const db = getDistance(customerLat, customerLng, cb[1], cb[0]);
+    return da - db;
+  });
+}
+
+/**
+ * All franchise nodes that cover this map pin (H3 res 8 or within 25km), sorted nearest-first.
+ * Used for order assignment (then narrowed by category) and storefront product availability.
+ */
+export async function fetchFranchiseCandidatesForLocation(
+  lat,
+  lng,
+  excludeIds = [],
+  categoryIds = [],
+) {
+  const orderHex = latLngToCell(lat, lng, 8);
+
+  const baseQuery = {
+    isActive: true,
+    isOnline: true,
+    capacityAvailable: true,
+    status: "active",
+    _id: { $nin: excludeIds },
+  };
+
+  const categoryObjectIds = (categoryIds || [])
+    .map((id) => {
+      if (!id) return null;
+      try {
+        return new mongoose.Types.ObjectId(id.toString());
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
+
+  if (categoryObjectIds.length > 0) {
+    baseQuery.$or = [
+      { servedCategories: { $all: categoryObjectIds } },
+      { servedCategories: { $size: 0 } },
+      { servedCategories: { $exists: false } },
+    ];
+  }
+
+  let nearestFranchises = await Franchise.find({
+    ...baseQuery,
+    serviceHexagons: orderHex,
+  }).lean();
+
+  if (nearestFranchises.length > 0) {
+    console.log(
+      `[Assignment] Found ${nearestFranchises.length} franchises via EXACT H3 Hexagon matching.`,
+    );
+  } else {
+    console.log(
+      `[Assignment] No exact H3 match... falling back to 25km radius query.`,
+    );
+    nearestFranchises = await Franchise.find({
+      ...baseQuery,
+      location: {
+        $near: {
+          $geometry: {
+            type: "Point",
+            coordinates: [lng, lat],
+          },
+          $maxDistance: 25000,
+        },
+      },
+    }).lean();
+  }
+
+  nearestFranchises = nearestFranchises.filter(
+    (f) =>
+      Array.isArray(f.location?.coordinates) &&
+      f.location.coordinates.length >= 2 &&
+      Number.isFinite(f.location.coordinates[0]) &&
+      Number.isFinite(f.location.coordinates[1]) &&
+      !(f.location.coordinates[0] === 0 && f.location.coordinates[1] === 0),
+  );
+
+  return sortFranchisesByDistance(nearestFranchises, lat, lng);
+}
+
+/** Franchises that can serve this pin (no category filter) — for browsing / inventory union. */
+export async function findFranchisesServingLocation(lat, lng) {
+  return fetchFranchiseCandidatesForLocation(lat, lng, [], []);
+}
+
+/**
+ * Finds the nearest eligible franchise for an order.
+ * - Prefers franchises whose servedCategories cover ALL product categories in the order.
+ * - Franchises with empty servedCategories are treated as serving all categories (legacy).
+ * - Uses H3 hex match first, then falls back to geo $near within 25km.
+ * - Among candidates, picks nearest by distance, preferring those in working hours (IST).
  */
 export const findNearestFranchise = async (
   location,
@@ -20,54 +122,15 @@ export const findNearestFranchise = async (
   try {
     const { lat, lng } = location;
 
-    // 1. Calculate Hexagon string from lat/lng (Resolution 8 is approx 1km-ish radius width)
-    const orderHex = latLngToCell(lat, lng, 8);
-    console.log(`[Assignment] Customer Hexagon (res 8): ${orderHex}`);
+    console.log(`[Assignment] Customer Hexagon (res 8): ${latLngToCell(lat, lng, 8)}`);
 
-    // 2. Retrieve all active franchises
-    let activeFranchisesQuery = {
-      isActive: true,
-      isOnline: true,
-      capacityAvailable: true,
-      _id: { $nin: excludeIds },
-    };
+    const nearestFranchises = await fetchFranchiseCandidatesForLocation(
+      lat,
+      lng,
+      excludeIds,
+      categoryIds,
+    );
 
-    // If categories are provided, filter franchises that serve ALL of these categories.
-    // Use $all to ensure the franchise supports every category in the order.
-    if (categoryIds && categoryIds.length > 0) {
-      activeFranchisesQuery.servedCategories = { $all: categoryIds };
-    }
-
-    // First attempt: Exact match Hexagon Service Area
-    let nearestFranchises = await Franchise.find({
-      ...activeFranchisesQuery,
-      serviceHexagons: orderHex,
-    });
-
-    if (nearestFranchises.length > 0) {
-      console.log(
-        `[Assignment] Found ${nearestFranchises.length} franchises via EXACT H3 Hexagon matching.`,
-      );
-    } else {
-      console.log(
-        `[Assignment] No exact H3 match... falling back to 25km radius query for ALL active franchises.`,
-      );
-      // Fall back to all active franchises within 25km radius
-      nearestFranchises = await Franchise.find({
-        ...activeFranchisesQuery,
-        location: {
-          $near: {
-            $geometry: {
-              type: "Point",
-              coordinates: [lng, lat],
-            },
-            $maxDistance: 25000, // 25km in meters
-          },
-        },
-      });
-    }
-
-    // Always compute business time in India timezone, independent of server timezone.
     const currentTime = new Intl.DateTimeFormat("en-GB", {
       timeZone: "Asia/Kolkata",
       hour: "2-digit",
@@ -79,8 +142,6 @@ export const findNearestFranchise = async (
       `[Assignment] Found ${nearestFranchises.length} nearest franchises at ${currentTime} (IST).`,
     );
 
-    // If it's outside working hours, we still want to assign it so the franchise can see it when they open.
-    // We will just prioritize franchises that are currently in working hours.
     let bestCandidate = null;
 
     for (const franchise of nearestFranchises) {
@@ -95,7 +156,6 @@ export const findNearestFranchise = async (
       if (currentTime >= start && currentTime <= end) {
         return franchise;
       }
-      // If no one is in working hours, the first one (nearest) will be the best candidate
       if (!bestCandidate) bestCandidate = franchise;
     }
 
@@ -120,17 +180,23 @@ export const findNearestFranchise = async (
  */
 export const assignOrderToFranchise = async (orderId) => {
   try {
-    const order = await Order.findById(orderId)
-      .populate("shippingLocation")
-      .populate("items.productId");
+    const order = await Order.findById(orderId).populate({
+      path: "items.productId",
+      select: "category name",
+      model: "Product",
+    });
     if (!order) return;
 
-    // Extract unique category IDs from order items
     const categoryIds = [
       ...new Set(
         order.items
-          .map((item) => item.productId?.category?.toString())
-          .filter((id) => id),
+          .map((item) => {
+            const p = item.productId;
+            if (!p) return null;
+            const cat = p.category;
+            return cat ? cat.toString() : null;
+          })
+          .filter(Boolean),
       ),
     ];
 
@@ -152,7 +218,6 @@ export const assignOrderToFranchise = async (orderId) => {
       return false;
     }
 
-    // Convert GeoJSON [lng, lat] to { lat, lng }
     const location = {
       lat: Number(coords[1]),
       lng: Number(coords[0]),
@@ -173,7 +238,6 @@ export const assignOrderToFranchise = async (orderId) => {
         reason: "auto-assigned",
       });
 
-      // Add to history
       order.statusHistory.push({
         status: "Accepted",
         updatedAt: new Date(),
@@ -186,37 +250,42 @@ export const assignOrderToFranchise = async (orderId) => {
         `[Assignment] Order ${orderId} auto-assigned to franchise ${franchise._id}. Triggering FCM + socket...`,
       );
 
-      // Send Push Notification
+      const fcmData = {
+        type: "new_order",
+        orderId: order._id.toString(),
+        link: `/franchise/orders/${order._id}`,
+        autoAccepted: "true",
+        showRejectOnly: "true",
+        orderStatus: "Accepted",
+      };
+
       await sendNotificationToUser(
         franchise._id,
         {
-          title: "New Order Auto-Assigned",
-          body: `Order #${order._id.toString().slice(-6)} has been assigned to you. Prepare for packing!`,
-          data: {
-            type: "new_order",
-            orderId: order._id.toString(),
-            link: `/franchise/orders/${order._id}`,
-          },
+          title: "New order — auto-accepted",
+          body: `Order #${order._id.toString().slice(-6)} is assigned to you. Tap to view; use Reject only if you cannot fulfil.`,
+          data: fcmData,
         },
         "franchise",
       );
 
-      // Send Socket Real-time Notification
       emitToFranchise(franchise._id, "new_order", {
         orderId: order._id,
-        message: `New Order Auto-Assigned: #${order._id.toString().slice(-6)}`,
+        message: `New order auto-assigned: #${order._id.toString().slice(-6)}`,
+        autoAccepted: true,
+        showRejectOnly: true,
+        orderStatus: "Accepted",
       });
 
       console.log(
         `[Assignment Success] Order ${orderId} assigned to Franchise ${franchise.franchiseName || franchise._id}`,
       );
       return true;
-    } else {
-      console.warn(
-        `[Assignment Failure] No eligible franchise found for order ${orderId} within 10km radius.`,
-      );
-      return false;
     }
+    console.warn(
+      `[Assignment Failure] No eligible franchise found for order ${orderId}.`,
+    );
+    return false;
   } catch (error) {
     console.error("Error assigning order to franchise:", error);
     return false;
@@ -232,7 +301,6 @@ export const findNearestDeliveryPartner = async (location) => {
   try {
     const { lat, lng } = location;
 
-    // Find nearest delivery partners within 5km
     const nearestPartner = await Delivery.findOne({
       location: {
         $near: {
@@ -240,7 +308,7 @@ export const findNearestDeliveryPartner = async (location) => {
             type: "Point",
             coordinates: [lng, lat],
           },
-          $maxDistance: 5000, // 5km
+          $maxDistance: 5000,
         },
       },
       status: "active",
@@ -282,11 +350,8 @@ export const assignDeliveryToOrder = async (orderId) => {
     if (partner) {
       console.log("[Assignment] Nearest delivery partner found:", partner._id);
       order.deliveryPartnerId = partner._id;
-      // Status remains Accepted or becomes Packed?
-      // Usually assigned when packed or accepted.
       await order.save();
 
-      // Send Notification (standardized payload for delivery assignment)
       await sendNotificationToUser(
         partner._id,
         {
@@ -303,7 +368,6 @@ export const assignDeliveryToOrder = async (orderId) => {
         "delivery",
       );
 
-      // Send Socket Real-time Notification
       emitToDelivery(partner._id, "new_task", {
         orderId: order._id,
         type: "DELIVERY",

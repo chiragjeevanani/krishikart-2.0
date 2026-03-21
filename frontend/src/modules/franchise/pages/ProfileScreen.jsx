@@ -1,31 +1,18 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    ArrowLeft,
     Camera,
     User,
-    Store,
-    MapPin,
-    Phone,
-    Mail,
     Bell,
-    Moon,
-    Sun,
     ChevronRight,
     LogOut,
-    ShieldCheck,
-    CreditCard,
     Home,
-    Settings2,
-    Lock,
     X,
-    Loader2,
-    Navigation
+    Loader2
 } from 'lucide-react';
 import { useFranchiseAuth } from '../contexts/FranchiseAuthContext';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { getCurrentLocation } from '@/lib/geo';
 
 const NOTIFICATIONS_STORAGE_KEY = 'franchise_notifications_enabled';
 
@@ -160,7 +147,6 @@ export default function ProfileScreen() {
 
                     <div className="mt-6 border-t border-slate-800 pt-6 text-center md:text-left">
                         <h1 className="text-xl font-black text-white tracking-tight leading-none uppercase">{franchise?.franchiseName}</h1>
-                        <p className="text-xs font-black text-white uppercase mt-1">{franchise?.city}, {franchise?.state}</p>
                     </div>
                 </div>
 
@@ -256,28 +242,9 @@ const EditProfileModal = ({ isOpen, onClose, franchiseData, onUpdate }) => {
         franchiseName: franchiseData?.franchiseName || '',
         ownerName: franchiseData?.ownerName || '',
         email: franchiseData?.email || '',
-        mobile: franchiseData?.mobile || '',
-        area: franchiseData?.area || '',
-        city: franchiseData?.city || '',
-        state: franchiseData?.state || '',
-        location: franchiseData?.location || null
+        mobile: franchiseData?.mobile || ''
     });
     const [isSaving, setIsSaving] = useState(false);
-    const [isPinning, setIsPinning] = useState(false);
-
-    const handlePinLocation = async () => {
-        setIsPinning(true);
-        try {
-            const loc = await getCurrentLocation();
-            setFormData(prev => ({ ...prev, location: loc }));
-            alert("Current location pinned! Remember to click Update Profile to save changes.");
-        } catch (error) {
-            console.error('Failed to get location', error);
-            alert("Could not detect location. Please check your browser permissions.");
-        } finally {
-            setIsPinning(false);
-        }
-    };
 
     const handleSubmit = async () => {
         setIsSaving(true);
@@ -334,63 +301,6 @@ const EditProfileModal = ({ isOpen, onClose, franchiseData, onUpdate }) => {
                             onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
                             className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
                         />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Area</label>
-                            <input
-                                value={formData.area}
-                                onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-                                className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
-                                placeholder="e.g. Vijay Nagar"
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">City</label>
-                            <input
-                                value={formData.city}
-                                onChange={(e) => setFormData({ ...formData, city: e.target.value.replace(/[^a-zA-Z\s]/g, '') })}
-                                className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
-                                placeholder="e.g. Indore"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">State</label>
-                        <input
-                            value={formData.state}
-                            onChange={(e) => setFormData({ ...formData, state: e.target.value.replace(/[^a-zA-Z\s]/g, '') })}
-                            className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
-                            placeholder="e.g. Madhya Pradesh"
-                            maxLength={50}
-                        />
-                    </div>
-
-                    <div className="pt-2">
-                        <button
-                            type="button"
-                            onClick={handlePinLocation}
-                            disabled={isPinning}
-                            className={cn(
-                                "w-full h-12 rounded-xl flex items-center justify-center gap-2 font-black text-[10px] uppercase tracking-widest transition-all border",
-                                formData.location?.lat
-                                    ? "bg-emerald-50 text-emerald-600 border-emerald-200"
-                                    : "bg-slate-50 text-slate-600 border-slate-100 hover:bg-slate-100"
-                            )}
-                        >
-                            {isPinning ? (
-                                <Loader2 size={16} className="animate-spin" />
-                            ) : (
-                                <Navigation size={16} className={formData.location?.lat ? "fill-emerald-600" : ""} />
-                            )}
-                            {formData.location?.lat
-                                ? `Location Pinned (${formData.location.lat.toFixed(4)}, ${formData.location.lng.toFixed(4)})`
-                                : "Pin Current GPS Location"}
-                        </button>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tight mt-1.5 px-1 text-center">
-                            Pins your exact coordinates for accurate distance calculation
-                        </p>
                     </div>
                 </div>
 

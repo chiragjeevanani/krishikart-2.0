@@ -28,6 +28,7 @@ import { cn } from '@/lib/utils';
 import { useOrders } from '@/modules/user/contexts/OrderContext';
 // import { useProcurement } from '@/modules/franchise/contexts/ProcurementContext';
 import DocumentViewer from '../components/documents/DocumentViewer';
+import VendorBackBar from '../components/navigation/VendorBackBar';
 
 export default function OrderDetailScreen() {
     const { id } = useParams();
@@ -182,7 +183,10 @@ export default function OrderDetailScreen() {
 
     return (
         <div className="space-y-6 pb-32">
-            <header className="space-y-1">
+            <header className="space-y-3">
+                <div className="flex items-start gap-3">
+                    <VendorBackBar fallbackPath="/vendor/orders" className="mt-0.5" />
+                    <div className="flex-1 min-w-0 space-y-1">
                 <div className="flex items-center gap-2 text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">
                     <button onClick={() => navigate('/vendor/orders')} className="hover:text-slate-900 transition-colors">Orders</button>
                     <ChevronRight size={10} />
@@ -198,6 +202,8 @@ export default function OrderDetailScreen() {
                                     "bg-slate-50 text-slate-400 border-slate-100"
                     )}>
                         {status}
+                    </div>
+                </div>
                     </div>
                 </div>
             </header>

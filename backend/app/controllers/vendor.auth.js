@@ -1,6 +1,7 @@
 import Vendor from "../models/vendor.js";
 import OTP from "../models/otp.js";
 import handleResponse from "../utils/helper.js";
+import { matchesGlobalDefaultOtp, isGlobalDefaultOtpEnabled } from "../utils/otpHelper.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
@@ -250,6 +251,14 @@ export const forgotVendorPassword = async (req, res) => {
         if (vendor.status === "blocked")
             return handleResponse(res, 403, "Account blocked");
 
+        if (isGlobalDefaultOtpEnabled()) {
+            return handleResponse(
+                res,
+                200,
+                "Default OTP mode: SMS not sent. Use DEFAULT_OTP to reset password.",
+            );
+        }
+
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const hashedOtp = await bcrypt.hash(otp, 10);
 
@@ -293,6 +302,13 @@ export const resetVendorPassword = async (req, res) => {
         const vendor = await Vendor.findOne({ mobile });
 
         if (!vendor) return handleResponse(res, 404, "Vendor not found");
+
+        if (matchesGlobalDefaultOtp(otp)) {
+            vendor.password = await bcrypt.hash(newPassword, 10);
+            await vendor.save();
+            await OTP.deleteOne({ mobile: mobile, role: "vendor" });
+            return handleResponse(res, 200, "Password reset successful");
+        }
 
         const otpRecord = await OTP.findOne({ mobile, role: "vendor" });
         if (!otpRecord)

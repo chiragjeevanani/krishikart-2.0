@@ -1,25 +1,8 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import {
-    LayoutDashboard,
-    Package,
-    ClipboardList,
-    Truck,
-    UserCircle,
-    LogOut,
-    Sprout,
-    History
-} from 'lucide-react';
+import { LogOut, Sprout } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useVendorAuth } from '../../contexts/VendorAuthContext';
-
-const navItems = [
-    { id: 'dashboard', path: '/vendor/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { id: 'inventory', path: '/vendor/inventory', icon: Package, label: 'Inventory' },
-    { id: 'orders', path: '/vendor/orders', icon: ClipboardList, label: 'Manage Orders' },
-    { id: 'dispatch', path: '/vendor/dispatch', icon: Truck, label: 'Active Dispatch' },
-    { id: 'history', path: '/vendor/dispatch-history', icon: History, label: 'Dispatch History' },
-    { id: 'profile', path: '/vendor/profile', icon: UserCircle, label: 'Account Settings' }
-];
+import { vendorNavItems, isVendorNavActive } from './vendorNavConfig';
 
 export default function Sidebar() {
     const { logout } = useVendorAuth();
@@ -39,8 +22,8 @@ export default function Sidebar() {
             </div>
 
             <nav className="flex-1 space-y-2">
-                {navItems.map((item) => {
-                    const isActive = location.pathname === item.path;
+                {vendorNavItems.map((item) => {
+                    const isActive = isVendorNavActive(location.pathname, item.path);
                     return (
                         <button
                             key={item.id}

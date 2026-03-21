@@ -16,15 +16,21 @@ import {
     Home,
     Settings,
     CreditCard,
-    Undo2
+    Undo2,
+    Lock
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useFranchiseAuth } from '@/modules/franchise/contexts/FranchiseAuthContext';
+
+const DOC_PATH = '/franchise/documentation';
 
 export default function Sidebar({ isCollapsed, setIsCollapsed }) {
     const navigate = useNavigate();
     const location = useLocation();
+    const { franchise } = useFranchiseAuth();
+    const isVerified = !!franchise?.isVerified;
 
     const navItems = [
         {
@@ -95,27 +101,39 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                         )}
                         {group.items.map((item) => {
                             const isActive = location.pathname === item.path;
+                            const isDocOnly = item.path === DOC_PATH;
+                            const locked = !isVerified && !isDocOnly;
                             return (
                                 <button
                                     key={item.path}
-                                    onClick={() => navigate(item.path)}
+                                    type="button"
+                                    disabled={locked}
+                                    title={locked ? 'Available after admin verifies your franchise' : item.label}
+                                    onClick={() => {
+                                        if (locked) return;
+                                        navigate(item.path);
+                                    }}
                                     className={cn(
-                                        "w-full flex items-center gap-3 px-3 py-2 rounded-sm transition-all duration-200 group relative",
-                                        isActive
+                                        "w-full flex items-center gap-3 px-3 py-2 rounded-sm transition-all duration-200 group relative text-left",
+                                        locked && "opacity-40 cursor-not-allowed",
+                                        !locked && isActive
                                             ? "bg-slate-900 text-white shadow-md shadow-slate-200"
-                                            : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                                            : !locked && "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
                                     )}
                                 >
-                                    <item.icon size={16} className={cn("shrink-0", isActive ? "text-white" : "group-hover:text-slate-900 transition-colors")} />
+                                    <item.icon size={16} className={cn("shrink-0", !locked && isActive ? "text-white" : !locked && "group-hover:text-slate-900 transition-colors", locked && "text-slate-400")} />
                                     {!isCollapsed && (
                                         <span className={cn(
                                             "font-bold text-[11px] uppercase tracking-wider flex-1 text-left whitespace-nowrap overflow-hidden transition-all",
-                                            isActive ? "opacity-100" : "opacity-80 group-hover:opacity-100"
+                                            !locked && isActive ? "opacity-100" : !locked && "opacity-80 group-hover:opacity-100"
                                         )}>
                                             {item.label}
                                         </span>
                                     )}
-                                    {isActive && isCollapsed && (
+                                    {locked && !isCollapsed && (
+                                        <Lock size={12} className="text-slate-300 shrink-0" aria-hidden />
+                                    )}
+                                    {isActive && !locked && isCollapsed && (
                                         <div className="absolute left-0 w-1 h-6 bg-slate-900 rounded-r-full" />
                                     )}
                                 </button>

@@ -14,6 +14,7 @@ import {
     getFranchiseOrders,
     getFranchiseOrderById,
     acceptFranchiseOrder,
+    rejectFranchiseOrder,
     assignDeliveryPartner,
     getDispatchedOrders,
     getDeliveryOrderHistory,
@@ -43,6 +44,7 @@ router.put("/admin/:id/status", protectMasterAdmin, updateOrderStatus);
 router.get("/franchise/all", protectFranchise, getFranchiseOrders);
 router.get("/franchise/:id", protectFranchise, getFranchiseOrderById);
 router.put("/franchise/:id/accept", protectFranchise, acceptFranchiseOrder);
+router.put("/franchise/:id/reject", protectFranchise, rejectFranchiseOrder);
 router.put("/franchise/:id/assign-delivery", protectFranchise, assignDeliveryPartner);
 router.put("/franchise/:id/status", protectFranchise, updateOrderStatus);
 router.get("/franchise/returns/all", protectFranchise, getFranchiseReturnRequests);

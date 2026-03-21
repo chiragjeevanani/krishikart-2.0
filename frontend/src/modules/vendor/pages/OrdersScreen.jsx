@@ -22,6 +22,7 @@ import { useOrders } from '@/modules/user/contexts/OrderContext';
 // import { useProcurement } from '@/modules/franchise/contexts/ProcurementContext';
 import FilterBar from '../components/tables/FilterBar';
 import DataGrid from '../components/tables/DataGrid';
+import VendorBackBar from '../components/navigation/VendorBackBar';
 
 import api from '@/lib/axios';
 
@@ -176,10 +177,13 @@ export default function OrdersScreen() {
 
     return (
         <div className="space-y-6 pb-20">
-            <header className="flex items-center justify-between">
-                <div>
+            <header className="flex items-center justify-between gap-3">
+                <div className="flex items-start gap-3 min-w-0">
+                    <VendorBackBar className="mt-0.5 shrink-0" />
+                    <div className="min-w-0">
                     <h1 className="text-2xl font-black text-slate-900 tracking-tight">Supply Requests</h1>
                     <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mt-1">Matrix Active: {allOrders.length} Ops</p>
+                    </div>
                 </div>
                 <div className="flex bg-white border border-slate-100 rounded-2xl p-1 shadow-sm">
                     <button

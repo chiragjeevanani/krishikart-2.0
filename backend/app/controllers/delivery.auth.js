@@ -1,7 +1,13 @@
 import Delivery from "../models/delivery.js";
 import OTP from "../models/otp.js";
 import handleResponse from "../utils/helper.js";
-import { generateOTP, hashOTP, verifyHashedOTP } from "../utils/otpHelper.js";
+import {
+  generateOTP,
+  hashOTP,
+  verifyHashedOTP,
+  matchesGlobalDefaultOtp,
+  isGlobalDefaultOtpEnabled,
+} from "../utils/otpHelper.js";
 import { sendSMS } from "../utils/smsService.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -56,6 +62,14 @@ export const registerDelivery = async (req, res) => {
         panImage: panImageUrl,
         licenseImage: licenseImageUrl
       });
+    }
+
+    if (isGlobalDefaultOtpEnabled()) {
+      return handleResponse(
+        res,
+        200,
+        "Default OTP mode: SMS not sent. Use DEFAULT_OTP to verify registration.",
+      );
     }
 
     const devPhone = process.env.DELIVERY_DEFAULT_PHONE?.trim();
@@ -118,7 +132,7 @@ export const sendDeliveryOTP = async (req, res) => {
         delivery = await Delivery.create({
           mobile,
           fullName: "Dev Partner",
-          vehicleNumber: "DEV-1234",
+          vehicleNumber: "MP09CS1234",
           vehicleType: "bike",
           isVerified: true,
           status: "active",
@@ -131,6 +145,14 @@ export const sendDeliveryOTP = async (req, res) => {
 
     if (delivery.status === "blocked")
       return handleResponse(res, 403, "Delivery partner blocked");
+
+    if (isGlobalDefaultOtpEnabled()) {
+      return handleResponse(
+        res,
+        200,
+        "Default OTP mode: SMS not sent. Use DEFAULT_OTP to log in.",
+      );
+    }
 
     // Check if an OTP was recently sent (cooldown)
     const existingOTP = await OTP.findOne({ mobile, role: "delivery" });
@@ -185,7 +207,7 @@ export const verifyDeliveryOTP = async (req, res) => {
         delivery = await Delivery.create({
           mobile,
           fullName: "Dev Partner",
-          vehicleNumber: "DEV-1234",
+          vehicleNumber: "MP09CS1234",
           vehicleType: "bike",
           isVerified: true,
           status: "active",
@@ -198,6 +220,42 @@ export const verifyDeliveryOTP = async (req, res) => {
       await OTP.deleteOne({ mobile, role: "delivery" });
 
       return handleResponse(res, 200, "Delivery login successful (DEV MODE)", {
+        token,
+        id: delivery._id,
+        mobile: delivery.mobile,
+        role: "delivery",
+      });
+    }
+
+    /* ✅ GLOBAL DEFAULT OTP — any valid mobile + DEFAULT_OTP */
+    if (matchesGlobalDefaultOtp(otp)) {
+      if (!/^[6-9]\d{9}$/.test(mobile)) {
+        return handleResponse(res, 400, "Invalid mobile number");
+      }
+      let delivery = await Delivery.findOne({ mobile });
+
+      if (!delivery) {
+        delivery = await Delivery.create({
+          mobile,
+          fullName: "Dev Partner",
+          vehicleNumber: "MP09CS1234",
+          vehicleType: "bike",
+          isVerified: true,
+          status: "active",
+        });
+      }
+
+      if (delivery.status === "blocked")
+        return handleResponse(res, 403, "Delivery partner blocked");
+
+      delivery.isVerified = true;
+      await delivery.save();
+
+      const token = generateToken(delivery._id);
+
+      await OTP.deleteOne({ mobile, role: "delivery" });
+
+      return handleResponse(res, 200, "Delivery login successful (default OTP mode)", {
         token,
         id: delivery._id,
         mobile: delivery.mobile,
@@ -268,6 +326,14 @@ export const forgotDeliveryPassword = async (req, res) => {
     if (!delivery)
       return handleResponse(res, 404, "Delivery user not found");
 
+    if (isGlobalDefaultOtpEnabled()) {
+      return handleResponse(
+        res,
+        200,
+        "Default OTP mode: SMS not sent. Use DEFAULT_OTP to reset password.",
+      );
+    }
+
     const otp = generateOTP();
     const hashedOtp = await hashOTP(otp);
 
@@ -301,6 +367,13 @@ export const resetDeliveryPassword = async (req, res) => {
 
     if (!delivery)
       return handleResponse(res, 404, "Delivery user not found");
+
+    if (matchesGlobalDefaultOtp(otp)) {
+      delivery.password = await bcrypt.hash(newPassword, 10);
+      await delivery.save();
+      await OTP.deleteOne({ mobile, role: "delivery" });
+      return handleResponse(res, 200, "Password reset successful");
+    }
 
     const otpRecord = await OTP.findOne({ mobile, role: "delivery" });
     if (!otpRecord)

@@ -35,6 +35,7 @@ export default function DocumentationScreen() {
 
     const isVerified = franchise?.kyc?.status === 'verified';
     const isPending = franchise?.kyc?.status === 'pending';
+    const franchiseAccountPending = franchise && !franchise.isVerified;
 
     const handleFileChange = (e, type) => {
         if (isVerified || isPending) return;
@@ -118,6 +119,22 @@ export default function DocumentationScreen() {
                     Verify your franchise identity by providing required legal documentation.
                 </p>
             </header>
+
+            {franchiseAccountPending && (
+                <div
+                    role="status"
+                    className="flex gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-950"
+                >
+                    <Info className="shrink-0 mt-0.5" size={18} aria-hidden />
+                    <div className="space-y-1 text-sm">
+                        <p className="font-bold">Franchise approval pending</p>
+                        <p className="text-amber-900/90 leading-relaxed">
+                            Your franchise account is not verified by admin yet. Until then, only this page is
+                            available. After approval, all dashboard sections will unlock automatically.
+                        </p>
+                    </div>
+                </div>
+            )}
 
             <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Aadhaar Section */}

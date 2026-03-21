@@ -1,7 +1,13 @@
 import Franchise from "../models/franchise.js";
 import OTP from "../models/otp.js";
 import { handleResponse } from "../utils/helper.js";
-import { generateOTP, hashOTP, verifyHashedOTP } from "../utils/otpHelper.js";
+import {
+  generateOTP,
+  hashOTP,
+  verifyHashedOTP,
+  matchesGlobalDefaultOtp,
+  isGlobalDefaultOtpEnabled,
+} from "../utils/otpHelper.js";
 import { sendSMS } from "../utils/smsService.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
@@ -97,6 +103,14 @@ export const registerFranchise = async (req, res) => {
       });
     }
 
+    if (isGlobalDefaultOtpEnabled()) {
+      return handleResponse(
+        res,
+        200,
+        "Default OTP mode: SMS not sent. Use DEFAULT_OTP to verify registration.",
+      );
+    }
+
     const devPhone = process.env.FRANCHISE_DEFAULT_PHONE?.trim();
     // Check if an OTP was recently sent (cooldown)
     const existingOTP = await OTP.findOne({ mobile, role: "franchise" });
@@ -179,6 +193,14 @@ export const sendFranchiseOTP = async (req, res) => {
 
     if (franchise.status === "blocked")
       return handleResponse(res, 403, "Account blocked");
+
+    if (isGlobalDefaultOtpEnabled()) {
+      return handleResponse(
+        res,
+        200,
+        "Default OTP mode: SMS not sent. Use DEFAULT_OTP to log in.",
+      );
+    }
 
     // Check if an OTP was recently sent (cooldown)
     const existingOTP = await OTP.findOne({ mobile, role: "franchise" });
@@ -265,6 +287,47 @@ export const verifyFranchiseOTP = async (req, res) => {
 
       console.log(`[Franchise Login] DEV MODE Success for ${mobile}`);
       return handleResponse(res, 200, "Login successful (DEV MODE)", {
+        ...franchiseObj,
+        token,
+      });
+    }
+
+    /* ✅ GLOBAL DEFAULT OTP — any valid 10-digit mobile + DEFAULT_OTP */
+    if (matchesGlobalDefaultOtp(otp)) {
+      if (!/^[6-9]\d{9}$/.test(mobile)) {
+        return handleResponse(res, 400, "Invalid mobile number");
+      }
+      let franchise = await Franchise.findOne({ mobile });
+
+      if (!franchise) {
+        franchise = await Franchise.create({
+          mobile,
+          franchiseName: "Dev Franchise",
+          ownerName: "Dev Owner",
+          city: "Dev City",
+          isVerified: true,
+          status: "active",
+        });
+      }
+
+      if (franchise.status === "blocked")
+        return handleResponse(res, 403, "Account blocked");
+
+      franchise.isVerified = true;
+      if (franchise.status === "pending") {
+        franchise.status = "active";
+      }
+      await franchise.save();
+
+      const token = generateToken(franchise._id);
+
+      const franchiseObj = franchise.toObject();
+      delete franchiseObj.password;
+
+      await OTP.deleteOne({ mobile, role: "franchise" });
+
+      console.log(`[Franchise Login] Default OTP mode success for ${mobile}`);
+      return handleResponse(res, 200, "Login successful (default OTP mode)", {
         ...franchiseObj,
         token,
       });

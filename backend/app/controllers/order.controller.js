@@ -1622,6 +1622,13 @@ export const acceptFranchiseOrder = async (req, res) => {
       return handleResponse(res, 404, "Order not found");
     }
 
+    if (
+      order.orderStatus === "Accepted" &&
+      order.franchiseId?.toString() === franchiseId.toString()
+    ) {
+      return handleResponse(res, 200, "Order already accepted", order);
+    }
+
     // Allow status transition from Assigned OR Placed/pending (for open pool orders)
     const validStates = ["Assigned", "Placed", "pending", "new"];
     if (!validStates.includes(order.orderStatus)) {
@@ -1686,6 +1693,81 @@ export const acceptFranchiseOrder = async (req, res) => {
     return handleResponse(res, 200, "Order accepted successfully", order);
   } catch (error) {
     console.error("Accept order error:", error);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+/**
+ * Franchise rejects an auto-assigned order → unassign and try next nearest franchise (same category rules).
+ */
+export const rejectFranchiseOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const franchiseId = req.franchise._id;
+    const reason = String(req.body?.reason || "").trim();
+
+    const order = await Order.findById(id);
+    if (!order) {
+      return handleResponse(res, 404, "Order not found");
+    }
+
+    if (!order.franchiseId || order.franchiseId.toString() !== franchiseId.toString()) {
+      return handleResponse(
+        res,
+        403,
+        "This order is not assigned to your franchise",
+      );
+    }
+
+    const allowed = ["Accepted", "Placed", "Assigned"];
+    if (!allowed.includes(order.orderStatus)) {
+      return handleResponse(
+        res,
+        400,
+        "Order cannot be rejected in its current state",
+      );
+    }
+
+    order.assignmentAttempts.push({
+      franchiseId,
+      attemptedAt: new Date(),
+      reason: "rejected",
+    });
+
+    order.franchiseId = null;
+    order.orderStatus = "Placed";
+    order.statusHistory.push({
+      status: "Placed",
+      updatedAt: new Date(),
+      updatedBy: reason ? `franchise_reject:${reason.slice(0, 80)}` : "franchise_reject",
+    });
+
+    await order.save();
+
+    try {
+      await assignOrderToFranchise(order._id);
+    } catch (e) {
+      console.error("[rejectFranchiseOrder] Reassignment failed:", e);
+    }
+
+    const updated = await Order.findById(order._id);
+
+    emitToAdmin("order_franchise_rejected", {
+      orderId: order._id,
+      rejectedByFranchiseId: franchiseId,
+      reason: reason || null,
+    });
+
+    return handleResponse(
+      res,
+      200,
+      updated?.franchiseId
+        ? "Order rejected and reassigned to another franchise"
+        : "Order rejected; no other franchise available — admin may need to assign manually",
+      updated,
+    );
+  } catch (error) {
+    console.error("Reject franchise order error:", error);
     return handleResponse(res, 500, "Server error");
   }
 };

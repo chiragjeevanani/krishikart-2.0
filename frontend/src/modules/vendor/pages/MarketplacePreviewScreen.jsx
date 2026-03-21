@@ -7,15 +7,14 @@ import {
     IndianRupee,
     Star,
     ShoppingCart,
-    ArrowLeft,
-    Monitor
+    Monitor,
+    Loader2
 } from 'lucide-react';
 import mockProduce from '../data/mockProduce.json';
 import { cn } from '@/lib/utils';
-import { useNavigate } from 'react-router-dom';
+import VendorBackBar from '../components/navigation/VendorBackBar';
 
 export default function MarketplacePreviewScreen() {
-    const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(true);
     const [previewMode, setPreviewMode] = useState('user'); // 'user' or 'franchise'
 
@@ -33,9 +32,7 @@ export default function MarketplacePreviewScreen() {
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <div className="flex items-center gap-2 mb-2">
-                        <button onClick={() => navigate(-1)} className="p-1.5 hover:bg-white rounded-lg transition-colors border border-transparent hover:border-slate-100">
-                            <ArrowLeft size={18} className="text-slate-400" />
-                        </button>
+                        <VendorBackBar className="!min-h-[40px] !min-w-[40px]" />
                         <h1 className="text-2xl font-black text-slate-900 tracking-tight">Marketplace Preview</h1>
                     </div>
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-10">Surveillance of platform rendering</p>

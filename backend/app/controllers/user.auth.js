@@ -3,7 +3,13 @@ import OTP from "../models/otp.js";
 import WalletRecharge from "../models/walletRecharge.js";
 import GlobalSetting from "../models/globalSetting.js";
 import handleResponse from "../utils/helper.js";
-import { generateOTP, hashOTP, verifyHashedOTP } from "../utils/otpHelper.js";
+import {
+  generateOTP,
+  hashOTP,
+  verifyHashedOTP,
+  matchesGlobalDefaultOtp,
+  isGlobalDefaultOtpEnabled,
+} from "../utils/otpHelper.js";
 import { sendSMS } from "../utils/smsService.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -33,6 +39,14 @@ export const sendOTP = async (req, res) => {
     // Auto-register if user not exists
     if (!user) {
       user = await User.create({ mobile });
+    }
+
+    if (isGlobalDefaultOtpEnabled()) {
+      return handleResponse(
+        res,
+        200,
+        "Default OTP mode: SMS not sent. Use DEFAULT_OTP from server config to verify."
+      );
     }
 
     const devPhone = process.env.USER_DEFAULT_PHONE?.trim();
@@ -118,6 +132,42 @@ export const verifyOTP = async (req, res) => {
       await OTP.deleteOne({ mobile, role: "user" });
 
       return handleResponse(res, 200, "Login successful (DEV MODE)", {
+        token,
+        user: {
+          id: user._id,
+          mobile: user.mobile,
+          fullName: user.fullName || "Dev User",
+          role: "user",
+          onboardingCompleted: user.onboardingCompleted || false,
+          businessType: user.businessType || null,
+        },
+      });
+    }
+
+    /* ✅ GLOBAL DEFAULT OTP (USE_DEFALT_OTP / USE_DEFAULT_OTP + DEFAULT_OTP) — any valid mobile */
+    if (matchesGlobalDefaultOtp(otp)) {
+      if (!/^[6-9]\d{9}$/.test(mobile)) {
+        return handleResponse(res, 400, "Invalid mobile number");
+      }
+      let user = await User.findOne({ mobile });
+
+      if (!user) {
+        user = await User.create({
+          mobile,
+          fullName: "Dev User",
+          isVerified: true,
+        });
+      }
+
+      const token = jwt.sign(
+        { id: user._id, role: "user" },
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_EXPIRES_IN }
+      );
+
+      await OTP.deleteOne({ mobile, role: "user" });
+
+      return handleResponse(res, 200, "Login successful (default OTP mode)", {
         token,
         user: {
           id: user._id,
@@ -264,6 +314,14 @@ export const forgotPassword = async (req, res) => {
     if (!user)
       return handleResponse(res, 404, "User not found");
 
+    if (isGlobalDefaultOtpEnabled()) {
+      return handleResponse(
+        res,
+        200,
+        "Default OTP mode: SMS not sent. Use DEFAULT_OTP to reset password."
+      );
+    }
+
     const otp = generateOTP();
     const hashedOtp = await hashOTP(otp);
 
@@ -296,6 +354,13 @@ export const resetPassword = async (req, res) => {
     const user = await User.findOne({ mobile });
     if (!user)
       return handleResponse(res, 404, "User not found");
+
+    if (matchesGlobalDefaultOtp(otp)) {
+      user.password = await bcrypt.hash(newPassword, 10);
+      await user.save();
+      await OTP.deleteOne({ mobile, role: "user" });
+      return handleResponse(res, 200, "Password reset successful");
+    }
 
     const otpRecord = await OTP.findOne({ mobile, role: "user" });
     if (!otpRecord)

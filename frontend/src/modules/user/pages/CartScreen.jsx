@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft,
@@ -15,6 +16,26 @@ import {
 import PageTransition from '../components/layout/PageTransition'
 import { Button } from '@/components/ui/button'
 import { useCart } from '../contexts/CartContext'
+
+function CartItemImage({ src, alt }) {
+  const [failed, setFailed] = useState(false)
+  if (failed || !src) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-300" aria-hidden>
+        <ShoppingBag size={28} strokeWidth={1.5} />
+      </div>
+    )
+  }
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className="w-full h-full object-cover"
+      onError={() => setFailed(true)}
+      loading="lazy"
+    />
+  )
+}
 
 export default function CartScreen() {
   const { cartItems, updateQuantity, setQuantity, removeFromCart, cartTotal, getActivePrice, deliveryConstraints } = useCart()
@@ -51,20 +72,20 @@ export default function CartScreen() {
 
   return (
     <PageTransition>
-      <div className="bg-[#f8fafd] min-h-screen pb-40 md:pb-20">
+      <div className="bg-[#f8fafd] min-h-screen overflow-x-hidden pb-[calc(9rem+env(safe-area-inset-bottom))] md:pb-20">
         {/* Mobile Header */}
-        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] border-b border-slate-100/80 shadow-[0_1px_10px_rgba(0,0,0,0.04)] flex items-center gap-4 md:hidden">
-          <button onClick={() => navigate(-1)} className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white border border-slate-100 shadow-sm text-slate-600 active:scale-95 transition-transform">
+        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl px-3 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] border-b border-slate-100/80 shadow-[0_1px_10px_rgba(0,0,0,0.04)] flex items-center gap-3 md:hidden">
+          <button onClick={() => navigate(-1)} className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-full bg-white border border-slate-100 shadow-sm text-slate-600 active:scale-95 transition-transform shrink-0">
             <ArrowLeft size={20} />
           </button>
-          <h1 className="text-xl font-black text-slate-900 tracking-tight">Your Cart</h1>
+          <h1 className="text-lg font-black text-slate-900 tracking-tight truncate">Your Cart</h1>
         </div>
 
         {/* Content Wrapper */}
         <div className="max-w-7xl mx-auto md:px-8">
           <div className="md:flex md:gap-10 md:py-10">
             {/* Cart Items List */}
-            <div className="flex-1 space-y-4 px-6 md:px-0">
+            <div className="flex-1 space-y-3 px-4 md:px-0 min-w-0">
               <h2 className="hidden md:block text-3xl font-bold text-slate-900 mb-8 tracking-tight">My Shopping Cart</h2>
 
               <AnimatePresence mode="popLayout">
@@ -75,45 +96,53 @@ export default function CartScreen() {
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="bg-white rounded-[32px] md:rounded-xl p-4 flex gap-4 border border-slate-100 shadow-sm relative group"
+                    className="bg-white rounded-2xl md:rounded-xl p-3 md:p-4 flex gap-3 md:gap-4 border border-slate-100 shadow-sm relative group overflow-hidden"
                   >
-                    <div className="w-24 h-24 rounded-2xl md:rounded-lg overflow-hidden bg-slate-50 shrink-0 border border-slate-50">
-                      <img src={item.primaryImage || item.image} alt={item.name} className="w-full h-full object-cover" />
+                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-xl md:rounded-lg overflow-hidden bg-slate-50 shrink-0 border border-slate-50">
+                      <CartItemImage src={item.primaryImage || item.image} alt={item.name} />
                     </div>
-                    <div className="flex-1 flex flex-col justify-between py-1">
-                      <div>
-                        <div className="flex justify-between items-start">
-                          <h3 className="text-base font-black text-slate-900 leading-tight uppercase md:normal-case md:font-bold">{item.name}</h3>
-                          <button
-                            onClick={() => removeFromCart(item.id)}
-                            className="text-slate-300 hover:text-red-500 transition-colors p-1"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        </div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 md:normal-case md:font-medium">₹{item.price} / {item.unit}</p>
+                    <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5 gap-2">
+                      <div className="relative pr-9 min-w-0">
+                        <h3 className="text-sm md:text-base font-black text-slate-900 leading-snug uppercase md:normal-case md:font-bold line-clamp-2 pr-1">
+                          {item.name}
+                        </h3>
+                        <button
+                          type="button"
+                          onClick={() => removeFromCart(item.id)}
+                          className="absolute top-0 right-0 min-h-[36px] min-w-[36px] -mr-1 -mt-0.5 flex items-center justify-center text-slate-300 hover:text-red-500 transition-colors rounded-lg active:bg-slate-50"
+                          aria-label="Remove item"
+                        >
+                          <Trash2 size={17} />
+                        </button>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 md:normal-case md:font-medium truncate">
+                          ₹{item.price} / {item.unit}
+                        </p>
                       </div>
 
-                      <div className="flex justify-between items-center">
-                        <span className="text-lg font-black text-primary md:font-bold">₹{getActivePrice(item) * item.quantity}</span>
-                        <div className="flex items-center gap-2 bg-slate-50 rounded-xl md:rounded-lg p-1 border border-slate-100">
+                      <div className="flex flex-col gap-2 min-w-0 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                        <span className="text-base font-black text-primary tabular-nums shrink-0 md:text-lg md:font-bold">
+                          ₹{getActivePrice(item) * item.quantity}
+                        </span>
+                        <div className="flex items-center justify-end sm:justify-start gap-0.5 bg-slate-50 rounded-xl md:rounded-lg p-0.5 border border-slate-100 shrink-0 self-end sm:self-auto max-w-full">
                           <button
+                            type="button"
                             onClick={() => updateQuantity(item.id, -1)}
-                            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-white shadow-sm text-slate-600 hover:text-primary transition-colors active:scale-90 md:min-h-[32px] md:min-w-[32px] md:w-8 md:h-8"
+                            className="min-h-[36px] min-w-[36px] md:min-h-[32px] md:min-w-[32px] flex items-center justify-center rounded-lg bg-white shadow-sm text-slate-600 hover:text-primary transition-colors active:scale-90"
                           >
-                            <Minus size={14} />
+                            <Minus size={14} strokeWidth={2.5} />
                           </button>
                           <input
                             type="number"
                             value={item.quantity}
                             onChange={(e) => setQuantity(item.id, e.target.value)}
-                            className="w-10 text-center text-sm font-black text-slate-900 md:font-bold bg-transparent border-none focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            className="w-8 md:w-10 text-center text-sm font-black text-slate-900 md:font-bold bg-transparent border-none focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none tabular-nums"
                           />
                           <button
+                            type="button"
                             onClick={() => updateQuantity(item.id, 1)}
-                            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-white shadow-sm text-slate-600 hover:text-primary transition-colors active:scale-90 md:min-h-[32px] md:min-w-[32px] md:w-8 md:h-8"
+                            className="min-h-[36px] min-w-[36px] md:min-h-[32px] md:min-w-[32px] flex items-center justify-center rounded-lg bg-white shadow-sm text-slate-600 hover:text-primary transition-colors active:scale-90"
                           >
-                            <Plus size={14} />
+                            <Plus size={14} strokeWidth={2.5} />
                           </button>
                         </div>
                       </div>
@@ -125,8 +154,8 @@ export default function CartScreen() {
             </div>
 
             {/* Order Summary - Sticky on Desktop */}
-            <div className="w-full md:w-[400px] shrink-0 mt-10 md:mt-0 px-6 md:px-0">
-              <div className="bg-white rounded-[40px] md:rounded-xl p-8 space-y-6 border border-slate-100 shadow-sm sticky top-24">
+            <div className="w-full md:w-[400px] shrink-0 mt-6 md:mt-0 px-4 md:px-0 pb-4 md:pb-0">
+              <div className="bg-white rounded-2xl md:rounded-xl p-5 md:p-8 space-y-5 md:space-y-6 border border-slate-100 shadow-sm md:sticky md:top-24">
                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 md:normal-case md:tracking-normal md:text-slate-900 md:text-base">Order Summary</h3>
 
                 <div className="space-y-4">

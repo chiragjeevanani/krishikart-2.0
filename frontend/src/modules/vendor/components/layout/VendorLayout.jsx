@@ -34,9 +34,9 @@ export default function VendorLayout() {
         );
     }
 
-    const hideNav = location.pathname.includes('/orders/') ||
-        location.pathname.includes('/dispatch') ||
-        location.pathname.includes('/packing');
+    // Only hide bottom nav on order detail pages (e.g. /vendor/orders/:id).
+    // Do NOT use pathname.includes('/dispatch') — it also matches /vendor/dispatch-history and hid the bar there.
+    const hideNav = location.pathname.includes('/orders/');
 
     return (
         <div className="flex min-h-screen bg-slate-50/50 text-slate-900 font-sans selection:bg-slate-900 selection:text-white">

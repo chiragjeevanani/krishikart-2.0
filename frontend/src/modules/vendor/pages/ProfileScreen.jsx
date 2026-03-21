@@ -22,6 +22,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import DocumentUploadCard from '../components/DocumentUploadCard';
+import VendorBackBar from '../components/navigation/VendorBackBar';
 import api from '../../../lib/axios';
 import { useVendorAuth } from '../contexts/VendorAuthContext';
 
@@ -322,12 +323,15 @@ export default function ProfileScreen() {
 
     return (
         <div className="space-y-8 pb-32">
-            <header className="flex items-end justify-between">
-                <div>
-                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-1">Sovereign Identity</p>
-                    <h1 className="text-2xl font-black text-slate-900 tracking-tight">Identity Suite</h1>
+            <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex items-start gap-3 min-w-0">
+                    <VendorBackBar className="mt-0.5" />
+                    <div className="min-w-0">
+                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-1">Sovereign Identity</p>
+                        <h1 className="text-2xl font-black text-slate-900 tracking-tight">Identity Suite</h1>
+                    </div>
                 </div>
-                <div className="px-3 py-1 bg-slate-900 text-white rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                <div className="px-3 py-1 bg-slate-900 text-white rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 self-start shrink-0">
                     <ShieldCheck size={10} className="text-emerald-400" />
                     Verified Node
                 </div>

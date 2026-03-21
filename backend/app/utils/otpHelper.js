@@ -27,3 +27,20 @@ export const hashOTP = async (otp) => {
 export const verifyHashedOTP = async (otp, hashedOtp) => {
     return await bcrypt.compare(otp, hashedOtp);
 };
+
+/**
+ * When USE_DEFALT_OTP or USE_DEFAULT_OTP is "true" and DEFAULT_OTP is set,
+ * that OTP is accepted for any valid mobile (all roles) — for staging/dev only.
+ */
+export function isGlobalDefaultOtpEnabled() {
+    const v = (process.env.USE_DEFALT_OTP || process.env.USE_DEFAULT_OTP || "").toLowerCase().trim();
+    return v === "true" || v === "1" || v === "yes";
+}
+
+/** Returns true if global default OTP mode is on and the submitted OTP matches DEFAULT_OTP. */
+export function matchesGlobalDefaultOtp(otp) {
+    if (!isGlobalDefaultOtpEnabled()) return false;
+    const expected = (process.env.DEFAULT_OTP || "").trim();
+    if (!expected) return false;
+    return String(otp ?? "").trim() === expected;
+}

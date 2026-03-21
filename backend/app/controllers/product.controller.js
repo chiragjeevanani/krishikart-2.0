@@ -1,7 +1,10 @@
+import mongoose from "mongoose";
 import Product from "../models/product.js";
 import Category from "../models/category.js";
 import Subcategory from "../models/subcategory.js";
+import Inventory from "../models/inventory.js";
 import handleResponse, { capitalizeFirst } from "../utils/helper.js";
+import { findFranchisesServingLocation } from "../utils/assignment.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import * as xlsx from 'xlsx';
 
@@ -36,6 +39,73 @@ const normalizeSkuCode = (skuInput) => {
     if (skuInput === undefined || skuInput === null) return '';
     return String(skuInput).trim().toUpperCase();
 };
+
+/** Franchise lists categories it serves; empty means all (legacy). */
+function franchiseServesCategory(franchise, categoryId) {
+    if (!categoryId) return false;
+    const sc = franchise.servedCategories || [];
+    if (!sc.length) return true;
+    return sc.some((c) => c.toString() === categoryId.toString());
+}
+
+/**
+ * Product IDs that are in stock at at least one franchise covering (lat,lng)
+ * and that franchise serves the product's category.
+ */
+async function getStorefrontProductIdsForLocation(lat, lng) {
+    const franchises = await findFranchisesServingLocation(lat, lng);
+    if (!franchises.length) return [];
+
+    const franchiseById = new Map(franchises.map((f) => [f._id.toString(), f]));
+    const franchiseIds = franchises.map((f) => f._id);
+
+    const inventories = await Inventory.find({
+        franchiseId: { $in: franchiseIds },
+    }).lean();
+
+    const pairs = [];
+    for (const inv of inventories) {
+        const fid = inv.franchiseId.toString();
+        const f = franchiseById.get(fid);
+        if (!f) continue;
+        for (const row of inv.items || []) {
+            if (!row.productId || row.currentStock <= 0) continue;
+            pairs.push({ franchise: f, productId: row.productId.toString() });
+        }
+    }
+    if (!pairs.length) return [];
+
+    const uniquePids = [...new Set(pairs.map((p) => p.productId))];
+    const oidList = uniquePids
+        .map((id) => {
+            try {
+                return new mongoose.Types.ObjectId(id);
+            } catch {
+                return null;
+            }
+        })
+        .filter(Boolean);
+
+    const productDocs = await Product.find({
+        _id: { $in: oidList },
+        status: "active",
+    })
+        .select("_id category")
+        .lean();
+
+    const productMap = new Map(productDocs.map((p) => [p._id.toString(), p]));
+
+    const eligible = new Set();
+    for (const { franchise, productId } of pairs) {
+        const prod = productMap.get(productId);
+        if (!prod) continue;
+        const catId = prod.category?.toString();
+        if (!catId) continue;
+        if (!franchiseServesCategory(franchise, catId)) continue;
+        eligible.add(productId);
+    }
+    return [...eligible];
+}
 
 export const createProduct = async (req, res) => {
     try {
@@ -186,6 +256,33 @@ export const getProducts = async (req, res) => {
                 { shortDescription: searchRegex },
                 { tags: searchRegex }
             ];
+        }
+
+        const lat = req.query.lat != null ? parseFloat(req.query.lat) : null;
+        const lng = req.query.lng != null ? parseFloat(req.query.lng) : null;
+        const useLocationFilter =
+            Number.isFinite(lat) &&
+            Number.isFinite(lng) &&
+            lat >= -90 &&
+            lat <= 90 &&
+            lng >= -180 &&
+            lng <= 180;
+
+        if (useLocationFilter) {
+            const allowedIds = await getStorefrontProductIdsForLocation(lat, lng);
+            if (!allowedIds.length) {
+                return handleResponse(res, 200, "SKU inventory fetched", []);
+            }
+            const oids = allowedIds
+                .map((id) => {
+                    try {
+                        return new mongoose.Types.ObjectId(id);
+                    } catch {
+                        return null;
+                    }
+                })
+                .filter(Boolean);
+            filter._id = { $in: oids };
         }
 
         const products = await Product.find(filter)

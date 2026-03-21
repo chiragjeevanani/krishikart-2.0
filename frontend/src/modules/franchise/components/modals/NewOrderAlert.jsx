@@ -11,6 +11,7 @@ const NewOrderAlert = () => {
         setIsAlertOpen,
         newOrderData,
         acceptOrder,
+        rejectFranchiseOrder,
         updateOrderStatus,
         refreshOrders,
     } = useFranchiseOrders();
@@ -47,8 +48,14 @@ const NewOrderAlert = () => {
     }, [isAlertOpen, orderId]);
 
     const statusNormalized = (orderDetail?.orderStatus || newOrderData?.orderStatus || '').toString().toLowerCase();
-    const canAccept = ['assigned', 'placed', 'pending', 'new'].includes(statusNormalized);
-    const canReject = statusNormalized !== 'cancelled';
+    /** Auto-assigned by system — only Reject is meaningful (accept is implicit). */
+    const autoAccepted =
+        newOrderData?.autoAccepted === true ||
+        newOrderData?.showRejectOnly === true ||
+        statusNormalized === 'accepted';
+    const canAccept =
+        !autoAccepted && ['assigned', 'placed', 'pending', 'new'].includes(statusNormalized);
+    const canReject = statusNormalized !== 'cancelled' && statusNormalized !== 'delivered';
 
     const hotelName =
         orderDetail?.userId?.legalEntityName ||
@@ -73,9 +80,13 @@ const NewOrderAlert = () => {
 
     const onReject = async () => {
         if (!orderId) return;
-        // Cancel is the supported "reject" workflow for orders in this portal.
-        const ok = await updateOrderStatus(orderId, 'Cancelled');
-        if (!ok) return;
+        if (autoAccepted) {
+            const ok = await rejectFranchiseOrder(orderId);
+            if (!ok) return;
+        } else {
+            const ok = await updateOrderStatus(orderId, 'Cancelled');
+            if (!ok) return;
+        }
         setIsAlertOpen(false);
         refreshOrders?.();
     };
@@ -122,10 +133,12 @@ const NewOrderAlert = () => {
                         {/* Title & Description */}
                         <div className="mb-8">
                             <h2 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">
-                                New Order Assigned!
+                                {autoAccepted ? 'New order — auto-accepted' : 'New Order Assigned!'}
                             </h2>
                             <p className="text-slate-500 font-bold text-lg leading-relaxed">
-                                A new order has been auto-assigned to your franchise. Please accept it immediately to start processing.
+                                {autoAccepted
+                                    ? 'This order is already accepted for your node. Reject only if you cannot fulfil it — we will try the next nearest franchise serving these categories.'
+                                    : 'A new order has been assigned to your franchise. Accept it to start processing, or reject to cancel.'}
                             </p>
                         </div>
 
@@ -190,39 +203,66 @@ const NewOrderAlert = () => {
                             </div>
                         </div>
 
-                        {/* Actions */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <button
-                                onClick={() => setIsAlertOpen(false)}
-                                className="h-16 px-6 rounded-2xl border-2 border-slate-100 text-slate-500 font-black uppercase text-xs tracking-widest hover:bg-slate-50 hover:border-slate-200 transition-all"
-                            >
-                                Not Now
-                            </button>
-                            <button
-                                onClick={onAccept}
-                                disabled={!canAccept || detailLoading}
-                                className="h-16 px-6 rounded-2xl bg-slate-900 text-white font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-slate-200 hover:bg-slate-800 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 group disabled:opacity-50 disabled:hover:scale-[1]"
-                            >
-                                {detailLoading ? 'Loading...' : canAccept ? 'Accept' : 'Already Accepted'}
-                            </button>
-                            <button
-                                onClick={onReject}
-                                disabled={!canReject || detailLoading}
-                                className="h-16 px-6 rounded-2xl bg-rose-600 text-white font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-rose-200 hover:bg-rose-700 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 group disabled:opacity-50 disabled:hover:scale-[1]"
-                            >
-                                {detailLoading ? 'Loading...' : canReject ? 'Reject' : 'Already Cancelled'}
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setIsAlertOpen(false);
-                                    navigate(`/franchise/orders`);
-                                }}
-                                className="h-16 px-6 rounded-2xl border-2 border-slate-100 text-slate-700 font-black uppercase text-xs tracking-[0.2em] hover:bg-slate-50 hover:border-slate-200 transition-all flex items-center justify-center gap-3"
-                            >
-                                View Order
-                                <ArrowRight size={18} />
-                            </button>
-                        </div>
+                        {/* Actions — auto-accepted: only Reject (per product spec); legacy pool: Accept / Not Now / Reject / View */}
+                        {autoAccepted ? (
+                            <div className="flex flex-col gap-3">
+                                <button
+                                    type="button"
+                                    onClick={onReject}
+                                    disabled={!canReject || detailLoading}
+                                    className="h-16 w-full px-6 rounded-2xl bg-rose-600 text-white font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-rose-200 hover:bg-rose-700 transition-all disabled:opacity-50"
+                                >
+                                    {detailLoading ? 'Loading...' : canReject ? 'Reject order' : '—'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsAlertOpen(false);
+                                        navigate(orderId ? `/franchise/orders/${orderId}` : '/franchise/orders');
+                                    }}
+                                    className="text-center text-sm font-bold text-slate-500 hover:text-slate-800 underline underline-offset-2"
+                                >
+                                    View order details
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-2 gap-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAlertOpen(false)}
+                                    className="h-16 px-6 rounded-2xl border-2 border-slate-100 text-slate-500 font-black uppercase text-xs tracking-widest hover:bg-slate-50 hover:border-slate-200 transition-all"
+                                >
+                                    Not Now
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={onAccept}
+                                    disabled={!canAccept || detailLoading}
+                                    className="h-16 px-6 rounded-2xl bg-slate-900 text-white font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-slate-200 hover:bg-slate-800 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 group disabled:opacity-50 disabled:hover:scale-[1]"
+                                >
+                                    {detailLoading ? 'Loading...' : canAccept ? 'Accept' : 'Already Accepted'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={onReject}
+                                    disabled={!canReject || detailLoading}
+                                    className="h-16 px-6 rounded-2xl bg-rose-600 text-white font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-rose-200 hover:bg-rose-700 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 group disabled:opacity-50 disabled:hover:scale-[1]"
+                                >
+                                    {detailLoading ? 'Loading...' : canReject ? 'Reject' : 'Already Cancelled'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsAlertOpen(false);
+                                        navigate(`/franchise/orders`);
+                                    }}
+                                    className="h-16 px-6 rounded-2xl border-2 border-slate-100 text-slate-700 font-black uppercase text-xs tracking-[0.2em] hover:bg-slate-50 hover:border-slate-200 transition-all flex items-center justify-center gap-3"
+                                >
+                                    View Order
+                                    <ArrowRight size={18} />
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     {/* Footer Info */}

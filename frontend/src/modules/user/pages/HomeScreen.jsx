@@ -35,6 +35,7 @@ import api from '@/lib/axios'
 import { Button } from '@/components/ui/button'
 import { useLocation } from '../contexts/LocationContext'
 import LocationPermissionPopup from '../components/common/LocationPermissionPopup'
+import { appendLocationToProductParams } from '../utils/storefrontParams'
 
 const isMobile = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches
 
@@ -113,9 +114,13 @@ export default function HomeScreen() {
     useEffect(() => {
         const fetchData = async () => {
             try {
+                const prodParams = appendLocationToProductParams(
+                    { showOnStorefront: true },
+                    { franchiseLocation, hasFranchisePinned }
+                )
                 const [catRes, prodRes] = await Promise.all([
                     api.get('/catalog/categories'),
-                    api.get('/products')
+                    api.get('/products', { params: prodParams }),
                 ])
                 if (catRes.data.success) setCategories(catRes.data.results)
                 if (prodRes.data.success) setProducts(prodRes.data.results)
@@ -126,7 +131,7 @@ export default function HomeScreen() {
             }
         }
         fetchData()
-    }, [])
+    }, [franchiseLocation, hasFranchisePinned])
 
     // Dedicated effect for onboarding sequence (Location -> Business Type -> Documents)
     useEffect(() => {
@@ -151,7 +156,7 @@ export default function HomeScreen() {
 
     const handleAllowLocation = async () => {
         try {
-            await updateLocation();
+            await updateFranchiseLocation();
             setShowLocationPopup(false);
         } catch (err) {
             console.error('Failed to get location:', err);

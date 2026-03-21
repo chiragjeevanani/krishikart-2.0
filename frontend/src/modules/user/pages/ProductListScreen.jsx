@@ -12,6 +12,8 @@ import { useWishlist } from '../contexts/WishlistContext'
 import api from '@/lib/axios'
 import { useDebounce } from '@/hooks/useDebounce'
 import { toast } from 'sonner'
+import { useLocation } from '../contexts/LocationContext'
+import { appendLocationToProductParams } from '../utils/storefrontParams'
 import {
     Sheet,
     SheetContent,
@@ -27,6 +29,7 @@ export default function ProductListScreen() {
     const [searchParams] = useSearchParams()
     const navigate = useNavigate()
     const { cartCount } = useCart()
+    const { franchiseLocation, hasFranchisePinned } = useLocation()
     const queryFromUrl = searchParams.get('search') || ''
     const [searchQuery, setSearchQuery] = useState(queryFromUrl)
     const [categories, setCategories] = useState([])
@@ -78,10 +81,14 @@ export default function ProductListScreen() {
             setIsLoading(true)
             try {
                 // Products
-                const params = {}
-                if (selectedCategory !== 'all') params.category = selectedCategory
-                if (queryFromUrl) params.search = queryFromUrl
-                params.showOnStorefront = true;
+                const params = appendLocationToProductParams(
+                    {
+                        ...(selectedCategory !== 'all' ? { category: selectedCategory } : {}),
+                        ...(queryFromUrl ? { search: queryFromUrl } : {}),
+                        showOnStorefront: true,
+                    },
+                    { franchiseLocation, hasFranchisePinned }
+                )
 
                 const prodRes = await api.get('/products', { params })
                 if (prodRes.data.success) setProducts(prodRes.data.results)
@@ -102,7 +109,7 @@ export default function ProductListScreen() {
             }
         }
         fetchData()
-    }, [selectedCategory, category, queryFromUrl])
+    }, [selectedCategory, category, queryFromUrl, franchiseLocation, hasFranchisePinned])
 
     // Filter by Subcategory
     useEffect(() => {
@@ -113,7 +120,14 @@ export default function ProductListScreen() {
             setIsLoading(true)
             try {
                 const response = await api.get('/products', {
-                    params: { category: selectedCategory, subcategory: activeSubCategory, showOnStorefront: true }
+                    params: appendLocationToProductParams(
+                        {
+                            category: selectedCategory,
+                            subcategory: activeSubCategory,
+                            showOnStorefront: true,
+                        },
+                        { franchiseLocation, hasFranchisePinned }
+                    ),
                 })
                 if (response.data.success) setProducts(response.data.results)
             } catch (error) {
@@ -123,7 +137,7 @@ export default function ProductListScreen() {
             }
         }
         fetchBySub()
-    }, [activeSubCategory])
+    }, [activeSubCategory, selectedCategory, franchiseLocation, hasFranchisePinned])
 
     const currentCategoryData = useMemo(() => {
         if (selectedCategory === 'all') return { name: 'All Products' }
