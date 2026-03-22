@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import Franchise from "../models/franchise.js";
-import handleResponse from "../utils/helper.js";
+import { handleResponse } from "../utils/helper.js";
 
 export const protectFranchise = async (req, res, next) => {
   try {
@@ -29,4 +29,16 @@ export const protectFranchise = async (req, res, next) => {
     });
     return handleResponse(res, 401, "Invalid token");
   }
+};
+
+/** Blocks operational routes until master admin sets `isVerified` (separate from phone OTP). */
+export const requireFranchiseAccountVerified = (req, res, next) => {
+  if (!req.franchise?.isVerified) {
+    return handleResponse(
+      res,
+      403,
+      "Franchise pending admin verification. Use Documentation until your profile is approved.",
+    );
+  }
+  next();
 };

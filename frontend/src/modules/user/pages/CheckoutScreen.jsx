@@ -79,7 +79,8 @@ export default function CheckoutScreen() {
     const { balance, payWithWallet, creditLimit, creditUsed, availableCredit } = useWallet()
 
     const [step, setStep] = useState(1) // 1: Address, 2: Payment, 3: Success
-    const [lastOrder, setLastOrder] = useState(null)
+    /** After place / Razorpay verify: `{ orders, orderGroupId }` (split by category when multiple). */
+    const [lastPlacement, setLastPlacement] = useState(null)
     const [selectedMethod, setSelectedMethod] = useState('upi')
     const [isPlacingOrder, setIsPlacingOrder] = useState(false)
     const [isEditingAddress, setIsEditingAddress] = useState(false)
@@ -343,7 +344,18 @@ export default function CheckoutScreen() {
                         })
 
                         if (verifyRes.data.success) {
-                            setLastOrder(verifyRes.data.result)
+                            const r = verifyRes.data.result
+                            const orders = Array.isArray(r?.orders)
+                                ? r.orders
+                                : r?.order
+                                  ? [r.order]
+                                  : r?._id
+                                    ? [r]
+                                    : []
+                            setLastPlacement({
+                                orders,
+                                orderGroupId: r?.orderGroupId ?? null,
+                            })
                             setStep(3)
                             setTimeout(() => {
                                 clearCart()
@@ -489,7 +501,10 @@ export default function CheckoutScreen() {
             if (selectedMethod === 'wallet') {
                 payWithWallet(total)
             }
-            setLastOrder(result.order)
+            setLastPlacement({
+                orders: result.orders || (result.order ? [result.order] : []),
+                orderGroupId: result.orderGroupId ?? null,
+            })
             setStep(3)
             setTimeout(() => {
                 clearCart()
@@ -513,12 +528,17 @@ export default function CheckoutScreen() {
                         <Check size={48} strokeWidth={3} />
                     </motion.div>
                     <h1 className="text-3xl font-black text-slate-900 tracking-tight md:font-bold">Order placed successfully!</h1>
+                    {(lastPlacement?.orders?.length ?? 0) > 1 && (
+                        <p className="mt-4 text-sm font-medium text-slate-600 max-w-md">
+                            Your cart was split into {lastPlacement.orders.length} orders by category — each is fulfilled by the nearest store for that category. You can track them separately.
+                        </p>
+                    )}
 
                     <Button
-                        onClick={() => navigate(`/track-order/${lastOrder?._id}`)}
+                        onClick={() => navigate(`/track-order/${lastPlacement?.orders?.[0]?._id}`)}
                         className="mt-12 w-full max-w-md h-16 md:h-14 rounded-3xl md:rounded-lg bg-primary text-xl font-black md:font-bold md:text-lg shadow-lg shadow-green-100 active:scale-95 transition-all"
                     >
-                        Track My Order
+                        {(lastPlacement?.orders?.length ?? 0) > 1 ? 'Track first order' : 'Track My Order'}
                     </Button>
                 </div>
             </PageTransition>

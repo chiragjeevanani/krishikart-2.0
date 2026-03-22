@@ -261,6 +261,12 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
           permissionKey: "settings",
         },
         {
+          icon: FileText,
+          label: "Terms, Privacy & Contact",
+          path: "/masteradmin/settings/legal-pages",
+          permissionKey: "settings",
+        },
+        {
           icon: Briefcase,
           label: "Team Management",
           path: "/masteradmin/team",
@@ -281,6 +287,11 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
               label: "Manage FAQs",
               path: "/masteradmin/settings/faqs",
               icon: HelpCircle,
+            },
+            {
+              label: "Terms, Privacy & Contact",
+              path: "/masteradmin/settings/legal-pages",
+              icon: FileText,
             },
           ],
         },

@@ -60,6 +60,7 @@ const Returns = lazy(() => import("../pages/ReturnsScreen"));
 const FranchisePayouts = lazy(() => import("../pages/FranchisePayoutsScreen"));
 const CodRemittance = lazy(() => import("../pages/CodRemittanceScreen"));
 const FAQManagement = lazy(() => import("../pages/FAQManagementScreen"));
+const LegalPagesManagement = lazy(() => import("../pages/LegalPagesManagementScreen"));
 const GlobalServiceMap = lazy(() => import("../pages/GlobalServiceMap"));
 
 const AdminRootRedirect = () => {
@@ -315,6 +316,7 @@ export const masterAdminRoutes = (
           element={<PermissionRoute permissionKey="settings" />}>
           <Route index element={<AdminSettings />} />
           <Route path="faqs" element={<FAQManagement />} />
+          <Route path="legal-pages" element={<LegalPagesManagement />} />
         </Route>
       </Route>
     </Route>

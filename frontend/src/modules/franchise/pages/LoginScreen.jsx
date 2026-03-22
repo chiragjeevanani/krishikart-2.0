@@ -104,7 +104,9 @@ export default function LoginScreen() {
                 localStorage.setItem('franchiseData', JSON.stringify(franchiseData));
             }
             loginSuccess(franchiseData, token);
-            navigate('/franchise/dashboard');
+            navigate(
+                franchiseData.isVerified ? '/franchise/dashboard' : '/franchise/documentation',
+            );
         } catch (error) {
             console.error('[Franchise Login Error]:', error);
             const errorMsg = error.response?.data?.message || error.message || 'Login failed';

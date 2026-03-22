@@ -48,11 +48,12 @@ const NewOrderAlert = () => {
     }, [isAlertOpen, orderId]);
 
     const statusNormalized = (orderDetail?.orderStatus || newOrderData?.orderStatus || '').toString().toLowerCase();
-    /** Auto-assigned by system — only Reject is meaningful (accept is implicit). */
+    /** System auto-assigned nearest franchise — alert shows reject only (not the same as any "Accepted" order). */
     const autoAccepted =
         newOrderData?.autoAccepted === true ||
         newOrderData?.showRejectOnly === true ||
-        statusNormalized === 'accepted';
+        newOrderData?.franchiseAutoAccepted === true ||
+        orderDetail?.franchiseAutoAccepted === true;
     const canAccept =
         !autoAccepted && ['assigned', 'placed', 'pending', 'new'].includes(statusNormalized);
     const canReject = statusNormalized !== 'cancelled' && statusNormalized !== 'delivered';
@@ -213,16 +214,6 @@ const NewOrderAlert = () => {
                                     className="h-16 w-full px-6 rounded-2xl bg-rose-600 text-white font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-rose-200 hover:bg-rose-700 transition-all disabled:opacity-50"
                                 >
                                     {detailLoading ? 'Loading...' : canReject ? 'Reject order' : '—'}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setIsAlertOpen(false);
-                                        navigate(orderId ? `/franchise/orders/${orderId}` : '/franchise/orders');
-                                    }}
-                                    className="text-center text-sm font-bold text-slate-500 hover:text-slate-800 underline underline-offset-2"
-                                >
-                                    View order details
                                 </button>
                             </div>
                         ) : (

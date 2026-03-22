@@ -23,7 +23,10 @@ import {
 } from "../controllers/order.controller.js";
 import { protect } from "../middlewares/authmiddleware.js";
 import { protectMasterAdmin } from "../middlewares/masteradmin.auth.js";
-import { protectFranchise } from "../middlewares/franchise.auth.js";
+import {
+    protectFranchise,
+    requireFranchiseAccountVerified,
+} from "../middlewares/franchise.auth.js";
 import { protectDelivery } from "../middlewares/delivery.auth.js";
 
 const router = express.Router();
@@ -41,15 +44,60 @@ router.get("/admin/:id", protectMasterAdmin, getOrderById);
 router.put("/admin/:id/status", protectMasterAdmin, updateOrderStatus);
 
 // Franchise Routes
-router.get("/franchise/all", protectFranchise, getFranchiseOrders);
-router.get("/franchise/:id", protectFranchise, getFranchiseOrderById);
-router.put("/franchise/:id/accept", protectFranchise, acceptFranchiseOrder);
-router.put("/franchise/:id/reject", protectFranchise, rejectFranchiseOrder);
-router.put("/franchise/:id/assign-delivery", protectFranchise, assignDeliveryPartner);
-router.put("/franchise/:id/status", protectFranchise, updateOrderStatus);
-router.get("/franchise/returns/all", protectFranchise, getFranchiseReturnRequests);
-router.put("/franchise/:id/returns/:requestIndex/review", protectFranchise, reviewReturnRequestByFranchise);
-router.put("/franchise/:id/returns/:requestIndex/assign-pickup", protectFranchise, assignReturnPickupDelivery);
+router.get(
+    "/franchise/all",
+    protectFranchise,
+    requireFranchiseAccountVerified,
+    getFranchiseOrders,
+);
+router.get(
+    "/franchise/:id",
+    protectFranchise,
+    requireFranchiseAccountVerified,
+    getFranchiseOrderById,
+);
+router.put(
+    "/franchise/:id/accept",
+    protectFranchise,
+    requireFranchiseAccountVerified,
+    acceptFranchiseOrder,
+);
+router.put(
+    "/franchise/:id/reject",
+    protectFranchise,
+    requireFranchiseAccountVerified,
+    rejectFranchiseOrder,
+);
+router.put(
+    "/franchise/:id/assign-delivery",
+    protectFranchise,
+    requireFranchiseAccountVerified,
+    assignDeliveryPartner,
+);
+router.put(
+    "/franchise/:id/status",
+    protectFranchise,
+    requireFranchiseAccountVerified,
+    updateOrderStatus,
+);
+router.get(
+    "/franchise/returns/all",
+    protectFranchise,
+    requireFranchiseAccountVerified,
+    getFranchiseReturnRequests,
+);
+router.put(
+    "/franchise/:id/returns/:requestIndex/review",
+    protectFranchise,
+    requireFranchiseAccountVerified,
+    reviewReturnRequestByFranchise,
+);
+router.put(
+    "/franchise/:id/returns/:requestIndex/assign-pickup",
+    protectFranchise,
+    requireFranchiseAccountVerified,
+    assignReturnPickupDelivery,
+);
 
 // Delivery Routes
 router.get("/delivery/dispatched", protectDelivery, getDispatchedOrders);

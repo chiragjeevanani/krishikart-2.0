@@ -32,12 +32,13 @@ import DocumentViewer from '../../vendor/components/documents/DocumentViewer';
 export default function OrderDetailScreen() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { updateOrderStatus, deliveryPartners, refreshPartners } = useFranchiseOrders();
+    const { updateOrderStatus, deliveryPartners, refreshPartners, rejectFranchiseOrder } = useFranchiseOrders();
     const [order, setOrder] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isDocOpen, setIsDocOpen] = useState(false);
     const [docType, setDocType] = useState('GRN');
     const [isAccepting, setIsAccepting] = useState(false);
+    const [isRejectingAssignment, setIsRejectingAssignment] = useState(false);
     const [reviewReasons, setReviewReasons] = useState({});
     const [isReviewing, setIsReviewing] = useState(false);
     const [isAssigningPickup, setIsAssigningPickup] = useState(false);
@@ -79,7 +80,8 @@ export default function OrderDetailScreen() {
                         requestedAt: rr.requestedAt,
                         pickupDeliveryPartnerId: rr.pickupDeliveryPartnerId || null
                     })),
-                    bilty: o.bilty
+                    bilty: o.bilty,
+                    franchiseAutoAccepted: !!o.franchiseAutoAccepted,
                 });
             }
         } catch (error) {
@@ -111,6 +113,19 @@ export default function OrderDetailScreen() {
             toast.error(error.response?.data?.message || 'Failed to accept order');
         } finally {
             setIsAccepting(false);
+        }
+    };
+
+    const handleRejectAutoAssignment = async () => {
+        setIsRejectingAssignment(true);
+        try {
+            const ok = await rejectFranchiseOrder(id);
+            if (ok) {
+                toast.success('Assignment released. Another franchise may take the order.');
+                navigate('/franchise/orders');
+            }
+        } finally {
+            setIsRejectingAssignment(false);
         }
     };
 
@@ -431,6 +446,18 @@ export default function OrderDetailScreen() {
                             )}
 
                             {/* Post-Acceptance Actions */}
+                            {order.status === 'accepted' && order.franchiseAutoAccepted && (
+                                <button
+                                    type="button"
+                                    onClick={handleRejectAutoAssignment}
+                                    disabled={isRejectingAssignment}
+                                    className="w-full h-12 bg-rose-600 text-white rounded-sm font-black uppercase text-[10px] tracking-[0.2em] shadow-lg hover:bg-rose-700 transition-all flex items-center justify-center gap-2"
+                                >
+                                    {isRejectingAssignment ? <RefreshCw size={14} className="animate-spin" /> : null}
+                                    Reject assignment
+                                </button>
+                            )}
+
                             {order.status === 'accepted' && (
                                     <div className="space-y-3 p-4 border border-emerald-100 bg-emerald-50 rounded-sm">
                                         <label className="text-[10px] font-black uppercase text-emerald-800 tracking-widest flex items-center justify-between">

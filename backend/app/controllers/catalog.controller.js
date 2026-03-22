@@ -5,6 +5,7 @@ import Inventory from "../models/inventory.js";
 import handleResponse, { capitalizeFirst } from "../utils/helper.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import GlobalSetting from "../models/globalSetting.js";
+import { getStorefrontCategoryIdsForLocation } from "../utils/storefrontAvailability.js";
 
 /* ================= CATEGORY CONTROLLERS ================= */
 
@@ -43,7 +44,29 @@ export const createCategory = async (req, res) => {
 
 export const getCategories = async (req, res) => {
   try {
-    const categories = await Category.find().sort({ createdAt: -1 });
+    const lat = req.query.lat != null ? parseFloat(req.query.lat) : null;
+    const lng = req.query.lng != null ? parseFloat(req.query.lng) : null;
+    const useLocation =
+      Number.isFinite(lat) &&
+      Number.isFinite(lng) &&
+      lat >= -90 &&
+      lat <= 90 &&
+      lng >= -180 &&
+      lng <= 180;
+
+    if (!useLocation) {
+      const categories = await Category.find().sort({ createdAt: -1 });
+      return handleResponse(res, 200, "Categories fetched", categories);
+    }
+
+    const catIds = await getStorefrontCategoryIdsForLocation(lat, lng);
+    if (!catIds.length) {
+      return handleResponse(res, 200, "Categories fetched", []);
+    }
+
+    const categories = await Category.find({ _id: { $in: catIds } }).sort({
+      createdAt: -1,
+    });
     return handleResponse(res, 200, "Categories fetched", categories);
   } catch (err) {
     return handleResponse(res, 500, "Server error");

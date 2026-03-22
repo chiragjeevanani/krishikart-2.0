@@ -25,8 +25,14 @@ export default function ProductCard({ product, layout = 'grid' }) {
         return () => window.removeEventListener('resize', checkMobile)
     }, [])
     const productId = product._id || product.id
-    const comparePrice = Number(product.comparePrice || product.mrp || 0)
-    const hasComparePrice = comparePrice > Number(product.price || 0)
+    const displayPrice = Number(product.effectiveStorefrontPrice ?? product.price ?? 0)
+    const comparePriceMrp = Number(product.comparePrice || product.mrp || 0)
+    const catalogList = Number(product.storefrontListPrice ?? product.price ?? 0)
+    const strikePrice = Math.max(
+        comparePriceMrp > displayPrice ? comparePriceMrp : 0,
+        product.effectiveStorefrontPrice != null && catalogList > displayPrice ? catalogList : 0,
+    )
+    const hasComparePrice = strikePrice > displayPrice
     const cartItem = cartItems.find(item => item.id === productId)
     const quantity = cartItem ? cartItem.quantity : 0
     const isLoved = isWishlisted(productId)
@@ -71,7 +77,8 @@ export default function ProductCard({ product, layout = 'grid' }) {
                         <img
                             src={productImage}
                             alt={product.name}
-                            className="w-full h-full object-cover"
+                            className="absolute inset-0 h-full w-full object-cover object-center"
+                            draggable={false}
                             onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=80' }}
                         />
                         <button
@@ -89,9 +96,9 @@ export default function ProductCard({ product, layout = 'grid' }) {
                         <div className="flex items-center justify-between mt-3">
                             <div>
                                 <div className="flex items-center gap-1.5">
-                                    <p className="text-[15px] font-black text-slate-900 leading-none md:text-base md:font-bold">₹{product.price}</p>
+                                    <p className="text-[15px] font-black text-slate-900 leading-none md:text-base md:font-bold">₹{displayPrice}</p>
                                     {hasComparePrice && (
-                                        <span className="text-[11px] font-bold text-slate-400 line-through">₹{comparePrice}</span>
+                                        <span className="text-[11px] font-bold text-slate-400 line-through">₹{strikePrice}</span>
                                     )}
                                 </div>
                                 <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-1 md:text-[10px] md:normal-case md:tracking-normal">{product.unit}</p>
@@ -150,11 +157,12 @@ export default function ProductCard({ product, layout = 'grid' }) {
                     )}
                 >
                     {/* Image area – part of the card, not a nested card */}
-                    <div className="relative aspect-square bg-slate-50/80 overflow-hidden rounded-t-[12px] md:rounded-t-[18px] group-hover:bg-slate-50 transition-colors">
+                    <div className="relative w-full aspect-square bg-slate-50/80 overflow-hidden rounded-t-[12px] md:rounded-t-[18px] group-hover:bg-slate-50 transition-colors shrink-0">
                         <img
                             src={productImage}
                             alt={product.name}
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                            className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-105 select-none"
+                            draggable={false}
                             onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=80' }}
                         />
 
@@ -241,17 +249,17 @@ export default function ProductCard({ product, layout = 'grid' }) {
                     {/* Pricing */}
                     <div className="mt-auto px-0.5 space-y-0.5 md:px-1 md:space-y-1">
                         <div className="flex items-baseline gap-1">
-                            <span className="text-[15px] font-extrabold text-slate-900 md:text-[18px]">₹{product.price}</span>
-                            {hasComparePrice && <span className="text-[10px] text-slate-400 line-through md:text-xs">₹{comparePrice}</span>}
+                            <span className="text-[15px] font-extrabold text-slate-900 md:text-[18px]">₹{displayPrice}</span>
+                            {hasComparePrice && <span className="text-[10px] text-slate-400 line-through md:text-xs">₹{strikePrice}</span>}
                         </div>
 
                         <p className="text-[10px] font-bold text-slate-400 md:text-[11px]">
-                            ₹{product.price}/{product.unit || 'unit'}
+                            ₹{displayPrice}/{product.unit || 'unit'}
                         </p>
 
-                        {(product.bestPrice || product.price) && (
+                        {(product.bestPrice || displayPrice) && (
                             <div className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded w-fit mt-0.5 border border-primary/20 md:text-xs md:px-2.5 md:py-1 md:rounded-md md:mt-1">
-                                ₹{product.bestPrice || Math.floor(product.price * 0.95)}/{product.unit === 'pcs' ? 'pc' : (product.unit || 'unit')} Best rate
+                                ₹{product.bestPrice || Math.floor(displayPrice * 0.95)}/{product.unit === 'pcs' ? 'pc' : (product.unit || 'unit')} Best rate
                             </div>
                         )}
                     </div>

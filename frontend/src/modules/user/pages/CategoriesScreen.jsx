@@ -7,16 +7,25 @@ import {
 import { useState, useEffect } from 'react'
 import PageTransition from '../components/layout/PageTransition'
 import api from '@/lib/axios'
+import { useLocation } from '../contexts/LocationContext'
+import { getBrowseLocationParams } from '../utils/storefrontParams'
 
 export default function CategoriesScreen() {
     const [categories, setCategories] = useState([])
     const [loading, setLoading] = useState(true)
     const navigate = useNavigate()
+    const locationCtx = useLocation()
 
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const response = await api.get('/catalog/categories')
+                const { coords, hasPinned } = getBrowseLocationParams(locationCtx)
+                const catParams = {}
+                if (hasPinned && coords) {
+                    catParams.lat = coords.lat
+                    catParams.lng = coords.lng
+                }
+                const response = await api.get('/catalog/categories', { params: catParams })
                 if (response.data.success) {
                     setCategories(response.data.results)
                 }
@@ -27,7 +36,12 @@ export default function CategoriesScreen() {
             }
         }
         fetchCategories()
-    }, [])
+    }, [
+        locationCtx?.deliveryLocation,
+        locationCtx?.hasDeliveryPinned,
+        locationCtx?.franchiseLocation,
+        locationCtx?.hasFranchisePinned,
+    ])
 
     return (
         <PageTransition>

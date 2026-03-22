@@ -54,6 +54,7 @@ const franchiseSchema = new mongoose.Schema(
     otpExpiresAt: Date,
     otpAttempts: { type: Number, default: 0 },
 
+    /** Set to true only by master admin (KYC / profile approval); never by OTP or self-service upload. */
     isVerified: {
       type: Boolean,
       default: false,
@@ -64,6 +65,11 @@ const franchiseSchema = new mongoose.Schema(
       aadhaarImage: String,
       panNumber: String,
       panImage: String,
+      fssaiNumber: String,
+      fssaiCertificate: String,
+      shopEstablishmentCertificate: String,
+      gstNumber: String,
+      gstCertificate: String,
       status: {
         type: String,
         enum: ["unsubmitted", "pending", "verified", "rejected"],
@@ -135,6 +141,13 @@ const franchiseSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    documents: [
+      {
+        name: String,
+        url: String,
+        status: { type: String, default: "pending" },
+      },
+    ],
   },
   { timestamps: true },
 );

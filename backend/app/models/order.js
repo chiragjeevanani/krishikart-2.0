@@ -116,6 +116,22 @@ const orderSchema = new mongoose.Schema({
         ref: 'Franchise',
         default: null
     },
+    /** True when the current assignee was chosen by nearest-franchise auto-assignment (reject → reassign flow). */
+    franchiseAutoAccepted: {
+        type: Boolean,
+        default: false
+    },
+    /** Same value on all sibling orders when checkout was split by product category. */
+    orderGroupId: {
+        type: String,
+        default: null,
+    },
+    /** Category this fulfillment slice belongs to (split orders). */
+    fulfillmentCategoryId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Category',
+        default: null,
+    },
     deliveryPartnerId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Delivery',

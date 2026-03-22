@@ -2,9 +2,8 @@ import mongoose from "mongoose";
 import Product from "../models/product.js";
 import Category from "../models/category.js";
 import Subcategory from "../models/subcategory.js";
-import Inventory from "../models/inventory.js";
 import handleResponse, { capitalizeFirst } from "../utils/helper.js";
-import { findFranchisesServingLocation } from "../utils/assignment.js";
+import { getStorefrontOffersByProduct } from "../utils/storefrontAvailability.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import * as xlsx from 'xlsx';
 
@@ -39,73 +38,6 @@ const normalizeSkuCode = (skuInput) => {
     if (skuInput === undefined || skuInput === null) return '';
     return String(skuInput).trim().toUpperCase();
 };
-
-/** Franchise lists categories it serves; empty means all (legacy). */
-function franchiseServesCategory(franchise, categoryId) {
-    if (!categoryId) return false;
-    const sc = franchise.servedCategories || [];
-    if (!sc.length) return true;
-    return sc.some((c) => c.toString() === categoryId.toString());
-}
-
-/**
- * Product IDs that are in stock at at least one franchise covering (lat,lng)
- * and that franchise serves the product's category.
- */
-async function getStorefrontProductIdsForLocation(lat, lng) {
-    const franchises = await findFranchisesServingLocation(lat, lng);
-    if (!franchises.length) return [];
-
-    const franchiseById = new Map(franchises.map((f) => [f._id.toString(), f]));
-    const franchiseIds = franchises.map((f) => f._id);
-
-    const inventories = await Inventory.find({
-        franchiseId: { $in: franchiseIds },
-    }).lean();
-
-    const pairs = [];
-    for (const inv of inventories) {
-        const fid = inv.franchiseId.toString();
-        const f = franchiseById.get(fid);
-        if (!f) continue;
-        for (const row of inv.items || []) {
-            if (!row.productId || row.currentStock <= 0) continue;
-            pairs.push({ franchise: f, productId: row.productId.toString() });
-        }
-    }
-    if (!pairs.length) return [];
-
-    const uniquePids = [...new Set(pairs.map((p) => p.productId))];
-    const oidList = uniquePids
-        .map((id) => {
-            try {
-                return new mongoose.Types.ObjectId(id);
-            } catch {
-                return null;
-            }
-        })
-        .filter(Boolean);
-
-    const productDocs = await Product.find({
-        _id: { $in: oidList },
-        status: "active",
-    })
-        .select("_id category")
-        .lean();
-
-    const productMap = new Map(productDocs.map((p) => [p._id.toString(), p]));
-
-    const eligible = new Set();
-    for (const { franchise, productId } of pairs) {
-        const prod = productMap.get(productId);
-        if (!prod) continue;
-        const catId = prod.category?.toString();
-        if (!catId) continue;
-        if (!franchiseServesCategory(franchise, catId)) continue;
-        eligible.add(productId);
-    }
-    return [...eligible];
-}
 
 export const createProduct = async (req, res) => {
     try {
@@ -268,8 +200,10 @@ export const getProducts = async (req, res) => {
             lng >= -180 &&
             lng <= 180;
 
+        let offersByProduct = null;
         if (useLocationFilter) {
-            const allowedIds = await getStorefrontProductIdsForLocation(lat, lng);
+            offersByProduct = await getStorefrontOffersByProduct(lat, lng);
+            const allowedIds = [...offersByProduct.keys()];
             if (!allowedIds.length) {
                 return handleResponse(res, 200, "SKU inventory fetched", []);
             }
@@ -288,9 +222,22 @@ export const getProducts = async (req, res) => {
         const products = await Product.find(filter)
             .populate("category", "name")
             .populate("subcategory", "name")
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .lean();
 
-        return handleResponse(res, 200, "SKU inventory fetched", products);
+        const enriched = products.map((p) => {
+            const pid = p._id.toString();
+            const offer = offersByProduct?.get(pid);
+            if (!offer) return p;
+            return {
+                ...p,
+                effectiveStorefrontPrice: offer.effectivePrice,
+                storefrontListPrice: offer.listPrice,
+                storefrontServingFranchiseId: offer.franchiseId,
+            };
+        });
+
+        return handleResponse(res, 200, "SKU inventory fetched", enriched);
     } catch (err) {
         return handleResponse(res, 500, "Server error: " + err.message);
     }
@@ -299,15 +246,40 @@ export const getProducts = async (req, res) => {
 export const getProductById = async (req, res) => {
     try {
         const { id } = req.params;
+        const lat = req.query.lat != null ? parseFloat(req.query.lat) : null;
+        const lng = req.query.lng != null ? parseFloat(req.query.lng) : null;
+        const useLocationFilter =
+            Number.isFinite(lat) &&
+            Number.isFinite(lng) &&
+            lat >= -90 &&
+            lat <= 90 &&
+            lng >= -180 &&
+            lng <= 180;
+
         const product = await Product.findById(id)
             .populate("category", "name")
-            .populate("subcategory", "name");
+            .populate("subcategory", "name")
+            .lean();
 
         if (!product) {
             return handleResponse(res, 404, "Product not found in system");
         }
 
-        return handleResponse(res, 200, "Product details verified", product);
+        let payload = product;
+        if (useLocationFilter) {
+            const offers = await getStorefrontOffersByProduct(lat, lng);
+            const offer = offers.get(id);
+            if (offer) {
+                payload = {
+                    ...product,
+                    effectiveStorefrontPrice: offer.effectivePrice,
+                    storefrontListPrice: offer.listPrice,
+                    storefrontServingFranchiseId: offer.franchiseId,
+                };
+            }
+        }
+
+        return handleResponse(res, 200, "Product details verified", payload);
     } catch (err) {
         return handleResponse(res, 500, "Server error: " + err.message);
     }

@@ -57,6 +57,7 @@ const DocumentationScreen = lazy(() => import('./modules/franchise/pages/Documen
 const FranchiseLogin = lazy(() => import('./modules/franchise/pages/LoginScreen'));
 const FranchiseSignup = lazy(() => import('./modules/franchise/pages/SignupScreen'));
 const FranchisePaymentSettings = lazy(() => import('./modules/franchise/pages/PaymentSettingsScreen'));
+const FranchiseReports = lazy(() => import('./modules/franchise/pages/ReportsScreen'));
 
 // Master Admin Module Imports
 import { MasterAdminAuthProvider } from './modules/masteradmin/contexts/MasterAdminAuthContext';
@@ -166,6 +167,7 @@ function App() {
                 <Route path="dashboard" element={<FranchiseDashboard />} />
                 <Route path="orders" element={<FranchiseOrders />} />
                 <Route path="orders/:id" element={<OrderDetail />} />
+                <Route path="reports" element={<FranchiseReports />} />
                 <Route path="inventory" element={<FranchiseInventory />} />
                 <Route path="receiving" element={<ReceivingScreen />} />
                 <Route path="dispatch" element={<FranchiseDelivery />} />

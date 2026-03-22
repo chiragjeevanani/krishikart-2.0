@@ -179,7 +179,9 @@ export default function SignupScreen() {
         localStorage.setItem("franchiseData", JSON.stringify(franchiseData));
       }
       loginSuccess(franchiseData, token);
-      navigate("/franchise/dashboard");
+      navigate(
+        franchiseData.isVerified ? "/franchise/dashboard" : "/franchise/documentation",
+      );
     } catch (error) {
       console.error(error);
       alert(error.response?.data?.message || "Verification failed");

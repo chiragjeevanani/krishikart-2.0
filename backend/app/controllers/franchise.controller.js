@@ -3,16 +3,25 @@ import Inventory from "../models/inventory.js";
 import Product from "../models/product.js";
 import handleResponse from "../utils/helper.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
+import {
+  isValidFranchiseGst14,
+  normalizeFranchiseGst14,
+} from "../utils/gstFranchiseKyc.js";
+import {
+  fetchPayoutOrders,
+  aggregatePayoutsFromOrders,
+} from "../utils/franchisePayoutReport.js";
+import FranchiseAdminPayout from "../models/franchiseAdminPayout.js";
 import admin from "../services/firebaseAdmin.js";
 
 /**
- * @desc Submit KYC Documents (Aadhaar & PAN)
+ * @desc Submit KYC Documents (Aadhaar, PAN, FSSAI, shop establishment, GST)
  * @route POST /franchise/kyc/submit
  * @access Private (Franchise)
  */
 export const submitKYC = async (req, res) => {
   try {
-    const { aadhaarNumber, panNumber } = req.body;
+    const { aadhaarNumber, panNumber, fssaiNumber, gstNumber } = req.body;
     const franchiseId = req.franchise._id;
 
     const franchise = await Franchise.findById(franchiseId);
@@ -22,9 +31,25 @@ export const submitKYC = async (req, res) => {
       return handleResponse(res, 400, "KYC already verified");
     }
 
+    const fssaiDigits = String(fssaiNumber ?? "").replace(/\D/g, "");
+    if (fssaiDigits.length !== 14) {
+      return handleResponse(res, 400, "FSSAI number must be exactly 14 digits");
+    }
+
+    const gstNorm = normalizeFranchiseGst14(gstNumber);
+    if (!isValidFranchiseGst14(gstNorm)) {
+      return handleResponse(
+        res,
+        400,
+        "GST number must be 14 characters: exactly 7 letters (A-Z) and 7 digits (0-9), in any order",
+      );
+    }
+
     const kycData = {
       aadhaarNumber,
       panNumber,
+      fssaiNumber: fssaiDigits,
+      gstNumber: gstNorm,
       status: "pending",
       submittedAt: new Date(),
     };
@@ -44,6 +69,24 @@ export const submitKYC = async (req, res) => {
           "franchise/kyc",
         );
         kycData.panImage = panUrl;
+      }
+      if (req.files.fssaiCertificate) {
+        kycData.fssaiCertificate = await uploadToCloudinary(
+          req.files.fssaiCertificate[0].buffer,
+          "franchise/kyc",
+        );
+      }
+      if (req.files.shopEstablishmentCertificate) {
+        kycData.shopEstablishmentCertificate = await uploadToCloudinary(
+          req.files.shopEstablishmentCertificate[0].buffer,
+          "franchise/kyc",
+        );
+      }
+      if (req.files.gstCertificate) {
+        kycData.gstCertificate = await uploadToCloudinary(
+          req.files.gstCertificate[0].buffer,
+          "franchise/kyc",
+        );
       }
     }
 
@@ -74,6 +117,91 @@ export const getKYCStatus = async (req, res) => {
     );
     return handleResponse(res, 200, "KYC Status Fetched", franchise);
   } catch (err) {
+    return handleResponse(res, 500, "Internal server error");
+  }
+};
+
+/**
+ * Commission owed to this franchise from admin (delivered/received orders × category %).
+ * @route GET /franchise/reports/payout-summary?from=&to=
+ */
+export const getFranchisePayoutReport = async (req, res) => {
+  try {
+    const { from, to } = req.query;
+    const fid = req.franchise._id;
+    const orders = await fetchPayoutOrders({ franchiseId: fid, from, to });
+    const { franchiseRows } = await aggregatePayoutsFromOrders(orders);
+
+    const row = franchiseRows.find((r) => String(r.franchiseId) === String(fid));
+
+    const empty = {
+      orderCount: 0,
+      orderValue: 0,
+      payableAmount: 0,
+      categories: [],
+    };
+
+    return handleResponse(res, 200, "Franchise payout report", {
+      from: from || null,
+      to: to || null,
+      franchiseName:
+        row?.franchiseName ||
+        req.franchise.franchiseName ||
+        req.franchise.ownerName ||
+        "Franchise",
+      orderCount: row?.orderCount ?? empty.orderCount,
+      orderValue: row?.orderValue ?? empty.orderValue,
+      amountDueFromAdmin: row?.payableAmount ?? empty.payableAmount,
+      categories: row?.categories ?? empty.categories,
+    });
+  } catch (err) {
+    console.error("Franchise payout report error:", err);
+    return handleResponse(res, 500, "Internal server error");
+  }
+};
+
+/**
+ * Payments recorded by admin to this franchise (settlement history).
+ * @route GET /franchise/reports/admin-payouts?from=&to= (filters paidAt)
+ */
+export const getFranchiseAdminPayoutsReceived = async (req, res) => {
+  try {
+    const { from, to } = req.query;
+    const match = { franchiseId: req.franchise._id };
+
+    if (from || to) {
+      match.paidAt = {};
+      if (from) {
+        const fromDate = new Date(from);
+        if (!Number.isNaN(fromDate.getTime())) match.paidAt.$gte = fromDate;
+      }
+      if (to) {
+        const toDate = new Date(to);
+        if (!Number.isNaN(toDate.getTime())) {
+          toDate.setHours(23, 59, 59, 999);
+          match.paidAt.$lte = toDate;
+        }
+      }
+      if (!match.paidAt.$gte && !match.paidAt.$lte) delete match.paidAt;
+    }
+
+    const items = await FranchiseAdminPayout.find(match)
+      .sort({ paidAt: -1 })
+      .select("amount paidAt note reference createdAt")
+      .limit(200)
+      .lean();
+
+    const totalReceived = items.reduce(
+      (s, x) => s + Number(x.amount || 0),
+      0,
+    );
+
+    return handleResponse(res, 200, "Admin payments to franchise", {
+      items,
+      totalReceived: Number(totalReceived.toFixed(2)),
+    });
+  } catch (err) {
+    console.error("Franchise admin payouts received error:", err);
     return handleResponse(res, 500, "Internal server error");
   }
 };

@@ -86,9 +86,24 @@ export function OrderProvider({ children }) {
             });
 
             if (response.data.success) {
-                const newOrder = response.data.result;
-                setOrders(prev => [newOrder, ...prev]);
-                return { success: true, order: newOrder };
+                const result = response.data.result;
+                const placedOrders = Array.isArray(result?.orders)
+                    ? result.orders
+                    : result?.order
+                      ? [result.order]
+                      : result?._id
+                        ? [result]
+                        : [];
+                if (placedOrders.length) {
+                    setOrders((prev) => [...placedOrders, ...prev]);
+                }
+                return {
+                    success: true,
+                    orders: placedOrders,
+                    order: placedOrders[0] ?? null,
+                    orderGroupId: result?.orderGroupId ?? null,
+                    grandTotal: result?.grandTotal,
+                };
             } else {
                 toast.error(response.data.message || "Failed to place order");
                 return { success: false, message: response.data.message };

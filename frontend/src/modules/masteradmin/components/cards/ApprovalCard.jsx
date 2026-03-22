@@ -72,7 +72,10 @@ export default function ApprovalCard({ item, type, onApprove, onReject, onViewDo
                         ))}
                         {isFranchise && [
                             { label: 'Aadhaar Card', value: item.kyc?.aadhaarImage },
-                            { label: 'PAN Card', value: item.kyc?.panImage }
+                            { label: 'PAN Card', value: item.kyc?.panImage },
+                            { label: 'FSSAI', value: item.kyc?.fssaiCertificate },
+                            { label: 'Shop establishment', value: item.kyc?.shopEstablishmentCertificate },
+                            { label: 'GST certificate', value: item.kyc?.gstCertificate },
                         ].map((doc, idx) => (
                             <div key={idx} className="flex items-center justify-between py-1 border-b border-slate-50 last:border-0">
                                 <span className="text-[10px] font-medium text-slate-600 flex items-center gap-1.5">

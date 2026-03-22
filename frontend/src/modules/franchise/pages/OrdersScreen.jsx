@@ -44,6 +44,7 @@ export default function OrdersScreen() {
         orders: allOrders,
         updateOrderStatus,
         acceptOrder,
+        rejectFranchiseOrder,
         assignDeliveryPartner,
         deliveryPartners,
         stats,
@@ -61,6 +62,7 @@ export default function OrdersScreen() {
     const [selectedOrderForPacking, setSelectedOrderForPacking] = useState(null);
     const [isAssigning, setIsAssigning] = useState(false);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+    const [rejectingOrderId, setRejectingOrderId] = useState(null);
 
     const handleAcceptOrder = async (orderId) => {
         setProcessingOrderId(orderId);
@@ -232,7 +234,23 @@ export default function OrdersScreen() {
                                 Accept Order
                             </button>
                         ) : row.status === 'accepted' && (
-                            row.items.some(i => i.isShortage) ? (
+                            <>
+                                {row.franchiseAutoAccepted && (
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            setRejectingOrderId(row.id);
+                                            await rejectFranchiseOrder(row.id);
+                                            setRejectingOrderId(null);
+                                            refreshOrders();
+                                        }}
+                                        disabled={rejectingOrderId === row.id}
+                                        className="p-1.5 px-3 text-[10px] font-black uppercase text-rose-600 border-2 border-rose-600 rounded-sm hover:bg-rose-600 hover:text-white transition-all disabled:opacity-50"
+                                    >
+                                        {rejectingOrderId === row.id ? '…' : 'Reject'}
+                                    </button>
+                                )}
+                                {row.items.some(i => i.isShortage) ? (
                                 <button
                                     onClick={() => handleAction(row.id, 'procure')}
                                     className="p-1.5 px-3 text-[10px] font-black uppercase text-amber-600 border-2 border-amber-600 rounded-sm hover:bg-amber-600 hover:text-white transition-all flex items-center gap-1.5"
@@ -247,7 +265,8 @@ export default function OrdersScreen() {
                                 >
                                     Mark Packed
                                 </button>
-                            )
+                            )}
+                            </>
                         )
                     )}
                     {activeTab === 'ready' && row.status === 'packed' && (

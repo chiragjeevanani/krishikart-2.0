@@ -68,11 +68,12 @@ export function CartProvider({ children }) {
     }, []);
 
     const getPriceForQuantity = (product, quantity) => {
-        if (!product.bulkPricing) return product.price;
+        const base = Number(product.effectiveStorefrontPrice ?? product.price ?? 0);
+        if (!product.bulkPricing) return base;
         const applicableBulk = [...product.bulkPricing]
             .reverse()
             .find(b => quantity >= b.minQty);
-        return applicableBulk ? applicableBulk.price : product.price;
+        return applicableBulk ? applicableBulk.price : base;
     };
 
     const addToCart = async (product, quantity = 1) => {

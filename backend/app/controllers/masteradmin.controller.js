@@ -9,14 +9,27 @@ import Category from "../models/category.js";
 import GlobalSetting from "../models/globalSetting.js";
 import LoyaltyConfigHistory from "../models/loyaltyConfigHistory.js";
 import DeliveryCodRemittance from "../models/deliveryCodRemittance.js";
+import FranchiseAdminPayout from "../models/franchiseAdminPayout.js";
 import handleResponse from "../utils/helper.js";
 import bcrypt from "bcryptjs";
 import Delivery from "../models/delivery.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
+import {
+  isValidFranchiseGst14,
+  normalizeFranchiseGst14,
+} from "../utils/gstFranchiseKyc.js";
 import { geocodeAddress } from "../utils/geo.js";
 import { sendNotificationToUser } from "../utils/pushNotificationHelper.js";
 import FAQ from "../models/faq.js";
 import { syncInventoryToAssignedProducts } from "../utils/vendorInventorySync.js";
+import {
+  fetchPayoutOrders,
+  aggregatePayoutsFromOrders,
+} from "../utils/franchisePayoutReport.js";
+import {
+  LEGAL_CMS_KEYS,
+  LEGAL_CMS_DESCRIPTIONS,
+} from "../constants/legalCmsKeys.js";
 
 /* ================= VENDOR MANAGEMENT ================= */
 
@@ -536,12 +549,57 @@ export const createFranchiseByAdmin = async (req, res) => {
       );
     }
 
+    if (req.files?.fssaiCertificate?.[0]) {
+      franchiseData.kyc.fssaiCertificate = await uploadToCloudinary(
+        req.files.fssaiCertificate[0].buffer,
+        "franchise/kyc",
+      );
+    }
+
+    if (req.files?.shopEstablishmentCertificate?.[0]) {
+      franchiseData.kyc.shopEstablishmentCertificate = await uploadToCloudinary(
+        req.files.shopEstablishmentCertificate[0].buffer,
+        "franchise/kyc",
+      );
+    }
+
+    if (req.files?.gstCertificate?.[0]) {
+      franchiseData.kyc.gstCertificate = await uploadToCloudinary(
+        req.files.gstCertificate[0].buffer,
+        "franchise/kyc",
+      );
+    }
+
     if (req.body.aadhaarNumber) {
       franchiseData.kyc.aadhaarNumber = String(req.body.aadhaarNumber).trim();
     }
 
     if (req.body.panNumber) {
       franchiseData.kyc.panNumber = String(req.body.panNumber).trim();
+    }
+
+    if (req.body.fssaiNumber) {
+      const fssaiDigits = String(req.body.fssaiNumber).replace(/\D/g, "");
+      if (fssaiDigits.length !== 14) {
+        return handleResponse(
+          res,
+          400,
+          "FSSAI number must be exactly 14 digits",
+        );
+      }
+      franchiseData.kyc.fssaiNumber = fssaiDigits;
+    }
+
+    if (req.body.gstNumber) {
+      const gstNorm = normalizeFranchiseGst14(req.body.gstNumber);
+      if (!isValidFranchiseGst14(gstNorm)) {
+        return handleResponse(
+          res,
+          400,
+          "GST number must be 14 characters: exactly 7 letters (A-Z) and 7 digits (0-9), in any order",
+        );
+      }
+      franchiseData.kyc.gstNumber = gstNorm;
     }
 
     const franchise = await Franchise.create(franchiseData);
@@ -847,193 +905,81 @@ export const updateFranchiseInventoryItem = async (req, res) => {
 export const getFranchisePayoutsSummary = async (req, res) => {
   try {
     const { from, to } = req.query;
-    const match = {
-      franchiseId: { $ne: null },
-      orderStatus: { $in: ["Delivered", "Received"] },
-    };
-
-    if (from || to) {
-      match.createdAt = {};
-      if (from) {
-        const fromDate = new Date(from);
-        if (!Number.isNaN(fromDate.getTime())) {
-          match.createdAt.$gte = fromDate;
-        }
-      }
-      if (to) {
-        const toDate = new Date(to);
-        if (!Number.isNaN(toDate.getTime())) {
-          toDate.setHours(23, 59, 59, 999);
-          match.createdAt.$lte = toDate;
-        }
-      }
-      if (!match.createdAt.$gte && !match.createdAt.$lte) {
-        delete match.createdAt;
-      }
-    }
-
-    const orders = await Order.find(match)
-      .select("franchiseId items subtotal totalAmount createdAt orderStatus")
-      .lean();
-
-    if (!orders.length) {
-      return handleResponse(res, 200, "Franchise payouts calculated", {
-        summary: {
-          totalFranchises: 0,
-          totalOrders: 0,
-          totalOrderValue: 0,
-          totalPayable: 0,
-        },
-        franchises: [],
-      });
-    }
-
-    const franchiseIdSet = new Set();
-    const productIdSet = new Set();
-
-    for (const order of orders) {
-      if (order.franchiseId) franchiseIdSet.add(String(order.franchiseId));
-      for (const item of order.items || []) {
-        if (item.productId) productIdSet.add(String(item.productId));
-      }
-    }
-
-    const [franchises, products, commissions] = await Promise.all([
-      Franchise.find({ _id: { $in: Array.from(franchiseIdSet) } })
-        .select("franchiseName ownerName city mobile")
-        .lean(),
-      Product.find({ _id: { $in: Array.from(productIdSet) } })
-        .select("category")
-        .lean(),
-      FranchiseCommission.find({
-        franchiseId: { $in: Array.from(franchiseIdSet) },
-      })
-        .select("franchiseId categoryId commissionPercentage")
-        .lean(),
-    ]);
-
-    const franchiseMap = new Map(franchises.map((f) => [String(f._id), f]));
-    const productCategoryMap = new Map(
-      products.map((p) => [String(p._id), String(p.category)]),
-    );
-    const commissionMap = new Map(
-      commissions.map((c) => [
-        `${String(c.franchiseId)}:${String(c.categoryId)}`,
-        Number(c.commissionPercentage || 0),
-      ]),
-    );
-
-    const payoutMap = new Map();
-
-    for (const order of orders) {
-      const franchiseId = String(order.franchiseId);
-      const franchise = franchiseMap.get(franchiseId);
-      if (!franchise) continue;
-
-      if (!payoutMap.has(franchiseId)) {
-        payoutMap.set(franchiseId, {
-          franchiseId,
-          franchiseName:
-            franchise.franchiseName ||
-            franchise.ownerName ||
-            "Unnamed Franchise",
-          ownerName: franchise.ownerName || "N/A",
-          city: franchise.city || "N/A",
-          mobile: franchise.mobile || "N/A",
-          orderCount: 0,
-          orderValue: 0,
-          payableAmount: 0,
-          categories: {},
-        });
-      }
-
-      const entry = payoutMap.get(franchiseId);
-      entry.orderCount += 1;
-      entry.orderValue += Number(order.subtotal || order.totalAmount || 0);
-
-      for (const item of order.items || []) {
-        const itemSubtotal = Number(
-          item.subtotal || Number(item.price || 0) * Number(item.quantity || 0),
-        );
-        if (!itemSubtotal) continue;
-
-        const categoryId = productCategoryMap.get(String(item.productId));
-        if (!categoryId) continue;
-
-        const commissionPercentage =
-          commissionMap.get(`${franchiseId}:${categoryId}`) || 0;
-        const payout = (itemSubtotal * commissionPercentage) / 100;
-
-        entry.payableAmount += payout;
-
-        if (!entry.categories[categoryId]) {
-          entry.categories[categoryId] = {
-            categoryId,
-            orderValue: 0,
-            commissionPercentage,
-            payoutAmount: 0,
-          };
-        }
-
-        entry.categories[categoryId].orderValue += itemSubtotal;
-        entry.categories[categoryId].payoutAmount += payout;
-      }
-    }
-
-    const categoryIds = Array.from(
-      new Set(
-        Array.from(payoutMap.values()).flatMap((f) =>
-          Object.keys(f.categories),
-        ),
-      ),
-    );
-
-    const categories = await Category.find({ _id: { $in: categoryIds } })
-      .select("name")
-      .lean();
-    const categoryNameMap = new Map(
-      categories.map((c) => [String(c._id), c.name]),
-    );
-
-    const franchiseRows = Array.from(payoutMap.values())
-      .map((f) => ({
-        ...f,
-        orderValue: Number(f.orderValue.toFixed(2)),
-        payableAmount: Number(f.payableAmount.toFixed(2)),
-        categories: Object.values(f.categories).map((c) => ({
-          ...c,
-          categoryName: categoryNameMap.get(c.categoryId) || "Uncategorized",
-          orderValue: Number(c.orderValue.toFixed(2)),
-          payoutAmount: Number(c.payoutAmount.toFixed(2)),
-        })),
-      }))
-      .sort((a, b) => b.payableAmount - a.payableAmount);
-
-    const summary = franchiseRows.reduce(
-      (acc, row) => {
-        acc.totalFranchises += 1;
-        acc.totalOrders += row.orderCount;
-        acc.totalOrderValue += row.orderValue;
-        acc.totalPayable += row.payableAmount;
-        return acc;
-      },
-      {
-        totalFranchises: 0,
-        totalOrders: 0,
-        totalOrderValue: 0,
-        totalPayable: 0,
-      },
-    );
-
-    summary.totalOrderValue = Number(summary.totalOrderValue.toFixed(2));
-    summary.totalPayable = Number(summary.totalPayable.toFixed(2));
-
+    const orders = await fetchPayoutOrders({ franchiseId: null, from, to });
+    const { summary, franchiseRows } =
+      await aggregatePayoutsFromOrders(orders);
     return handleResponse(res, 200, "Franchise payouts calculated", {
       summary,
       franchises: franchiseRows,
     });
   } catch (err) {
     console.error("Get franchise payouts summary error:", err);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+/** List recorded admin→franchise settlement payments (for admin UI). */
+export const listFranchiseAdminPayouts = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const franchise = await Franchise.findById(id).select("_id").lean();
+    if (!franchise) return handleResponse(res, 404, "Franchise not found");
+
+    const items = await FranchiseAdminPayout.find({ franchiseId: id })
+      .sort({ paidAt: -1 })
+      .populate("recordedBy", "fullName email")
+      .limit(200)
+      .lean();
+
+    const totalPaid = items.reduce(
+      (s, x) => s + Number(x.amount || 0),
+      0,
+    );
+    return handleResponse(res, 200, "Admin payouts listed", {
+      items,
+      totalPaid: Number(totalPaid.toFixed(2)),
+    });
+  } catch (err) {
+    console.error("List franchise admin payouts error:", err);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+/** Record that admin paid settlement to a franchise (shows on franchise Reports). */
+export const recordFranchiseAdminPayout = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { amount, note, reference, paidAt } = req.body;
+    const num = Number(amount);
+    if (!Number.isFinite(num) || num <= 0) {
+      return handleResponse(res, 400, "Valid positive amount is required");
+    }
+
+    const franchise = await Franchise.findById(id).select("_id").lean();
+    if (!franchise) return handleResponse(res, 404, "Franchise not found");
+
+    let paidAtDate = new Date();
+    if (paidAt) {
+      const d = new Date(paidAt);
+      if (!Number.isNaN(d.getTime())) paidAtDate = d;
+    }
+
+    const doc = await FranchiseAdminPayout.create({
+      franchiseId: id,
+      amount: num,
+      note: note != null ? String(note).trim() : "",
+      reference: reference != null ? String(reference).trim() : "",
+      paidAt: paidAtDate,
+      recordedBy: req.masteradmin?._id || null,
+    });
+
+    const populated = await FranchiseAdminPayout.findById(doc._id)
+      .populate("recordedBy", "fullName email")
+      .lean();
+
+    return handleResponse(res, 201, "Payment to franchise recorded", populated);
+  } catch (err) {
+    console.error("Record franchise admin payout error:", err);
     return handleResponse(res, 500, "Server error");
   }
 };
@@ -1128,6 +1074,109 @@ export const getGlobalSettings = async (req, res) => {
     const settings = await GlobalSetting.find();
     return handleResponse(res, 200, "Settings fetched", settings);
   } catch (err) {
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+function buildLegalCmsPayload(docs) {
+  const map = Object.fromEntries(docs.map((d) => [d.key, d.value]));
+
+  const textFrom = (stored) => {
+    if (stored == null) return "";
+    if (typeof stored === "string") return stored;
+    if (typeof stored === "object" && stored.content != null) {
+      return String(stored.content);
+    }
+    return "";
+  };
+
+  const contactRaw = map[LEGAL_CMS_KEYS.contact];
+  const contactObj =
+    contactRaw && typeof contactRaw === "object" && !Array.isArray(contactRaw)
+      ? contactRaw
+      : {};
+
+  return {
+    terms: { content: textFrom(map[LEGAL_CMS_KEYS.terms]) },
+    privacy: { content: textFrom(map[LEGAL_CMS_KEYS.privacy]) },
+    contact: {
+      content: textFrom(contactRaw),
+      email: String(contactObj.email ?? ""),
+      phone: String(contactObj.phone ?? ""),
+      address: String(contactObj.address ?? ""),
+    },
+  };
+}
+
+/** Master admin: load Terms, Privacy, Contact for editing. */
+export const getLegalCmsForAdmin = async (req, res) => {
+  try {
+    const keys = Object.values(LEGAL_CMS_KEYS);
+    const docs = await GlobalSetting.find({ key: { $in: keys } }).lean();
+    return handleResponse(
+      res,
+      200,
+      "Legal pages content",
+      buildLegalCmsPayload(docs),
+    );
+  } catch (err) {
+    console.error("getLegalCmsForAdmin error:", err);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+/** Public: customer app / landing can read without auth. */
+export const getPublicLegalPages = async (req, res) => {
+  try {
+    const keys = Object.values(LEGAL_CMS_KEYS);
+    const docs = await GlobalSetting.find({ key: { $in: keys } }).lean();
+    return handleResponse(
+      res,
+      200,
+      "Legal pages",
+      buildLegalCmsPayload(docs),
+    );
+  } catch (err) {
+    console.error("getPublicLegalPages error:", err);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+/** Save one section (terms | privacy | contact). */
+export const saveLegalCmsSection = async (req, res) => {
+  try {
+    const { section, data } = req.body || {};
+    const allowed = ["terms", "privacy", "contact"];
+    if (!allowed.includes(section)) {
+      return handleResponse(res, 400, "Invalid section", {});
+    }
+
+    const key = LEGAL_CMS_KEYS[section];
+    let value;
+    if (section === "contact") {
+      value = {
+        content: String(data?.content ?? ""),
+        email: String(data?.email ?? "").trim(),
+        phone: String(data?.phone ?? "").trim(),
+        address: String(data?.address ?? "").trim(),
+      };
+    } else {
+      value = { content: String(data?.content ?? "") };
+    }
+
+    await GlobalSetting.findOneAndUpdate(
+      { key },
+      {
+        key,
+        value,
+        description: LEGAL_CMS_DESCRIPTIONS[key],
+      },
+      { new: true, upsert: true },
+    );
+
+    return handleResponse(res, 200, "Saved", { section });
+  } catch (err) {
+    console.error("saveLegalCmsSection error:", err);
     return handleResponse(res, 500, "Server error");
   }
 };

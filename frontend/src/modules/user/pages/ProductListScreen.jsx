@@ -13,7 +13,7 @@ import api from '@/lib/axios'
 import { useDebounce } from '@/hooks/useDebounce'
 import { toast } from 'sonner'
 import { useLocation } from '../contexts/LocationContext'
-import { appendLocationToProductParams } from '../utils/storefrontParams'
+import { appendLocationToProductParams, getBrowseLocationParams } from '../utils/storefrontParams'
 import {
     Sheet,
     SheetContent,
@@ -29,7 +29,7 @@ export default function ProductListScreen() {
     const [searchParams] = useSearchParams()
     const navigate = useNavigate()
     const { cartCount } = useCart()
-    const { franchiseLocation, hasFranchisePinned } = useLocation()
+    const locationCtx = useLocation()
     const queryFromUrl = searchParams.get('search') || ''
     const [searchQuery, setSearchQuery] = useState(queryFromUrl)
     const [categories, setCategories] = useState([])
@@ -62,24 +62,37 @@ export default function ProductListScreen() {
         setSearchQuery(queryFromUrl)
     }, [queryFromUrl])
 
-    // Fetch Categories
+    // Fetch Categories (area-filtered when location is pinned)
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const response = await api.get('/catalog/categories')
+                const { coords, hasPinned } = getBrowseLocationParams(locationCtx)
+                const catParams = {}
+                if (hasPinned && coords) {
+                    catParams.lat = coords.lat
+                    catParams.lng = coords.lng
+                }
+                const response = await api.get('/catalog/categories', { params: catParams })
                 if (response.data.success) setCategories(response.data.results)
             } catch (error) {
                 console.error('Categories error:', error)
             }
         }
         fetchCategories()
-    }, [])
+    }, [
+        locationCtx?.deliveryLocation,
+        locationCtx?.hasDeliveryPinned,
+        locationCtx?.franchiseLocation,
+        locationCtx?.hasFranchisePinned,
+    ])
 
     // Fetch Products and Subcategories when Category or Search changes
     useEffect(() => {
         const fetchData = async () => {
             setIsLoading(true)
             try {
+                const { coords, hasPinned } = getBrowseLocationParams(locationCtx)
+                const locArg = { franchiseLocation: coords, hasFranchisePinned: hasPinned }
                 // Products
                 const params = appendLocationToProductParams(
                     {
@@ -87,7 +100,7 @@ export default function ProductListScreen() {
                         ...(queryFromUrl ? { search: queryFromUrl } : {}),
                         showOnStorefront: true,
                     },
-                    { franchiseLocation, hasFranchisePinned }
+                    locArg
                 )
 
                 const prodRes = await api.get('/products', { params })
@@ -109,7 +122,15 @@ export default function ProductListScreen() {
             }
         }
         fetchData()
-    }, [selectedCategory, category, queryFromUrl, franchiseLocation, hasFranchisePinned])
+    }, [
+        selectedCategory,
+        category,
+        queryFromUrl,
+        locationCtx?.deliveryLocation,
+        locationCtx?.hasDeliveryPinned,
+        locationCtx?.franchiseLocation,
+        locationCtx?.hasFranchisePinned,
+    ])
 
     // Filter by Subcategory
     useEffect(() => {
@@ -119,6 +140,8 @@ export default function ProductListScreen() {
         const fetchBySub = async () => {
             setIsLoading(true)
             try {
+                const { coords, hasPinned } = getBrowseLocationParams(locationCtx)
+                const locArg = { franchiseLocation: coords, hasFranchisePinned: hasPinned }
                 const response = await api.get('/products', {
                     params: appendLocationToProductParams(
                         {
@@ -126,7 +149,7 @@ export default function ProductListScreen() {
                             subcategory: activeSubCategory,
                             showOnStorefront: true,
                         },
-                        { franchiseLocation, hasFranchisePinned }
+                        locArg
                     ),
                 })
                 if (response.data.success) setProducts(response.data.results)
@@ -137,7 +160,14 @@ export default function ProductListScreen() {
             }
         }
         fetchBySub()
-    }, [activeSubCategory, selectedCategory, franchiseLocation, hasFranchisePinned])
+    }, [
+        activeSubCategory,
+        selectedCategory,
+        locationCtx?.deliveryLocation,
+        locationCtx?.hasDeliveryPinned,
+        locationCtx?.franchiseLocation,
+        locationCtx?.hasFranchisePinned,
+    ])
 
     const currentCategoryData = useMemo(() => {
         if (selectedCategory === 'all') return { name: 'All Products' }

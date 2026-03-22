@@ -15,12 +15,15 @@ import User from "../models/user.js";
 import Franchise from "../models/franchise.js";
 import GlobalSetting from "../models/globalSetting.js";
 import Inventory from "../models/inventory.js";
-import Coupon from "../models/coupon.js";
 import { geocodeAddress, getDistance } from "../utils/geo.js";
 import {
   assignOrderToFranchise,
   assignDeliveryToOrder,
 } from "../utils/assignment.js";
+import {
+  computeSplitCheckoutPayload,
+  resolveCheckoutCoordinates,
+} from "../utils/checkoutOrderSplit.js";
 
 /**
  * Helper to calculate price based on quantity and bulk pricing rules
@@ -77,7 +80,6 @@ export const createOrder = async (req, res) => {
       );
     }
 
-    // 1. Get User Cart
     const cart = await Cart.findOne({ userId }).populate("items.productId");
     if (!cart || cart.items.length === 0) {
       return handleResponse(res, 400, "Your cart is empty");
@@ -86,154 +88,39 @@ export const createOrder = async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return handleResponse(res, 404, "User not found");
 
-    // 2.5 Fetch Delivery Constraints from Admin Settings
-    const settings = await GlobalSetting.findOne({
-      key: "delivery_constraints",
-    });
-    const constraints = settings?.value || {
-      baseFee: 40,
-      freeMov: 500,
-      tax: 5,
-      platformFee: 2,
-    };
-
-    // 3. Process Items and Calculate Totals
-    let subtotal = 0;
-    const orderItems = [];
-
-    // Fetch franchise inventory to get potential price overrides
-    const nearestFranchiseId = req.body.franchiseId; // Assuming client might send it, or we resolve it
-    let inventoryMap = new Map();
-    if (nearestFranchiseId) {
-      const inventory = await Inventory.findOne({
-        franchiseId: nearestFranchiseId,
-      }).lean();
-      if (inventory?.items) {
-        inventoryMap = new Map(
-          inventory.items.map((i) => [i.productId.toString(), i]),
-        );
-      }
-    }
-
-    for (const item of cart.items) {
-      const product = item.productId;
-      if (!product) {
-        console.warn(
-          `[Order] Skipping a product in cart for user ${userId} because it no longer exists in DB.`,
-        );
-        continue; // Skip items that are missing from products collection instead of failing
-      }
-
-      // Check for franchise-specific price override
-      const invItem = inventoryMap.get(product._id.toString());
-      const basePrice = invItem?.franchisePrice || product.price;
-
-      // Temporary override product price for calculation helper if needed
-      const productWithResolvedPrice = {
-        ...product.toObject(),
-        price: basePrice,
-      };
-
-      const { price, isBulkRate } = calculateItemPrice(
-        productWithResolvedPrice,
-        item.quantity,
-      );
-      const itemSubtotal = price * item.quantity;
-
-      orderItems.push({
-        productId: product._id,
-        name: product.name,
-        image: product.primaryImage,
-        quantity: item.quantity,
-        unit: product.unit,
-        price: price,
-        subtotal: itemSubtotal,
-        isBulkRate,
-      });
-
-      subtotal += itemSubtotal;
-    }
-
-    // 4. Handle Coupon Validation and Discounts
-    let discountAmount = 0;
-    let finalDeliveryFee =
-      subtotal >= parseFloat(constraints.freeMov)
-        ? 0
-        : parseFloat(constraints.baseFee);
-    let appliedCouponCode = "";
-
-    if (req.body.couponCode) {
-      try {
-        const coupon = await Coupon.findOne({
-          code: req.body.couponCode.toUpperCase(),
-          status: "active",
-        });
-
-        if (coupon) {
-          const now = new Date();
-          let isValid = true;
-
-          // 1. Date Check
-          if (coupon.startDate && now < coupon.startDate) isValid = false;
-          if (coupon.endDate && now > coupon.endDate) isValid = false;
-
-          // 2. Usage Limit Check
-          if (coupon.usageLimit && coupon.timesUsed >= coupon.usageLimit)
-            isValid = false;
-
-          // 3. Min Order Value Check
-          if (subtotal < coupon.minOrderValue) isValid = false;
-
-          // 4. User Usage Limit
-          const userUsage = await Order.countDocuments({
-            userId,
-            couponCode: coupon.code,
-            orderStatus: { $ne: "Cancelled" },
-          });
-          if (userUsage >= coupon.usageLimitPerUser) isValid = false;
-
-          if (isValid) {
-            if (coupon.type === "free_delivery") {
-              finalDeliveryFee = 0;
-            } else if (
-              [
-                "percentage",
-                "bulk_discount",
-                "category_based",
-                "new_partner",
-                "min_order_value",
-                "monthly_volume",
-              ].includes(coupon.type)
-            ) {
-              discountAmount = (subtotal * coupon.value) / 100;
-              if (coupon.maxDiscount > 0 && discountAmount > coupon.maxDiscount)
-                discountAmount = coupon.maxDiscount;
-            } else if (coupon.type === "fixed") {
-              discountAmount = coupon.value;
-            }
-
-            appliedCouponCode = coupon.code;
-            discountAmount = Number(discountAmount.toFixed(2));
-
-            // Increment usage
-            coupon.timesUsed += 1;
-            await coupon.save();
-          }
-        }
-      } catch (err) {
-        console.error("Coupon processing error in createOrder:", err);
-      }
-    }
-
-    // Dynamic Tax applied to the entire order (Subtotal + Fees)
-    const taxRate = parseFloat(constraints.tax || 0) / 100;
-    const tax = Number(((subtotal + finalDeliveryFee) * taxRate).toFixed(2));
-    const totalAmount = Number(
-      (subtotal + finalDeliveryFee + tax - discountAmount).toFixed(2),
+    const resolvedLocation = await resolveCheckoutCoordinates(
+      shippingAddress,
+      shippingLocation,
     );
 
-    // 5. Handle Payments (Wallet/Credit)
-    // BLOCK IF PREVIOUS CREDIT OVERDUE (STRICT 7 DAYS CHECK)
+    if (!resolvedLocation) {
+      return handleResponse(
+        res,
+        400,
+        "Valid delivery location is required. Please pick your location on map and try again.",
+      );
+    }
+
+    const split = await computeSplitCheckoutPayload({
+      cart,
+      userId,
+      couponCode: req.body.couponCode,
+      resolvedLocation,
+    });
+
+    if (!split.ok) {
+      return handleResponse(res, split.status, split.message);
+    }
+
+    const {
+      userCoords,
+      computedGroups,
+      grandTotal,
+      appliedCouponCode,
+      couponToIncrement,
+      orderGroupId,
+    } = split.payload;
+
     if (
       user.usedCredit > 0 &&
       user.creditOverdueDate &&
@@ -247,121 +134,115 @@ export const createOrder = async (req, res) => {
     }
 
     if (paymentMethod === "Wallet") {
-      if (user.walletBalance < totalAmount) {
+      if (user.walletBalance < grandTotal) {
         return handleResponse(res, 400, "Insufficient wallet balance");
       }
-      user.walletBalance -= totalAmount;
+      user.walletBalance -= grandTotal;
       user.walletTransactions = user.walletTransactions || [];
       user.walletTransactions.unshift({
         txnId: `WAL-${Date.now()}`,
         type: "Paid",
-        amount: totalAmount,
+        amount: grandTotal,
         status: "Success",
         note: `Order paid via wallet ${appliedCouponCode ? "(Coupon: " + appliedCouponCode + ")" : ""}`,
         createdAt: new Date(),
       });
     } else if (paymentMethod === "Credit") {
       const availableCredit = user.creditLimit - user.usedCredit;
-      if (availableCredit < totalAmount) {
+      if (availableCredit < grandTotal) {
         return handleResponse(res, 400, "Insufficient credit limit");
       }
 
-      // If this is the first time using credit in current cycle, set the 7-day clock
       if (user.usedCredit === 0) {
-        // Set to exactly 7 days from now
         const dueDate = new Date();
         dueDate.setDate(dueDate.getDate() + 7);
         user.creditOverdueDate = dueDate;
       }
 
-      user.usedCredit += totalAmount;
+      user.usedCredit += grandTotal;
       user.walletTransactions = user.walletTransactions || [];
       user.walletTransactions.unshift({
         txnId: `CRD-${Date.now()}`,
         type: "Credit Used",
-        amount: totalAmount,
+        amount: grandTotal,
         status: "Success",
         note: `Order paid via business credit ${appliedCouponCode ? "(Coupon: " + appliedCouponCode + ")" : ""}`,
         createdAt: new Date(),
       });
     }
 
-    // 6. Coordinates for Order (required for nearest-franchise assignment)
-    const parsedLat = Number(shippingLocation?.lat);
-    const parsedLng = Number(shippingLocation?.lng);
-    const hasValidClientCoords =
-      Number.isFinite(parsedLat) &&
-      Number.isFinite(parsedLng) &&
-      parsedLat >= -90 &&
-      parsedLat <= 90 &&
-      parsedLng >= -180 &&
-      parsedLng <= 180;
+    const createdOrders = [];
+    for (const g of computedGroups) {
+      let fulfillmentCategoryId = null;
+      try {
+        fulfillmentCategoryId = new mongoose.Types.ObjectId(g.categoryId);
+      } catch {
+        fulfillmentCategoryId = null;
+      }
 
-    let resolvedLocation = null;
-    if (hasValidClientCoords) {
-      resolvedLocation = { lat: parsedLat, lng: parsedLng };
-    } else {
-      // Fallback for legacy clients that send only address text.
-      resolvedLocation = await geocodeAddress(shippingAddress);
+      const order = new Order({
+        userId,
+        items: g.items,
+        subtotal: g.subtotal,
+        deliveryFee: g.deliveryFee,
+        tax: g.tax,
+        totalAmount: g.totalAmount,
+        paymentMethod,
+        couponCode: appliedCouponCode,
+        discountAmount: g.discountAmount,
+        paymentStatus:
+          paymentMethod === "Wallet" || paymentMethod === "Credit"
+            ? "Completed"
+            : "Pending",
+        orderStatus: "Placed",
+        shippingAddress,
+        shippingLocation: userCoords,
+        deliveryShift,
+        orderGroupId,
+        fulfillmentCategoryId,
+      });
+
+      await order.save();
+      createdOrders.push(order);
+
+      try {
+        await assignOrderToFranchise(order._id);
+      } catch (assignErr) {
+        console.error("[CreateOrder] Auto-assignment failed:", assignErr);
+      }
     }
 
-    if (!resolvedLocation) {
-      return handleResponse(
-        res,
-        400,
-        "Valid delivery location is required. Please pick your location on map and try again.",
-      );
+    if (couponToIncrement) {
+      couponToIncrement.timesUsed += 1;
+      await couponToIncrement.save();
     }
 
-    const userCoords = {
-      type: "Point",
-      coordinates: [resolvedLocation.lng, resolvedLocation.lat], // GeoJSON: [longitude, latitude]
-    };
-
-    // 7. Create Order
-    const order = new Order({
-      userId,
-      items: orderItems,
-      subtotal,
-      deliveryFee: finalDeliveryFee,
-      tax,
-      totalAmount,
-      paymentMethod,
-      couponCode: appliedCouponCode,
-      discountAmount: discountAmount,
-      paymentStatus:
-        paymentMethod === "Wallet" || paymentMethod === "Credit"
-          ? "Completed"
-          : "Pending",
-      orderStatus: "Placed",
-      shippingAddress,
-      shippingLocation: userCoords,
-      deliveryShift: deliveryShift,
-    });
-
-    await order.save();
     await user.save();
 
-    // 8. Auto-assign Nearest Franchise
-    try {
-      await assignOrderToFranchise(order._id);
-    } catch (assignErr) {
-      console.error("[CreateOrder] Auto-assignment failed:", assignErr);
-    }
-
-    // 9. Clear Cart
     cart.items = [];
     await cart.save();
 
-    // 10. Real-time Notification to Admin
-    emitToAdmin("new_order_placed", {
-      orderId: order._id,
-      customerName: user.fullName,
-      amount: totalAmount,
-      message: `New order placed by ${user.fullName}: ₹${totalAmount}`,
-    });
+    for (const order of createdOrders) {
+      emitToAdmin("new_order_placed", {
+        orderId: order._id,
+        orderGroupId,
+        customerName: user.fullName,
+        amount: order.totalAmount,
+        message: `New order placed by ${user.fullName}: ₹${order.totalAmount}`,
+      });
+    }
 
-    return handleResponse(res, 201, "Order placed successfully", order);
+    const payload =
+      createdOrders.length === 1
+        ? {
+            order: createdOrders[0],
+            orders: createdOrders,
+            orderGroupId,
+            grandTotal,
+          }
+        : { orders: createdOrders, orderGroupId, grandTotal };
+
+    return handleResponse(res, 201, "Order placed successfully", payload);
   } catch (error) {
     console.error("Create order error:", error);
     return handleResponse(res, 500, "Server error");
@@ -978,9 +859,10 @@ export const updateOrderStatus = async (req, res) => {
             "This order is assigned to another franchise",
           );
         }
-        // If unassigned but franchise is acting on it, claim ownership
+        // If unassigned but franchise is acting on it, claim ownership (manual — not auto-accepted)
         if (!order.franchiseId) {
           order.franchiseId = req.franchise._id;
+          order.franchiseAutoAccepted = false;
         }
 
         if (["Packed", "Out for Delivery"].includes(status) && !isFranchise) {
@@ -1433,9 +1315,9 @@ export const getFranchiseOrders = async (req, res) => {
     const franchiseId = new mongoose.Types.ObjectId(franchise._id);
     const { date, includeOpen } = req.query;
 
-    // Strict isolation: a franchise sees ONLY its own assigned orders.
-    // Default to including "open" orders (franchiseId === null) so the franchise portal can claim them.
-    const shouldIncludeOpen = includeOpen === "false" ? false : true;
+    // Strict isolation: franchises see their assigned orders only. Optional open pool for legacy/manual
+    // claim flows — pass ?includeOpen=true if you still need unassigned orders in the list.
+    const shouldIncludeOpen = includeOpen === "true";
 
     // 1. Fetch orders explicitly assigned to this franchise
     const assignedQuery = { franchiseId };
@@ -1654,6 +1536,7 @@ export const acceptFranchiseOrder = async (req, res) => {
     // If it's an open order (franchiseId is null), claim it
     if (!order.franchiseId) {
       order.franchiseId = franchiseId;
+      order.franchiseAutoAccepted = false;
     }
 
     // Change status to Accepted
@@ -1735,6 +1618,7 @@ export const rejectFranchiseOrder = async (req, res) => {
     });
 
     order.franchiseId = null;
+    order.franchiseAutoAccepted = false;
     order.orderStatus = "Placed";
     order.statusHistory.push({
       status: "Placed",
@@ -1789,6 +1673,7 @@ export const assignDeliveryPartner = async (req, res) => {
     if (!order.franchiseId) {
       // Auto-assign broadcast order to this franchise when dispatching
       order.franchiseId = franchiseId;
+      order.franchiseAutoAccepted = false;
     } else if (order.franchiseId.toString() !== franchiseId.toString()) {
       return handleResponse(res, 403, "Not authorized to manage this order");
     }

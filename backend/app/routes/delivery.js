@@ -11,7 +11,10 @@ import {
 
 
 import { protectDelivery } from "../middlewares/delivery.auth.js";
-import { protectFranchise } from "../middlewares/franchise.auth.js";
+import {
+  protectFranchise,
+  requireFranchiseAccountVerified,
+} from "../middlewares/franchise.auth.js";
 import upload from "../middlewares/upload.js";
 import {
   getAllDeliveryPartners,
@@ -43,7 +46,12 @@ router.post("/reset-password", resetDeliveryPassword);
 router.put("/profile", protectDelivery, updateDeliveryProfile);
 
 // Public/Franchise access to partners list
-router.get("/partners", protectFranchise, getAllDeliveryPartners);
+router.get(
+  "/partners",
+  protectFranchise,
+  requireFranchiseAccountVerified,
+  getAllDeliveryPartners,
+);
 router.get("/cod/summary", protectDelivery, getMyCodSummary);
 router.get("/cod/remittances", protectDelivery, getMyCodRemittances);
 router.post("/cod/remittance", protectDelivery, submitCodRemittance);

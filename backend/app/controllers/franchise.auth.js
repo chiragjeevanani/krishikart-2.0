@@ -100,6 +100,8 @@ export const registerFranchise = async (req, res) => {
         },
         servedCategories: servedCategories || [],
         serviceHexagons: initialHexagons,
+        isVerified: false,
+        status: "pending",
       });
     }
 
@@ -179,8 +181,8 @@ export const sendFranchiseOTP = async (req, res) => {
           franchiseName: "Dev Franchise",
           ownerName: "Dev Owner",
           city: "Dev City",
-          isVerified: true,
-          status: "active",
+          isVerified: false,
+          status: "pending",
         });
       } else {
         return handleResponse(
@@ -272,8 +274,8 @@ export const verifyFranchiseOTP = async (req, res) => {
           franchiseName: "Dev Franchise",
           ownerName: "Dev Owner",
           city: "Dev City",
-          isVerified: true,
-          status: "active",
+          isVerified: false,
+          status: "pending",
         });
       }
 
@@ -305,19 +307,13 @@ export const verifyFranchiseOTP = async (req, res) => {
           franchiseName: "Dev Franchise",
           ownerName: "Dev Owner",
           city: "Dev City",
-          isVerified: true,
-          status: "active",
+          isVerified: false,
+          status: "pending",
         });
       }
 
       if (franchise.status === "blocked")
         return handleResponse(res, 403, "Account blocked");
-
-      franchise.isVerified = true;
-      if (franchise.status === "pending") {
-        franchise.status = "active";
-      }
-      await franchise.save();
 
       const token = generateToken(franchise._id);
 
@@ -354,13 +350,7 @@ export const verifyFranchiseOTP = async (req, res) => {
     if (franchise.status === "blocked")
       return handleResponse(res, 403, "Account blocked");
 
-    franchise.isVerified = true;
-
-    if (franchise.status === "pending") {
-      franchise.status = "active";
-    }
-
-    await franchise.save();
+    // Phone OTP proves identity only; `isVerified` is set by master admin after KYC approval.
 
     // Delete OTP record after successful verification
     await OTP.deleteOne({ mobile, role: "franchise" });
@@ -551,21 +541,15 @@ export const uploadFranchiseDocuments = async (req, res) => {
 
     const uploadedDocs = await Promise.all(uploadPromises);
 
+    if (!Array.isArray(franchise.documents)) franchise.documents = [];
     franchise.documents.push(...uploadedDocs);
-
-    // After documents are uploaded, we can mark as verified for now or leave for admin
-    // User said: "is verified franchise tab hogi jab vo api document daal de"
-    // So let's mark it as verified once they upload any document, or at least change status.
-    // Let's set isVerified to true for now since the user prompt implies this trigger.
-    franchise.isVerified = true;
-    franchise.status = "active";
 
     await franchise.save();
 
     return handleResponse(
       res,
       200,
-      "Documents uploaded and franchise verified",
+      "Documents uploaded; pending admin verification",
       franchise,
     );
   } catch (err) {

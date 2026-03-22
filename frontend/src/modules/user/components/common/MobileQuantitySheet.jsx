@@ -9,20 +9,26 @@ import {
 
 export default function MobileQuantitySheet({ isOpen, onClose, product, onAdd }) {
     const [qty, setQty] = useState(1)
-    const comparePrice = Number(product?.comparePrice || product?.mrp || 0)
-    const hasComparePrice = comparePrice > Number(product?.price || 0)
 
     if (!product) return null
+
+    const unitBase = Number(product.effectiveStorefrontPrice ?? product.price ?? 0)
+    const comparePrice = Number(product.comparePrice || product.mrp || 0)
+    const listAnchor = Number(product.storefrontListPrice ?? product.price ?? 0)
+    const strikePrice = Math.max(
+        comparePrice > unitBase ? comparePrice : 0,
+        product.effectiveStorefrontPrice != null && listAnchor > unitBase ? listAnchor : 0,
+    )
+    const hasComparePrice = strikePrice > unitBase
 
     const handleAdd = () => {
         onAdd(product, qty)
         onClose()
     }
 
-    // Use actual bulk pricing from product if available
     const activeBulkDeal = product.bulkPricing && product.bulkPricing.length > 0
         ? product.bulkPricing[0]
-        : { price: Math.floor(product.price * 0.95), minQty: 3 };
+        : { price: Math.floor(unitBase * 0.95), minQty: 3 };
 
     return (
         <Sheet open={isOpen} onOpenChange={onClose}>
@@ -47,10 +53,11 @@ export default function MobileQuantitySheet({ isOpen, onClose, product, onAdd })
                         <div className="bg-white rounded-[24px] p-5 shadow-sm border border-slate-100">
                             {/* Product Info */}
                             <div className="flex gap-4 mb-6">
-                                <div className="w-20 h-20 rounded-2xl bg-slate-50 border border-slate-100 p-2 shrink-0">
+                                <div className="relative w-20 h-20 rounded-2xl bg-slate-50 border border-slate-100 overflow-hidden shrink-0">
                                     <img
                                         src={product.primaryImage || product.image || product.image}
-                                        className="w-full h-full object-contain mix-blend-multiply"
+                                        className="absolute inset-0 h-full w-full object-cover object-center select-none"
+                                        draggable={false}
                                         alt={product.name}
                                     />
                                 </div>
@@ -68,11 +75,11 @@ export default function MobileQuantitySheet({ isOpen, onClose, product, onAdd })
                             <div className="flex items-center justify-between mb-6">
                                 <div className="flex items-center gap-2">
                                     <span className="text-[24px] font-black text-slate-900">
-                                        ₹{product.price}
+                                        ₹{unitBase}
                                     </span>
                                     {hasComparePrice && (
                                         <span className="text-sm text-slate-400 line-through font-bold">
-                                            ₹{comparePrice}
+                                            ₹{strikePrice}
                                         </span>
                                     )}
                                 </div>

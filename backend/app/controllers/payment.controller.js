@@ -3,29 +3,12 @@ import crypto from "crypto";
 import handleResponse from "../utils/helper.js";
 import Order from "../models/order.js";
 import Cart from "../models/cart.js";
-import User from "../models/user.js";
-import Product from "../models/product.js";
-import Franchise from "../models/franchise.js";
-import { geocodeAddress, getDistance } from "../utils/geo.js";
+import mongoose from "mongoose";
+import {
+    computeSplitCheckoutPayload,
+    resolveCheckoutCoordinates,
+} from "../utils/checkoutOrderSplit.js";
 import { assignOrderToFranchise } from "../utils/assignment.js";
-
-/**
- * Helper to calculate price based on quantity and bulk pricing rules (Copied from order controller)
- */
-const calculateItemPrice = (product, quantity) => {
-    let price = product.price;
-    let isBulkRate = false;
-
-    if (product.bulkPricing && product.bulkPricing.length > 0) {
-        const sortedBulk = [...product.bulkPricing].sort((a, b) => b.minQty - a.minQty);
-        const applicableBulk = sortedBulk.find(bp => quantity >= bp.minQty);
-        if (applicableBulk) {
-            price = applicableBulk.price;
-            isBulkRate = true;
-        }
-    }
-    return { price, isBulkRate };
-};
 
 export const createRazorpayOrder = async (req, res) => {
     try {
@@ -135,121 +118,105 @@ export const verifyPayment = async (req, res) => {
 
         console.log(`Cart found with ${cart.items.length} items`);
 
-        const user = await User.findById(userId);
-
-        let subtotal = 0;
-        const orderItems = [];
-
-        for (const item of cart.items) {
-            const product = item.productId;
-            if (!product) {
-                console.warn(`[Payment] Skipping a product in cart for user ${userId} because it no longer exists in DB.`);
-                continue;
-            }
-
-            const { price, isBulkRate } = calculateItemPrice(product, item.quantity);
-            const itemSubtotal = price * item.quantity;
-
-            orderItems.push({
-                productId: product._id,
-                name: product.name,
-                image: product.primaryImage,
-                quantity: item.quantity,
-                unit: product.unit,
-                price: price,
-                subtotal: itemSubtotal,
-                isBulkRate
-            });
-
-            subtotal += itemSubtotal;
-        }
-
-        const deliveryFee = subtotal > 1000 ? 0 : 50;
-        const tax = Math.round(subtotal * 0.05);
-        const totalAmount = subtotal + deliveryFee + tax;
-
-        console.log("Order totals calculated:", { subtotal, deliveryFee, tax, totalAmount });
-
-        // 2.5 Auto Franchise Assignment
-        let assignedFranchiseId = null;
-        let geoJsonCoords = null;
-        console.log('Attempting auto-franchise assignment...');
-        try {
-            if (shippingLocation && shippingLocation.lat && shippingLocation.lng) {
-                geoJsonCoords = {
-                    type: 'Point',
-                    coordinates: [shippingLocation.lng, shippingLocation.lat]
-                };
-
-                const activeFranchises = await Franchise.find({
-                    status: 'active',
-                    'location.lat': { $ne: null },
-                    'location.lng': { $ne: null }
-                });
-
-                let minDistance = Infinity;
-                for (const franchise of activeFranchises) {
-                    // Check if coordinates exist before getting distance
-                    if (franchise.location?.lat && franchise.location?.lng) {
-                        const dist = getDistance(
-                            shippingLocation.lat, shippingLocation.lng,
-                            franchise.location.lat, franchise.location.lng
-                        );
-                        if (dist < minDistance) {
-                            minDistance = dist;
-                            assignedFranchiseId = franchise._id;
-                        }
-                    }
-                }
-            }
-        } catch (geoErr) {
-            console.error("Auto-assignment error:", geoErr);
-        }
-
-        const franchiseId = assignedFranchiseId;
-        if (franchiseId) {
-            console.log(`Order auto-assigned to franchise ID: ${franchiseId}`);
-        } else {
-            console.log('=== Broadcast Payment Order ===');
-            console.log('Payment order will be broadcast to ALL active franchises');
-        }
-
-        console.log("Creating order in database...");
-        const newOrder = new Order({
-            userId,
-            franchiseId: assignedFranchiseId,
-            items: orderItems,
-            subtotal,
-            deliveryFee,
-            tax,
-            totalAmount,
-            paymentMethod,
-            paymentStatus: 'Completed',
-            orderStatus: assignedFranchiseId ? 'Accepted' : 'Placed',
+        const resolvedLocation = await resolveCheckoutCoordinates(
             shippingAddress,
-            shippingLocation: geoJsonCoords,
-            deliveryShift,
-            razorpayOrderId: razorpay_order_id,
-            razorpayPaymentId: razorpay_payment_id
+            shippingLocation,
+        );
+
+        if (!resolvedLocation) {
+            return handleResponse(
+                res,
+                400,
+                "Valid delivery location is required. Please pick your location on the map and try again.",
+            );
+        }
+
+        const split = await computeSplitCheckoutPayload({
+            cart,
+            userId,
+            couponCode: orderData.couponCode || "",
+            resolvedLocation,
         });
 
-        await newOrder.save();
-        console.log("Order saved successfully, ID:", newOrder._id);
-
-        // Auto-assign nearest franchise (with push + socket) using shared helper
-        try {
-            await assignOrderToFranchise(newOrder._id);
-        } catch (assignErr) {
-            console.error("[VerifyPayment] Auto-assignment failed:", assignErr);
+        if (!split.ok) {
+            return handleResponse(res, split.status, split.message);
         }
 
-        // Clear Cart
+        const {
+            userCoords,
+            computedGroups,
+            grandTotal,
+            appliedCouponCode,
+            couponToIncrement,
+            orderGroupId,
+        } = split.payload;
+
+        console.log("Split checkout totals:", { slices: computedGroups.length, grandTotal });
+
+        const createdOrders = [];
+        for (const g of computedGroups) {
+            let fulfillmentCategoryId = null;
+            try {
+                fulfillmentCategoryId = new mongoose.Types.ObjectId(g.categoryId);
+            } catch {
+                fulfillmentCategoryId = null;
+            }
+
+            const newOrder = new Order({
+                userId,
+                franchiseId: null,
+                items: g.items,
+                subtotal: g.subtotal,
+                deliveryFee: g.deliveryFee,
+                tax: g.tax,
+                totalAmount: g.totalAmount,
+                paymentMethod,
+                couponCode: appliedCouponCode,
+                discountAmount: g.discountAmount,
+                paymentStatus: "Completed",
+                orderStatus: "Placed",
+                shippingAddress,
+                shippingLocation: userCoords,
+                deliveryShift,
+                orderGroupId,
+                fulfillmentCategoryId,
+                razorpayOrderId: razorpay_order_id,
+                razorpayPaymentId: razorpay_payment_id,
+            });
+
+            await newOrder.save();
+            createdOrders.push(newOrder);
+            console.log("Order saved successfully, ID:", newOrder._id);
+
+            try {
+                await assignOrderToFranchise(newOrder._id);
+            } catch (assignErr) {
+                console.error("[VerifyPayment] Auto-assignment failed:", assignErr);
+            }
+        }
+
+        if (couponToIncrement) {
+            couponToIncrement.timesUsed += 1;
+            await couponToIncrement.save();
+        }
+
         cart.items = [];
         await cart.save();
         console.log("Cart cleared");
 
         console.log("=== Payment Verification Completed Successfully ===");
-        return handleResponse(res, 201, "Order placed and payment verified", newOrder);
+
+        const payload =
+            createdOrders.length === 1
+                ? {
+                      order: createdOrders[0],
+                      orders: createdOrders,
+                      orderGroupId,
+                      grandTotal,
+                  }
+                : { orders: createdOrders, orderGroupId, grandTotal };
+
+        return handleResponse(res, 201, "Order placed and payment verified", payload);
 
     } catch (error) {
         console.error("=== Payment Verification Failed ===");

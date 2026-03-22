@@ -15,16 +15,34 @@ import {
     franchiseConfirmReceipt,
     createProcurementFromOrder
 } from "../controllers/procurement.controller.js";
-import { protectFranchise } from "../middlewares/franchise.auth.js";
+import {
+    protectFranchise,
+    requireFranchiseAccountVerified,
+} from "../middlewares/franchise.auth.js";
 import { protectMasterAdmin } from "../middlewares/masteradmin.auth.js";
 import { protectVendor } from "../middlewares/vendor.auth.js";
 
 const router = express.Router();
 
 // Franchise Routes (Request)
-router.post("/franchise/create", protectFranchise, createProcurementRequest);
-router.get("/franchise/my-requests", protectFranchise, getMyProcurementRequests);
-router.put("/franchise/:requestId/receive", protectFranchise, franchiseConfirmReceipt);
+router.post(
+    "/franchise/create",
+    protectFranchise,
+    requireFranchiseAccountVerified,
+    createProcurementRequest,
+);
+router.get(
+    "/franchise/my-requests",
+    protectFranchise,
+    requireFranchiseAccountVerified,
+    getMyProcurementRequests,
+);
+router.put(
+    "/franchise/:requestId/receive",
+    protectFranchise,
+    requireFranchiseAccountVerified,
+    franchiseConfirmReceipt,
+);
 
 // Vendor Routes (View Assignment)
 router.get("/vendor/my-assignments", protectVendor, getVendorAssignments);

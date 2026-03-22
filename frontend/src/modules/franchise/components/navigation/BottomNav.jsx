@@ -8,6 +8,7 @@ import {
     Truck,
     Undo2,
     FileText,
+    BarChart3,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -18,6 +19,7 @@ const DOC_PATH = '/franchise/documentation';
 const fullNavItems = [
     { icon: LayoutDashboard, label: 'Home', path: '/franchise/dashboard' },
     { icon: ShoppingBag, label: 'Orders', path: '/franchise/orders' },
+    { icon: BarChart3, label: 'Reports', path: '/franchise/reports' },
     { icon: Package, label: 'Inventory', path: '/franchise/inventory' },
     { icon: PackageCheck, label: 'Receiving', path: '/franchise/receiving' },
     { icon: Undo2, label: 'Returns', path: '/franchise/returns' },

@@ -10,11 +10,14 @@ import { useCart } from '../contexts/CartContext'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import categoriesData from '../data/categories.json'
+import { useLocation } from '../contexts/LocationContext'
+import { getBrowseLocationParams } from '../utils/storefrontParams'
 
 export default function WishlistScreen() {
     const navigate = useNavigate()
     const { wishlistItems } = useWishlist()
     const { cartCount } = useCart()
+    const locationCtx = useLocation()
     const [activeCategory, setActiveCategory] = useState('all')
     const [categories, setCategories] = useState([])
 
@@ -22,14 +25,25 @@ export default function WishlistScreen() {
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const response = await api.get('/catalog/categories')
+                const { coords, hasPinned } = getBrowseLocationParams(locationCtx)
+                const catParams = {}
+                if (hasPinned && coords) {
+                    catParams.lat = coords.lat
+                    catParams.lng = coords.lng
+                }
+                const response = await api.get('/catalog/categories', { params: catParams })
                 if (response.data.success) setCategories(response.data.results)
             } catch (error) {
                 console.error('Fetch categories error:', error)
             }
         }
         fetchCategories()
-    }, [])
+    }, [
+        locationCtx?.deliveryLocation,
+        locationCtx?.hasDeliveryPinned,
+        locationCtx?.franchiseLocation,
+        locationCtx?.hasFranchisePinned,
+    ])
 
     // Generate dynamic categories based on products in wishlist
     const dynamicCategories = useMemo(() => {

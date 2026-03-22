@@ -9,8 +9,22 @@ export default function QuantityModal({ isOpen, onClose, product, onAdd }) {
 
     if (!isOpen) return null;
 
+    const unitBase = Number(product.effectiveStorefrontPrice ?? product.price ?? 0);
     const originalPrice = Number(product.comparePrice || product.mrp || 0);
-    const hasOriginalPrice = originalPrice > Number(product.price || 0);
+    const listAnchor = Number(product.storefrontListPrice ?? product.price ?? 0);
+    const strikeMrp = Math.max(
+        originalPrice > unitBase ? originalPrice : 0,
+        product.effectiveStorefrontPrice != null && listAnchor > unitBase ? listAnchor : 0,
+    );
+    const hasOriginalPrice = strikeMrp > unitBase;
+
+    const unitPriceForQty = (qty) => {
+        const q = Math.max(1, Number(qty) || 1);
+        if (!product.bulkPricing?.length) return unitBase;
+        const tier = [...product.bulkPricing].reverse().find((b) => q >= b.minQty);
+        return tier ? tier.price : unitBase;
+    };
+    const lineTotal = (qty) => unitPriceForQty(qty) * Math.max(1, Number(qty) || 1);
 
     const handleFinalAdd = () => {
         const finalQty = Math.max(1, Number(modalQty) || 1);
@@ -56,11 +70,12 @@ export default function QuantityModal({ isOpen, onClose, product, onAdd }) {
                     <div className="px-8 pb-8">
                         <div className="bg-white border border-slate-100 rounded-[24px] p-6 shadow-sm">
                             <div className="flex gap-6 items-start">
-                                <div className="w-28 h-28 rounded-2xl bg-slate-50 overflow-hidden shrink-0 border border-slate-100 flex items-center justify-center p-2">
+                                <div className="relative w-28 h-28 rounded-2xl bg-slate-50 overflow-hidden shrink-0 border border-slate-100">
                                     <img
                                         src={product.primaryImage || product.image}
                                         alt={product.name}
-                                        className="w-full h-full object-cover"
+                                        className="absolute inset-0 h-full w-full object-cover object-center select-none"
+                                        draggable={false}
                                         onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=80' }}
                                     />
                                 </div>
@@ -72,9 +87,9 @@ export default function QuantityModal({ isOpen, onClose, product, onAdd }) {
 
                             <div className="flex items-center justify-between mt-8">
                                 <div className="flex items-baseline gap-2">
-                                    <span className="text-3xl font-black text-slate-900">₹{product.price}</span>
+                                    <span className="text-3xl font-black text-slate-900">₹{unitPriceForQty(modalQty)}</span>
                                     {hasOriginalPrice && (
-                                        <span className="text-base text-slate-400 line-through font-medium">₹{originalPrice}</span>
+                                        <span className="text-base text-slate-400 line-through font-medium">₹{strikeMrp}</span>
                                     )}
                                 </div>
 
@@ -130,7 +145,7 @@ export default function QuantityModal({ isOpen, onClose, product, onAdd }) {
                                 onClick={handleFinalAdd}
                                 className="w-full h-14 mt-8 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-100"
                             >
-                                Add items to cart · ₹{product.price * (Number(modalQty) || 1)}
+                                Add items to cart · ₹{lineTotal(modalQty)}
                             </Button>
                         </div>
                     </div>

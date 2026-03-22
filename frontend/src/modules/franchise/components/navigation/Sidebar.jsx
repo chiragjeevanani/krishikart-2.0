@@ -17,7 +17,8 @@ import {
     Settings,
     CreditCard,
     Undo2,
-    Lock
+    Lock,
+    BarChart3,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -51,6 +52,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
         {
             group: 'Assets & Ledger', items: [
                 { icon: Package, label: 'Inventory Stock', path: '/franchise/inventory' },
+                { icon: BarChart3, label: 'Reports', path: '/franchise/reports' },
             ]
         },
         {

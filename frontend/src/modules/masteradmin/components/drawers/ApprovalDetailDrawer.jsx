@@ -60,7 +60,10 @@ export default function ApprovalDetailDrawer({ isOpen, onClose, item, type, onAp
     ] :
         isFranchise ? [
             { type: 'Aadhaar Card', fileName: `Aadhaar: ${item.kyc?.aadhaarNumber || 'N/A'}`, url: item.kyc?.aadhaarImage, submitted: !!item.kyc?.aadhaarImage },
-            { type: 'PAN Card', fileName: `PAN: ${item.kyc?.panNumber || 'N/A'}`, url: item.kyc?.panImage, submitted: !!item.kyc?.panImage }
+            { type: 'PAN Card', fileName: `PAN: ${item.kyc?.panNumber || 'N/A'}`, url: item.kyc?.panImage, submitted: !!item.kyc?.panImage },
+            { type: 'FSSAI', fileName: `FSSAI: ${item.kyc?.fssaiNumber || 'N/A'}`, url: item.kyc?.fssaiCertificate, submitted: !!item.kyc?.fssaiCertificate },
+            { type: 'Shop establishment', fileName: 'Shop establishment certificate', url: item.kyc?.shopEstablishmentCertificate, submitted: !!item.kyc?.shopEstablishmentCertificate },
+            { type: 'GST', fileName: `GSTIN: ${item.kyc?.gstNumber || 'N/A'}`, url: item.kyc?.gstCertificate, submitted: !!item.kyc?.gstCertificate },
         ] :
             isDelivery ? [
                 { type: 'Aadhar Card', fileName: item.aadharNumber || 'Verification Image', url: item.aadharImage, submitted: !!item.aadharImage },

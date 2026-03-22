@@ -231,6 +231,7 @@ export const assignOrderToFranchise = async (orderId) => {
 
     if (franchise) {
       order.franchiseId = franchise._id;
+      order.franchiseAutoAccepted = true;
       order.orderStatus = "Accepted";
       order.assignmentAttempts.push({
         franchiseId: franchise._id,
@@ -256,6 +257,7 @@ export const assignOrderToFranchise = async (orderId) => {
         link: `/franchise/orders/${order._id}`,
         autoAccepted: "true",
         showRejectOnly: "true",
+        franchiseAutoAccepted: "true",
         orderStatus: "Accepted",
       };
 
@@ -274,6 +276,7 @@ export const assignOrderToFranchise = async (orderId) => {
         message: `New order auto-assigned: #${order._id.toString().slice(-6)}`,
         autoAccepted: true,
         showRejectOnly: true,
+        franchiseAutoAccepted: true,
         orderStatus: "Accepted",
       });
 

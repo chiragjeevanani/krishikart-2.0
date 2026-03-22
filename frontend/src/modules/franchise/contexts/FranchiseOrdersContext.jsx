@@ -187,6 +187,7 @@ export function FranchiseOrdersProvider({ children }) {
                 orderId: oid,
                 autoAccepted: data?.autoAccepted === true,
                 showRejectOnly: data?.showRejectOnly === true,
+                franchiseAutoAccepted: data?.franchiseAutoAccepted === true,
             });
             setIsAlertOpen(true);
             playNotificationSound();
@@ -235,6 +236,7 @@ export function FranchiseOrdersProvider({ children }) {
             date: o.date,
             time: o.time,
             franchiseId: o.franchiseId || o.franchise || null,
+            franchiseAutoAccepted: !!o.franchiseAutoAccepted,
             deliveryPartnerId: o.deliveryPartnerId?._id || o.deliveryPartnerId,
             deliveryPartner: o.deliveryPartnerId,
             statusHistory: o.statusHistory || []

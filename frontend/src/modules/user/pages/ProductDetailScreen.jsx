@@ -27,12 +27,15 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { useCart } from '../contexts/CartContext'
 import { useWishlist } from '../contexts/WishlistContext'
+import { useLocation } from '../contexts/LocationContext'
+import { getBrowseLocationParams } from '../utils/storefrontParams'
 
 export default function ProductDetailScreen() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { addToCart, cartItems, updateQuantity } = useCart()
   const { toggleWishlist, isWishlisted } = useWishlist()
+  const locationCtx = useLocation()
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -54,7 +57,13 @@ export default function ProductDetailScreen() {
     const fetchProduct = async () => {
       try {
         setLoading(true)
-        const response = await api.get(`/products/${id}`)
+        const { coords, hasPinned } = getBrowseLocationParams(locationCtx)
+        const params = {}
+        if (hasPinned && coords) {
+          params.lat = coords.lat
+          params.lng = coords.lng
+        }
+        const response = await api.get(`/products/${id}`, { params })
         if (response.data.success) {
           setProduct(response.data.result)
         }
@@ -67,16 +76,25 @@ export default function ProductDetailScreen() {
     }
 
     if (id) fetchProduct()
-  }, [id])
+  }, [
+    id,
+    locationCtx?.deliveryLocation,
+    locationCtx?.hasDeliveryPinned,
+    locationCtx?.franchiseLocation,
+    locationCtx?.hasFranchisePinned,
+  ])
 
-  // Calculate current price based on quantity
+  // Unit price: area-specific when API returned effectiveStorefrontPrice; bulk tiers override when applicable
   const currentPrice = useMemo(() => {
-    if (!product) return 0;
-    if (!product.bulkPricing || product.bulkPricing.length === 0) return product.price;
+    if (!product) return 0
+    const baseUnit = Number(
+      product.effectiveStorefrontPrice ?? product.price ?? 0
+    )
+    if (!product.bulkPricing || product.bulkPricing.length === 0) return baseUnit
     const applicableBulk = [...product.bulkPricing]
       .reverse()
-      .find(b => quantity >= b.minQty);
-    return applicableBulk ? applicableBulk.price : product.price;
+      .find(b => quantity >= b.minQty)
+    return applicableBulk ? applicableBulk.price : baseUnit
   }, [product, quantity])
 
   if (loading) {
@@ -100,6 +118,7 @@ export default function ProductDetailScreen() {
   const productImage = product.primaryImage || product.image
   const productCategory = product.category?.name || product.category || 'General'
   const comparePrice = Number(product.comparePrice || product.mrp || 0)
+  const standardUnit = Number(product.effectiveStorefrontPrice ?? product.price ?? 0)
   const hasComparePrice = comparePrice > Number(currentPrice || 0)
 
   return (
@@ -140,11 +159,12 @@ export default function ProductDetailScreen() {
         <div className="max-w-7xl mx-auto md:px-8">
           <div className="md:flex md:gap-12 md:items-start">
             {/* Hero Image */}
-            <div className="relative aspect-[3/4] md:aspect-square md:w-[450px] lg:w-[500px] shrink-0 bg-white overflow-hidden md:rounded-xl md:border md:border-slate-100 flex items-center justify-center">
+            <div className="relative aspect-[3/4] md:aspect-square md:w-[450px] lg:w-[500px] shrink-0 bg-slate-50 overflow-hidden md:rounded-xl md:border md:border-slate-100">
               <img
                 src={productImage}
                 alt={product.name}
-                className="w-full h-full object-cover"
+                className="absolute inset-0 h-full w-full object-cover object-center select-none"
+                draggable={false}
                 onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80' }}
               />
             </div>
@@ -203,7 +223,7 @@ export default function ProductDetailScreen() {
                     <span className="text-lg text-slate-400 line-through font-bold">₹{comparePrice}</span>
                   )}
                   <span className="text-sm text-slate-400 font-bold md:font-medium">/ {product.unit}</span>
-                  {currentPrice < product.price && (
+                  {product.bulkPricing?.length > 0 && currentPrice < standardUnit && (
                     <div className="flex items-center gap-1 ml-2 bg-orange-100 text-orange-600 px-2 py-0.5 rounded-lg text-[10px] font-black md:normal-case md:font-bold">
                       <TrendingDown size={12} />
                       Bulk Pricing Applied

@@ -35,7 +35,7 @@ import api from '@/lib/axios'
 import { Button } from '@/components/ui/button'
 import { useLocation } from '../contexts/LocationContext'
 import LocationPermissionPopup from '../components/common/LocationPermissionPopup'
-import { appendLocationToProductParams } from '../utils/storefrontParams'
+import { appendLocationToProductParams, getBrowseLocationParams } from '../utils/storefrontParams'
 
 const isMobile = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches
 
@@ -105,7 +105,8 @@ function CategoryCard({ cat, idx, navigate }) {
 export default function HomeScreen() {
     const [categories, setCategories] = useState([])
     const [products, setProducts] = useState([])
-    const { location: userLocation, updateLocation, address } = useLocation()
+    const locationCtx = useLocation()
+    const { location: userLocation, updateFranchiseLocation, address } = locationCtx
     const [loading, setLoading] = useState(true)
     const [showLocationPopup, setShowLocationPopup] = useState(false)
     const navigate = useNavigate()
@@ -114,12 +115,18 @@ export default function HomeScreen() {
     useEffect(() => {
         const fetchData = async () => {
             try {
+                const { coords, hasPinned } = getBrowseLocationParams(locationCtx)
                 const prodParams = appendLocationToProductParams(
                     { showOnStorefront: true },
-                    { franchiseLocation, hasFranchisePinned }
+                    { franchiseLocation: coords, hasFranchisePinned: hasPinned }
                 )
+                const catParams = {}
+                if (hasPinned && coords) {
+                    catParams.lat = coords.lat
+                    catParams.lng = coords.lng
+                }
                 const [catRes, prodRes] = await Promise.all([
-                    api.get('/catalog/categories'),
+                    api.get('/catalog/categories', { params: catParams }),
                     api.get('/products', { params: prodParams }),
                 ])
                 if (catRes.data.success) setCategories(catRes.data.results)
@@ -131,7 +138,12 @@ export default function HomeScreen() {
             }
         }
         fetchData()
-    }, [franchiseLocation, hasFranchisePinned])
+    }, [
+        locationCtx?.deliveryLocation,
+        locationCtx?.hasDeliveryPinned,
+        locationCtx?.franchiseLocation,
+        locationCtx?.hasFranchisePinned,
+    ])
 
     // Dedicated effect for onboarding sequence (Location -> Business Type -> Documents)
     useEffect(() => {
@@ -156,12 +168,12 @@ export default function HomeScreen() {
 
     const handleAllowLocation = async () => {
         try {
-            await updateFranchiseLocation();
-            setShowLocationPopup(false);
+            await updateFranchiseLocation()
+            setShowLocationPopup(false)
         } catch (err) {
-            console.error('Failed to get location:', err);
+            console.error('Failed to get location:', err)
         }
-    };
+    }
 
     const handleManualLocation = () => {
         setShowLocationPopup(false);

@@ -36,10 +36,15 @@ import {
   updateFranchiseCommission,
   getFranchiseCommissions,
   getFranchisePayoutsSummary,
+  listFranchiseAdminPayouts,
+  recordFranchiseAdminPayout,
   getCodRemittances,
   reviewCodRemittance,
   getGlobalSettings,
   updateGlobalSetting,
+  getLegalCmsForAdmin,
+  getPublicLegalPages,
+  saveLegalCmsSection,
   getAllReturnRequests,
   getLoyaltyConfigHistory,
   getAdminDashboardStats,
@@ -122,6 +127,9 @@ router.post(
   upload.fields([
     { name: "aadhaarImage", maxCount: 1 },
     { name: "panImage", maxCount: 1 },
+    { name: "fssaiCertificate", maxCount: 1 },
+    { name: "shopEstablishmentCertificate", maxCount: 1 },
+    { name: "gstCertificate", maxCount: 1 },
   ]),
   createFranchiseByAdmin,
 );
@@ -234,6 +242,18 @@ router.get(
   protectMasterAdmin,
   getFranchisePayoutsSummary,
 );
+router.get(
+  "/franchises/:id/admin-payouts",
+  protectMasterAdmin,
+  requirePermission("franchise-payouts"),
+  listFranchiseAdminPayouts,
+);
+router.post(
+  "/franchises/:id/admin-payouts",
+  protectMasterAdmin,
+  requirePermission("franchise-payouts"),
+  recordFranchiseAdminPayout,
+);
 router.get("/cod/remittances", protectMasterAdmin, getCodRemittances);
 router.put(
   "/cod/remittances/:remittanceId/review",
@@ -257,6 +277,21 @@ router.post(
 router.get("/loyalty/history", protectMasterAdmin, getLoyaltyConfigHistory);
 router.get("/public-settings", getGlobalSettings); // Public route for user app
 router.get("/public-faqs", getPublicFAQs); // Public route for user app
+router.get("/public/legal-pages", getPublicLegalPages);
+
+/* Terms, Privacy, Contact — master admin CMS */
+router.get(
+  "/legal-cms",
+  protectMasterAdmin,
+  requirePermission("settings"),
+  getLegalCmsForAdmin,
+);
+router.post(
+  "/legal-cms",
+  protectMasterAdmin,
+  requirePermission("settings"),
+  saveLegalCmsSection,
+);
 
 /* ❓ FAQ Management */
 router.get(
