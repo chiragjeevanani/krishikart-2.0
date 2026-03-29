@@ -250,22 +250,22 @@ export default function OrdersScreen() {
                                         {rejectingOrderId === row.id ? '…' : 'Reject'}
                                     </button>
                                 )}
-                                {row.items.some(i => i.isShortage) ? (
-                                <button
-                                    onClick={() => handleAction(row.id, 'procure')}
-                                    className="p-1.5 px-3 text-[10px] font-black uppercase text-amber-600 border-2 border-amber-600 rounded-sm hover:bg-amber-600 hover:text-white transition-all flex items-center gap-1.5"
-                                >
-                                    <Info size={12} /> Request Procurement
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={() => handleAction(row.id, 'Packed')}
-                                    disabled={processingOrderId === row.id}
-                                    className="p-1.5 px-3 text-[10px] font-black uppercase text-emerald-600 border-2 border-emerald-600 rounded-sm hover:bg-emerald-600 hover:text-white transition-all disabled:opacity-50 shadow-sm"
-                                >
-                                    Mark Packed
-                                </button>
-                            )}
+                                {row.items.some(i => i.isShortage) && !row.allowPartialFulfillment ? (
+                                    <button
+                                        onClick={() => handleAction(row.id, 'procure')}
+                                        className="p-1.5 px-3 text-[10px] font-black uppercase text-amber-600 border-2 border-amber-600 rounded-sm hover:bg-amber-600 hover:text-white transition-all flex items-center gap-1.5"
+                                    >
+                                        <Info size={12} /> Request Procurement
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => handleAction(row.id, 'Packed')}
+                                        disabled={processingOrderId === row.id}
+                                        className="p-1.5 px-3 text-[10px] font-black uppercase text-emerald-600 border-2 border-emerald-600 rounded-sm hover:bg-emerald-600 hover:text-white transition-all disabled:opacity-50 shadow-sm"
+                                    >
+                                        {row.allowPartialFulfillment ? 'Pack Available Stock' : 'Mark Packed'}
+                                    </button>
+                                )}
                             </>
                         )
                     )}

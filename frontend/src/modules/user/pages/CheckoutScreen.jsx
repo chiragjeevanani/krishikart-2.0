@@ -44,7 +44,8 @@ const DELIVERY_SHIFT_SLOTS = [
     { label: '10 AM - 12 PM', start: [10, 0] },
     { label: '12 PM - 2 PM', start: [12, 0] },
     { label: '2 PM - 4 PM', start: [14, 0] },
-    { label: '4 PM - 6 PM', start: [16, 0] }
+    { label: '4 PM - 6 PM', start: [16, 0] },
+    { label: '6 PM - 8 PM', start: [18, 0] }
 ]
 
 function getShiftStartDate(shiftLabel, baseDate = new Date()) {
@@ -76,7 +77,7 @@ export default function CheckoutScreen() {
     const ctxHasDeliveryPinned = locationCtx?.hasDeliveryPinned
     const ctxUpdateDeliveryLocation = locationCtx?.updateDeliveryLocation
     const { placeOrder } = useOrders()
-    const { balance, payWithWallet, creditLimit, creditUsed, availableCredit } = useWallet()
+    const { balance, payWithWallet, useCreditAmount, creditLimit, creditUsed, availableCredit } = useWallet()
 
     const [step, setStep] = useState(1) // 1: Address, 2: Payment, 3: Success
     /** After place / Razorpay verify: `{ orders, orderGroupId }` (split by category when multiple). */
@@ -307,12 +308,18 @@ export default function CheckoutScreen() {
     const tax = parseFloat(((cartTotal + finalDeliveryFee) * taxRate).toFixed(2))
 
     const total = parseFloat((cartTotal + finalDeliveryFee + tax - discountAmount).toFixed(2))
+    const walletContribution = Math.min(Number(balance || 0), total)
+    const walletShortfall = parseFloat(Math.max(0, total - walletContribution).toFixed(2))
+    const creditContribution = Math.min(Number(availableCredit || 0), total)
+    const creditShortfall = parseFloat(Math.max(0, total - creditContribution).toFixed(2))
+    const isWalletShort = selectedMethod === 'wallet' && walletShortfall > 0
+    const isCreditShort = selectedMethod === 'credit' && creditShortfall > 0
     const hasStructuredAddress = !!(addressDetails.flat && addressDetails.floor && addressDetails.colony && addressDetails.landmark && addressDetails.city && addressDetails.state)
     const displayAddress = hasStructuredAddress
         ? `Flat: ${addressDetails.flat}, Floor: ${addressDetails.floor}, ${addressDetails.colony}, ${addressDetails.landmark}, ${addressDetails.city}, ${addressDetails.state}`
         : (deliveryAddress || '')
 
-    const handleRazorpayPayment = async (orderData) => {
+    const handleRazorpayPayment = async (orderData, payableAmount = total) => {
         try {
             // 1. Load Razorpay Script
             const res = await loadRazorpay()
@@ -323,7 +330,7 @@ export default function CheckoutScreen() {
 
             // 2. Create Razorpay Order on Backend
             const { data: { result: order } } = await api.post('/payment/create-order', {
-                amount: total
+                amount: payableAmount
             })
 
             // 3. Open Razorpay Modal
@@ -345,6 +352,12 @@ export default function CheckoutScreen() {
 
                         if (verifyRes.data.success) {
                             const r = verifyRes.data.result
+                            if (orderData.paymentMethod === 'Wallet + Online' && orderData.walletAmountUsed > 0) {
+                                payWithWallet(orderData.walletAmountUsed)
+                            }
+                            if (orderData.paymentMethod === 'Credit + Online' && orderData.creditAmountUsed > 0) {
+                                useCreditAmount(orderData.creditAmountUsed)
+                            }
                             const orders = Array.isArray(r?.orders)
                                 ? r.orders
                                 : r?.order
@@ -476,21 +489,27 @@ export default function CheckoutScreen() {
             return
         }
 
-        // Wallet Balance check
         if (selectedMethod === 'wallet') {
-            if (balance < total) {
-                toast.error("Insufficient Wallet Balance!");
-                setIsPlacingOrder(false);
-                return;
+            if (walletShortfall > 0) {
+                await handleRazorpayPayment({
+                    ...orderData,
+                    paymentMethod: 'Wallet + Online',
+                    walletAmountUsed: walletContribution,
+                    onlineAmountPaid: walletShortfall
+                }, walletShortfall)
+                return
             }
         }
 
-        // Credit Limit check
         if (selectedMethod === 'credit') {
-            if (availableCredit < total) {
-                toast.error("Insufficient Credit Limit!");
-                setIsPlacingOrder(false);
-                return;
+            if (creditShortfall > 0) {
+                await handleRazorpayPayment({
+                    ...orderData,
+                    paymentMethod: 'Credit + Online',
+                    creditAmountUsed: creditContribution,
+                    onlineAmountPaid: creditShortfall
+                }, creditShortfall)
+                return
             }
         }
 
@@ -499,7 +518,7 @@ export default function CheckoutScreen() {
 
         if (result.success) {
             if (selectedMethod === 'wallet') {
-                payWithWallet(total)
+                payWithWallet(walletContribution)
             }
             setLastPlacement({
                 orders: result.orders || (result.order ? [result.order] : []),
@@ -864,14 +883,18 @@ export default function CheckoutScreen() {
                                                 name: 'KK Wallet',
                                                 icon: Wallet,
                                                 color: 'text-primary bg-primary/5',
-                                                subtitle: 'Balance: ₹' + balance.toLocaleString()
+                                                subtitle: walletShortfall > 0
+                                                    ? `Use ₹${walletContribution.toLocaleString()} from wallet, pay ₹${walletShortfall.toLocaleString()} online`
+                                                    : 'Balance: ₹' + balance.toLocaleString()
                                             },
                                             {
                                                 id: 'credit',
                                                 name: 'KK Credit',
                                                 icon: CreditCard,
                                                 color: 'text-amber-600 bg-amber-50',
-                                                subtitle: 'Available: ₹' + availableCredit.toLocaleString()
+                                                subtitle: creditShortfall > 0
+                                                    ? `Use ₹${creditContribution.toLocaleString()} from credit, pay ₹${creditShortfall.toLocaleString()} online`
+                                                    : 'Available: ₹' + availableCredit.toLocaleString()
                                             },
                                             { id: 'upi', name: 'Google Pay / UPI', icon: Sparkles, color: 'text-blue-500 bg-blue-50' },
                                             { id: 'cod', name: 'Cash on Delivery', icon: ShieldCheck, color: 'text-emerald-500 bg-emerald-50' }
@@ -941,11 +964,46 @@ export default function CheckoutScreen() {
                                         <span>KK Wallet Balance</span>
                                         <span className="tabular-nums">₹{balance.toLocaleString()}</span>
                                     </div>
+                                    {selectedMethod === 'wallet' && (
+                                        <div className="flex items-center justify-between text-[11px] font-bold text-primary">
+                                            <span>{walletShortfall > 0 ? 'Wallet Used Now' : 'Wallet Covers'}</span>
+                                            <span className="tabular-nums">₹{walletContribution.toLocaleString()}</span>
+                                        </div>
+                                    )}
+                                    {isWalletShort && (
+                                        <div className="flex items-center justify-between text-[11px] font-bold text-blue-600">
+                                            <span>Online Remaining</span>
+                                            <span className="tabular-nums">₹{walletShortfall.toLocaleString()}</span>
+                                        </div>
+                                    )}
+                                    {selectedMethod === 'credit' && (
+                                        <div className="flex items-center justify-between text-[11px] font-bold text-amber-700">
+                                            <span>{creditShortfall > 0 ? 'Credit Used Now' : 'Credit Covers'}</span>
+                                            <span className="tabular-nums">₹{creditContribution.toLocaleString()}</span>
+                                        </div>
+                                    )}
+                                    {isCreditShort && (
+                                        <div className="flex items-center justify-between text-[11px] font-bold text-blue-600">
+                                            <span>Online Remaining</span>
+                                            <span className="tabular-nums">₹{creditShortfall.toLocaleString()}</span>
+                                        </div>
+                                    )}
                                     <div className="flex items-center justify-between text-[11px] font-bold text-amber-700">
                                         <span>KK Credit Available</span>
                                         <span className="tabular-nums">₹{availableCredit.toLocaleString()}</span>
                                     </div>
                                 </div>
+
+                                {isWalletShort && (
+                                    <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-[11px] font-bold text-blue-700">
+                                        Your wallet balance will be used first. The remaining ₹{walletShortfall.toLocaleString()} will open in online payment automatically.
+                                    </div>
+                                )}
+                                {isCreditShort && (
+                                    <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-[11px] font-bold text-blue-700">
+                                        Your credit balance will be used first. The remaining ₹{creditShortfall.toLocaleString()} will open in online payment automatically.
+                                    </div>
+                                )}
 
                                 <div className="border-t border-slate-100 pt-6">
                                     <div className="hidden md:flex justify-between items-center mb-8">

@@ -27,7 +27,7 @@ import { cn } from '@/lib/utils';
 import StatusBadge from '../common/StatusBadge';
 import html2pdf from 'html2pdf.js';
 
-const OrderDetailModal = ({ isOpen, onClose, orderId, onProcure }) => {
+const OrderDetailModal = ({ isOpen, onClose, orderId, onProcure, onAllowPartial }) => {
     const [order, setOrder] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const printableRef = useRef(null);
@@ -299,16 +299,31 @@ const OrderDetailModal = ({ isOpen, onClose, orderId, onProcure }) => {
                                                 </div>
                                                 <div className="bg-slate-900 p-6 flex flex-col gap-3">
                                                     {order.items?.some(i => i.isShortage) && (
-                                                        <button
-                                                            onClick={() => {
-                                                                onClose();
-                                                                onProcure?.(order);
-                                                            }}
-                                                            className="mb-4 w-full bg-amber-500 hover:bg-amber-600 text-slate-900 py-3 rounded-sm text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)]"
-                                                        >
-                                                            <Package size={16} />
-                                                            Procure Shortage Items
-                                                        </button>
+                                                        <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                            <button
+                                                                onClick={() => onAllowPartial?.(order)}
+                                                                disabled={order.allowPartialFulfillment}
+                                                                className={cn(
+                                                                    "w-full py-3 rounded-sm text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all border",
+                                                                    order.allowPartialFulfillment
+                                                                        ? "bg-slate-800 text-slate-400 border-slate-700 cursor-not-allowed"
+                                                                        : "bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-400"
+                                                                )}
+                                                            >
+                                                                <Truck size={15} />
+                                                                {order.allowPartialFulfillment ? 'Available Delivery Approved' : 'Allow Available Delivery'}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    onClose();
+                                                                    onProcure?.(order);
+                                                                }}
+                                                                className="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 py-3 rounded-sm text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)]"
+                                                            >
+                                                                <Package size={16} />
+                                                                Procure Shortage Items
+                                                            </button>
+                                                        </div>
                                                     )}
                                                     <div className="flex items-center justify-between text-slate-400 text-[10px] font-black uppercase tracking-widest">
                                                         <span>Subtotal</span>

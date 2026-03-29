@@ -233,6 +233,21 @@ export default function OrdersScreen() {
         }
     };
 
+    const handleAllowAvailableDelivery = async (order) => {
+        try {
+            const response = await api.put(`/orders/admin/${order._id}/status`, {
+                allowPartialFulfillment: true
+            });
+            if (response.data.success) {
+                toast.success('Franchise can now proceed with currently available stock');
+                fetchAllOrders(true);
+            }
+        } catch (error) {
+            console.error('Partial delivery approval error:', error);
+            toast.error(error?.response?.data?.message || 'Failed to allow available delivery');
+        }
+    };
+
     useEffect(() => {
         const timer = setTimeout(() => setIsLoading(false), 700);
         return () => clearTimeout(timer);
@@ -329,6 +344,7 @@ export default function OrdersScreen() {
                             setIsDetailModalOpen(true);
                         }}
                         onProcure={handleProcure}
+                        onAllowPartial={handleAllowAvailableDelivery}
                     />
 
                     {/* Pagination Footer */}
@@ -613,6 +629,7 @@ export default function OrdersScreen() {
                 }}
                 orderId={selectedOrderId}
                 onProcure={handleProcure}
+                onAllowPartial={handleAllowAvailableDelivery}
             />
         </div>
     );

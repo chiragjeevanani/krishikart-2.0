@@ -1,10 +1,16 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import api from '@/lib/axios';
 
 const WishlistContext = createContext();
 
 export function WishlistProvider({ children }) {
     const [wishlistItems, setWishlistItems] = useState([]);
+    const hasFetchedRef = useRef(false);
+
+    const loadWishlistFromStorage = () => {
+        const saved = localStorage.getItem('kk_wishlist');
+        setWishlistItems(saved ? JSON.parse(saved) : []);
+    };
 
     const fetchWishlist = async () => {
         const token = localStorage.getItem('userToken') || localStorage.getItem('token');
@@ -17,8 +23,7 @@ export function WishlistProvider({ children }) {
             path.includes('/vendor') ||
             path.includes('/delivery')
         ) {
-            const saved = localStorage.getItem('kk_wishlist');
-            setWishlistItems(saved ? JSON.parse(saved) : []);
+            loadWishlistFromStorage();
             return;
         }
 
@@ -34,13 +39,16 @@ export function WishlistProvider({ children }) {
                 setWishlistItems(items);
             }
         } catch (error) {
-            console.error("Fetch wishlist error:", error);
-            const saved = localStorage.getItem('kk_wishlist');
-            setWishlistItems(saved ? JSON.parse(saved) : []);
+            if (import.meta.env.DEV && error?.response?.status !== 500) {
+                console.warn('Fetch wishlist fallback:', error?.message || error);
+            }
+            loadWishlistFromStorage();
         }
     };
 
     useEffect(() => {
+        if (hasFetchedRef.current) return;
+        hasFetchedRef.current = true;
         fetchWishlist();
     }, []);
 

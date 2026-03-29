@@ -45,6 +45,11 @@ export default function FranchiseStockMonitoringScreen() {
     item: null,
     value: "",
   });
+  const [stockModal, setStockModal] = useState({
+    isOpen: false,
+    item: null,
+    value: "",
+  });
 
   const fetchNetworkOverview = async () => {
     setIsLoading(true);
@@ -174,6 +179,40 @@ export default function FranchiseStockMonitoringScreen() {
     }
   };
 
+  const handleOpenStockModal = (e, item) => {
+    e.stopPropagation();
+    setStockModal({
+      isOpen: true,
+      item,
+      value: String(item.currentStock ?? 0),
+    });
+  };
+
+  const handleSaveStock = async () => {
+    if (!selectedFranchiseId || !stockModal.item?.productId) return;
+
+    try {
+      const response = await api.put(
+        `/masteradmin/inventory/franchise/${selectedFranchiseId}/item`,
+        {
+          productId: stockModal.item.productId,
+          currentStock: Math.max(0, Number(stockModal.value) || 0),
+        },
+      );
+
+      if (response.data.success) {
+        toast.success(
+          `Stock for ${stockModal.item.productName} updated successfully`,
+        );
+        setStockModal({ isOpen: false, item: null, value: "" });
+        fetchFranchiseDetails(selectedFranchiseId);
+      }
+    } catch (error) {
+      console.error("Update stock error:", error);
+      toast.error("Failed to update stock quantity");
+    }
+  };
+
   const franchises = useMemo(
     () =>
       networkData.map((f) => ({
@@ -189,6 +228,25 @@ export default function FranchiseStockMonitoringScreen() {
   const categoryStats = useMemo(() => {
     if (!franchiseDetail) return [];
     const cats = {};
+
+    (franchiseDetail?.franchise?.servedCategories || []).forEach((category) => {
+      const categoryId = category?._id || category?.id;
+      const categoryName = category?.name || "Uncategorized";
+      if (!cats[categoryName]) {
+        cats[categoryName] = {
+          id: categoryId,
+          name: categoryName,
+          totalItems: 0,
+          lowStockItems: 0,
+          criticalItems: 0,
+          commissionPercentage:
+            (categoryId &&
+              franchiseDetail?.commissions?.[categoryId?.toString?.()]) ||
+            0,
+        };
+      }
+    });
+
     franchiseDetail.items.forEach((item) => {
       const catName = item.categoryName || "Uncategorized";
       if (!cats[catName]) {
@@ -656,7 +714,10 @@ export default function FranchiseStockMonitoringScreen() {
                                 </div>
                               </td>
                               <td className="px-6 py-4 text-center">
-                                <div className="inline-flex flex-col items-center">
+                                <div
+                                  onClick={(e) => handleOpenStockModal(e, item)}
+                                  className="inline-flex cursor-pointer flex-col items-center rounded-sm border border-transparent p-2 transition-all hover:border-slate-200 hover:bg-slate-50"
+                                >
                                   <span
                                     className={cn(
                                       "text-sm font-black tabular-nums",
@@ -940,6 +1001,92 @@ export default function FranchiseStockMonitoringScreen() {
                   onClick={handleSavePrice}
                   className="flex-1 px-4 py-2.5 bg-slate-900 text-white rounded-sm text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-md shadow-slate-200">
                   Save Override
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Stock Modal */}
+      <AnimatePresence>
+        {stockModal.isOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-white border border-slate-200 rounded-sm shadow-2xl w-full max-w-md overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    Stock Control
+                  </span>
+                  <h2 className="text-sm font-bold text-slate-900">
+                    Update Quantity
+                  </h2>
+                </div>
+                <button
+                  onClick={() =>
+                    setStockModal({ isOpen: false, item: null, value: "" })
+                  }
+                  className="text-slate-400 hover:text-slate-900">
+                  <ChevronDown size={20} className="rotate-90" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                <div className="flex items-center gap-4 p-4 bg-slate-50 border border-slate-100 rounded-sm">
+                  <div className="w-10 h-10 bg-white border border-slate-100 rounded-sm flex items-center justify-center text-slate-900 overflow-hidden">
+                    {stockModal.item?.image ? (
+                      <img
+                        src={stockModal.item.image}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Package size={20} />
+                    )}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-slate-900">
+                      {stockModal.item?.productName}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                      Current: {stockModal.item?.currentStock} {stockModal.item?.unit}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                    Stock Quantity
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={stockModal.value}
+                    onChange={(e) =>
+                      setStockModal({ ...stockModal, value: e.target.value })
+                    }
+                    className="w-full bg-white border border-slate-200 rounded-sm px-4 py-3 text-sm font-bold focus:border-slate-900 focus:ring-1 focus:ring-slate-900/5 outline-none transition-all"
+                    placeholder="Enter stock quantity"
+                  />
+                </div>
+              </div>
+
+              <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex gap-3">
+                <button
+                  onClick={() =>
+                    setStockModal({ isOpen: false, item: null, value: "" })
+                  }
+                  className="flex-1 px-4 py-2.5 border border-slate-200 rounded-sm text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 hover:border-slate-400 transition-all">
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveStock}
+                  className="flex-1 px-4 py-2.5 bg-slate-900 text-white rounded-sm text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-md shadow-slate-200">
+                  Save Stock
                 </button>
               </div>
             </motion.div>

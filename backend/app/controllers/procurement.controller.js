@@ -6,6 +6,7 @@ import User from "../models/user.js";
 import Order from "../models/order.js";
 import Inventory from "../models/inventory.js";
 import VendorInventory from "../models/vendorInventory.js";
+import Vendor from "../models/vendor.js";
 import handleResponse from "../utils/helper.js";
 import { emitToVendor, emitToAdmin, emitToFranchise } from "../lib/socket.js";
 import { sendNotificationToUser } from "../utils/pushNotificationHelper.js";
@@ -771,7 +772,31 @@ export const createProcurementFromOrder = async (req, res) => {
             return handleResponse(res, 400, "Order is not assigned to a franchise yet");
         }
 
-        const shortageItems = order.items.filter(item => item.isShortage);
+        const inventory = await Inventory.findOne({ franchiseId: order.franchiseId }).lean();
+        const inventoryItems = inventory?.items || [];
+
+        const shortageItems = order.items
+            .map(item => {
+                const productId = item.productId?._id || item.productId;
+                if (!productId) return null;
+
+                const inventoryItem = inventoryItems.find(invItem =>
+                    invItem.productId?.toString() === productId.toString()
+                );
+                const availableStock = Number(inventoryItem?.currentStock || 0);
+                const orderedQty = Number(item.quantity || 0);
+                const persistedShortage = Number(item.shortageQty || 0);
+                const computedShortage = Math.max(0, orderedQty - availableStock);
+                const shortageQty = Math.max(computedShortage, persistedShortage);
+
+                return {
+                    ...item.toObject?.() || item,
+                    productId,
+                    isShortage: shortageQty > 0,
+                    shortageQty
+                };
+            })
+            .filter(item => item?.isShortage);
         if (shortageItems.length === 0) {
             return handleResponse(res, 400, "No items in this order require procurement");
         }
@@ -915,6 +940,7 @@ export const getVendorReceivablesReport = async (req, res) => {
 export const getVendorDashboardStats = async (req, res) => {
     try {
         const vendorId = req.vendor._id.toString();
+        const vendor = await Vendor.findById(vendorId).select("status");
 
         // 1. Fetch all requests for this vendor
         const allRequests = await ProcurementRequest.find({
@@ -950,20 +976,70 @@ export const getVendorDashboardStats = async (req, res) => {
         // 7. Archive Vol
         const archiveVol = completedCount;
 
-        // 8. Yield Delta (Revenue this month vs last month - simplified mock for now)
-        const yieldDelta = 4200; // Mocking for now, could be calculated if we had more history
+        const now = new Date();
+        const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+        const currentMonthTurnover = allRequests
+            .filter(r => r.status === 'completed' && new Date(r.updatedAt) >= currentMonthStart)
+            .reduce((sum, r) => sum + (Number(r.totalQuotedAmount) || 0), 0);
+
+        const previousMonthTurnover = allRequests
+            .filter(r =>
+                r.status === 'completed' &&
+                new Date(r.updatedAt) >= previousMonthStart &&
+                new Date(r.updatedAt) < currentMonthStart
+            )
+            .reduce((sum, r) => sum + (Number(r.totalQuotedAmount) || 0), 0);
+
+        const yieldDelta = currentMonthTurnover - previousMonthTurnover;
+
+        const completedOrReady = allRequests.filter(r =>
+            ['ready_for_pickup', 'completed'].includes(r.status)
+        );
+        const avgPrepMs = completedOrReady.length > 0
+            ? completedOrReady.reduce((sum, r) => {
+                const created = new Date(r.createdAt).getTime();
+                const finished = new Date(r.updatedAt).getTime();
+                return sum + Math.max(0, finished - created);
+            }, 0) / completedOrReady.length
+            : 0;
+        const avgPrepDays = avgPrepMs / (1000 * 60 * 60 * 24);
+
+        const oldestActive = allRequests
+            .filter(r => ['approved', 'preparing', 'ready_for_pickup'].includes(r.status))
+            .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))[0];
+        const syncMinutes = oldestActive
+            ? Math.max(1, Math.round((Date.now() - new Date(oldestActive.createdAt).getTime()) / 60000))
+            : 0;
+
+        const previousTurnoverBase = previousMonthTurnover || 0;
+        const settlementTrend = previousTurnoverBase > 0
+            ? ((pendingSettlement - previousTurnoverBase) / previousTurnoverBase) * 100
+            : 0;
+        const turnoverTrend = previousTurnoverBase > 0
+            ? (yieldDelta / previousTurnoverBase) * 100
+            : 0;
 
         return handleResponse(res, 200, "Vendor dashboard stats fetched", {
             activeOps,
             pendingSettlement,
             totalTurnover,
+            payoutCycleDays: Number(avgPrepDays.toFixed(1)),
+            verificationStatus: vendor?.status === "active" ? "Alpha Verified" : "Pending Verification",
+            syncMinutes,
+            trends: {
+                pendingSettlement: Number(settlementTrend.toFixed(1)),
+                yieldDelta: Number(turnoverTrend.toFixed(1)),
+                totalTurnover: Number(turnoverTrend.toFixed(1)),
+            },
             inventory: {
                 stockQuantity,
                 availableProduce
             },
             performance: {
                 fulfillmentRate,
-                avgPrepTime: "1.2 Days", // Mock
+                avgPrepTime: `${avgPrepDays.toFixed(1)} Days`,
                 archiveVol,
                 yieldDelta
             }

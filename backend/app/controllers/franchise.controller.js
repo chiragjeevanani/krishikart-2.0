@@ -214,12 +214,24 @@ export const getFranchiseAdminPayoutsReceived = async (req, res) => {
 export const getInventory = async (req, res) => {
   try {
     const franchiseId = req.franchise._id;
+    const franchise = await Franchise.findById(franchiseId).select(
+      "servedCategories",
+    );
+
+    if (!franchise) {
+      return handleResponse(res, 404, "Franchise not found");
+    }
 
     // Fetch franchise inventory record
     const inventoryRecord = await Inventory.findOne({ franchiseId });
 
-    // Fetch all active products
-    const allProducts = await Product.find({ status: "active" })
+    const productFilter = { status: "active" };
+    if ((franchise.servedCategories || []).length > 0) {
+      productFilter.category = { $in: franchise.servedCategories };
+    }
+
+    // Fetch all active products available for this franchise's selected categories
+    const allProducts = await Product.find(productFilter)
       .populate("category", "name")
       .populate("subcategory", "name");
 

@@ -237,6 +237,7 @@ export function FranchiseOrdersProvider({ children }) {
             time: o.time,
             franchiseId: o.franchiseId || o.franchise || null,
             franchiseAutoAccepted: !!o.franchiseAutoAccepted,
+            allowPartialFulfillment: !!o.allowPartialFulfillment,
             deliveryPartnerId: o.deliveryPartnerId?._id || o.deliveryPartnerId,
             deliveryPartner: o.deliveryPartnerId,
             statusHistory: o.statusHistory || []

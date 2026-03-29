@@ -30,16 +30,28 @@ export async function getStorefrontOffersByProduct(lat, lng) {
     invByFranchise.set(inv.franchiseId.toString(), inv);
   }
 
-  const productIdStrs = new Set();
-  for (const inv of inventories) {
+  const explicitCategoryIds = new Set();
+  const legacyProductIdStrs = new Set();
+
+  for (const franchise of franchises) {
+    const served = franchise.servedCategories || [];
+    if (served.length > 0) {
+      served.forEach((id) => {
+        if (id) explicitCategoryIds.add(id.toString());
+      });
+      continue;
+    }
+
+    const inv = invByFranchise.get(franchise._id.toString());
+    if (!inv) continue;
     for (const row of inv.items || []) {
       if (row.currentStock > 0 && row.productId) {
-        productIdStrs.add(row.productId.toString());
+        legacyProductIdStrs.add(row.productId.toString());
       }
     }
   }
 
-  const oids = [...productIdStrs]
+  const explicitCategoryObjectIds = [...explicitCategoryIds]
     .map((id) => {
       try {
         return new mongoose.Types.ObjectId(id);
@@ -49,20 +61,76 @@ export async function getStorefrontOffersByProduct(lat, lng) {
     })
     .filter(Boolean);
 
+  const legacyProductObjectIds = [...legacyProductIdStrs]
+    .map((id) => {
+      try {
+        return new mongoose.Types.ObjectId(id);
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
+
+  const productOrFilters = [];
+  if (explicitCategoryObjectIds.length > 0) {
+    productOrFilters.push({ category: { $in: explicitCategoryObjectIds } });
+  }
+  if (legacyProductObjectIds.length > 0) {
+    productOrFilters.push({ _id: { $in: legacyProductObjectIds } });
+  }
+  if (!productOrFilters.length) return new Map();
+
   const productDocs = await Product.find({
-    _id: { $in: oids },
     status: "active",
+    $or: productOrFilters,
   })
     .select("_id category price")
     .lean();
 
   const productMap = new Map(productDocs.map((p) => [p._id.toString(), p]));
+  const productsByCategory = new Map();
+  for (const product of productDocs) {
+    const categoryId = product.category?.toString();
+    if (!categoryId) continue;
+    if (!productsByCategory.has(categoryId)) {
+      productsByCategory.set(categoryId, []);
+    }
+    productsByCategory.get(categoryId).push(product);
+  }
 
   const offerMap = new Map();
   for (const f of franchises) {
     const inv = invByFranchise.get(f._id.toString());
-    if (!inv) continue;
-    for (const row of inv.items || []) {
+    const inventoryRows = new Map(
+      (inv?.items || [])
+        .filter((row) => row.productId)
+        .map((row) => [row.productId.toString(), row]),
+    );
+
+    const served = f.servedCategories || [];
+    if (served.length > 0) {
+      for (const categoryId of served) {
+        const products = productsByCategory.get(categoryId.toString()) || [];
+        for (const prod of products) {
+          const pid = prod._id.toString();
+          if (offerMap.has(pid)) continue;
+          const row = inventoryRows.get(pid);
+          const listPrice = Number(prod.price) || 0;
+          const eff =
+            row?.franchisePrice != null && row.franchisePrice !== ""
+              ? Number(row.franchisePrice)
+              : listPrice;
+          offerMap.set(pid, {
+            franchiseId: f._id,
+            listPrice,
+            effectivePrice: eff,
+          });
+        }
+      }
+      continue;
+    }
+
+    for (const row of inv?.items || []) {
       if (!row.productId || row.currentStock <= 0) continue;
       const pid = row.productId.toString();
       if (offerMap.has(pid)) continue;
@@ -91,20 +159,58 @@ export async function getStorefrontProductIdsForLocation(lat, lng) {
 }
 
 export async function getStorefrontCategoryIdsForLocation(lat, lng) {
-  const ids = await getStorefrontProductIdsForLocation(lat, lng);
-  if (!ids.length) return [];
-  const oids = ids
-    .map((id) => {
-      try {
-        return new mongoose.Types.ObjectId(id);
-      } catch {
-        return null;
+  const franchises = await findFranchisesServingLocation(lat, lng);
+  if (!franchises.length) return [];
+
+  const explicitCategoryIds = new Set();
+  const legacyFranchiseIds = [];
+
+  for (const franchise of franchises) {
+    const served = franchise.servedCategories || [];
+    if (served.length > 0) {
+      served.forEach((id) => {
+        if (id) explicitCategoryIds.add(id.toString());
+      });
+    } else {
+      legacyFranchiseIds.push(franchise._id);
+    }
+  }
+
+  if (legacyFranchiseIds.length > 0) {
+    const inventories = await Inventory.find({
+      franchiseId: { $in: legacyFranchiseIds },
+    }).lean();
+
+    const productIdStrs = new Set();
+    for (const inv of inventories) {
+      for (const row of inv.items || []) {
+        if (row.currentStock > 0 && row.productId) {
+          productIdStrs.add(row.productId.toString());
+        }
       }
-    })
-    .filter(Boolean);
-  const cats = await Product.distinct("category", {
-    _id: { $in: oids },
-    status: "active",
-  });
-  return cats.filter(Boolean);
+    }
+
+    if (productIdStrs.size > 0) {
+      const oids = [...productIdStrs]
+        .map((id) => {
+          try {
+            return new mongoose.Types.ObjectId(id);
+          } catch {
+            return null;
+          }
+        })
+        .filter(Boolean);
+
+      const fallbackCats = await Product.distinct("category", {
+        _id: { $in: oids },
+        status: "active",
+      });
+
+      fallbackCats.filter(Boolean).forEach((id) => {
+        explicitCategoryIds.add(id.toString());
+      });
+    }
+  }
+
+  return [...explicitCategoryIds];
 }

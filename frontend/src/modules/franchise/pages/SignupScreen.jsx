@@ -19,6 +19,8 @@ import {
 import { useFranchiseAuth } from "../contexts/FranchiseAuthContext";
 import api from "../../../lib/axios";
 import { geocodeAddressFrontend } from "@/lib/geo";
+import LocationPickerModal from "../components/LocationPickerModal";
+import LocationSummary from "../components/LocationSummary";
 
 export default function SignupScreen() {
   const navigate = useNavigate();
@@ -34,8 +36,11 @@ export default function SignupScreen() {
     city: "",
     state: "",
     servedCategories: [],
+    location: null, // {lat, lng}
+    formattedAddress: null,
   });
 
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [categories, setCategories] = useState([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
 
@@ -100,24 +105,28 @@ export default function SignupScreen() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleLocationConfirm = (locationData) => {
+    setFormData((prev) => ({
+      ...prev,
+      location: locationData.coordinates,
+      formattedAddress: locationData.formattedAddress,
+      city: locationData.addressComponents.city || prev.city,
+      area: locationData.addressComponents.area || prev.area,
+      state: locationData.addressComponents.state || prev.state,
+    }));
+    setIsLocationModalOpen(false);
+  };
+
   const handleNext = async (e) => {
     e.preventDefault();
     if (
       formData.mobile.length === 10 &&
       formData.franchiseName &&
-      formData.ownerName
+      formData.ownerName &&
+      formData.location // Require location selection
     ) {
       setIsLoading(true);
       try {
-        let coords = null;
-        try {
-          coords = await geocodeAddressFrontend(
-            `${formData.city}, ${formData.state}`,
-          );
-        } catch (geoErr) {
-          // non-fatal
-        }
-
         await api.post("/franchise/register", {
           franchiseName: formData.franchiseName,
           ownerName: formData.ownerName,
@@ -127,7 +136,8 @@ export default function SignupScreen() {
           state: formData.state,
           email: formData.email,
           servedCategories: formData.servedCategories,
-          location: coords,
+          location: formData.location,
+          formattedAddress: formData.formattedAddress,
         });
         setMode("otp");
         setTimer(120);
@@ -357,68 +367,12 @@ export default function SignupScreen() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] px-1">
-                        Area
-                      </label>
-                      <div className="relative group">
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors">
-                          <MapPin size={16} />
-                        </div>
-                        <input
-                          value={formData.area}
-                          onChange={(e) => handleChange("area", e.target.value)}
-                          placeholder="e.g. Vijay Nagar"
-                          className="w-full h-12 pl-12 pr-4 bg-slate-50 border border-slate-200 rounded-sm outline-none text-xs font-black text-slate-900 placeholder:text-slate-300 focus:bg-white focus:border-slate-900 transition-all font-sans"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] px-1">
-                        City
-                      </label>
-                      <div className="relative group">
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors">
-                          <Building2 size={16} />
-                        </div>
-                        <input
-                          value={formData.city}
-                          onChange={(e) =>
-                            handleChange(
-                              "city",
-                              e.target.value.replace(/[^a-zA-Z\s]/g, ""),
-                            )
-                          }
-                          placeholder="e.g. Indore"
-                          className="w-full h-12 pl-12 pr-4 bg-slate-50 border border-slate-200 rounded-sm outline-none text-xs font-black text-slate-900 placeholder:text-slate-300 focus:bg-white focus:border-slate-900 transition-all font-sans"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] px-1">
-                      State
-                    </label>
-                    <div className="relative group">
-                      <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors">
-                        <MapPin size={16} />
-                      </div>
-                      <input
-                        value={formData.state}
-                        onChange={(e) =>
-                          handleChange(
-                            "state",
-                            e.target.value.replace(/[^a-zA-Z\s]/g, ""),
-                          )
-                        }
-                        placeholder="e.g. Madhya Pradesh"
-                        maxLength={50}
-                        className="w-full h-12 pl-12 pr-4 bg-slate-50 border border-slate-200 rounded-sm outline-none text-xs font-black text-slate-900 placeholder:text-slate-300 focus:bg-white focus:border-slate-900 transition-all font-sans"
-                      />
-                    </div>
-                  </div>
+                  {/* Location Picker */}
+                  <LocationSummary
+                    formattedAddress={formData.formattedAddress}
+                    onChangeLocation={() => setIsLocationModalOpen(true)}
+                    required={true}
+                  />
 
                   <div className="space-y-2">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] px-1">
@@ -473,8 +427,7 @@ export default function SignupScreen() {
                       !formData.mobile ||
                       formData.mobile.length < 10 ||
                       !formData.franchiseName ||
-                      !formData.city ||
-                      !formData.state ||
+                      !formData.location ||
                       formData.servedCategories.length === 0
                     }
                     className="w-full h-14 bg-slate-900 text-white rounded-sm font-black uppercase text-[11px] tracking-[0.3em] shadow-xl hover:bg-slate-800 active:scale-[0.98] transition-all disabled:bg-slate-200 disabled:text-slate-400 flex items-center justify-center gap-3 mt-4">
@@ -564,6 +517,16 @@ export default function SignupScreen() {
           </div>
         </motion.div>
       </div>
+
+      {/* Location Picker Modal */}
+      <LocationPickerModal
+        isOpen={isLocationModalOpen}
+        onClose={() => setIsLocationModalOpen(false)}
+        onConfirm={handleLocationConfirm}
+        initialLocation={formData.location}
+        defaultCity={formData.city}
+        defaultState={formData.state}
+      />
     </div>
   );
 }

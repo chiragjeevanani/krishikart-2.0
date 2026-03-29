@@ -33,6 +33,10 @@ const orderItemSchema = new mongoose.Schema({
     shortageQty: {
         type: Number,
         default: 0
+    },
+    packedQuantity: {
+        type: Number,
+        default: 0
     }
 }, { _id: false });
 
@@ -121,6 +125,14 @@ const orderSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    allowPartialFulfillment: {
+        type: Boolean,
+        default: false
+    },
+    partialFulfillmentApprovedAt: {
+        type: Date,
+        default: null
+    },
     /** Same value on all sibling orders when checkout was split by product category. */
     orderGroupId: {
         type: String,
@@ -164,8 +176,20 @@ const orderSchema = new mongoose.Schema({
     },
     paymentMethod: {
         type: String,
-        enum: ['Wallet', 'Credit', 'UPI', 'Card', 'COD'],
+        enum: ['Wallet', 'Credit', 'UPI', 'Card', 'COD', 'Wallet + Online', 'Credit + Online'],
         required: true
+    },
+    walletAmountUsed: {
+        type: Number,
+        default: 0
+    },
+    creditAmountUsed: {
+        type: Number,
+        default: 0
+    },
+    onlineAmountPaid: {
+        type: Number,
+        default: 0
     },
     codTracking: {
         isCollected: {

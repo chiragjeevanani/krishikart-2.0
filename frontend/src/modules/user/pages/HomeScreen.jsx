@@ -111,6 +111,8 @@ export default function HomeScreen() {
     const [showLocationPopup, setShowLocationPopup] = useState(false)
     const navigate = useNavigate()
     const flashDealsScrollRef = useRef(null)
+    const { coords: browseCoords, hasPinned: hasBrowseLocation } = getBrowseLocationParams(locationCtx)
+    const isUnsupportedLocation = hasBrowseLocation && !loading && categories.length === 0 && products.length === 0
 
     useEffect(() => {
         const fetchData = async () => {
@@ -214,7 +216,37 @@ export default function HomeScreen() {
                 <StickySearchBar />
             </div>
             <PageTransition>
-                <div className="bg-[var(--color-brand-subtle)] md:bg-white pb-32 min-h-screen pt-24 md:pt-0">
+                {isUnsupportedLocation ? (
+                    <div className="min-h-screen bg-[var(--color-brand-subtle)] md:bg-white pt-24 md:pt-10 pb-24">
+                        <div className="max-w-3xl mx-auto px-5 md:px-8 min-h-[calc(100vh-9rem)] md:min-h-[calc(100vh-5rem)] flex items-center justify-center">
+                            <motion.div
+                                initial={{ opacity: 0, y: 18 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="w-full overflow-hidden rounded-[36px] border border-emerald-100 bg-white shadow-[0_24px_80px_rgba(16,185,129,0.12)]"
+                            >
+                                <div className="relative px-6 py-8 md:px-10 md:py-12 bg-gradient-to-br from-emerald-600 via-emerald-500 to-lime-300 text-white">
+                                    <div className="absolute right-[-18px] top-[-18px] h-28 w-28 rounded-full bg-white/10 blur-2xl" />
+                                    <div className="absolute left-[-24px] bottom-[-32px] h-32 w-32 rounded-full bg-lime-200/30 blur-2xl" />
+                                    <div className="relative z-10">
+                                        <div className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-black uppercase tracking-[0.2em]">
+                                            Coming Soon
+                                        </div>
+                                        <h1 className="mt-4 text-[30px] leading-tight font-black md:text-5xl md:max-w-xl">
+                                            Service coming soon
+                                        </h1>
+                                        <p className="mt-3 max-w-2xl text-sm font-medium text-emerald-50 md:text-base">
+                                            We are not available at this location right now.
+                                        </p>
+                                        <div className="mt-4 rounded-2xl bg-white/12 px-4 py-3 text-sm font-semibold text-emerald-50 backdrop-blur-sm">
+                                            {address || (browseCoords ? `${browseCoords.lat.toFixed(4)}, ${browseCoords.lng.toFixed(4)}` : 'Selected location')}
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="bg-[var(--color-brand-subtle)] md:bg-white pb-32 min-h-screen pt-24 md:pt-0">
                     {/* Categories Row - Full width background, centered content */}
                     <div className="bg-[var(--color-brand-subtle)]/75 md:bg-white shadow-sm md:shadow-none">
                         <div className="max-w-7xl mx-auto px-5 md:px-8 pt-5 md:pt-4 pb-10 md:pb-16">
@@ -399,8 +431,8 @@ export default function HomeScreen() {
                             </div>
                         </div>
                     </div>
-                </div>
-
+                    </div>
+                )}
                 <LocationPermissionPopup
                     isOpen={showLocationPopup}
                     onAllow={handleAllowLocation}

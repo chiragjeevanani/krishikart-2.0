@@ -9,6 +9,8 @@ import { cn } from '@/lib/utils'
 import MobileProfileDrawer from './MobileProfileDrawer'
 import { useDebounce } from '@/hooks/useDebounce'
 import { toast } from 'sonner'
+import { getReadableLocationError } from '@/lib/geo'
+import LocationActionPopup from '../common/LocationActionPopup'
 
 const PLACEHOLDERS = [
     "Search 'Spring Caps'",
@@ -22,13 +24,14 @@ export default function DesktopNavbar() {
     const navigate = useNavigate()
     const { cartCount } = useCart()
     const { wishlistCount } = useWishlist()
-    const { address, updateFranchiseLocation, loading } = useLocation()
+    const { address, updateFranchiseLocation, setPinnedFranchiseLocation, loading } = useLocation()
 
     const [index, setIndex] = useState(0)
     const routeLocation = useRouteLocation()
     const urlParams = new URLSearchParams(routeLocation.search)
     const [searchValue, setSearchValue] = useState(urlParams.get('search') || "")
     const [isScrolled, setIsScrolled] = useState(false)
+    const [showLocationPopup, setShowLocationPopup] = useState(false)
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -67,18 +70,18 @@ export default function DesktopNavbar() {
         setSearchValue(e.target.value)
     }
 
-    const handleLocationClick = async () => {
+    const handleUseCurrentLocation = async () => {
         toast.info("Fetching real-time location...")
         try {
             if (typeof updateFranchiseLocation !== 'function') {
-                navigate('/location-picker?type=franchise&returnTo=/home')
+                toast.error("Location service is unavailable right now.")
                 return
             }
             await updateFranchiseLocation(true)
+            setShowLocationPopup(false)
             toast.success("Location updated successfully!")
         } catch (error) {
-            toast.error("Failed to fetch location. Please enable location access or pick on map.")
-            navigate('/location-picker?type=franchise&returnTo=/home')
+            toast.error(getReadableLocationError(error))
         }
     }
 
@@ -103,7 +106,7 @@ export default function DesktopNavbar() {
 
                     {/* Delivery Info */}
                     <div
-                        onClick={handleLocationClick}
+                        onClick={() => setShowLocationPopup(true)}
                         className="hidden lg:flex items-center gap-2.5 cursor-pointer group hover:bg-slate-50 px-3 py-1.5 rounded-xl transition-all"
                     >
                         <div className={cn(
@@ -204,6 +207,15 @@ export default function DesktopNavbar() {
                     <MobileProfileDrawer />
                 </div>
             </div>
+            <LocationActionPopup
+                isOpen={showLocationPopup}
+                loading={loading}
+                onClose={() => setShowLocationPopup(false)}
+                onUseCurrentLocation={handleUseCurrentLocation}
+                onManualLocationSelect={async (locationData) => {
+                    await setPinnedFranchiseLocation(locationData)
+                }}
+            />
         </nav>
     )
 }

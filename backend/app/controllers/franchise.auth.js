@@ -32,6 +32,7 @@ export const registerFranchise = async (req, res) => {
       area,
       state,
       location,
+      formattedAddress,
       servedCategories,
     } = req.body;
 
@@ -58,6 +59,24 @@ export const registerFranchise = async (req, res) => {
     if (!/^[6-9]\d{9}$/.test(mobile))
       return handleResponse(res, 400, "Invalid mobile number");
 
+    // Validate coordinates if provided
+    if (location && location.lat && location.lng) {
+      const lat = Number(location.lat);
+      const lng = Number(location.lng);
+
+      if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) {
+        return handleResponse(res, 400, 'Coordinates must be valid numbers');
+      }
+
+      if (lat < -90 || lat > 90) {
+        return handleResponse(res, 400, 'Latitude must be between -90 and 90 degrees');
+      }
+
+      if (lng < -180 || lng > 180) {
+        return handleResponse(res, 400, 'Longitude must be between -180 and 180 degrees');
+      }
+    }
+
     let franchise = await Franchise.findOne({ mobile });
 
     if (franchise && franchise.isVerified)
@@ -67,24 +86,37 @@ export const registerFranchise = async (req, res) => {
       let coords = [0, 0];
       let initialHexagons = [];
 
-      // If coordinates provided, use them
+      // Priority: use provided coordinates > geocode text address > default [0,0]
       if (location && location.lat && location.lng) {
-        coords = [location.lng, location.lat];
+        coords = [location.lng, location.lat]; // GeoJSON format: [longitude, latitude]
       }
       // Fallback to geocoding the address
-      else {
-        const query = `${area ? area + ", " : ""}${city}, ${state}, India`;
-        const geocoded = await geocodeAddress(query);
-        if (geocoded) {
-          coords = [geocoded.lng, geocoded.lat];
+      else if (city && state) {
+        try {
+          const query = `${area ? area + ", " : ""}${city}, ${state}, India`;
+          const geocoded = await geocodeAddress(query);
+          if (geocoded) {
+            coords = [geocoded.lng, geocoded.lat];
+          } else {
+            console.warn(`Geocoding failed for ${query}`);
+          }
+        } catch (geoErr) {
+          console.error('Geocoding error:', geoErr.message);
+          // Non-fatal: continue with [0, 0]
         }
       }
 
+      // Calculate H3 hexagons only for non-zero coordinates
       if (coords[0] !== 0 || coords[1] !== 0) {
-        // Get center hexagon at resolution 8 (~0.73 km2 area)
-        const centerHex = latLngToCell(coords[1], coords[0], 8);
-        // Get 1 ring (center + 6 neighbors = 7 hexagons)
-        initialHexagons = gridDisk(centerHex, 1);
+        try {
+          // Get center hexagon at resolution 8 (~0.73 km2 area)
+          const centerHex = latLngToCell(coords[1], coords[0], 8);
+          // Get 1 ring (center + 6 neighbors = 7 hexagons)
+          initialHexagons = gridDisk(centerHex, 1);
+        } catch (h3Error) {
+          console.error('H3 calculation error:', h3Error.message);
+          // Non-fatal: continue without hexagons
+        }
       }
 
       franchise = await Franchise.create({
@@ -94,6 +126,7 @@ export const registerFranchise = async (req, res) => {
         city,
         area,
         state,
+        formattedAddress: formattedAddress || null,
         location: {
           type: "Point",
           coordinates: coords,
@@ -386,7 +419,7 @@ export const updateFranchiseProfile = async (req, res) => {
     console.log("Updating franchise profile for:", req.franchise._id);
     console.log("Request body:", req.body);
 
-    const { franchiseName, ownerName, mobile, city, area, state, location } =
+    const { franchiseName, ownerName, mobile, city, area, state, location, formattedAddress } =
       req.body;
     const franchiseId = req.franchise._id;
 
@@ -425,17 +458,44 @@ export const updateFranchiseProfile = async (req, res) => {
       addressChanged = true;
     }
 
-    // Handle direct location update (e.g. from GPS)
-    // Ensure values are valid numbers before assigning
+    // Handle direct location update (e.g. from GPS or map picker)
     if (location && typeof location === "object") {
       const lat = Number(location.lat);
       const lng = Number(location.lng);
+
+      // Validate coordinates
+      if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) {
+        return handleResponse(res, 400, 'Coordinates must be valid numbers');
+      }
+
+      if (lat < -90 || lat > 90) {
+        return handleResponse(res, 400, 'Latitude must be between -90 and 90 degrees');
+      }
+
+      if (lng < -180 || lng > 180) {
+        return handleResponse(res, 400, 'Longitude must be between -180 and 180 degrees');
+      }
 
       if (!isNaN(lat) && !isNaN(lng)) {
         franchise.location = {
           type: "Point",
           coordinates: [lng, lat], // [longitude, latitude]
         };
+
+        // Update formatted address if provided
+        if (formattedAddress) {
+          franchise.formattedAddress = formattedAddress;
+        }
+
+        // Recalculate H3 hexagons for new location
+        try {
+          const centerHex = latLngToCell(lat, lng, 8);
+          franchise.serviceHexagons = gridDisk(centerHex, 1);
+        } catch (h3Error) {
+          console.error('H3 calculation error during profile update:', h3Error.message);
+          // Non-fatal: continue without updating hexagons
+        }
+
         addressChanged = false; // GPS override takes priority
       }
     }
@@ -457,8 +517,12 @@ export const updateFranchiseProfile = async (req, res) => {
             franchise.serviceHexagons.length === 0 ||
             city !== franchise.city
           ) {
-            const centerHex = latLngToCell(coords.lat, coords.lng, 8);
-            franchise.serviceHexagons = gridDisk(centerHex, 1);
+            try {
+              const centerHex = latLngToCell(coords.lat, coords.lng, 8);
+              franchise.serviceHexagons = gridDisk(centerHex, 1);
+            } catch (h3Error) {
+              console.error('H3 calculation error:', h3Error.message);
+            }
           }
 
           console.log(

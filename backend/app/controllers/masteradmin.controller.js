@@ -753,20 +753,24 @@ export const getGlobalInventoryMonitoring = async (req, res) => {
 export const getFranchiseInventoryDetails = async (req, res) => {
   try {
     const { id } = req.params;
+    const franchise = await Franchise.findById(id)
+      .select("franchiseName ownerName city servedCategories")
+      .populate("servedCategories", "name");
+
+    if (!franchise) {
+      return handleResponse(res, 404, "Franchise not found");
+    }
+
     const inventory = await Inventory.findOne({ franchiseId: id })
       .populate({
         path: "items.productId",
-        select: "name primaryImage unit unitValue category subcategory",
+        select: "name primaryImage unit unitValue category subcategory price",
         populate: [
           { path: "category", select: "name" },
           { path: "subcategory", select: "name" },
         ],
       })
       .populate("franchiseId", "franchiseName ownerName city");
-
-    if (!inventory) {
-      return handleResponse(res, 404, "Inventory not found for this franchise");
-    }
 
     // Fetch commissions for this franchise
     const commissions = await FranchiseCommission.find({ franchiseId: id });
@@ -775,33 +779,65 @@ export const getFranchiseInventoryDetails = async (req, res) => {
       return acc;
     }, {});
 
-    const formattedItems = inventory.items.map((item) => ({
-      productId: item.productId?._id,
-      productName: item.productId?.name,
-      image: item.productId?.primaryImage,
-      currentStock: item.currentStock,
-      mbq: item.mbq,
-      franchisePrice: item.franchisePrice,
-      globalPrice: item.productId?.price,
-      unit: item.productId?.unit,
-      categoryId: item.productId?.category?._id,
-      categoryName: item.productId?.category?.name || "Uncategorized",
-      subcategoryId: item.productId?.subcategory?._id,
-      subcategoryName: item.productId?.subcategory?.name || "General",
-      alertStatus:
-        item.currentStock < item.mbq
-          ? item.currentStock === 0
-            ? "critical"
-            : "low"
-          : "ok",
-      commissionPercentage:
-        (item.productId?.category?._id &&
-          commissionMap[item.productId.category._id.toString()]) ||
-        0,
-    }));
+    const productFilter = { status: "active" };
+    if ((franchise.servedCategories || []).length > 0) {
+      productFilter.category = { $in: franchise.servedCategories };
+    }
+
+    const eligibleProducts = await Product.find(productFilter)
+      .select("name primaryImage unit unitValue category subcategory price stock")
+      .populate("category", "name")
+      .populate("subcategory", "name")
+      .lean();
+
+    const inventoryMap = new Map(
+      (inventory?.items || [])
+        .filter((item) => item.productId?._id)
+        .map((item) => [item.productId._id.toString(), item]),
+    );
+
+    const formattedItems = eligibleProducts.map((product) => {
+      const savedItem = inventoryMap.get(product._id.toString());
+      const currentStock = Number(savedItem?.currentStock || 0);
+      const mbq = Number(savedItem?.mbq || product.stock || 5);
+
+      return {
+        productId: product._id,
+        productName: product.name,
+        image: product.primaryImage,
+        currentStock,
+        mbq,
+        franchisePrice: savedItem?.franchisePrice ?? null,
+        globalPrice: product.price || 0,
+        unit: product.unit,
+        categoryId: product.category?._id,
+        categoryName: product.category?.name || "Uncategorized",
+        subcategoryId: product.subcategory?._id,
+        subcategoryName: product.subcategory?.name || "General",
+        alertStatus:
+          currentStock < mbq
+            ? currentStock === 0
+              ? "critical"
+              : "low"
+            : "ok",
+        commissionPercentage:
+          (product.category?._id &&
+            commissionMap[product.category._id.toString()]) ||
+          0,
+      };
+    });
+
+    const franchisePayload = {
+      _id: franchise._id,
+      franchiseName:
+        inventory?.franchiseId?.franchiseName || franchise.franchiseName,
+      ownerName: inventory?.franchiseId?.ownerName || franchise.ownerName,
+      city: inventory?.franchiseId?.city || franchise.city,
+      servedCategories: franchise.servedCategories || [],
+    };
 
     return handleResponse(res, 200, "Franchise inventory details fetched", {
-      franchise: inventory.franchiseId,
+      franchise: franchisePayload,
       items: formattedItems,
       commissions: commissionMap, // Also send raw map if needed
     });
@@ -867,28 +903,41 @@ export const updateFranchiseInventoryItem = async (req, res) => {
       return handleResponse(res, 400, "Product ID is required");
     }
 
-    const updateData = {};
-    if (currentStock !== undefined)
-      updateData["items.$.currentStock"] = Number(currentStock);
-    if (mbq !== undefined) updateData["items.$.mbq"] = Number(mbq);
-
-    // Handle franchisePrice: can be number or null
-    if (franchisePrice !== undefined) {
-      updateData["items.$.franchisePrice"] =
-        franchisePrice === null ? null : Number(franchisePrice);
+    let inventory = await Inventory.findOne({ franchiseId: id });
+    if (!inventory) {
+      inventory = await Inventory.create({ franchiseId: id, items: [] });
     }
 
-    updateData["items.$.lastUpdated"] = new Date();
-
-    const inventory = await Inventory.findOneAndUpdate(
-      { franchiseId: id, "items.productId": productId },
-      { $set: updateData },
-      { new: true },
+    const existingItem = inventory.items.find(
+      (item) => item.productId.toString() === productId.toString(),
     );
 
-    if (!inventory) {
-      return handleResponse(res, 404, "Inventory item not found");
+    if (existingItem) {
+      if (currentStock !== undefined)
+        existingItem.currentStock = Number(currentStock);
+      if (mbq !== undefined) existingItem.mbq = Number(mbq);
+      if (franchisePrice !== undefined) {
+        existingItem.franchisePrice =
+          franchisePrice === null ? null : Number(franchisePrice);
+      }
+      existingItem.lastUpdated = new Date();
+    } else {
+      inventory.items.push({
+        productId,
+        currentStock:
+          currentStock !== undefined ? Number(currentStock) : 0,
+        mbq: mbq !== undefined ? Number(mbq) : 5,
+        franchisePrice:
+          franchisePrice === undefined
+            ? null
+            : franchisePrice === null
+              ? null
+              : Number(franchisePrice),
+        lastUpdated: new Date(),
+      });
     }
+
+    await inventory.save();
 
     return handleResponse(
       res,

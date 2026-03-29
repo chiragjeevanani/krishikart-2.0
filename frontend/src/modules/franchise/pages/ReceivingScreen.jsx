@@ -46,14 +46,23 @@ const ReceivingScreen = () => {
         fetchOrders();
     }, []);
 
+    const inboundStatuses = new Set([
+        'assigned',
+        'quoted',
+        'approved',
+        'preparing',
+        'ready_for_pickup',
+        'dispatched',
+        'in_transit'
+    ]);
+
     const fetchOrders = async () => {
         setIsLoading(true);
         try {
             const response = await api.get('/procurement/franchise/my-requests');
-            // Filter only orders ready for pickup/receiving
-            const inbound = response.data.results.filter(o =>
-                ['ready_for_pickup', 'dispatched', 'in_transit'].includes(o.status)
-            );
+            const requests = response.data?.results || response.data?.result || [];
+            // Show the full inbound procurement lifecycle until final franchise receipt.
+            const inbound = requests.filter(o => inboundStatuses.has(o.status));
             setOrders(inbound);
         } catch (error) {
             console.error("Fetch failed", error);
@@ -123,7 +132,7 @@ const ReceivingScreen = () => {
 
     const filteredPOs = orders.filter(po =>
         po._id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        po.vendor?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (po.vendor || po.vendorName || po.assignedVendorName || po.assignedVendorId || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         po.invoice?.invoiceNumber?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
@@ -144,9 +153,9 @@ const ReceivingScreen = () => {
             render: (_, row) => (
                 <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-500">
-                        {row.vendor?.[0] || 'V'}
+                        {(row.vendor || row.vendorName || row.assignedVendorName || row.assignedVendorId || 'V')?.[0] || 'V'}
                     </div>
-                    <span className="text-[10px] font-black text-slate-700 uppercase">{row.vendor || 'Kisaankart Partner'}</span>
+                    <span className="text-[10px] font-black text-slate-700 uppercase">{row.vendor || row.vendorName || row.assignedVendorName || row.assignedVendorId || 'Kisaankart Partner'}</span>
                 </div>
             )
         },
@@ -274,7 +283,7 @@ const ReceivingScreen = () => {
                                     </button>
                                     <div>
                                         <h2 className="text-sm font-black text-slate-900 uppercase tracking-tight">Audit Session: {selectedPO.invoice?.invoiceNumber || selectedPO._id}</h2>
-                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{selectedPO.vendor || 'Kisaankart Partner'}</p>
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{selectedPO.vendor || selectedPO.vendorName || selectedPO.assignedVendorName || selectedPO.assignedVendorId || 'Kisaankart Partner'}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
@@ -463,7 +472,7 @@ const ReceivingScreen = () => {
                             price: i.price,
                             quotedPrice: i.quotedPrice
                         })),
-                    vendor: selectedPO.vendor || 'Kisaankart Partner',
+                    vendor: selectedPO.vendor || selectedPO.vendorName || selectedPO.assignedVendorName || selectedPO.assignedVendorId || 'Kisaankart Partner',
                     franchise: 'My Franchise Node', // Ideally from context
                     handlingFee: 40
                 } : null}

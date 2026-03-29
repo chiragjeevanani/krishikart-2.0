@@ -32,7 +32,7 @@ const PaymentBadge = ({ method }) => {
     );
 };
 
-export default function OrdersTable({ orders, onAction, onOrderClick, onProcure }) {
+export default function OrdersTable({ orders, onAction, onOrderClick, onProcure, onAllowPartial }) {
     const navigate = useNavigate();
 
     return (
@@ -108,23 +108,42 @@ export default function OrdersTable({ orders, onAction, onOrderClick, onProcure 
                             <td className="px-4 py-4 text-right">
                                 <div className="flex items-center justify-end gap-2">
                                     {order.items?.some(i => i.isShortage) && (
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                onProcure?.(order);
-                                            }}
-                                            disabled={!order.franchiseId}
-                                            title={!order.franchiseId ? 'Assign franchise before procurement' : 'Create procurement request'}
-                                            className={cn(
-                                                "px-5 py-2.5 text-white text-[11px] font-black uppercase tracking-[0.15em] rounded-sm transition-all flex items-center gap-2.5 border-2 group/button",
-                                                order.franchiseId
-                                                    ? "bg-amber-600 hover:bg-slate-900 shadow-[0_4px_15px_rgba(217,119,6,0.3)] hover:shadow-[0_4px_20px_rgba(217,119,6,0.5)] active:scale-95 border-amber-500/50"
-                                                    : "bg-slate-300 border-slate-300 cursor-not-allowed opacity-70"
-                                            )}
-                                        >
-                                            <Package size={14} strokeWidth={3} className="group-hover/button:scale-110 transition-transform" />
-                                            Procure
-                                        </button>
+                                        <>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onAllowPartial?.(order);
+                                                }}
+                                                disabled={!order.franchiseId || order.allowPartialFulfillment}
+                                                title={!order.franchiseId ? 'Assign franchise before allowing available delivery' : 'Allow franchise to dispatch current available stock'}
+                                                className={cn(
+                                                    "px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.12em] rounded-sm transition-all flex items-center gap-2 border",
+                                                    !order.franchiseId || order.allowPartialFulfillment
+                                                        ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed"
+                                                        : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-600 hover:text-white hover:border-emerald-600"
+                                                )}
+                                            >
+                                                <Truck size={13} strokeWidth={3} />
+                                                {order.allowPartialFulfillment ? 'Approved' : 'Allow Available'}
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onProcure?.(order);
+                                                }}
+                                                disabled={!order.franchiseId}
+                                                title={!order.franchiseId ? 'Assign franchise before procurement' : 'Create procurement request'}
+                                                className={cn(
+                                                    "px-5 py-2.5 text-white text-[11px] font-black uppercase tracking-[0.15em] rounded-sm transition-all flex items-center gap-2.5 border-2 group/button",
+                                                    order.franchiseId
+                                                        ? "bg-amber-600 hover:bg-slate-900 shadow-[0_4px_15px_rgba(217,119,6,0.3)] hover:shadow-[0_4px_20px_rgba(217,119,6,0.5)] active:scale-95 border-amber-500/50"
+                                                        : "bg-slate-300 border-slate-300 cursor-not-allowed opacity-70"
+                                                )}
+                                            >
+                                                <Package size={14} strokeWidth={3} className="group-hover/button:scale-110 transition-transform" />
+                                                Procure
+                                            </button>
+                                        </>
                                     )}
                                     <button
                                         onClick={(e) => {

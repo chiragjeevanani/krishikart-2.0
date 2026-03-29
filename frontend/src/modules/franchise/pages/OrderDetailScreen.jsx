@@ -71,6 +71,7 @@ export default function OrderDetailScreen() {
                     paymentMethod: o.paymentMethod,
                     paymentStatus: o.paymentStatus || 'Pending',
                     franchiseId: o.franchiseId || o.franchise,
+                    allowPartialFulfillment: !!o.allowPartialFulfillment,
                     returnRequests: (o.returnRequests || []).map((rr, idx) => ({
                         index: idx,
                         items: rr.items || [],
@@ -460,6 +461,11 @@ export default function OrderDetailScreen() {
 
                             {order.status === 'accepted' && (
                                     <div className="space-y-3 p-4 border border-emerald-100 bg-emerald-50 rounded-sm">
+                                        {order.allowPartialFulfillment && (
+                                            <div className="rounded-sm border border-blue-200 bg-blue-50 px-3 py-2 text-[9px] font-black uppercase tracking-widest text-blue-700">
+                                                Master Admin approved packing with current available stock.
+                                            </div>
+                                        )}
                                         <label className="text-[10px] font-black uppercase text-emerald-800 tracking-widest flex items-center justify-between">
                                             <span>Number of Packages</span>
                                             <Package size={14} />
@@ -479,7 +485,7 @@ export default function OrderDetailScreen() {
                                                 }}
                                                 className="flex-1 h-10 bg-emerald-600 text-white rounded-sm font-black uppercase text-[10px] tracking-[0.2em] shadow-lg hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
                                             >
-                                                Proceed to Packing <ArrowRight size={14} />
+                                                {order.allowPartialFulfillment ? 'Pack Available Stock' : 'Proceed to Packing'} <ArrowRight size={14} />
                                             </button>
                                         </div>
                                     </div>

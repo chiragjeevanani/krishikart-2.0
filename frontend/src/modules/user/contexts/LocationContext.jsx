@@ -3,6 +3,11 @@ import { getCurrentLocation, reverseGeocode } from '@/lib/geo';
 
 const LocationContext = createContext();
 
+const isPermissionDeniedError = (message = '') => {
+    const normalizedMessage = String(message).toLowerCase();
+    return normalizedMessage.includes('denied') || normalizedMessage.includes('permission');
+};
+
 /**
  * LocationProvider now tracks TWO independent locations:
  * - franchiseLocation: used on Home to find nearest franchise / serviceability
@@ -109,8 +114,10 @@ export function LocationProvider({ children }) {
             const loc = await getCurrentLocation();
             await setPinnedFranchiseLocation({ lat: loc.lat, lng: loc.lng });
         } catch (err) {
-            console.error('Location error:', err);
             setError(err.message);
+            if (!isPermissionDeniedError(err?.message)) {
+                console.error('Location error:', err);
+            }
             if (manual) throw err;
         } finally {
             setLoading(false);
@@ -125,8 +132,10 @@ export function LocationProvider({ children }) {
             const loc = await getCurrentLocation();
             await setPinnedDeliveryLocation({ lat: loc.lat, lng: loc.lng });
         } catch (err) {
-            console.error('Location error:', err);
             setError(err.message);
+            if (!isPermissionDeniedError(err?.message)) {
+                console.error('Location error:', err);
+            }
             if (manual) throw err;
         } finally {
             setLoading(false);

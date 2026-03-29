@@ -3,6 +3,7 @@ import crypto from "crypto";
 import handleResponse from "../utils/helper.js";
 import Order from "../models/order.js";
 import Cart from "../models/cart.js";
+import User from "../models/user.js";
 import mongoose from "mongoose";
 import {
     computeSplitCheckoutPayload,
@@ -153,6 +154,76 @@ export const verifyPayment = async (req, res) => {
 
         console.log("Split checkout totals:", { slices: computedGroups.length, grandTotal });
 
+        const user = await User.findById(userId);
+        if (!user) {
+            return handleResponse(res, 404, "User not found");
+        }
+
+        const requestedWalletAmount = Number(orderData.walletAmountUsed || 0);
+        const requestedCreditAmount = Number(orderData.creditAmountUsed || 0);
+        const walletAmountUsed = Math.min(
+            Number.isFinite(requestedWalletAmount) ? requestedWalletAmount : 0,
+            Number(user.walletBalance || 0),
+            Number(grandTotal || 0),
+        );
+        const availableCredit = Math.max(0, Number(user.creditLimit || 0) - Number(user.usedCredit || 0));
+        const creditAmountUsed = Math.min(
+            Number.isFinite(requestedCreditAmount) ? requestedCreditAmount : 0,
+            availableCredit,
+            Number(grandTotal || 0),
+        );
+        const onlineAmountPaid = paymentMethod === "Wallet + Online"
+            ? Number((Number(grandTotal || 0) - walletAmountUsed).toFixed(2))
+            : paymentMethod === "Credit + Online"
+                ? Number((Number(grandTotal || 0) - creditAmountUsed).toFixed(2))
+                : Number(grandTotal || 0);
+
+        if (paymentMethod === "Wallet + Online") {
+            if (walletAmountUsed <= 0) {
+                return handleResponse(res, 400, "Wallet amount is required for split payment");
+            }
+
+            if (onlineAmountPaid <= 0) {
+                return handleResponse(res, 400, "Online payment amount must be greater than zero");
+            }
+
+            user.walletBalance = Number((Number(user.walletBalance || 0) - walletAmountUsed).toFixed(2));
+            user.walletTransactions = user.walletTransactions || [];
+            user.walletTransactions.unshift({
+                txnId: `WAL-${Date.now()}`,
+                type: "Paid",
+                amount: walletAmountUsed,
+                status: "Success",
+                note: `Wallet contribution for hybrid order payment${appliedCouponCode ? " (Coupon: " + appliedCouponCode + ")" : ""}`,
+                createdAt: new Date(),
+            });
+        } else if (paymentMethod === "Credit + Online") {
+            if (creditAmountUsed <= 0) {
+                return handleResponse(res, 400, "Credit amount is required for split payment");
+            }
+
+            if (onlineAmountPaid <= 0) {
+                return handleResponse(res, 400, "Online payment amount must be greater than zero");
+            }
+
+            if (user.usedCredit === 0) {
+                const dueDate = new Date();
+                dueDate.setDate(dueDate.getDate() + 7);
+                user.creditOverdueDate = dueDate;
+            }
+
+            user.usedCredit = Number((Number(user.usedCredit || 0) + creditAmountUsed).toFixed(2));
+            user.walletTransactions = user.walletTransactions || [];
+            user.walletTransactions.unshift({
+                txnId: `CRD-${Date.now()}`,
+                type: "Credit Used",
+                amount: creditAmountUsed,
+                status: "Success",
+                note: `Credit contribution for hybrid order payment${appliedCouponCode ? " (Coupon: " + appliedCouponCode + ")" : ""}`,
+                createdAt: new Date(),
+            });
+        }
+
         const createdOrders = [];
         for (const g of computedGroups) {
             let fulfillmentCategoryId = null;
@@ -174,6 +245,15 @@ export const verifyPayment = async (req, res) => {
                 couponCode: appliedCouponCode,
                 discountAmount: g.discountAmount,
                 paymentStatus: "Completed",
+                walletAmountUsed: paymentMethod === "Wallet + Online"
+                    ? Number(((g.totalAmount / grandTotal) * walletAmountUsed).toFixed(2))
+                    : 0,
+                creditAmountUsed: paymentMethod === "Credit + Online"
+                    ? Number(((g.totalAmount / grandTotal) * creditAmountUsed).toFixed(2))
+                    : 0,
+                onlineAmountPaid: ["Wallet + Online", "Credit + Online"].includes(paymentMethod)
+                    ? Number(((g.totalAmount / grandTotal) * onlineAmountPaid).toFixed(2))
+                    : g.totalAmount,
                 orderStatus: "Placed",
                 shippingAddress,
                 shippingLocation: userCoords,
@@ -199,6 +279,8 @@ export const verifyPayment = async (req, res) => {
             couponToIncrement.timesUsed += 1;
             await couponToIncrement.save();
         }
+
+        await user.save();
 
         cart.items = [];
         await cart.save();

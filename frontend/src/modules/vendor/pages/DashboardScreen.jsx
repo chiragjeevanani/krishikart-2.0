@@ -25,13 +25,21 @@ export default function DashboardScreen() {
         activeOps: 0,
         pendingSettlement: 0,
         totalTurnover: 0,
+        payoutCycleDays: 0,
+        verificationStatus: 'Pending Verification',
+        syncMinutes: 0,
+        trends: {
+            pendingSettlement: 0,
+            yieldDelta: 0,
+            totalTurnover: 0
+        },
         inventory: {
             stockQuantity: 0,
             availableProduce: 0
         },
         performance: {
             fulfillmentRate: 0,
-            avgPrepTime: "0h",
+            avgPrepTime: '0.0 Days',
             archiveVol: 0,
             yieldDelta: 0
         }
@@ -95,7 +103,16 @@ export default function DashboardScreen() {
         fetchDashboardData();
     }, []);
 
-    const { activeOps = 0, pendingSettlement = 0, totalTurnover = 0, performance = {}, inventory = {} } = dashboardStats || {};
+    const {
+        activeOps = 0,
+        pendingSettlement = 0,
+        totalTurnover = 0,
+        payoutCycleDays = 0,
+        verificationStatus = 'Pending Verification',
+        syncMinutes = 0,
+        trends = {},
+        performance = {},
+    } = dashboardStats || {};
 
     const dispatchColumns = [
         {
@@ -176,19 +193,18 @@ export default function DashboardScreen() {
                 </div>
             </header>
 
-            {/* Quick Stats Grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 <MetricCard
                     label="Escrow Settlement"
-                    value={`₹${(pendingSettlement || 124000).toLocaleString()}`}
+                    value={`₹${pendingSettlement.toLocaleString()}`}
                     icon={Wallet}
                     color="blue"
-                    trend={{ value: 12, positive: true }}
+                    trend={{ value: Math.abs(trends.pendingSettlement || 0), positive: (trends.pendingSettlement || 0) >= 0 }}
                     index={0}
                 />
                 <MetricCard
                     label="Payout Cycle"
-                    value="4 Days"
+                    value={`${payoutCycleDays.toFixed(1)} Days`}
                     icon={Clock}
                     color="amber"
                     index={1}
@@ -198,7 +214,7 @@ export default function DashboardScreen() {
                     value={`₹${(performance.yieldDelta || 0).toLocaleString()}`}
                     icon={TrendingUp}
                     color="red"
-                    trend={{ value: 3.4, positive: performance.yieldDelta > 0 }}
+                    trend={{ value: Math.abs(trends.yieldDelta || 0), positive: (trends.yieldDelta || 0) >= 0 }}
                     index={2}
                 />
                 <MetricCard
@@ -206,12 +222,11 @@ export default function DashboardScreen() {
                     value={`₹${totalTurnover.toLocaleString()}`}
                     icon={IndianRupee}
                     color="emerald"
-                    trend={{ value: 24, positive: true }}
+                    trend={{ value: Math.abs(trends.totalTurnover || 0), positive: (trends.totalTurnover || 0) >= 0 }}
                     index={3}
                 />
             </div>
 
-            {/* Performance Overview */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <motion.div
                     initial={{ opacity: 0, x: -20 }}
@@ -227,7 +242,7 @@ export default function DashboardScreen() {
                             </div>
                             <div className="flex items-center gap-1.5 sm:gap-2 bg-white/10 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl backdrop-blur-md border border-white/5 shrink-0">
                                 <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_#10b981]" />
-                                <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-widest">Alpha Verified</span>
+                                <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-widest">{verificationStatus}</span>
                             </div>
                         </div>
 
@@ -247,7 +262,10 @@ export default function DashboardScreen() {
                                 <p className="text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-wider sm:tracking-widest mb-1 sm:mb-2">Cycle Rate</p>
                                 <p className="text-xl sm:text-2xl md:text-3xl font-black tabular-nums leading-none break-words">{performance.avgPrepTime}</p>
                                 <div className="mt-4 w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                                    <div className="h-full bg-blue-500 w-3/4" />
+                                    <div
+                                        className="h-full bg-blue-500"
+                                        style={{ width: `${Math.min(100, Math.max(0, payoutCycleDays > 0 ? ((7 - Math.min(payoutCycleDays, 7)) / 7) * 100 : 0))}%` }}
+                                    />
                                 </div>
                             </div>
                             <div className="min-w-0">
@@ -270,7 +288,7 @@ export default function DashboardScreen() {
                             <Truck className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2} />
                         </div>
                         <h4 className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-tight uppercase">Dispatch <br /> Workflow</h4>
-                        <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4 sm:mt-6">Matrix Sync in 22m</p>
+                        <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4 sm:mt-6">Matrix Sync in {syncMinutes}m</p>
                     </div>
 
                     <button
@@ -283,7 +301,6 @@ export default function DashboardScreen() {
                 </motion.div>
             </div>
 
-            {/* Quick Actions & Recent Activity */}
             <div className="grid grid-cols-1 gap-6">
                 <div className="bg-white rounded-2xl sm:rounded-[40px] p-5 sm:p-8 border border-slate-100 shadow-sm">
                     <div className="flex items-center justify-between gap-3 mb-6 sm:mb-8">
@@ -310,4 +327,3 @@ export default function DashboardScreen() {
         </div>
     );
 }
-

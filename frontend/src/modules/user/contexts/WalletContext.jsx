@@ -282,6 +282,25 @@ export function WalletProvider({ children }) {
         return false;
     };
 
+    const useCreditAmount = (amount) => {
+        const value = Number(amount || 0);
+        if (!Number.isFinite(value) || value <= 0 || availableCredit < value) {
+            return false;
+        }
+
+        const newTxn = {
+            id: `CRD-${Math.floor(1000 + Math.random() * 9000)}`,
+            type: 'Credit Used',
+            amount: value,
+            date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            status: 'Success'
+        };
+
+        setCreditUsed(prev => prev + value);
+        setTransactions(prev => [newTxn, ...prev]);
+        return true;
+    };
+
     const availableCredit = Math.max(0, creditLimit - creditUsed);
 
     return (
@@ -291,6 +310,7 @@ export function WalletProvider({ children }) {
             addMoney,
             repayCredit,
             payWithWallet,
+            useCreditAmount,
             creditLimit,
             creditUsed,
             availableCredit,

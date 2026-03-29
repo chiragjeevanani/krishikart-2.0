@@ -66,6 +66,66 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   return R * c;
 };
 
+const applyFranchiseStockShortageFlags = async (orders) => {
+  if (!Array.isArray(orders) || orders.length === 0) {
+    return orders;
+  }
+
+  const franchiseIds = [
+    ...new Set(
+      orders
+        .map((order) => order.franchiseId?._id || order.franchiseId)
+        .filter(Boolean)
+        .map((id) => id.toString()),
+    ),
+  ];
+
+  if (franchiseIds.length === 0) {
+    return orders;
+  }
+
+  const inventories = await Inventory.find({
+    franchiseId: { $in: franchiseIds },
+  }).lean();
+
+  const inventoryByFranchise = new Map(
+    inventories.map((inventory) => [
+      inventory.franchiseId.toString(),
+      inventory,
+    ]),
+  );
+
+  return orders.map((order) => {
+    const franchiseId = order.franchiseId?._id || order.franchiseId;
+    if (!franchiseId) {
+      return order;
+    }
+
+    const inventory = inventoryByFranchise.get(franchiseId.toString());
+    const orderObject = order.toObject ? order.toObject() : { ...order };
+    const inventoryItems = inventory?.items || [];
+
+    orderObject.items = (orderObject.items || []).map((item) => {
+      const productId = item.productId?._id || item.productId;
+      const invItem = inventoryItems.find(
+        (inventoryItem) =>
+          inventoryItem.productId?.toString() === productId?.toString(),
+      );
+      const availableStock = Number(invItem?.currentStock || 0);
+      const orderedQty = Number(item.quantity || 0);
+      const shortageQty = Math.max(0, orderedQty - availableStock);
+
+      return {
+        ...item,
+        isShortage: shortageQty > 0,
+        shortageQty,
+      };
+    });
+
+    return orderObject;
+  });
+};
+
 export const createOrder = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -284,7 +344,9 @@ export const getOrderById = async (req, res) => {
       return handleResponse(res, 403, "Unauthorized access");
     }
 
-    return handleResponse(res, 200, "Order details fetched", order);
+    const [enrichedOrder] = await applyFranchiseStockShortageFlags([order]);
+
+    return handleResponse(res, 200, "Order details fetched", enrichedOrder);
   } catch (error) {
     console.error("Get order by id error:", error);
     return handleResponse(res, 500, "Server error");
@@ -774,10 +836,43 @@ export const updateReturnPickupStatus = async (req, res) => {
 export const updateOrderStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, allowPartialFulfillment } = req.body;
 
     const order = await Order.findById(id);
     if (!order) return handleResponse(res, 404, "Order not found");
+
+    const isMasterAdmin = !!req.masteradmin;
+    const isFranchise = !!req.franchise;
+    const isDelivery = !!req.delivery || req.user?.role === "delivery";
+    const isUser = !!req.user && !isMasterAdmin && !isDelivery;
+
+    if (
+      isMasterAdmin &&
+      typeof allowPartialFulfillment === "boolean" &&
+      !status
+    ) {
+      order.allowPartialFulfillment = allowPartialFulfillment;
+      order.partialFulfillmentApprovedAt = allowPartialFulfillment
+        ? new Date()
+        : null;
+      order.statusHistory.push({
+        status: order.orderStatus,
+        updatedAt: new Date(),
+        updatedBy: "masteradmin",
+        message: allowPartialFulfillment
+          ? "Master Admin approved delivery with currently available franchise stock."
+          : "Master Admin revoked partial delivery approval.",
+      });
+      await order.save();
+      return handleResponse(
+        res,
+        200,
+        allowPartialFulfillment
+          ? "Partial delivery approval enabled"
+          : "Partial delivery approval removed",
+        order,
+      );
+    }
 
     const currentStatus = order.orderStatus;
     const allowedStatuses = [
@@ -804,10 +899,6 @@ export const updateOrderStatus = async (req, res) => {
     }
 
     // Role-based validation
-    const isMasterAdmin = !!req.masteradmin;
-    const isFranchise = !!req.franchise;
-    const isDelivery = !!req.delivery || req.user?.role === "delivery";
-    const isUser = !!req.user && !isMasterAdmin && !isDelivery;
 
     // Transitions logic (Master Admin can bypass)
     // We normalize to ensure case-insensitivity during check
@@ -929,7 +1020,7 @@ export const updateOrderStatus = async (req, res) => {
         }
       }
 
-      if (insufficientItems.length > 0) {
+      if (insufficientItems.length > 0 && !order.allowPartialFulfillment) {
         return handleResponse(
           res,
           400,
@@ -1078,14 +1169,26 @@ export const updateOrderStatus = async (req, res) => {
             const inventoryItem = inventory.items.find(
               (i) => i.productId.toString() === item.productId.toString(),
             );
-            if (inventoryItem) {
+            const quantityToPack = order.allowPartialFulfillment
+              ? Math.min(
+                  Number(inventoryItem?.currentStock || 0),
+                  Number(item.quantity || 0),
+                )
+              : Number(item.quantity || 0);
+
+            item.packedQuantity = quantityToPack;
+
+            if (inventoryItem && quantityToPack > 0) {
               inventoryItem.currentStock = Math.max(
                 0,
-                inventoryItem.currentStock - item.quantity,
+                inventoryItem.currentStock - quantityToPack,
               );
               inventoryItem.lastUpdated = new Date();
+            } else if (!inventoryItem) {
+              item.packedQuantity = 0;
             }
           }
+          await order.save();
           await inventory.save();
           console.log(
             `[Inventory] Stock deducted for order ${order._id} (Franchise: ${franchiseId})`,
@@ -1126,16 +1229,24 @@ export const updateOrderStatus = async (req, res) => {
     }
 
     // Refund credit if order was paid via Credit
-    if (status === "Cancelled" && order.paymentMethod === "Credit") {
+    if (
+      status === "Cancelled" &&
+      (order.paymentMethod === "Credit" ||
+        order.paymentMethod === "Credit + Online")
+    ) {
       try {
         const user = await User.findById(order.userId);
         if (user) {
-          user.usedCredit = Math.max(0, user.usedCredit - order.totalAmount);
+          const refundedCredit =
+            order.paymentMethod === "Credit + Online"
+              ? Number(order.creditAmountUsed || 0)
+              : order.totalAmount;
+          user.usedCredit = Math.max(0, user.usedCredit - refundedCredit);
           user.walletTransactions = user.walletTransactions || [];
           user.walletTransactions.unshift({
             txnId: `CRR-${Date.now()}`,
             type: "Credit Refunded",
-            amount: order.totalAmount,
+            amount: refundedCredit,
             status: "Success",
             note: `Credit refunded for cancelled order ${order._id}`,
             referenceOrderId: order._id,
@@ -1155,20 +1266,29 @@ export const updateOrderStatus = async (req, res) => {
     if (
       status === "Cancelled" &&
       (order.paymentMethod === "Wallet" ||
+        order.paymentMethod === "Wallet + Online" ||
+        order.paymentMethod === "Credit + Online" ||
         (["UPI", "Card"].includes(order.paymentMethod) &&
           order.paymentStatus === "Completed"))
     ) {
       try {
         const user = await User.findById(order.userId);
         if (user) {
+          const refundAmount =
+            order.paymentMethod === "Wallet + Online"
+              ? Number(order.walletAmountUsed || 0) +
+                Number(order.onlineAmountPaid || 0)
+              : order.paymentMethod === "Credit + Online"
+                ? Number(order.onlineAmountPaid || 0)
+              : order.totalAmount;
           user.walletBalance = Number(
-            (user.walletBalance + order.totalAmount).toFixed(2),
+            (user.walletBalance + refundAmount).toFixed(2),
           );
           user.walletTransactions = user.walletTransactions || [];
           user.walletTransactions.unshift({
             txnId: `REF-${Date.now()}`,
             type: "Refund",
-            amount: order.totalAmount,
+            amount: refundAmount,
             status: "Success",
             note: `Refund for cancelled order ${order._id} (${order.paymentMethod})`,
             referenceOrderId: order._id,
@@ -1218,15 +1338,18 @@ export const updateOrderStatus = async (req, res) => {
 export const getAllOrders = async (req, res) => {
   try {
     const orders = await Order.find()
+      .populate("items.productId")
       .populate("userId", "fullName mobile")
       .populate("franchiseId", "shopName ownerName mobile cityArea")
       .populate("deliveryPartnerId", "fullName mobile")
       .sort({ createdAt: -1 });
 
-    const formattedOrders = orders.map((order) => {
+    const enrichedOrders = await applyFranchiseStockShortageFlags(orders);
+
+    const formattedOrders = enrichedOrders.map((order) => {
       const dateObj = new Date(order.createdAt);
       return {
-        ...order.toObject(),
+        ...order,
         date: dateObj.toLocaleDateString("en-IN", {
           day: "2-digit",
           month: "2-digit",

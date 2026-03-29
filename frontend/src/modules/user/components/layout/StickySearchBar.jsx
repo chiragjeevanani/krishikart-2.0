@@ -6,6 +6,8 @@ import { useCart } from '../../contexts/CartContext'
 import { useLocation } from '../../contexts/LocationContext'
 import { useDebounce } from '@/hooks/useDebounce'
 import { toast } from 'sonner'
+import { getReadableLocationError } from '@/lib/geo'
+import LocationActionPopup from '../common/LocationActionPopup'
 
 const PLACEHOLDERS = [
     "Fresh Apples",
@@ -18,7 +20,7 @@ const PLACEHOLDERS = [
 
 export default function StickySearchBar() {
     const navigate = useNavigate()
-    const { address, hasFranchisePinned, updateFranchiseLocation, loading } = useLocation()
+    const { address, updateFranchiseLocation, setPinnedFranchiseLocation, loading } = useLocation()
     const { cartCount } = useCart()
 
     const [index, setIndex] = useState(0)
@@ -26,6 +28,7 @@ export default function StickySearchBar() {
     const searchParams = new URLSearchParams(routeLocation.search)
     const [searchValue, setSearchValue] = useState(searchParams.get('search') || "")
     const [isMobile, setIsMobile] = useState(false)
+    const [showLocationPopup, setShowLocationPopup] = useState(false)
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -63,6 +66,21 @@ export default function StickySearchBar() {
         setSearchValue(e.target.value)
     }
 
+    const handleUseCurrentLocation = async () => {
+        toast.info("Fetching real-time location...")
+        try {
+            if (typeof updateFranchiseLocation !== 'function') {
+                toast.error("Location service is unavailable right now.")
+                return
+            }
+            await updateFranchiseLocation(true)
+            setShowLocationPopup(false)
+            toast.success("Location updated successfully!")
+        } catch (error) {
+            toast.error(getReadableLocationError(error))
+        }
+    }
+
     const topSection = (
         <div className="relative flex items-center justify-between gap-2 min-w-0 w-full">
             {/* Left: logo + location */}
@@ -73,15 +91,7 @@ export default function StickySearchBar() {
                     className="h-14 w-auto shrink-0 object-contain"
                 />
                 <button
-                    onClick={async () => {
-                        // First time: force map selection for nearest-franchise area
-                        // Later: treat as "edit" entry point, still via map
-                        if (!hasFranchisePinned) {
-                            navigate('/location-picker?type=franchise&returnTo=/home');
-                        } else {
-                            navigate('/location-picker?type=franchise&returnTo=/home');
-                        }
-                    }}
+                    onClick={() => setShowLocationPopup(true)}
                     className={`flex items-center gap-1.5 min-w-0 max-w-full cursor-pointer active:scale-95 transition-all min-h-[38px] ${loading ? 'opacity-50' : ''} text-slate-900`}
                 >
                     <MapPin size={16} strokeWidth={2.5} className={`shrink-0 ${loading ? 'animate-pulse' : ''}`} />
@@ -181,6 +191,15 @@ export default function StickySearchBar() {
             </form>
                 </motion.div>
             </motion.div>
+            <LocationActionPopup
+                isOpen={showLocationPopup}
+                loading={loading}
+                onClose={() => setShowLocationPopup(false)}
+                onUseCurrentLocation={handleUseCurrentLocation}
+                onManualLocationSelect={async (locationData) => {
+                    await setPinnedFranchiseLocation(locationData)
+                }}
+            />
         </div>
     )
 }

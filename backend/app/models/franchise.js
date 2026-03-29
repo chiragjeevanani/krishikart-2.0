@@ -34,6 +34,11 @@ const franchiseSchema = new mongoose.Schema(
       default: null,
     },
 
+    formattedAddress: {
+      type: String,
+      default: null,
+    },
+
     email: {
       type: String,
       trim: true,
