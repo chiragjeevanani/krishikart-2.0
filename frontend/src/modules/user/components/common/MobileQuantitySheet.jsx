@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, Minus } from 'lucide-react'
 import { motion } from 'framer-motion'
 import {
     Sheet,
@@ -84,13 +84,43 @@ export default function MobileQuantitySheet({ isOpen, onClose, product, onAdd })
                                     )}
                                 </div>
 
-                                <button
-                                    onClick={handleAdd}
-                                    className="h-[42px] px-8 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-600 font-bold text-[15px] flex items-center justify-center gap-1 active:scale-95 transition-all"
-                                >
-                                    ADD <Plus size={16} strokeWidth={3} />
-                                </button>
+                                <div className="flex items-center bg-white border border-emerald-200 rounded-xl overflow-hidden h-11">
+                                    <button
+                                        onClick={() => setQty(Math.max(1, qty - 1))}
+                                        className="w-10 h-full flex items-center justify-center text-emerald-600 hover:bg-emerald-50 transition-colors border-r border-emerald-100"
+                                    >
+                                        <Minus size={16} strokeWidth={3} />
+                                    </button>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        value={qty}
+                                        onChange={(e) => {
+                                            const val = e.target.value === '' ? '' : parseInt(e.target.value);
+                                            setQty(val === '' ? '' : (isNaN(val) ? 1 : Math.max(1, val)));
+                                        }}
+                                        onBlur={(e) => {
+                                            if (e.target.value === '' || isNaN(parseInt(e.target.value))) {
+                                                setQty(1);
+                                            }
+                                        }}
+                                        className="w-12 h-full flex items-center justify-center font-black text-slate-900 bg-slate-50/50 text-center outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    />
+                                    <button
+                                        onClick={() => setQty(qty + 1)}
+                                        className="w-10 h-full flex items-center justify-center text-emerald-600 hover:bg-emerald-50 transition-colors border-l border-emerald-100"
+                                    >
+                                        <Plus size={16} strokeWidth={3} />
+                                    </button>
+                                </div>
                             </div>
+
+                            <button
+                                onClick={handleAdd}
+                                className="w-full h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-100 flex items-center justify-center gap-2 mb-4"
+                            >
+                                Add to cart · ₹{unitBase * (Number(qty) || 1)}
+                            </button>
 
                             {(product.bulkPricing && product.bulkPricing.length > 0) && (
                                 <button

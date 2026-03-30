@@ -1,5 +1,6 @@
 import Franchise from "../models/franchise.js";
 import OTP from "../models/otp.js";
+import Category from "../models/category.js";
 import { handleResponse } from "../utils/helper.js";
 import {
   generateOTP,
@@ -313,9 +314,10 @@ export const verifyFranchiseOTP = async (req, res) => {
       }
 
       const token = generateToken(franchise._id);
-
-      const franchiseObj = franchise.toObject();
-      delete franchiseObj.password;
+      const hydrated = await Franchise.findById(franchise._id).populate(
+        "servedCategories",
+      );
+      const franchiseObj = hydrated?.toObject?.() || franchise.toObject();
 
       // Invalidate any existing OTP
       await OTP.deleteOne({ mobile, role: "franchise" });
@@ -349,9 +351,10 @@ export const verifyFranchiseOTP = async (req, res) => {
         return handleResponse(res, 403, "Account blocked");
 
       const token = generateToken(franchise._id);
-
-      const franchiseObj = franchise.toObject();
-      delete franchiseObj.password;
+      const hydrated = await Franchise.findById(franchise._id).populate(
+        "servedCategories",
+      );
+      const franchiseObj = hydrated?.toObject?.() || franchise.toObject();
 
       await OTP.deleteOne({ mobile, role: "franchise" });
 
@@ -389,9 +392,10 @@ export const verifyFranchiseOTP = async (req, res) => {
     await OTP.deleteOne({ mobile, role: "franchise" });
 
     const token = generateToken(franchise._id);
-
-    const franchiseObj = franchise.toObject();
-    delete franchiseObj.password;
+    const hydrated = await Franchise.findById(franchise._id).populate(
+      "servedCategories",
+    );
+    const franchiseObj = hydrated?.toObject?.() || franchise.toObject();
     delete franchiseObj.otp;
 
     console.log(
@@ -410,7 +414,8 @@ export const verifyFranchiseOTP = async (req, res) => {
 
 /* ================= GET ME ================= */
 export const getFranchiseMe = async (req, res) => {
-  return handleResponse(res, 200, "Franchise profile", req.franchise);
+  const franchise = await Franchise.findById(req.franchise._id).populate("servedCategories");
+  return handleResponse(res, 200, "Franchise profile", franchise);
 };
 
 /* ================= UPDATE PROFILE ================= */
@@ -419,7 +424,7 @@ export const updateFranchiseProfile = async (req, res) => {
     console.log("Updating franchise profile for:", req.franchise._id);
     console.log("Request body:", req.body);
 
-    const { franchiseName, ownerName, mobile, city, area, state, location, formattedAddress } =
+    const { franchiseName, ownerName, mobile, city, area, state, location, formattedAddress, servedCategories } =
       req.body;
     const franchiseId = req.franchise._id;
 
@@ -436,6 +441,29 @@ export const updateFranchiseProfile = async (req, res) => {
     if (franchiseName) franchise.franchiseName = franchiseName;
     if (ownerName) franchise.ownerName = ownerName;
     if (area) franchise.area = area;
+    if (servedCategories !== undefined) {
+      if (!Array.isArray(servedCategories)) {
+        return handleResponse(res, 400, "servedCategories must be an array");
+      }
+
+      // Normalize + validate category IDs so one franchise cannot "poison" the catalog selection.
+      const normalized = [...new Set(servedCategories.filter(Boolean).map(String))];
+      const invalid = normalized.filter((id) => !/^[a-fA-F0-9]{24}$/.test(id));
+      if (invalid.length) {
+        return handleResponse(res, 400, "servedCategories contains invalid category IDs", {
+          invalid,
+        });
+      }
+
+      if (normalized.length > 0) {
+        const existing = await Category.countDocuments({ _id: { $in: normalized } });
+        if (existing !== normalized.length) {
+          return handleResponse(res, 400, "servedCategories contains unknown categories");
+        }
+      }
+
+      franchise.servedCategories = normalized;
+    }
 
     let addressChanged = false;
     if (city && city !== franchise.city) {
@@ -540,7 +568,11 @@ export const updateFranchiseProfile = async (req, res) => {
     await franchise.save();
 
     console.log("Franchise updated successfully");
-    return handleResponse(res, 200, "Profile updated successfully", franchise);
+
+    const hydrated = await Franchise.findById(franchiseId).populate(
+      "servedCategories",
+    );
+    return handleResponse(res, 200, "Profile updated successfully", hydrated);
   } catch (err) {
     console.error("Update Profile Critical Error:", err);
     // Respond with the actual error message for debugging

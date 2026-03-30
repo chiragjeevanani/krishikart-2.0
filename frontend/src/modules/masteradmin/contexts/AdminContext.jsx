@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState } from 'react';
 import api from '@/lib/axios';
 import { toast } from 'sonner';
+import { getSocket } from '@/lib/socket';
+import { useNotificationSound } from '@/hooks/useNotificationSound';
+import { useEffect } from 'react';
 
 const AdminContext = createContext();
 
@@ -9,6 +12,9 @@ export const AdminProvider = ({ children }) => {
     const [franchises, setFranchises] = useState([]);
     const [deliveryPartners, setDeliveryPartners] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [isQuotationAlertOpen, setIsQuotationAlertOpen] = useState(false);
+    const [newQuotationData, setNewQuotationData] = useState(null);
+    const { playNotificationSound } = useNotificationSound();
 
     const fetchVendors = async (status) => {
         setIsLoading(true);
@@ -211,6 +217,23 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
+    useEffect(() => {
+        const socket = getSocket();
+        
+        const handleNewQuotation = (data) => {
+            console.log("New Quotation Received:", data);
+            setNewQuotationData(data);
+            setIsQuotationAlertOpen(true);
+            playNotificationSound();
+        };
+
+        socket.on('procurement_quote_received', handleNewQuotation);
+
+        return () => {
+            socket.off('procurement_quote_received', handleNewQuotation);
+        };
+    }, []);
+
     return (
         <AdminContext.Provider value={{
             vendors,
@@ -228,7 +251,10 @@ export const AdminProvider = ({ children }) => {
             fetchFranchiseServiceMap,
             deliveryPartners,
             fetchDeliveryPartners,
-            updateDeliveryPartnerStatus
+            updateDeliveryPartnerStatus,
+            isQuotationAlertOpen,
+            setIsQuotationAlertOpen,
+            newQuotationData
         }}>
             {children}
         </AdminContext.Provider>

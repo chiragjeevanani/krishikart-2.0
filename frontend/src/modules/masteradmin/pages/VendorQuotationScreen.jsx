@@ -20,20 +20,31 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export default function VendorQuotationScreen() {
-    // const { procurementRequests, updateRequestStatus } = useProcurement(); // Removed context usage
     const [quotations, setQuotations] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedRequest, setSelectedRequest] = useState(null);
+    const [editedItems, setEditedItems] = useState([]);
 
     useEffect(() => {
         fetchQuotations();
     }, []);
 
+    useEffect(() => {
+        if (selectedRequest) {
+            setEditedItems(selectedRequest.items.map(item => ({
+                ...item,
+                quantity: item.qty || item.quantity,
+                quotedPrice: item.quotedPrice
+            })));
+        } else {
+            setEditedItems([]);
+        }
+    }, [selectedRequest]);
+
     const fetchQuotations = async () => {
         try {
             const response = await api.get('/procurement/admin/all');
             if (response.data.success) {
-                // Filter locally or rely on API params if available
                 const allRequests = response.data.results;
                 const filtered = allRequests.filter(req => req.status === 'quoted' || req.status === 'approved');
                 setQuotations(filtered);
@@ -46,13 +57,26 @@ export default function VendorQuotationScreen() {
         }
     };
 
+    const handleItemEdit = (idx, field, value) => {
+        const newItems = [...editedItems];
+        newItems[idx] = { ...newItems[idx], [field]: Number(value) || 0 };
+        setEditedItems(newItems);
+    };
+
+    const currentTotal = editedItems.reduce((acc, item) => 
+        acc + (Number(item.quotedPrice || 0) * Number(item.quantity || 0)), 0
+    );
+
     const handleApprove = async (id) => {
         try {
-            const response = await api.put(`/procurement/admin/${id}/status`, { status: 'approved' });
+            const response = await api.put(`/procurement/admin/${id}/status`, { 
+                status: 'approved',
+                items: editedItems 
+            });
             if (response.data.success) {
-                toast.success('Quotation approved successfully! Vendor has been notified.');
+                toast.success('Quotation approved with changes! Vendor has been notified.');
                 setSelectedRequest(null);
-                fetchQuotations(); // Refresh list
+                fetchQuotations(); 
             }
         } catch (error) {
             console.error("Failed to approve:", error);
@@ -66,7 +90,7 @@ export default function VendorQuotationScreen() {
             if (response.data.success) {
                 toast.success('Quotation rejected.');
                 setSelectedRequest(null);
-                fetchQuotations(); // Refresh list
+                fetchQuotations();
             }
         } catch (error) {
             console.error("Failed to reject:", error);
@@ -90,8 +114,8 @@ export default function VendorQuotationScreen() {
                         <HandHelping size={20} />
                     </div>
                     <div className="flex flex-col">
-                        <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase leading-none">Vendor Quotation</h1>
-                        <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mt-1">Review & Authorize Supply Rates</p>
+                        <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase leading-none">Vendor Receiving Audit</h1>
+                        <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mt-1">Audit & Adjust Procurement Quotations</p>
                     </div>
                 </div>
             </header>
@@ -99,7 +123,7 @@ export default function VendorQuotationScreen() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Quotation List */}
                 <div className="lg:col-span-1 space-y-4">
-                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Active Proposals</h3>
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Quoted Proposals</h3>
                     <div className="space-y-3">
                         {quotations.length > 0 ? quotations.map((req) => (
                             <motion.button
@@ -133,7 +157,7 @@ export default function VendorQuotationScreen() {
                         )) : (
                             <div className="p-12 text-center rounded-xl border border-dashed border-slate-200 bg-white">
                                 <Clock size={32} className="mx-auto text-slate-200 mb-4" />
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Awaiting quotations from vendors...</p>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No active quotations found</p>
                             </div>
                         )}
                     </div>
@@ -153,14 +177,17 @@ export default function VendorQuotationScreen() {
                                         <FileText size={16} />
                                     </div>
                                     <div>
-                                        <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">Proposal Details</h3>
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">Proposal Audit</h3>
+                                            <span className="px-1.5 py-0.5 bg-slate-900 text-white text-[8px] font-black rounded-sm uppercase tracking-tighter">Admin Mode</span>
+                                        </div>
                                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">REQ #{(selectedRequest._id || selectedRequest.id).slice(-6)}</p>
                                     </div>
                                 </div>
                                 {selectedRequest.status === 'approved' && (
                                     <div className="flex items-center gap-2 text-emerald-600 px-3 py-1 bg-emerald-50 rounded-sm border border-emerald-100">
                                         <CheckCircle2 size={14} />
-                                        <span className="text-[9px] font-black uppercase tracking-widest">Officially Authorized</span>
+                                        <span className="text-[9px] font-black uppercase tracking-widest">Authorized</span>
                                     </div>
                                 )}
                             </div>
@@ -170,14 +197,14 @@ export default function VendorQuotationScreen() {
                                     <table className="w-full">
                                         <thead>
                                             <tr className="border-b border-slate-100 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                                                <th className="text-left pb-4">Product Artifact</th>
+                                                <th className="text-left pb-4">Product</th>
                                                 <th className="text-center pb-4">Quantity</th>
-                                                <th className="text-right pb-4">Quoted Rate</th>
-                                                <th className="text-right pb-4">Total Sub</th>
+                                                <th className="text-right pb-4">Rate (INR)</th>
+                                                <th className="text-right pb-4">Subtotal</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-50">
-                                            {selectedRequest.items.map((item, idx) => (
+                                            {editedItems.map((item, idx) => (
                                                 <tr key={idx} className="group italic-row hover:bg-slate-50/50 transition-colors">
                                                     <td className="py-4">
                                                         <div className="flex items-center gap-3">
@@ -188,17 +215,41 @@ export default function VendorQuotationScreen() {
                                                                     <Package size={16} className="text-slate-300" />
                                                                 )}
                                                             </div>
-                                                            <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest leading-none">{item.name}</span>
+                                                            <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest leading-none max-w-[150px]">{item.name}</span>
                                                         </div>
                                                     </td>
                                                     <td className="py-4 text-center">
-                                                        <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{item.qty || item.quantity} {item.unit}</span>
+                                                        {selectedRequest.status === 'quoted' ? (
+                                                            <div className="flex items-center justify-center gap-1">
+                                                                <input
+                                                                    type="number"
+                                                                    value={item.quantity}
+                                                                    onChange={(e) => handleItemEdit(idx, 'quantity', e.target.value)}
+                                                                    className="w-16 h-8 bg-slate-50 border border-slate-200 rounded text-center text-[10px] font-black focus:outline-none focus:border-slate-900 transition-all"
+                                                                />
+                                                                <span className="text-[8px] font-black text-slate-400 uppercase">{item.unit}</span>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{item.quantity} {item.unit}</span>
+                                                        )}
                                                     </td>
                                                     <td className="py-4 text-right">
-                                                        <span className="text-[11px] font-black text-slate-900 tabular-nums">₹{item.quotedPrice}</span>
+                                                        {selectedRequest.status === 'quoted' ? (
+                                                            <div className="flex items-center justify-end gap-1">
+                                                                <span className="text-[9px] font-black text-slate-400 tracking-tighter">₹</span>
+                                                                <input
+                                                                    type="number"
+                                                                    value={item.quotedPrice}
+                                                                    onChange={(e) => handleItemEdit(idx, 'quotedPrice', e.target.value)}
+                                                                    className="w-20 h-8 bg-slate-50 border border-slate-200 rounded text-right pr-2 text-[10px] font-black focus:outline-none focus:border-slate-900 transition-all"
+                                                                />
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-[11px] font-black text-slate-900 tabular-nums">₹{item.quotedPrice}</span>
+                                                        )}
                                                     </td>
                                                     <td className="py-4 text-right">
-                                                        <span className="text-[11px] font-black text-slate-900 tabular-nums">₹{((item.qty || item.quantity) * item.quotedPrice).toLocaleString()}</span>
+                                                        <span className="text-[11px] font-black text-slate-900 tabular-nums">₹{(item.quantity * item.quotedPrice).toLocaleString()}</span>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -207,21 +258,21 @@ export default function VendorQuotationScreen() {
                                 </div>
 
                                 <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-end pt-8 border-t border-slate-100">
-                                    <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl space-y-2">
-                                        <div className="flex items-center gap-2 text-blue-900 mb-1">
+                                    <div className="p-4 bg-orange-50 border border-orange-100 rounded-xl space-y-2">
+                                        <div className="flex items-center gap-2 text-orange-900 mb-1">
                                             <Info size={14} />
-                                            <h5 className="text-[9px] font-black uppercase tracking-widest">Rate Comparison</h5>
+                                            <h5 className="text-[9px] font-black uppercase tracking-widest">Audit Notice</h5>
                                         </div>
-                                        <p className="text-[9px] text-blue-800/70 font-bold uppercase leading-relaxed tracking-wider">
-                                            The quoted aggregate of ₹{selectedRequest.totalQuotedAmount?.toLocaleString()} is within estimated procurement margins. System recommends authorization.
+                                        <p className="text-[9px] text-orange-800/70 font-bold uppercase leading-relaxed tracking-wider">
+                                            You are in Audit Mode. Any changes to quantities or rates will override the vendor's proposal and serve as the final authorized procurement value.
                                         </p>
                                     </div>
 
                                     <div className="space-y-4">
                                         <div className="flex justify-between items-baseline mb-4">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Aggregate Total</span>
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Authorized Aggregate</span>
                                             <div className="flex items-baseline gap-1">
-                                                <span className="text-3xl font-black text-slate-900 tabular-nums tracking-tighter">₹{selectedRequest.totalQuotedAmount?.toLocaleString()}</span>
+                                                <span className="text-3xl font-black text-slate-900 tabular-nums tracking-tighter">₹{currentTotal.toLocaleString()}</span>
                                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">INR</span>
                                             </div>
                                         </div>
@@ -238,7 +289,7 @@ export default function VendorQuotationScreen() {
                                                     onClick={() => handleApprove(selectedRequest._id || selectedRequest.id)}
                                                     className="flex-[2] h-12 bg-slate-900 text-white rounded-sm font-black uppercase text-[10px] tracking-[0.2em] shadow-xl shadow-slate-200 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
                                                 >
-                                                    <CheckCircle2 size={16} /> Authorize Supply
+                                                    <CheckCircle2 size={16} /> Approve & Authorize
                                                 </button>
                                             </div>
                                         )}
@@ -251,9 +302,9 @@ export default function VendorQuotationScreen() {
                             <div className="w-20 h-20 bg-white shadow-xl rounded-full flex items-center justify-center text-slate-200 mb-6">
                                 <ArrowUpRight size={32} strokeWidth={1} />
                             </div>
-                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">Select a proposal to begin audit</h3>
+                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">Choose a proposal to audit</h3>
                             <p className="text-[10px] text-slate-300 font-bold uppercase tracking-widest mt-2 max-w-[200px] leading-relaxed">
-                                Choose a quotation from the list to review individual SKU rates and authorize node replenishments.
+                                Quotations can be audited and adjusted by the Master Admin before final supply authorization.
                             </p>
                         </div>
                     )}

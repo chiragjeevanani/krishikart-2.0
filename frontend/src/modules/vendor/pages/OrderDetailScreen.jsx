@@ -187,23 +187,23 @@ export default function OrderDetailScreen() {
                 <div className="flex items-start gap-3">
                     <VendorBackBar fallbackPath="/vendor/orders" className="mt-0.5" />
                     <div className="flex-1 min-w-0 space-y-1">
-                <div className="flex items-center gap-2 text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">
-                    <button onClick={() => navigate('/vendor/orders')} className="hover:text-slate-900 transition-colors">Orders</button>
-                    <ChevronRight size={10} />
-                    <span className="text-primary">{order.id}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-black text-slate-900 tracking-tight">Supply Reference</h1>
-                    <div className={cn(
-                        "px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border",
-                        status === 'assigned' || status === 'new' ? "bg-blue-50 text-blue-600 border-blue-100" :
-                            status === 'bidding' ? "bg-amber-50 text-amber-600 border-amber-100" :
-                                status === 'accepted' || status === 'ready' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
-                                    "bg-slate-50 text-slate-400 border-slate-100"
-                    )}>
-                        {status}
-                    </div>
-                </div>
+                        <div className="flex items-center gap-2 text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">
+                            <button onClick={() => navigate('/vendor/orders')} className="hover:text-slate-900 transition-colors">Orders</button>
+                            <ChevronRight size={10} />
+                            <span className="text-primary">{order.id}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Supply Reference</h1>
+                            <div className={cn(
+                                "px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border",
+                                status === 'assigned' || status === 'new' ? "bg-blue-50 text-blue-600 border-blue-100" :
+                                    status === 'bidding' ? "bg-amber-50 text-amber-600 border-amber-100" :
+                                        status === 'accepted' || status === 'ready' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
+                                            "bg-slate-50 text-slate-400 border-slate-100"
+                            )}>
+                                {status}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -332,7 +332,12 @@ export default function OrderDetailScreen() {
                                         </div>
                                     ) : (
                                         <div className="text-right">
-                                            <p className="text-[11px] font-black text-slate-900 tabular-nums">₹{item.quotedPrice || (item.price || 0)}</p>
+                                            <div className="flex flex-col items-end">
+                                                <p className="text-[11px] font-black text-slate-900 tabular-nums">₹{item.quotedPrice || (item.price || 0)}</p>
+                                                {item.originalQuotedPrice && item.originalQuotedPrice !== item.quotedPrice && (
+                                                    <p className="text-[8px] font-black text-rose-500 uppercase tracking-tighter line-through opacity-60">Was ₹{item.originalQuotedPrice}</p>
+                                                )}
+                                            </div>
                                             <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest">Rate</p>
                                         </div>
                                     )}

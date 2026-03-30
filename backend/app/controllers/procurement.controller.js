@@ -114,13 +114,16 @@ export const vendorSubmitQuotation = async (req, res) => {
                     (i.productId === reqItem.productId)
                 );
                 if (submittedItem) {
-                    reqItem.quotedPrice = Number(submittedItem.quotedPrice) || 0;
+                    const price = Number(submittedItem.quotedPrice) || 0;
+                    reqItem.quotedPrice = price;
+                    reqItem.originalQuotedPrice = price;
                 }
                 totalQuoted += (reqItem.quotedPrice || 0) * reqItem.quantity;
             });
         }
 
         request.totalQuotedAmount = totalQuoted;
+        request.vendorQuoteTotal = totalQuoted;
         request.status = 'quoted';
         await request.save();
 
@@ -280,12 +283,36 @@ export const vendorUpdateStatus = async (req, res) => {
             status: status,
             message: `Procurement #${request._id.toString().slice(-6)} moved to ${status.replace('_', ' ')}`
         });
+
         if (request.franchiseId) {
             emitToFranchise(request.franchiseId, 'procurement_cycle_update', {
                 requestId: request._id,
                 status: status,
                 message: `Vendor updated procurement #${request._id.toString().slice(-6)} status: ${status.replace('_', ' ')}`
             });
+
+            // Push Notification to Franchise
+            let title = "Procurement Update";
+            let body = `Vendor updated your request #${request._id.toString().slice(-6)} to ${status.replace('_', ' ')}`;
+
+            if (status === 'ready_for_pickup') {
+                title = "Items Ready for Pickup";
+                body = `Your procurement items are ready at vendor location.`;
+            } else if (status === 'shipped') {
+                title = "Items Dispatched";
+                body = `The vendor has dispatched your procurement items. Check inbound logistics.`;
+            }
+
+            sendNotificationToUser(request.franchiseId.toString(), {
+                title,
+                body,
+                data: {
+                    type: "procurement",
+                    requestId: request._id.toString(),
+                    status: status,
+                    link: `/franchise/receiving`
+                }
+            }, 'franchise');
         }
 
         // Update Order if exists
@@ -354,13 +381,31 @@ export const createProcurementRequest = async (req, res) => {
 export const adminUpdateProcurementRequest = async (req, res) => {
     try {
         const { requestId } = req.params;
-        const { status, vendorId, adminId, itemId } = req.body;
+        const { status, vendorId, adminId, itemId, items: editedItems } = req.body;
 
         console.log(`Admin updating request ${requestId}. Status: ${status}, Vendor: ${vendorId}, item: ${itemId}`);
 
         const request = await ProcurementRequest.findById(requestId);
         if (!request) {
             return handleResponse(res, 404, "Procurement request not found");
+        }
+
+        // Handle Item Edits by Admin (Price/Qty)
+        if (editedItems && Array.isArray(editedItems)) {
+            request.items.forEach(reqItem => {
+                const edited = editedItems.find(i =>
+                    (i._id && i._id === reqItem._id.toString()) ||
+                    (i.productId?.toString() === reqItem.productId?.toString())
+                );
+                if (edited) {
+                    if (edited.quotedPrice !== undefined) reqItem.quotedPrice = Number(edited.quotedPrice);
+                    if (edited.quantity !== undefined) {
+                        reqItem.quantity = Number(edited.quantity);
+                    }
+                }
+            });
+            // Recalculate Total
+            request.totalQuotedAmount = request.items.reduce((acc, i) => acc + ((i.quotedPrice || i.price || 0) * (i.quantity || 0)), 0);
         }
 
         let requestToAssign = request;
@@ -379,6 +424,7 @@ export const adminUpdateProcurementRequest = async (req, res) => {
                 // Remove from original
                 request.items.splice(itemIndex, 1);
                 request.totalEstimatedAmount = request.items.reduce((acc, i) => acc + ((i.price || 0) * i.quantity), 0);
+                request.totalQuotedAmount = request.items.reduce((acc, i) => acc + ((i.quotedPrice || i.price || 0) * i.quantity), 0);
                 await request.save(); // Save original with remaining items
 
                 // Create new request for this vendor
@@ -387,6 +433,7 @@ export const adminUpdateProcurementRequest = async (req, res) => {
                     orderId: request.orderId,
                     items: [itemToSplit],
                     totalEstimatedAmount: (itemToSplit.price || 0) * itemToSplit.quantity,
+                    totalQuotedAmount: (itemToSplit.quotedPrice || itemToSplit.price || 0) * itemToSplit.quantity,
                     status: status || 'assigned',
                     assignedVendorId: vendorId,
                     adminId: adminId
@@ -426,6 +473,26 @@ export const adminUpdateProcurementRequest = async (req, res) => {
                     link: `/vendor/orders/${requestToAssign._id}`
                 }
             }, 'vendor');
+        }
+
+        // Notify Franchise
+        if (requestToAssign.franchiseId) {
+            emitToFranchise(requestToAssign.franchiseId.toString(), 'procurement_cycle_update', {
+                requestId: requestToAssign._id,
+                status: 'assigned',
+                message: `Master Admin has assigned a vendor for your procurement #${requestToAssign._id.toString().slice(-6)}`
+            });
+            // Push Notification
+            sendNotificationToUser(requestToAssign.franchiseId.toString(), {
+                title: "Procurement Vendor Assigned",
+                body: "A vendor has been assigned to procurement request items for your node.",
+                data: {
+                    type: "procurement",
+                    requestId: requestToAssign._id.toString(),
+                    status: 'assigned',
+                    link: `/franchise/receiving`
+                }
+            }, 'franchise');
         }
 
         // Update Order if exists
@@ -867,6 +934,15 @@ export const createProcurementFromOrder = async (req, res) => {
                     link: `/vendor/orders/${procurementRequest._id}`
                 }
             }, 'vendor');
+        }
+
+        // Notify Franchise
+        if (order.franchiseId) {
+            emitToFranchise(order.franchiseId.toString(), 'procurement_cycle_update', {
+                requestId: procurementRequest._id,
+                status: 'assigned',
+                message: `Procurement request created for your order shortages. Vendor has been assigned.`
+            });
         }
 
         // Update order to indicate procurement has started

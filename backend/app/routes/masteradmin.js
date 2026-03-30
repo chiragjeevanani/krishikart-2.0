@@ -33,6 +33,7 @@ import {
   getGlobalInventoryMonitoring,
   getFranchiseInventoryDetails,
   updateFranchiseInventoryItem,
+  bulkUpdateFranchiseInventory,
   updateFranchiseCommission,
   getFranchiseCommissions,
   getFranchisePayoutsSummary,
@@ -222,6 +223,12 @@ router.put(
   protectMasterAdmin,
   requirePermission("stock-monitoring"),
   updateFranchiseInventoryItem,
+);
+router.post(
+  "/inventory/franchise/:id/bulk-update",
+  protectMasterAdmin,
+  requirePermission("stock-monitoring"),
+  bulkUpdateFranchiseInventory,
 );
 
 /* 💰 Commission Management */

@@ -3,6 +3,7 @@ import api from '@/lib/axios';
 import { toast } from 'sonner';
 import { getSocket, joinDeliveryRoom } from '@/lib/socket';
 import { useDeliveryAuth } from './DeliveryAuthContext';
+import { useNotificationSound } from '@/hooks/useNotificationSound';
 
 const DeliveryOrderContext = createContext();
 
@@ -16,22 +17,7 @@ export function DeliveryOrderProvider({ children }) {
     const [isAlertOpen, setIsAlertOpen] = useState(false);
     const [newTaskData, setNewTaskData] = useState(null);
 
-    const playNotificationSound = () => {
-        try {
-            const soundUrl = 'https://cdn.pixabay.com/audio/2021/08/04/audio_06d8a39a09.mp3';
-            const audio = new Audio(soundUrl);
-            audio.volume = 1.0;
-            audio.play().catch(() => {
-                const playOnClick = () => {
-                    audio.play().catch(() => { });
-                    document.removeEventListener('click', playOnClick);
-                };
-                document.addEventListener('click', playOnClick);
-            });
-        } catch (err) {
-            console.error('Audio failure:', err);
-        }
-    };
+    const { playNotificationSound } = useNotificationSound();
 
     const fetchDispatchedOrders = async () => {
         setLoading(true);
@@ -132,7 +118,8 @@ export function DeliveryOrderProvider({ children }) {
             fetchReturnPickups,
             updateStatus,
             updateReturnStatus,
-            rejectTask
+            rejectTask,
+            playNotificationSound
         }}>
             {children}
         </DeliveryOrderContext.Provider>

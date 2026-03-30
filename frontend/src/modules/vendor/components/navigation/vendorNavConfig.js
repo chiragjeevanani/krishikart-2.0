@@ -17,6 +17,7 @@ export const vendorNavItems = [
     { id: 'inventory', path: '/vendor/inventory', icon: Package, label: 'Inventory', shortLabel: 'Stock' },
     { id: 'orders', path: '/vendor/orders', icon: ClipboardList, label: 'Manage Orders', shortLabel: 'Orders' },
     { id: 'dispatch', path: '/vendor/dispatch', icon: Truck, label: 'Active Dispatch', shortLabel: 'Dispatch' },
+    { id: 'quotations', path: '/vendor/quotations', icon: ClipboardList, label: 'Proposals & Audits', shortLabel: 'Quotes' },
     { id: 'history', path: '/vendor/dispatch-history', icon: History, label: 'Dispatch History', shortLabel: 'History' },
     { id: 'reports', path: '/vendor/reports', icon: FileText, label: 'Reports', shortLabel: 'Reports' },
     {
@@ -43,6 +44,9 @@ export function isVendorNavActive(pathname, itemPath) {
     }
     if (itemPath === '/vendor/dispatch-history') {
         return pathname === '/vendor/dispatch-history';
+    }
+    if (itemPath === '/vendor/quotations') {
+        return pathname.startsWith('/vendor/quotations');
     }
     if (itemPath === '/vendor/reports') {
         return pathname === '/vendor/reports';

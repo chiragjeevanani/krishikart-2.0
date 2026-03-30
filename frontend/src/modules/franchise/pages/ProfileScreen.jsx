@@ -8,8 +8,11 @@ import {
     LogOut,
     Home,
     X,
-    Loader2
+    Loader2,
+    Layers,
+    Check
 } from 'lucide-react';
+import api from '@/lib/axios';
 import { useFranchiseAuth } from '../contexts/FranchiseAuthContext';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -45,7 +48,8 @@ export default function ProfileScreen() {
         {
             group: 'Account Information',
             items: [
-                { id: 'details', label: 'Personal Details', icon: User, sub: 'View and edit your profile', onClick: () => setIsEditModalOpen(true) }
+                { id: 'details', label: 'Personal Details', icon: User, sub: 'View and edit your profile', onClick: () => setIsEditModalOpen(true) },
+                { id: 'categories', label: 'Served Categories', icon: Layers, sub: 'Manage your business categories', onClick: () => setIsEditModalOpen(true) }
             ]
         },
         {
@@ -145,6 +149,17 @@ export default function ProfileScreen() {
                         </p>
                     </div>
 
+                    {/* Show categories in the identity card too if they exist */}
+                    {franchise?.servedCategories?.length > 0 && (
+                        <div className="mt-4 flex flex-wrap gap-2 justify-center md:justify-start">
+                            {franchise.servedCategories.map(cat => (
+                                <span key={cat._id} className="px-2 py-0.5 bg-slate-800 text-slate-300 text-[8px] font-bold uppercase tracking-wider rounded-sm border border-slate-700">
+                                    {cat.name}
+                                </span>
+                            ))}
+                        </div>
+                    )}
+
                     <div className="mt-6 border-t border-slate-800 pt-6 text-center md:text-left">
                         <h1 className="text-xl font-black text-white tracking-tight leading-none uppercase">{franchise?.franchiseName}</h1>
                     </div>
@@ -242,9 +257,51 @@ const EditProfileModal = ({ isOpen, onClose, franchiseData, onUpdate }) => {
         franchiseName: franchiseData?.franchiseName || '',
         ownerName: franchiseData?.ownerName || '',
         email: franchiseData?.email || '',
-        mobile: franchiseData?.mobile || ''
+        mobile: franchiseData?.mobile || '',
+        servedCategories: franchiseData?.servedCategories?.map(c => c._id || c) || []
     });
+    const [allCategories, setAllCategories] = useState([]);
     const [isSaving, setIsSaving] = useState(false);
+    const [isLoadingCats, setIsLoadingCats] = useState(true);
+
+    useEffect(() => {
+        // Reset form values whenever a different franchise is loaded (or modal re-opens).
+        // Prevents stale category selections leaking across sessions/accounts in a single SPA runtime.
+        if (isOpen) {
+            setFormData({
+                franchiseName: franchiseData?.franchiseName || '',
+                ownerName: franchiseData?.ownerName || '',
+                email: franchiseData?.email || '',
+                mobile: franchiseData?.mobile || '',
+                servedCategories: franchiseData?.servedCategories?.map(c => c._id || c) || []
+            });
+        }
+    }, [isOpen, franchiseData?._id]);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await api.get('/catalog/categories');
+                setAllCategories(response.data.results || []);
+            } catch (error) {
+                console.error("Failed to fetch categories", error);
+            } finally {
+                setIsLoadingCats(false);
+            }
+        };
+        fetchCategories();
+    }, []);
+
+    const toggleCategory = (catId) => {
+        setFormData(prev => {
+            const current = prev.servedCategories;
+            if (current.includes(catId)) {
+                return { ...prev, servedCategories: current.filter(id => id !== catId) };
+            } else {
+                return { ...prev, servedCategories: [...current, catId] };
+            }
+        });
+    };
 
     const handleSubmit = async () => {
         setIsSaving(true);
@@ -262,12 +319,12 @@ const EditProfileModal = ({ isOpen, onClose, franchiseData, onUpdate }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm shadow-2xl">
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white w-full max-w-lg rounded-[32px] shadow-2xl max-h-[90vh] flex flex-col overflow-hidden"
+                className="bg-white w-full max-w-xl rounded-[32px] shadow-2xl max-h-[90vh] flex flex-col overflow-hidden"
             >
                 <div className="flex items-center justify-between p-8 pb-4 bg-white shrink-0">
                     <h2 className="text-xl font-black text-slate-900 tracking-tight">Edit Profile</h2>
@@ -276,31 +333,96 @@ const EditProfileModal = ({ isOpen, onClose, franchiseData, onUpdate }) => {
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-8 pt-0 space-y-6">
-                    <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Shop Name</label>
-                        <input
-                            value={formData.franchiseName}
-                            onChange={(e) => setFormData({ ...formData, franchiseName: e.target.value })}
-                            className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
-                        />
-                    </div>
-                    <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Owner Name</label>
-                        <input
-                            value={formData.ownerName}
-                            onChange={(e) => setFormData({ ...formData, ownerName: e.target.value.replace(/[^a-zA-Z\s]/g, '') })}
-                            className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
-                        />
+                <div className="flex-1 overflow-y-auto p-8 pt-0 space-y-8">
+                    {/* Input Fields */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Shop Name</label>
+                            <input
+                                value={formData.franchiseName}
+                                onChange={(e) => setFormData({ ...formData, franchiseName: e.target.value })}
+                                className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
+                                placeholder="Enter Shop Name"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Owner Name</label>
+                            <input
+                                value={formData.ownerName}
+                                onChange={(e) => setFormData({ ...formData, ownerName: e.target.value.replace(/[^a-zA-Z\s]/g, '') })}
+                                className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
+                                placeholder="Enter Owner Name"
+                            />
+                        </div>
                     </div>
 
-                    <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mobile Number</label>
-                        <input
-                            value={formData.mobile}
-                            onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-                            className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
-                        />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mobile Number</label>
+                            <input
+                                value={formData.mobile}
+                                onChange={(e) => setFormData({ ...formData, mobile: e.target.value.replace(/\D/g, '') })}
+                                className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
+                                placeholder="Mobile Number"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email (Optional)</label>
+                            <input
+                                type="email"
+                                value={formData.email}
+                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none focus:border-slate-900 transition-all text-xs"
+                                placeholder="Email address"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Category Selection */}
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between px-1">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Served Categories</label>
+                            {isLoadingCats && <Loader2 size={12} className="animate-spin text-slate-300" />}
+                        </div>
+                        
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {allCategories.map((cat) => {
+                                const isSelected = formData.servedCategories.includes(cat._id);
+                                return (
+                                    <button
+                                        key={cat._id}
+                                        type="button"
+                                        onClick={() => toggleCategory(cat._id)}
+                                        className={cn(
+                                            "relative h-14 p-2 rounded-2xl flex items-center gap-3 border transition-all duration-200 text-left",
+                                            isSelected 
+                                                ? "bg-slate-900 border-slate-900 shadow-lg shadow-slate-200" 
+                                                : "bg-white border-slate-100 hover:border-slate-300"
+                                        )}
+                                    >
+                                        <div className={cn(
+                                            "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+                                            isSelected ? "bg-white/10" : "bg-slate-50"
+                                        )}>
+                                            <img src={cat.image} className="w-5 h-5 object-contain" alt="" />
+                                        </div>
+                                        <div className="min-w-0 pr-6">
+                                            <p className={cn(
+                                                "text-[9px] font-black uppercase tracking-tight truncate",
+                                                isSelected ? "text-white" : "text-slate-700"
+                                            )}>
+                                                {cat.name}
+                                            </p>
+                                        </div>
+                                        {isSelected && (
+                                            <div className="absolute top-2 right-2">
+                                                <Check size={10} className="text-white" strokeWidth={4} />
+                                            </div>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
 
@@ -308,7 +430,7 @@ const EditProfileModal = ({ isOpen, onClose, franchiseData, onUpdate }) => {
                     <button
                         onClick={handleSubmit}
                         disabled={isSaving}
-                        className="w-full h-14 bg-slate-900 text-white rounded-xl font-black text-xs uppercase tracking-[0.2em] hover:bg-emerald-600 transition-all flex items-center justify-center gap-3 disabled:bg-slate-200"
+                        className="w-full h-14 bg-slate-900 text-white rounded-xl font-black text-xs uppercase tracking-[0.2em] hover:bg-emerald-600 transition-all shadow-xl shadow-slate-200 disabled:bg-slate-200 disabled:shadow-none flex items-center justify-center gap-3"
                     >
                         {isSaving ? <Loader2 size={18} className="animate-spin" /> : 'Update Profile'}
                     </button>

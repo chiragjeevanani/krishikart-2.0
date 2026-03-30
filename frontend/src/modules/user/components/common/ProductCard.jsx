@@ -11,12 +11,13 @@ import MobileQuantitySheet from './MobileQuantitySheet'
 
 export default function ProductCard({ product, layout = 'grid' }) {
     const navigate = useNavigate()
-    const { cartItems, addToCart, updateQuantity, removeFromCart } = useCart()
+    const { cartItems, addToCart, updateQuantity, removeFromCart, setQuantity } = useCart()
     const { toggleWishlist, isWishlisted } = useWishlist()
 
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [isMobile, setIsMobile] = useState(false)
     const [addAreaActive, setAddAreaActive] = useState(false)
+    const [localQuantity, setLocalQuantity] = useState('')
 
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth < 768)
@@ -24,7 +25,14 @@ export default function ProductCard({ product, layout = 'grid' }) {
         window.addEventListener('resize', checkMobile)
         return () => window.removeEventListener('resize', checkMobile)
     }, [])
+
     const productId = product._id || product.id
+    const cartItem = cartItems.find(item => item.id === productId)
+    const quantity = cartItem ? cartItem.quantity : 0
+
+    useEffect(() => {
+        setLocalQuantity(quantity > 0 ? quantity.toString() : '')
+    }, [quantity])
     const displayPrice = Number(product.effectiveStorefrontPrice ?? product.price ?? 0)
     const comparePriceMrp = Number(product.comparePrice || product.mrp || 0)
     const catalogList = Number(product.storefrontListPrice ?? product.price ?? 0)
@@ -33,8 +41,6 @@ export default function ProductCard({ product, layout = 'grid' }) {
         product.effectiveStorefrontPrice != null && catalogList > displayPrice ? catalogList : 0,
     )
     const hasComparePrice = strikePrice > displayPrice
-    const cartItem = cartItems.find(item => item.id === productId)
-    const quantity = cartItem ? cartItem.quantity : 0
     const isLoved = isWishlisted(productId)
     const productImage = product.primaryImage || product.image
 
@@ -59,6 +65,30 @@ export default function ProductCard({ product, layout = 'grid' }) {
             updateQuantity(productId, -1)
         } else {
             removeFromCart(productId)
+        }
+    }
+
+    const handleQuantityInput = (e) => {
+        e.stopPropagation()
+        const value = e.target.value
+        if (value === '') {
+            setLocalQuantity('')
+            return
+        }
+        setLocalQuantity(value)
+        const newQty = parseInt(value)
+        if (!isNaN(newQty)) {
+            if (newQty <= 0) {
+                removeFromCart(productId)
+            } else {
+                setQuantity(productId, newQty)
+            }
+        }
+    }
+
+    const handleBlur = () => {
+        if (localQuantity === '' || isNaN(parseInt(localQuantity))) {
+            setLocalQuantity(quantity.toString())
         }
     }
 
@@ -117,7 +147,13 @@ export default function ProductCard({ product, layout = 'grid' }) {
                                     ) : (
                                         <div className="flex items-center gap-2.5 h-8 bg-slate-50 rounded-lg px-1.5 text-slate-900 border border-slate-100 md:bg-white md:border-primary md:px-2">
                                             <button type="button" onClick={handleDecrement} className="p-1 hover:text-red-500 transition-colors md:text-primary"><Minus size={12} strokeWidth={3} /></button>
-                                            <span className="text-[11px] font-black w-4 text-center md:font-bold">{quantity}</span>
+                                            <input
+                                                type="number"
+                                                value={localQuantity}
+                                                onChange={handleQuantityInput}
+                                                onBlur={handleBlur}
+                                                className="text-[11px] font-black w-8 text-center bg-transparent border-none focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none md:font-bold"
+                                            />
                                             <button type="button" onClick={handleIncrement} className="p-1 hover:text-primary transition-colors md:text-primary"><Plus size={12} strokeWidth={3} /></button>
                                         </div>
                                     )}
@@ -217,7 +253,13 @@ export default function ProductCard({ product, layout = 'grid' }) {
                                         >
                                             <Minus size={11} strokeWidth={3} className="md:w-3 md:h-3" />
                                         </button>
-                                        <span className="text-[10px] font-bold w-3.5 text-center md:text-[11px] md:w-4">{quantity}</span>
+                                        <input
+                                            type="number"
+                                            value={localQuantity}
+                                            onChange={handleQuantityInput}
+                                            onBlur={handleBlur}
+                                            className="text-[10px] font-bold w-6 text-center bg-transparent border-none text-white focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none md:text-[11px] md:w-8 px-0"
+                                        />
                                         <button
                                             type="button"
                                             onClick={handleIncrement}

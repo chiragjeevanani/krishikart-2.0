@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from '../navigation/Sidebar';
 import TopBar from '../navigation/TopBar';
 import { useState, Suspense } from 'react';
+import NewQuotationAlert from '../modals/NewQuotationAlert';
 import { CatalogProvider } from '../../contexts/CatalogContext';
 import { AdminProvider } from '../../contexts/AdminContext';
 import { WalletProvider } from '../../../user/contexts/WalletContext';
@@ -52,6 +53,7 @@ export default function MasterAdminLayout() {
                             </main>
                         </div>
                     </div>
+                    <NewQuotationAlert />
                 </AdminProvider>
             </CatalogProvider>
         </WalletProvider>

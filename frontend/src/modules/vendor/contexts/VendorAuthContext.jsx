@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import api from '@/lib/axios';
 import { getSocket, joinVendorRoom } from '@/lib/socket';
 import { useFCM } from '@/hooks/useFCM';
+import { useNotificationSound } from '@/hooks/useNotificationSound';
 
 const VendorAuthContext = createContext();
 
@@ -25,22 +26,7 @@ export function VendorAuthProvider({ children }) {
     // Register FCM Token
     useFCM(!!vendor, 'vendor');
 
-    const playNotificationSound = () => {
-        try {
-            const soundUrl = 'https://cdn.pixabay.com/audio/2022/01/18/audio_03d9715a0c.mp3'; // Chime/Bell sound
-            const audio = new Audio(soundUrl);
-            audio.volume = 1.0;
-            audio.play().catch(() => {
-                const playOnClick = () => {
-                    audio.play().catch(() => { });
-                    document.removeEventListener('click', playOnClick);
-                };
-                document.addEventListener('click', playOnClick);
-            });
-        } catch (err) {
-            console.error('Audio failure:', err);
-        }
-    };
+    const { playNotificationSound } = useNotificationSound();
 
     useEffect(() => {
         const loadVendor = async () => {
@@ -112,7 +98,8 @@ export function VendorAuthProvider({ children }) {
             loading,
             isAlertOpen,
             setIsAlertOpen,
-            newAssignmentData
+            newAssignmentData,
+            playNotificationSound
         }}>
             {loading ? (
                 <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-50">

@@ -17,7 +17,11 @@ const procurementRequestSchema = new mongoose.Schema({
             unit: String,
             price: Number, // Estimated price
             quotedPrice: {
-                type: Number, // Vendor's quoted price per item
+                type: Number, // Vendor's current quoted price (can be edited by admin)
+                default: 0
+            },
+            originalQuotedPrice: {
+                type: Number, // Original price quoted by vendor
                 default: 0
             },
             image: String,
@@ -37,7 +41,11 @@ const procurementRequestSchema = new mongoose.Schema({
     ],
     totalEstimatedAmount: Number,
     totalQuotedAmount: {
-        type: Number,
+        type: Number, // Final/Authorized total
+        default: 0
+    },
+    vendorQuoteTotal: {
+        type: Number, // Original total submitted by vendor
         default: 0
     },
     status: {

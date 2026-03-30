@@ -19,6 +19,10 @@ import {
   ChevronRight,
   Target,
   Settings,
+  FileSpreadsheet,
+  UploadCloud,
+  Edit3,
+  ExternalLink,
 } from "lucide-react";
 import api from "@/lib/axios";
 import StockAlertBadge from "../components/badges/StockAlertBadge";
@@ -49,6 +53,18 @@ export default function FranchiseStockMonitoringScreen() {
     isOpen: false,
     item: null,
     value: "",
+  });
+  const [bulkModal, setBulkModal] = useState({
+    isOpen: false,
+    file: null,
+    isUploading: false,
+  });
+  const [editModal, setEditModal] = useState({
+    isOpen: false,
+    item: null,
+    currentStock: "",
+    mbq: "",
+    franchisePrice: "",
   });
 
   const fetchNetworkOverview = async () => {
@@ -211,6 +227,131 @@ export default function FranchiseStockMonitoringScreen() {
       console.error("Update stock error:", error);
       toast.error("Failed to update stock quantity");
     }
+  };
+
+  const handleOpenEditModal = (e, item) => {
+    e.stopPropagation();
+    setEditModal({
+      isOpen: true,
+      item,
+      currentStock: String(item.currentStock ?? 0),
+      mbq: String(item.mbq ?? 0),
+      franchisePrice: String(item.franchisePrice || ""),
+    });
+  };
+
+  const handleSaveEditModal = async () => {
+    if (!selectedFranchiseId || !editModal.item?.productId) return;
+
+    try {
+      const response = await api.put(
+        `/masteradmin/inventory/franchise/${selectedFranchiseId}/item`,
+        {
+          productId: editModal.item.productId,
+          currentStock: Number(editModal.currentStock) || 0,
+          mbq: Number(editModal.mbq) || 0,
+          franchisePrice:
+            editModal.franchisePrice === ""
+              ? null
+              : Number(editModal.franchisePrice),
+        },
+      );
+
+      if (response.data.success) {
+        toast.success(`Updated ${editModal.item.productName} successfully`);
+        setEditModal({ ...editModal, isOpen: false });
+        fetchFranchiseDetails(selectedFranchiseId);
+      }
+    } catch (error) {
+      console.error("Update item error:", error);
+      toast.error("Failed to update item parameters");
+    }
+  };
+
+  const handleDownloadTemplate = () => {
+    const headers = [
+      "SKU",
+      "ProductID",
+      "ProductName",
+      "CurrentStock",
+      "Threshold_MBQ",
+      "FranchisePrice",
+    ];
+    const rows = franchiseDetail.items.map((item) => [
+      item.skuCode || "",
+      item.productId,
+      item.productName,
+      item.currentStock,
+      item.mbq,
+      item.franchisePrice ?? "",
+    ]);
+
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      headers.join(",") +
+      "\n" +
+      rows.map((e) => e.join(",")).join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute(
+      "download",
+      `stock_template_${franchiseDetail?.franchise?.franchiseName}.csv`,
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleBulkUpdate = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setBulkModal((prev) => ({ ...prev, isUploading: true }));
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const text = event.target.result;
+        const lines = text.split("\n");
+        const data = lines
+          .slice(1)
+          .filter((line) => line.trim())
+          .map((line) => {
+            const values = line.split(",").map((v) => v.trim());
+            return {
+              sku: values[0],
+              productId: values[1],
+              currentStock: Number(values[3]) || 0,
+              mbq: Number(values[4]) || 0,
+              franchisePrice:
+                values[5] === "" || values[5] === undefined
+                  ? null
+                  : Number(values[5]),
+            };
+          });
+
+        const response = await api.post(
+          `/masteradmin/inventory/franchise/${selectedFranchiseId}/bulk-update`,
+          {
+            items: data,
+          },
+        );
+
+        if (response.data.success) {
+          toast.success("Bulk update completed successfully");
+          setBulkModal({ isOpen: false, file: null, isUploading: false });
+          fetchFranchiseDetails(selectedFranchiseId);
+        }
+      } catch (error) {
+        console.error("Bulk update error:", error);
+        toast.error("Failed to process bulk update file");
+      } finally {
+        setBulkModal((prev) => ({ ...prev, isUploading: false }));
+      }
+    };
+    reader.readAsText(file);
   };
 
   const franchises = useMemo(
@@ -659,6 +800,25 @@ export default function FranchiseStockMonitoringScreen() {
                     className="w-full border-none outline-none text-[11px] font-bold py-2 pl-9 pr-4 placeholder:text-slate-400 bg-transparent"
                   />
                 </div>
+                <div className="flex items-center gap-2 border-l border-slate-100 pl-4">
+                  <button
+                    onClick={handleDownloadTemplate}
+                    className="flex items-center gap-2 px-3 py-2 border border-slate-200 text-slate-400 hover:text-slate-900 hover:border-slate-900 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all"
+                    title="Download Current View as Template">
+                    <FileSpreadsheet size={14} />
+                    Template
+                  </button>
+                  <label className="flex items-center gap-2 px-3 py-2 bg-slate-900 text-white hover:bg-emerald-600 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer shadow-lg shadow-slate-200">
+                    <UploadCloud size={14} />
+                    Bulk Update
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept=".csv"
+                      onChange={handleBulkUpdate}
+                    />
+                  </label>
+                </div>
               </div>
 
               <div className="space-y-8">
@@ -783,7 +943,13 @@ export default function FranchiseStockMonitoringScreen() {
                               <td className="px-6 py-4">
                                 <StockAlertBadge status={item.alertStatus} />
                               </td>
-                              <td className="px-6 py-4 text-right">
+                              <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
+                                <button
+                                  onClick={(e) => handleOpenEditModal(e, item)}
+                                  className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-sm transition-all"
+                                  title="Edit All Parameters">
+                                  <Edit3 size={14} />
+                                </button>
                                 {item.alertStatus !== "ok" ? (
                                   <button className="bg-slate-900 text-white px-3 py-1.5 rounded-sm font-bold text-[9px] uppercase tracking-widest hover:bg-slate-800 transition-all shadow-sm">
                                     Draft PO
@@ -1087,6 +1253,149 @@ export default function FranchiseStockMonitoringScreen() {
                   onClick={handleSaveStock}
                   className="flex-1 px-4 py-2.5 bg-slate-900 text-white rounded-sm text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-md shadow-slate-200">
                   Save Stock
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {editModal.isOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-white border border-slate-200 rounded-sm shadow-2xl w-full max-w-lg overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    Matrix Configuration
+                  </span>
+                  <h2 className="text-sm font-bold text-slate-900">
+                    Product Parameters Override
+                  </h2>
+                </div>
+                <button
+                  onClick={() => setEditModal({ ...editModal, isOpen: false })}
+                  className="text-slate-400 hover:text-slate-900">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                <div className="flex items-center gap-4 p-4 bg-slate-50 border border-slate-100 rounded-sm">
+                  <div className="w-12 h-12 bg-white border border-slate-100 rounded-sm flex items-center justify-center text-slate-900 overflow-hidden">
+                    {editModal.item?.image ? (
+                      <img
+                        src={editModal.item.image}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Package size={24} />
+                    )}
+                  </div>
+                  <div className="flex-1 flex flex-col">
+                    <span className="text-sm font-bold text-slate-900">
+                      {editModal.item?.productName}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                      CODE: {editModal.item?.productId?.slice(-8)}
+                    </span>
+                  </div>
+                  <a
+                    href={`/masteradmin/products/edit/${editModal.item?.productId}`}
+                    target="_blank"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-sm text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-all shadow-sm">
+                    <ExternalLink size={12} />
+                    Master Edit
+                  </a>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                      Current Stock Registry
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        value={editModal.currentStock}
+                        onChange={(e) =>
+                          setEditModal({
+                            ...editModal,
+                            currentStock: e.target.value,
+                          })
+                        }
+                        className="w-full bg-white border border-slate-200 rounded-sm px-4 py-3 text-sm font-bold focus:border-slate-900 focus:ring-1 focus:ring-slate-900/5 outline-none transition-all"
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-300 uppercase">
+                        {editModal.item?.unit}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                      Threshold (MBQ)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        value={editModal.mbq}
+                        onChange={(e) =>
+                          setEditModal({ ...editModal, mbq: e.target.value })
+                        }
+                        className="w-full bg-white border border-slate-200 rounded-sm px-4 py-3 text-sm font-bold focus:border-slate-900 focus:ring-1 focus:ring-slate-900/5 outline-none transition-all"
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-300 uppercase">
+                        {editModal.item?.unit}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                    Franchise Price Control (₹)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={editModal.franchisePrice}
+                      onChange={(e) =>
+                        setEditModal({
+                          ...editModal,
+                          franchisePrice: e.target.value,
+                        })
+                      }
+                      className="w-full bg-white border border-slate-200 rounded-sm px-4 py-3 text-sm font-bold focus:border-slate-900 focus:ring-1 focus:ring-slate-900/5 outline-none transition-all"
+                      placeholder={`Global Rate: ₹${editModal.item?.globalPrice}`}
+                    />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">
+                      ₹
+                    </div>
+                  </div>
+                  <p className="text-[9px] text-slate-400 italic">
+                    Overrides the global rate for this hub. Leave blank to
+                    inherit global pricing.
+                  </p>
+                </div>
+              </div>
+
+              <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex gap-3">
+                <button
+                  onClick={() => setEditModal({ ...editModal, isOpen: false })}
+                  className="flex-1 px-4 py-2.5 border border-slate-200 rounded-sm text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 hover:border-slate-400 transition-all">
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveEditModal}
+                  className="flex-1 px-4 py-2.5 bg-slate-900 text-white rounded-sm text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-md">
+                  Commit Changes
                 </button>
               </div>
             </motion.div>

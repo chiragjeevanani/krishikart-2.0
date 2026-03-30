@@ -4,6 +4,7 @@ import BottomNav from '../navigation/BottomNav';
 import Sidebar from '../navigation/Sidebar';
 import { useState, Suspense } from 'react';
 import NewOrderAlert from '../modals/NewOrderAlert';
+import ProcurementUpdateAlert from '../modals/ProcurementUpdateAlert';
 
 export default function FranchiseLayout() {
     const [isCollapsed, setIsCollapsed] = useState(false);
@@ -68,6 +69,7 @@ export default function FranchiseLayout() {
                 )}
             </main>
             <NewOrderAlert />
+            <ProcurementUpdateAlert />
         </div>
     );
 }

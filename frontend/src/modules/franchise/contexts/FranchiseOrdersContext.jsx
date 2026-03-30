@@ -3,7 +3,7 @@ import api from '@/lib/axios';
 import { toast } from 'sonner';
 import { getSocket, joinFranchiseRoom } from '@/lib/socket';
 import { useFranchiseAuth } from '@/modules/franchise/contexts/FranchiseAuthContext'; // Need franchise ID
-import sellerAlert from '@/assets/sounds/seller_alert.mp3';
+import { useNotificationSound } from '@/hooks/useNotificationSound';
 
 const FranchiseOrdersContext = createContext();
 
@@ -16,111 +16,11 @@ export function FranchiseOrdersProvider({ children }) {
     // Alert State
     const [isAlertOpen, setIsAlertOpen] = useState(false);
     const [newOrderData, setNewOrderData] = useState(null);
-    const audioRef = useRef(null);
-    const hasPrimedAudioRef = useRef(false);
+    const [isProcurementAlertOpen, setIsProcurementAlertOpen] = useState(false);
+    const [procurementAlertData, setProcurementAlertData] = useState(null);
+    
+    const { playNotificationSound } = useNotificationSound();
     const knownOrderIdsRef = useRef(new Set());
-
-    // Play sound helper when new order arrives.
-    // Preferred: play seller_alert.mp3. Fallback: oscillator "beeps".
-    const playNotificationSound = () => {
-        const fallbackBeep = () => {
-            if (!hasPrimedAudioRef.current) return;
-            try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (!AudioContext) return;
-                const ctx = new AudioContext();
-
-                const playBeep = (freq, startTime, duration) => {
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(freq, ctx.currentTime + startTime);
-                    gain.gain.setValueAtTime(0, ctx.currentTime + startTime);
-                    gain.gain.linearRampToValueAtTime(1, ctx.currentTime + startTime + 0.05);
-                    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + startTime + duration);
-
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-
-                    osc.start(ctx.currentTime + startTime);
-                    osc.stop(ctx.currentTime + startTime + duration);
-                };
-
-                playBeep(880, 0, 0.15);
-                playBeep(1108.73, 0.15, 0.25);
-
-                setTimeout(() => {
-                    playBeep(880, 0, 0.15);
-                    playBeep(1108.73, 0.15, 0.25);
-                }, 800);
-
-                setTimeout(() => {
-                    playBeep(880, 0, 0.15);
-                    playBeep(1108.73, 0.15, 0.25);
-                }, 1600);
-
-                if (ctx.state === 'suspended') ctx.resume();
-            } catch (_) {
-                // silent fallback
-            }
-        };
-
-        try {
-            const audio = audioRef.current || new Audio(sellerAlert);
-            audioRef.current = audio;
-            audio.volume = 1.0;
-            audio.currentTime = 0;
-            const playPromise = audio.play();
-
-            if (playPromise && typeof playPromise.catch === 'function') {
-                playPromise.catch(() => fallbackBeep());
-            }
-        } catch (_) {
-            fallbackBeep();
-        }
-    };
-
-    // Prime audio on first user interaction so browser autoplay policies don't block alerts later.
-    useEffect(() => {
-        if (hasPrimedAudioRef.current) return;
-        const prime = () => {
-            try {
-                hasPrimedAudioRef.current = true;
-                const audio = audioRef.current || new Audio(sellerAlert);
-                audioRef.current = audio;
-                audio.volume = 0;
-                const p = audio.play();
-                if (p && typeof p.finally === 'function') {
-                    p.finally(() => {
-                        audio.pause();
-                        audio.currentTime = 0;
-                        audio.volume = 1;
-                    });
-                } else {
-                    audio.pause();
-                    audio.currentTime = 0;
-                    audio.volume = 1;
-                }
-            } catch (_) {
-                // Keep silent; fallback beep still exists.
-            } finally {
-                window.removeEventListener('click', prime);
-                window.removeEventListener('touchstart', prime);
-                window.removeEventListener('keydown', prime);
-            }
-        };
-
-        window.addEventListener('click', prime, { once: true });
-        window.addEventListener('touchstart', prime, { once: true });
-        window.addEventListener('keydown', prime, { once: true });
-
-        return () => {
-            window.removeEventListener('click', prime);
-            window.removeEventListener('touchstart', prime);
-            window.removeEventListener('keydown', prime);
-        };
-    }, []);
 
     const fetchOrders = async () => {
         setLoading(true);
@@ -194,10 +94,20 @@ export function FranchiseOrdersProvider({ children }) {
             fetchOrders(); // Immediate refresh
         };
 
+        const handleProcurementUpdate = (data) => {
+            console.log("Procurement Cycle Update Received:", data);
+            setProcurementAlertData(data);
+            setIsProcurementAlertOpen(true);
+            playNotificationSound();
+            // Optional: refresh any relevant procurement list
+        };
+
         socket.on('new_order', handleNewOrder);
+        socket.on('procurement_cycle_update', handleProcurementUpdate);
 
         return () => {
             socket.off('new_order', handleNewOrder);
+            socket.off('procurement_cycle_update', handleProcurementUpdate);
         };
     }, [franchise?._id]);
 
@@ -283,7 +193,7 @@ export function FranchiseOrdersProvider({ children }) {
     /** Reject auto-assigned order → backend reassigns to next nearest franchise (same category rules). */
     const rejectFranchiseOrder = async (orderId, reason = '') => {
         try {
-            const response = await api.put(`/orders/franchise/${orderId}/reject`, { reason });
+            const response = await api.put(`/orders/franchise/${orderId}/rejection`, { reason });
             if (response.data.success) {
                 toast.success(response.data.message || 'Order rejected');
                 fetchOrders();
@@ -335,6 +245,9 @@ export function FranchiseOrdersProvider({ children }) {
             isAlertOpen,
             setIsAlertOpen,
             newOrderData,
+            isProcurementAlertOpen,
+            setIsProcurementAlertOpen,
+            procurementAlertData,
             refreshOrders: fetchOrders,
             refreshPartners: fetchDeliveryPartners,
             fetchOrdersByDate: async (date) => {

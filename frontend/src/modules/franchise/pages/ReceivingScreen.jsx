@@ -26,6 +26,7 @@ import FilterBar from '../components/tables/FilterBar';
 import DocumentViewer from '../../vendor/components/documents/DocumentViewer';
 import { useInventory } from '../contexts/InventoryContext';
 import { useFranchiseOrders } from '../contexts/FranchiseOrdersContext';
+import { getSocket } from '@/lib/socket';
 
 const ReceivingScreen = () => {
     const [orders, setOrders] = useState([]);
@@ -44,6 +45,17 @@ const ReceivingScreen = () => {
 
     useEffect(() => {
         fetchOrders();
+
+        const socket = getSocket();
+        const handleUpdate = () => {
+            fetchOrders();
+        };
+
+        socket.on('procurement_cycle_update', handleUpdate);
+
+        return () => {
+            socket.off('procurement_cycle_update', handleUpdate);
+        };
     }, []);
 
     const inboundStatuses = new Set([

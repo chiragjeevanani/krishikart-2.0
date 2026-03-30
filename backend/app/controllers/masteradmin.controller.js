@@ -1,4 +1,5 @@
 import Vendor from "../models/vendor.js";
+import mongoose from "mongoose";
 import Franchise from "../models/franchise.js";
 import User from "../models/user.js";
 import Product from "../models/product.js";
@@ -785,7 +786,7 @@ export const getFranchiseInventoryDetails = async (req, res) => {
     }
 
     const eligibleProducts = await Product.find(productFilter)
-      .select("name primaryImage unit unitValue category subcategory price stock")
+      .select("name skuCode primaryImage unit unitValue category subcategory price stock")
       .populate("category", "name")
       .populate("subcategory", "name")
       .lean();
@@ -804,6 +805,7 @@ export const getFranchiseInventoryDetails = async (req, res) => {
       return {
         productId: product._id,
         productName: product.name,
+        skuCode: product.skuCode || "",
         image: product.primaryImage,
         currentStock,
         mbq,
@@ -947,6 +949,85 @@ export const updateFranchiseInventoryItem = async (req, res) => {
     );
   } catch (err) {
     console.error("Update Inventory Item Error:", err);
+    return handleResponse(res, 500, "Server error: " + err.message);
+  }
+};
+
+export const bulkUpdateFranchiseInventory = async (req, res) => {
+  try {
+    const { id } = req.params; // franchiseId
+    const { items } = req.body; // Array of { productId, currentStock, mbq, franchisePrice }
+
+    if (!Array.isArray(items)) {
+      return handleResponse(res, 400, "Items must be an array");
+    }
+
+    let inventory = await Inventory.findOne({ franchiseId: id });
+    if (!inventory) {
+      inventory = await Inventory.create({ franchiseId: id, items: [] });
+    }
+
+    for (const update of items) {
+      let productId = update.productId;
+
+      // Ensure productId is a valid ObjectId if provided
+      if (productId && !mongoose.Types.ObjectId.isValid(productId)) {
+        productId = null;
+      }
+
+      // Fallback to SKU/ID/Name mapping if productId not directly matched or provided
+      if (!productId && update.sku) {
+        const product = await Product.findOne({
+          $or: [
+            { skuCode: update.sku },
+            { name: update.sku },
+            ...(mongoose.Types.ObjectId.isValid(update.sku)
+              ? [{ _id: update.sku }]
+              : []),
+          ],
+        });
+        if (product) productId = product._id;
+      }
+
+      if (!productId) continue;
+
+      const existingItem = inventory.items.find(
+        (item) => item.productId.toString() === productId.toString(),
+      );
+
+      if (existingItem) {
+        if (update.currentStock !== undefined)
+          existingItem.currentStock = Number(update.currentStock);
+        if (update.mbq !== undefined) existingItem.mbq = Number(update.mbq);
+        if (update.franchisePrice !== undefined) {
+          existingItem.franchisePrice =
+            update.franchisePrice === null ? null : Number(update.franchisePrice);
+        }
+        existingItem.lastUpdated = new Date();
+      } else {
+        inventory.items.push({
+          productId,
+          currentStock:
+            update.currentStock !== undefined ? Number(update.currentStock) : 0,
+          mbq: update.mbq !== undefined ? Number(update.mbq) : 5,
+          franchisePrice:
+            update.franchisePrice === undefined ? null : update.franchisePrice,
+          lastUpdated: new Date(),
+        });
+      }
+    }
+
+    inventory.markModified("items");
+    await inventory.save();
+
+    return handleResponse(
+      res,
+      200,
+      "Bulk inventory update successful",
+      inventory,
+    );
+  } catch (err) {
+    console.error("Bulk Inventory Update Error:", err);
     return handleResponse(res, 500, "Server error: " + err.message);
   }
 };

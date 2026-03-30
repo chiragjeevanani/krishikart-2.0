@@ -445,75 +445,75 @@ export default function PackingScreen() {
                             <VendorBackBar fallbackPath="/vendor/orders" />
                         </div>
                         <div className="bg-white p-10 rounded-[48px] border border-slate-100 shadow-2xl text-center space-y-10">
-                        <div className="w-24 h-24 bg-emerald-600 text-white rounded-[32px] flex items-center justify-center mx-auto shadow-2xl shadow-emerald-100 rotate-12">
-                            <CheckCircle2 size={48} />
-                        </div>
-
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <h3 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase">CYCLE SYNCHRONIZED</h3>
-                                <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em]">CONSGN REF: KK-IX-{order.id?.slice(-8).toUpperCase()}</p>
+                            <div className="w-24 h-24 bg-emerald-600 text-white rounded-[32px] flex items-center justify-center mx-auto shadow-2xl shadow-emerald-100 rotate-12">
+                                <CheckCircle2 size={48} />
                             </div>
-                            {orders.find(o => o._id === orderId)?.invoice && (
-                                <div className="bg-emerald-50 py-2 px-4 rounded-full inline-block">
-                                    <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Invoice Generated: {orders.find(o => o._id === orderId).invoice.invoiceNumber}</p>
-                                </div>
-                            )}
-                        </div>
 
-                        <div className="bg-slate-50 p-8 rounded-[40px] border border-slate-100 text-left space-y-6">
-                            <div className="space-y-3">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200 pb-2">Final Dispatch Manifest</p>
-                                {order.items.filter(item => checkedItems[item.productId || item.name]).map((item, idx) => (
-                                    <div key={idx} className="flex justify-between items-center text-[11px] font-black uppercase tracking-tight">
-                                        <span className="text-slate-600">{item.name}</span>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-slate-400 text-[9px]">SENT:</span>
-                                            <span className="text-slate-900 tabular-nums">{itemQuantities[item.productId || item.name] || 0} {item.unit}</span>
-                                        </div>
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <h3 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase">CYCLE SYNCHRONIZED</h3>
+                                    <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em]">CONSGN REF: KK-IX-{order.id?.slice(-8).toUpperCase()}</p>
+                                </div>
+                                {orders.find(o => o._id === orderId)?.invoice && (
+                                    <div className="bg-emerald-50 py-2 px-4 rounded-full inline-block">
+                                        <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Invoice Generated: {orders.find(o => o._id === orderId).invoice.invoiceNumber}</p>
                                     </div>
-                                ))}
+                                )}
                             </div>
 
-                            <div className="flex justify-between items-center border-t border-slate-200 pt-4">
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Total Payload</span>
-                                <span className="text-lg font-black text-slate-900 tabular-nums">{actualWeight} KG</span>
-                            </div>
-                            <div className="flex justify-between items-center border-b border-slate-100 pb-4">
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Target Node</span>
-                                <span className="text-sm font-black text-slate-900 uppercase tracking-tight">{order.franchiseName}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Network Status</span>
-                                <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-600 rounded-full text-[9px] font-black uppercase tracking-widest border border-emerald-200">
-                                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                                    IN TRANSIT
+                            <div className="bg-slate-50 p-8 rounded-[40px] border border-slate-100 text-left space-y-6">
+                                <div className="space-y-3">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200 pb-2">Final Dispatch Manifest</p>
+                                    {order.items.filter(item => checkedItems[item.productId || item.name]).map((item, idx) => (
+                                        <div key={idx} className="flex justify-between items-center text-[11px] font-black uppercase tracking-tight">
+                                            <span className="text-slate-600">{item.name}</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-slate-400 text-[9px]">SENT:</span>
+                                                <span className="text-slate-900 tabular-nums">{itemQuantities[item.productId || item.name] || 0} {item.unit}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="flex justify-between items-center border-t border-slate-200 pt-4">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Total Payload</span>
+                                    <span className="text-lg font-black text-slate-900 tabular-nums">{actualWeight} KG</span>
+                                </div>
+                                <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Target Node</span>
+                                    <span className="text-sm font-black text-slate-900 uppercase tracking-tight">{order.franchiseName}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Network Status</span>
+                                    <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-600 rounded-full text-[9px] font-black uppercase tracking-widest border border-emerald-200">
+                                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                                        IN TRANSIT
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="space-y-4 pt-4">
-                            <button
-                                onClick={() => setIsDocOpen(true)}
-                                className="w-full bg-slate-50 text-slate-600 py-5 rounded-[24px] font-black text-[12px] uppercase tracking-widest flex items-center justify-center gap-3 border border-slate-100 hover:bg-white hover:shadow-xl hover:shadow-slate-100/50 transition-all active:scale-95 group"
-                            >
-                                <FileText size={20} className="text-slate-300 group-hover:text-primary transition-colors" /> View Digital Invoice
-                            </button>
-                            <div className="flex gap-4">
+                            <div className="space-y-4 pt-4">
                                 <button
-                                    onClick={() => navigate('/vendor/dashboard')}
-                                    className="flex-1 bg-slate-900 text-white py-5 rounded-[24px] font-black text-[12px] uppercase tracking-widest shadow-xl active:scale-95 transition-all"
+                                    onClick={() => setIsDocOpen(true)}
+                                    className="w-full bg-slate-50 text-slate-600 py-5 rounded-[24px] font-black text-[12px] uppercase tracking-widest flex items-center justify-center gap-3 border border-slate-100 hover:bg-white hover:shadow-xl hover:shadow-slate-100/50 transition-all active:scale-95 group"
                                 >
-                                    Dashboard
+                                    <FileText size={20} className="text-slate-300 group-hover:text-primary transition-colors" /> View Digital Invoice
                                 </button>
-                                <button
-                                    onClick={() => navigate('/vendor/dispatch-history')}
-                                    className="flex-1 bg-white border border-slate-100 text-slate-900 py-5 rounded-[24px] font-black text-[12px] uppercase tracking-widest active:scale-95 transition-all"
-                                >
-                                    History
-                                </button>
+                                <div className="flex gap-4">
+                                    <button
+                                        onClick={() => navigate('/vendor/dashboard')}
+                                        className="flex-1 bg-slate-900 text-white py-5 rounded-[24px] font-black text-[12px] uppercase tracking-widest shadow-xl active:scale-95 transition-all"
+                                    >
+                                        Dashboard
+                                    </button>
+                                    <button
+                                        onClick={() => navigate('/vendor/dispatch-history')}
+                                        className="flex-1 bg-white border border-slate-100 text-slate-900 py-5 rounded-[24px] font-black text-[12px] uppercase tracking-widest active:scale-95 transition-all"
+                                    >
+                                        History
+                                    </button>
+                                </div>
                             </div>
-                        </div>
                         </div>
                     </motion.div>
                 )}
