@@ -101,9 +101,9 @@ export default function ProductCard({ product, layout = 'grid' }) {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.25 }}
                     onClick={() => navigate(`/product/${productId}`)}
-                    className="bg-white rounded-2xl p-2.5 border border-slate-100 flex gap-3.5 h-[110px] items-center group cursor-pointer shadow-sm hover:shadow-md transition-all duration-150 active:scale-[0.98] md:rounded-xl md:border-slate-200 md:shadow-none md:hover:shadow-sm md:active:scale-100"
+                    className="bg-white rounded-2xl p-1.5 border border-slate-100 flex gap-2 h-[94px] items-center group cursor-pointer shadow-sm hover:shadow-md transition-all duration-150 active:scale-[0.98] overflow-hidden md:rounded-xl md:border-slate-200 md:shadow-none md:hover:shadow-sm md:active:scale-100"
                 >
-                    <div className="relative w-24 h-24 rounded-xl overflow-hidden shrink-0 bg-slate-50 md:rounded-lg">
+                    <div className="relative w-[76px] h-[76px] rounded-[16px] overflow-hidden shrink-0 bg-slate-50 md:rounded-lg">
                         <img
                             src={productImage}
                             alt={product.name}
@@ -126,7 +126,7 @@ export default function ProductCard({ product, layout = 'grid' }) {
                         <div className="flex items-center justify-between mt-3">
                             <div>
                                 <div className="flex items-center gap-1.5">
-                                    <p className="text-[15px] font-black text-slate-900 leading-none md:text-base md:font-bold">₹{displayPrice}</p>
+                                    <p className="text-sm font-black text-slate-900 leading-none md:text-base md:font-bold">₹{displayPrice}</p>
                                     {hasComparePrice && (
                                         <span className="text-[11px] font-bold text-slate-400 line-through">₹{strikePrice}</span>
                                     )}
@@ -134,7 +134,7 @@ export default function ProductCard({ product, layout = 'grid' }) {
                                 <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-1 md:text-[10px] md:normal-case md:tracking-normal">{product.unit}</p>
                             </div>
 
-                            <div className="h-8" onClick={(e) => e.stopPropagation()}>
+                            <div className="h-8 shrink-0 ml-auto" onClick={(e) => e.stopPropagation()}>
                                 <AnimatePresence mode="wait">
                                     {quantity === 0 ? (
                                         <button
@@ -145,16 +145,16 @@ export default function ProductCard({ product, layout = 'grid' }) {
                                             Add
                                         </button>
                                     ) : (
-                                        <div className="flex items-center gap-2.5 h-8 bg-slate-50 rounded-lg px-1.5 text-slate-900 border border-slate-100 md:bg-white md:border-primary md:px-2">
-                                            <button type="button" onClick={handleDecrement} className="p-1 hover:text-red-500 transition-colors md:text-primary"><Minus size={12} strokeWidth={3} /></button>
+                                        <div className="flex items-center gap-0.5 h-7 bg-slate-50 rounded-lg px-0.5 text-slate-900 border border-slate-100 md:bg-white md:border-primary md:px-2 md:gap-2.5 md:px-1.5">
+                                            <button type="button" onClick={handleDecrement} className="p-0.5 hover:text-red-500 transition-colors md:text-primary"><Minus size={11} strokeWidth={3} /></button>
                                             <input
                                                 type="number"
                                                 value={localQuantity}
                                                 onChange={handleQuantityInput}
                                                 onBlur={handleBlur}
-                                                className="text-[11px] font-black w-8 text-center bg-transparent border-none focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none md:font-bold"
+                                                className="text-[10px] font-black w-6 text-center bg-transparent border-none focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none md:font-bold md:w-8"
                                             />
-                                            <button type="button" onClick={handleIncrement} className="p-1 hover:text-primary transition-colors md:text-primary"><Plus size={12} strokeWidth={3} /></button>
+                                            <button type="button" onClick={handleIncrement} className="p-0.5 hover:text-primary transition-colors md:text-primary"><Plus size={11} strokeWidth={3} /></button>
                                         </div>
                                     )}
                                 </AnimatePresence>

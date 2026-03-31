@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import {
     Phone,
     MessageSquare,
-    Navigation,
     MapPin,
     Clock,
     Loader2,
@@ -123,17 +122,6 @@ const ActiveDelivery = () => {
                             >
                                 <Phone className="w-3.5 h-3.5" /> Call Franchise
                             </button>
-                            <button
-                                onClick={() => {
-                                    if (order?.franchiseId?.location?.coordinates) {
-                                        const [lng, lat] = order.franchiseId.location.coordinates;
-                                        window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
-                                    }
-                                }}
-                                className="flex-1 bg-muted/50 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 active:bg-slate-100"
-                            >
-                                <Navigation className="w-3.5 h-3.5" /> Directions
-                            </button>
                         </div>
                     </div>
 
@@ -159,16 +147,6 @@ const ActiveDelivery = () => {
                                 className="flex-1 bg-muted/50 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 active:bg-slate-100"
                             >
                                 <Phone className="w-3.5 h-3.5" /> Call Customer
-                            </button>
-                            <button
-                                onClick={() => {
-                                    // Use shipping address for directions if coordinates not available
-                                    const encodedAddress = encodeURIComponent(order?.shippingAddress || '');
-                                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`, '_blank');
-                                }}
-                                className="flex-1 bg-muted/50 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 active:bg-slate-100"
-                            >
-                                <Navigation size={14} className="w-3.5 h-3.5" /> Directions
                             </button>
                         </div>
                     </div>

@@ -14,6 +14,7 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { toast } from 'sonner'
 import { useLocation } from '../contexts/LocationContext'
 import { appendLocationToProductParams, getBrowseLocationParams } from '../utils/storefrontParams'
+import { useFilter } from '../contexts/FilterContext'
 import {
     Sheet,
     SheetContent,
@@ -35,15 +36,21 @@ export default function ProductListScreen() {
     const [categories, setCategories] = useState([])
     const [subcategories, setSubcategories] = useState([])
     const [products, setProducts] = useState([])
+    const { vegMode, setVegMode } = useFilter()
     const [isLoading, setIsLoading] = useState(true)
     const [selectedCategory, setSelectedCategory] = useState(category || 'all')
     const [activeSubCategory, setActiveSubCategory] = useState('all')
     const [activeFilters, setActiveFilters] = useState({
         rating: false,
-        veg: false,
+        veg: vegMode,
         inStock: false,
         sort: 'none' // 'price-low', 'price-high'
     })
+
+    // Sync local veg filter with global context
+    useEffect(() => {
+        setActiveFilters(prev => ({ ...prev, veg: vegMode }))
+    }, [vegMode])
     const [showSearch, setShowSearch] = useState(false)
     const debouncedSearch = useDebounce(searchQuery, 500)
     const activeSidebarRef = useRef(null)
@@ -221,7 +228,7 @@ export default function ProductListScreen() {
                 p.description?.toLowerCase().includes(normalizedSearch) ||
                 tagsText.toLowerCase().includes(normalizedSearch)
             const matchesRating = !activeFilters.rating || (p.rating >= 4.0 || p.comparePrice > p.price) // Simplified rating logic or deal logic
-            const matchesVeg = !activeFilters.veg || p.dietaryType !== 'non-veg'
+            const matchesVeg = !activeFilters.veg || (p.dietaryType === 'veg' || p.dietaryType === 'none')
             const matchesInStock = !activeFilters.inStock || (p.stock > 0)
             return matchesSearch && matchesRating && matchesVeg && matchesInStock
         })
@@ -446,14 +453,14 @@ export default function ProductListScreen() {
                                     <span className="text-[12px]">Top Deals</span>
                                 </div>
                                 <div
-                                    onClick={() => setActiveFilters(prev => ({ ...prev, veg: !prev.veg }))}
+                                    onClick={() => setVegMode(!vegMode)}
                                     className={cn(
                                         "flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm transition-all shrink-0",
-                                        activeFilters.veg ? "bg-green-50 border-green-200 text-green-600 font-bold" : "bg-white border-slate-100 text-slate-700"
+                                        vegMode ? "bg-green-50 border-green-200 text-green-600 font-bold" : "bg-white border-slate-100 text-slate-700"
                                     )}
                                 >
-                                    <div className={cn("w-3 h-3 border flex items-center justify-center rounded-[2px]", activeFilters.veg ? "border-green-600" : "border-slate-300")}>
-                                        <div className={cn("w-1.5 h-1.5 rounded-full", activeFilters.veg ? "bg-green-600" : "bg-transparent")} />
+                                    <div className={cn("w-3 h-3 border flex items-center justify-center rounded-[2px]", vegMode ? "border-green-600" : "border-slate-300")}>
+                                        <div className={cn("w-1.5 h-1.5 rounded-full", vegMode ? "bg-green-600" : "bg-transparent")} />
                                     </div>
                                     <span className="text-[12px]">Veg Only</span>
                                 </div>

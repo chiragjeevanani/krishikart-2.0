@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import api from '@/lib/axios'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     User,
@@ -17,6 +16,7 @@ import {
 import { useNavigate } from 'react-router-dom'
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { useWallet } from '../../contexts/WalletContext'
+import { useUserAuth } from '../../contexts/UserAuthContext'
 import { cn } from '@/lib/utils'
 
 const HamburgerIcon = () => (
@@ -68,8 +68,8 @@ const MenuItem = ({ icon: Icon, label, path, badge, isNew, hasToggle, isActive, 
                             onToggle?.();
                         }}
                         className={cn(
-                            "w-10 h-5 rounded-full p-0.5 transition-all duration-200 cursor-pointer",
-                            isActive ? "bg-slate-400" : "bg-slate-200"
+                            "w-10 h-5 rounded-full p-0.5 transition-all duration-300 cursor-pointer shadow-inner",
+                            isActive ? "bg-emerald-600" : "bg-slate-200"
                         )}
                     >
                         <motion.div
@@ -89,41 +89,8 @@ const MenuItem = ({ icon: Icon, label, path, badge, isNew, hasToggle, isActive, 
 export default function MobileProfileDrawer() {
     const navigate = useNavigate()
     const { balance, creditLimit, availableCredit } = useWallet()
-    const [vegMode, setVegMode] = useState(false)
+    const { user } = useUserAuth()
     const [isOpen, setIsOpen] = useState(false)
-    const [user, setUser] = useState(null)
-
-    useEffect(() => {
-        const loadUser = async () => {
-            const storedUser = localStorage.getItem('userData');
-            if (storedUser) {
-                try {
-                    setUser(JSON.parse(storedUser));
-                } catch (e) {
-                    console.error("Failed to parse user data", e);
-                }
-            }
-
-            // Always fetch fresh data in background
-            const token = localStorage.getItem('userToken');
-            if (token) {
-                try {
-                    const response = await api.get('/user/me');
-                    if (response.data?.result) {
-                        const freshUser = response.data.result;
-                        setUser(freshUser);
-                        localStorage.setItem('userData', JSON.stringify(freshUser));
-                    }
-                } catch (error) {
-                    console.error("Failed to refresh user profile:", error);
-                }
-            }
-        };
-
-        loadUser();
-        window.addEventListener('userDataUpdated', loadUser);
-        return () => window.removeEventListener('userDataUpdated', loadUser);
-    }, [])
 
     return (
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -206,13 +173,6 @@ export default function MobileProfileDrawer() {
                                         <SectionHeader title="Others" />
                                         <div className="bg-white rounded-[24px] overflow-hidden border border-slate-100 shadow-sm">
                                             <MenuItem icon={User} label="Profile settings" path="/edit-profile" isFirst />
-                                            <MenuItem
-                                                icon={CircleDot}
-                                                label="Veg mode"
-                                                hasToggle
-                                                isActive={vegMode}
-                                                onToggle={() => setVegMode(!vegMode)}
-                                            />
                                             <MenuItem icon={Bell} label="Notifications" path="/notifications" />
                                             <MenuItem icon={Heart} label="My list" path="/wishlist" />
                                             <MenuItem icon={Info} label="Contact us" path="/help-support" isLast />

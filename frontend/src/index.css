@@ -339,3 +339,15 @@ body {
         border: 1px solid var(--color-slate-100);
     }
 }
+
+/* Prevent text selection and copy on small screens */
+@media (max-width: 767px) {
+    body {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        /* Disables the default callout (e.g., magnifying glass/copy) on iOS */
+        -webkit-touch-callout: none;
+    }
+}

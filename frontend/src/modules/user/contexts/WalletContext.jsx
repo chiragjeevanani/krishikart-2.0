@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import { useUserAuth } from './UserAuthContext';
 import api from '@/lib/axios';
 
 const WalletContext = createContext();
@@ -10,80 +11,76 @@ export function WalletProvider({ children }) {
     const [creditUsed, setCreditUsed] = useState(0);
     const [transactions, setTransactions] = useState([]);
     const [loyaltyConfig, setLoyaltyConfig] = useState({
-        awardRate: 5, // 5% of order value
-        redemptionRate: 10, // 10 points = ₹1
+        awardRate: 5,
+        redemptionRate: 10,
         minRedeemPoints: 100
     });
 
     const [isLoading, setIsLoading] = useState(false);
+    const { user } = useUserAuth();
 
-    useEffect(() => {
-        fetchWalletData();
+    const syncWalletFromUser = useCallback((userData) => {
+        if (!userData) return;
+        setBalance(userData.walletBalance || 0);
+        setCreditLimit(userData.creditLimit || 0);
+        setCreditUsed(userData.usedCredit || userData.creditUsed || 0);
+        setLoyaltyPoints(userData.loyaltyPoints || 0);
+        const txns = (userData.walletTransactions || []).map((txn, idx) => ({
+            id: txn.txnId || `TXN-${idx}`,
+            type: txn.type || 'Added',
+            amount: Number(txn.amount || 0),
+            date: txn.createdAt
+                ? new Date(txn.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                : 'N/A',
+            status: txn.status || 'Success'
+        }));
+        setTransactions(txns);
     }, []);
 
-    const fetchWalletData = async () => {
+    // Sync wallet data whenever the global user profile updates
+    useEffect(() => {
+        if (user) syncWalletFromUser(user);
+    }, [user, syncWalletFromUser]);
+
+    const fetchWalletData = useCallback(async () => {
         const token = localStorage.getItem('userToken');
         const path = window.location.pathname;
 
-        // Skip if on auth pages or in other modules
         if (!token ||
             ['/', '/login', '/verification'].includes(path) ||
             path.includes('/masteradmin') ||
             path.includes('/franchise') ||
             path.includes('/vendor') ||
             path.includes('/delivery')
-        ) {
-            return;
-        }
+        ) return;
 
         setIsLoading(true);
         try {
-            try {
-                const settingsRes = await api.get('/masteradmin/public-settings');
-                const settings = settingsRes.data?.results || settingsRes.data?.result || [];
-                const loyaltySetting = Array.isArray(settings)
-                    ? settings.find((s) => s.key === 'loyalty_config')
-                    : null;
-                if (loyaltySetting?.value && typeof loyaltySetting.value === 'object') {
-                    setLoyaltyConfig((prev) => ({
-                        ...prev,
-                        ...loyaltySetting.value,
-                    }));
-                }
-            } catch (settingsError) {
-                console.error('Failed to fetch loyalty config:', settingsError);
-            }
+            const settingsRes = await api.get('/masteradmin/public-settings');
+            const settings = settingsRes.data?.results || settingsRes.data?.result || [];
 
-            const response = await api.get('/user/me');
-            if (response.data && response.data.result) {
-                const user = response.data.result;
-                setBalance(user.walletBalance || 0);
-                setCreditLimit(user.creditLimit || 0);
-                setCreditUsed(user.usedCredit || 0);
-                setLoyaltyPoints(user.loyaltyPoints || 0);
-                const txns = (user.walletTransactions || []).map((txn, idx) => ({
-                    id: txn.txnId || `TXN-${idx}`,
-                    type: txn.type || 'Added',
-                    amount: Number(txn.amount || 0),
-                    date: txn.createdAt
-                        ? new Date(txn.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                        : 'N/A',
-                    status: txn.status || 'Success'
-                }));
-                setTransactions(txns);
+            if (Array.isArray(settings)) {
+                const loyaltySetting = settings.find((s) => s.key === 'loyalty_config');
+                if (loyaltySetting?.value && typeof loyaltySetting.value === 'object') {
+                    setLoyaltyConfig((prev) => ({ ...prev, ...loyaltySetting.value }));
+                }
             }
         } catch (error) {
-            console.error('Failed to fetch wallet data:', error);
+            console.error('Failed to fetch wallet data config:', error);
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
 
-    const updateLoyaltyConfig = (newConfig) => {
+    useEffect(() => {
+        fetchWalletData();
+    }, [fetchWalletData]);
+
+    const updateLoyaltyConfig = useCallback((newConfig) => {
         setLoyaltyConfig(prev => ({ ...prev, ...newConfig }));
-    };
+    }, []);
 
-    const addLoyaltyPoints = (points) => {
+    const addLoyaltyPoints = useCallback((points) => {
         setLoyaltyPoints(prev => prev + points);
         const newTxn = {
             id: `LYT-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -93,9 +90,9 @@ export function WalletProvider({ children }) {
             status: 'Success'
         };
         setTransactions(prev => [newTxn, ...prev]);
-    };
+    }, []);
 
-    const redeemLoyaltyPoints = async (points) => {
+    const redeemLoyaltyPoints = useCallback(async (points) => {
         try {
             const response = await api.post('/user/wallet/redeem-loyalty', { points });
             if (response.data?.success) {
@@ -107,26 +104,9 @@ export function WalletProvider({ children }) {
             console.error('Redeem loyalty points failed:', error);
             return false;
         }
-    };
+    }, [syncWalletFromUser]);
 
-    const syncWalletFromUser = (user) => {
-        setBalance(user.walletBalance || 0);
-        setCreditLimit(user.creditLimit || 0);
-        setCreditUsed(user.usedCredit || 0);
-        setLoyaltyPoints(user.loyaltyPoints || 0);
-        const txns = (user.walletTransactions || []).map((txn, idx) => ({
-            id: txn.txnId || `TXN-${idx}`,
-            type: txn.type || 'Added',
-            amount: Number(txn.amount || 0),
-            date: txn.createdAt
-                ? new Date(txn.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                : 'N/A',
-            status: txn.status || 'Success'
-        }));
-        setTransactions(txns);
-    };
-
-    const loadRazorpay = () => {
+    const loadRazorpay = useCallback(() => {
         return new Promise((resolve) => {
             if (window.Razorpay) {
                 resolve(true);
@@ -139,18 +119,15 @@ export function WalletProvider({ children }) {
             script.onerror = () => resolve(false);
             document.body.appendChild(script);
         });
-    };
+    }, []);
 
-    const addMoney = async (amount) => {
+    const addMoney = useCallback(async (amount) => {
         try {
             const value = Number(amount || 0);
             if (!Number.isFinite(value) || value <= 0) return { success: false, message: 'Invalid amount' };
 
             const sdkLoaded = await loadRazorpay();
-            if (!sdkLoaded) {
-                console.error('Razorpay SDK failed to load');
-                return { success: false, message: 'Razorpay SDK failed to load' };
-            }
+            if (!sdkLoaded) return { success: false, message: 'Razorpay SDK failed to load' };
 
             const createRes = await api.post('/user/wallet/recharge/create-order', { amount: value });
             if (!createRes.data?.success || !createRes.data?.result?.id) {
@@ -158,18 +135,11 @@ export function WalletProvider({ children }) {
             }
             const order = createRes.data.result;
 
-            let prefill = {};
-            try {
-                const meRes = await api.get('/user/me');
-                const me = meRes.data?.result || {};
-                prefill = {
-                    name: me.fullName || '',
-                    email: me.email || '',
-                    contact: me.mobile || ''
-                };
-            } catch (err) {
-                console.error('Failed to load user prefill details for Razorpay', err);
-            }
+            const prefill = user ? {
+                name: user.fullName || '',
+                email: user.email || '',
+                contact: user.mobile || ''
+            } : {};
 
             return await new Promise((resolve) => {
                 const paymentObject = new window.Razorpay({
@@ -191,28 +161,22 @@ export function WalletProvider({ children }) {
                             }
                             resolve({ success: false, message: verifyRes.data?.message || 'Payment verification failed' });
                         } catch (verifyError) {
-                            console.error('Wallet recharge verify failed:', verifyError);
-                            resolve({ success: false, message: verifyError?.response?.data?.message || 'Payment verification failed' });
+                            resolve({ success: false, message: 'Payment verification failed' });
                         }
                     },
-                    modal: {
-                        ondismiss: () => resolve({ success: false, message: 'Payment cancelled' })
-                    }
+                    modal: { ondismiss: () => resolve({ success: false, message: 'Payment cancelled' }) }
                 });
                 paymentObject.open();
             });
         } catch (error) {
-            console.error('Wallet recharge failed:', error);
             return { success: false, message: error?.response?.data?.message || 'Wallet recharge failed' };
         }
-    };
+    }, [user, loadRazorpay, syncWalletFromUser]);
 
-    const repayCredit = async () => {
+    const repayCredit = useCallback(async () => {
         try {
             const sdkLoaded = await loadRazorpay();
-            if (!sdkLoaded) {
-                return { success: false, message: 'Razorpay SDK failed to load' };
-            }
+            if (!sdkLoaded) return { success: false, message: 'Razorpay SDK failed to load' };
 
             const createRes = await api.post('/user/wallet/repay-credit/create-order');
             if (!createRes.data?.success || !createRes.data?.result?.id) {
@@ -220,16 +184,11 @@ export function WalletProvider({ children }) {
             }
             const order = createRes.data.result;
 
-            let prefill = {};
-            try {
-                const meRes = await api.get('/user/me');
-                const me = meRes.data?.result || {};
-                prefill = {
-                    name: me.fullName || '',
-                    email: me.email || '',
-                    contact: me.mobile || ''
-                };
-            } catch (err) { }
+            const prefill = user ? {
+                name: user.fullName || '',
+                email: user.email || '',
+                contact: user.mobile || ''
+            } : {};
 
             return await new Promise((resolve) => {
                 const paymentObject = new window.Razorpay({
@@ -247,7 +206,7 @@ export function WalletProvider({ children }) {
                             if (verifyRes.data?.success) {
                                 syncWalletFromUser(verifyRes.data.result || {});
                                 resolve({ success: true, message: 'Credit balance cleared!' });
-                                window.location.reload(); // Hard reload to clear blocks
+                                window.location.reload(); 
                                 return;
                             }
                             resolve({ success: false, message: 'Payment verification failed' });
@@ -255,18 +214,16 @@ export function WalletProvider({ children }) {
                             resolve({ success: false, message: 'Payment verification failed' });
                         }
                     },
-                    modal: {
-                        ondismiss: () => resolve({ success: false, message: 'Payment cancelled' })
-                    }
+                    modal: { ondismiss: () => resolve({ success: false, message: 'Payment cancelled' }) }
                 });
                 paymentObject.open();
             });
         } catch (error) {
-            return { success: false, message: error?.response?.data?.message || 'Repayment failed' };
+            return { success: false, message: 'Repayment failed' };
         }
-    };
+    }, [user, loadRazorpay, syncWalletFromUser]);
 
-    const payWithWallet = (amount) => {
+    const payWithWallet = useCallback((amount) => {
         if (balance >= amount) {
             const newTxn = {
                 id: `TXN-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -280,13 +237,13 @@ export function WalletProvider({ children }) {
             return true;
         }
         return false;
-    };
+    }, [balance]);
 
-    const useCreditAmount = (amount) => {
+    const availableCredit = Math.max(0, creditLimit - creditUsed);
+
+    const useCreditAmount = useCallback((amount) => {
         const value = Number(amount || 0);
-        if (!Number.isFinite(value) || value <= 0 || availableCredit < value) {
-            return false;
-        }
+        if (!Number.isFinite(value) || value <= 0 || availableCredit < value) return false;
 
         const newTxn = {
             id: `CRD-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -299,29 +256,46 @@ export function WalletProvider({ children }) {
         setCreditUsed(prev => prev + value);
         setTransactions(prev => [newTxn, ...prev]);
         return true;
-    };
+    }, [availableCredit]);
 
-    const availableCredit = Math.max(0, creditLimit - creditUsed);
+    const value = useMemo(() => ({
+        balance,
+        transactions,
+        addMoney,
+        repayCredit,
+        payWithWallet,
+        useCreditAmount,
+        creditLimit,
+        creditUsed,
+        availableCredit,
+        loyaltyPoints,
+        addLoyaltyPoints,
+        redeemLoyaltyPoints,
+        loyaltyConfig,
+        updateLoyaltyConfig,
+        fetchWalletData,
+        isLoading
+    }), [
+        balance,
+        transactions,
+        addMoney,
+        repayCredit,
+        payWithWallet,
+        useCreditAmount,
+        creditLimit,
+        creditUsed,
+        availableCredit,
+        loyaltyPoints,
+        addLoyaltyPoints,
+        redeemLoyaltyPoints,
+        loyaltyConfig,
+        updateLoyaltyConfig,
+        fetchWalletData,
+        isLoading
+    ]);
 
     return (
-        <WalletContext.Provider value={{
-            balance,
-            transactions,
-            addMoney,
-            repayCredit,
-            payWithWallet,
-            useCreditAmount,
-            creditLimit,
-            creditUsed,
-            availableCredit,
-            loyaltyPoints,
-            addLoyaltyPoints,
-            redeemLoyaltyPoints,
-            loyaltyConfig,
-            updateLoyaltyConfig,
-            fetchWalletData,
-            isLoading
-        }}>
+        <WalletContext.Provider value={value}>
             {children}
         </WalletContext.Provider >
     );

@@ -71,36 +71,39 @@ export default function WishlistScreen() {
             { id: 'all', name: 'All', icon: LayoutGrid, color: 'bg-emerald-50 text-emerald-500' },
             ...cats
         ]
-    }, [wishlistItems])
+    }, [wishlistItems, categories])
 
     const filteredItems = useMemo(() => {
         if (activeCategory === 'all') return wishlistItems
-        return wishlistItems.filter(item => item.category === activeCategory)
+        return wishlistItems.filter(item => {
+            const catId = typeof item.category === 'object' ? item.category?._id : item.category
+            return catId === activeCategory
+        })
     }, [wishlistItems, activeCategory])
 
     return (
         <PageTransition>
-            <div className="bg-white min-h-screen pb-32 flex flex-col">
-                {/* Mobile Header - Redesigned */}
-                <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b border-slate-100/80 shadow-[0_1px_10px_rgba(0,0,0,0.04)] md:hidden">
-                    <div className="flex items-center justify-between px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-3 h-16">
-                        <div className="flex items-center gap-4">
-                            <button onClick={() => navigate(-1)} className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white border border-slate-100 shadow-sm text-slate-900 active:scale-95 transition-transform">
-                                <ArrowLeft size={22} />
+            <div className="bg-[#f8fafc] min-h-screen pb-32 flex flex-col">
+                {/* Mobile Header */}
+                <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-100 md:hidden">
+                    <div className="flex items-center justify-between px-4 pt-6 pb-2.5">
+                        <div className="flex items-center gap-3">
+                            <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center rounded-2xl bg-white border border-slate-100 shadow-sm text-slate-900 active:scale-95 transition-all">
+                                <ArrowLeft size={20} strokeWidth={2.5} />
                             </button>
-                            <h1 className="text-[20px] font-bold text-slate-900 tracking-tight">My List</h1>
+                            <div>
+                                <h1 className="text-[18px] font-black text-slate-900 tracking-tight leading-none uppercase">Favourites</h1>
+                                <p className="text-[10px] font-bold text-slate-400 tracking-widest mt-1.5 uppercase">{wishlistItems.length} Products</p>
+                            </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <button className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white border border-slate-100 shadow-sm text-slate-400">
-                                <Search size={20} strokeWidth={2.5} />
-                            </button>
                             <button
                                 onClick={() => navigate('/cart')}
-                                className="relative min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/20 font-bold"
+                                className="relative w-10 h-10 flex items-center justify-center rounded-2xl bg-slate-900 text-white shadow-xl shadow-slate-200 active:scale-95 transition-all"
                             >
-                                <ShoppingCart size={20} strokeWidth={2.5} />
+                                <ShoppingCart size={18} strokeWidth={2.5} />
                                 {cartCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-black text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white">
+                                    <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-emerald-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white">
                                         {cartCount}
                                     </span>
                                 )}
@@ -109,12 +112,11 @@ export default function WishlistScreen() {
                     </div>
                 </div>
 
-                {/* Main Content Area - Split View on Mobile */}
                 <div className="flex flex-1 overflow-hidden">
-                    {/* Mobile Sidebar - Categories present in wishlist */}
+                    {/* Mobile Sidebar - Vertical List of Categories */}
                     {wishlistItems.length > 0 && (
-                        <aside className="w-[85px] border-r border-slate-50 h-[calc(100vh-120px)] overflow-y-auto no-scrollbar md:hidden bg-white shrink-0">
-                            <div className="flex flex-col py-2">
+                        <aside className="w-[74px] border-r border-slate-100 h-[calc(100vh-140px)] overflow-y-auto no-scrollbar md:hidden bg-white shrink-0">
+                            <div className="flex flex-col py-4">
                                 {dynamicCategories.map((cat) => {
                                     const isActive = activeCategory === cat.id
                                     return (
@@ -122,35 +124,28 @@ export default function WishlistScreen() {
                                             key={cat.id}
                                             onClick={() => setActiveCategory(cat.id)}
                                             className={cn(
-                                                "relative flex flex-col items-center gap-1.5 py-4 px-1 transition-all",
-                                                isActive ? "bg-white" : "hover:bg-slate-50/50"
+                                                "relative flex flex-col items-center gap-2 py-4 px-1 group",
+                                                isActive ? "bg-slate-50/50" : ""
                                             )}
                                         >
                                             <div className={cn(
-                                                "w-[54px] h-[54px] rounded-full overflow-hidden flex items-center justify-center shrink-0 border border-slate-50 transition-all shadow-sm",
-                                                isActive ? "ring-2 ring-emerald-500 ring-offset-2 scale-105" : "bg-slate-50",
-                                                cat.color
+                                                "w-11 h-11 rounded-2xl overflow-hidden flex items-center justify-center border transition-all duration-300",
+                                                isActive ? "bg-white border-emerald-500 shadow-lg shadow-emerald-50 scale-110" : "bg-slate-50 border-slate-100 grayscale-[0.3]"
                                             )}>
-                                                {cat.icon && typeof cat.icon === 'function' ? (
-                                                    <cat.icon size={22} strokeWidth={2.5} />
-                                                ) : cat.image ? (
+                                                {cat.image ? (
                                                     <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
                                                 ) : (
-                                                    <LayoutGrid size={22} className="text-slate-400" />
+                                                    <LayoutGrid size={20} className={isActive ? "text-emerald-500" : "text-slate-400"} />
                                                 )}
                                             </div>
                                             <span className={cn(
-                                                "text-[10px] font-bold text-center leading-tight transition-colors px-1",
-                                                isActive ? "text-slate-900" : "text-slate-500"
+                                                "text-[9px] font-black uppercase text-center leading-tight tracking-wider transition-colors px-1",
+                                                isActive ? "text-slate-900" : "text-slate-400"
                                             )}>
                                                 {cat.name}
                                             </span>
-
                                             {isActive && (
-                                                <motion.div
-                                                    layoutId="wishlistMobileBar"
-                                                    className="absolute right-0 top-[19px] w-1 h-12 bg-emerald-600 rounded-l-md"
-                                                />
+                                                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-emerald-500 rounded-r-full" />
                                             )}
                                         </button>
                                     )
@@ -159,52 +154,38 @@ export default function WishlistScreen() {
                         </aside>
                     )}
 
-                    {/* Right Side - Product Items */}
-                    <main className="flex-1 bg-white">
-                        {wishlistItems.length > 0 && (
-                            <div className="flex items-center gap-2.5 px-4 py-4 overflow-x-auto no-scrollbar border-b border-slate-50/50 sticky top-0 bg-white/95 backdrop-blur-sm z-30 md:hidden">
-                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-100 bg-white text-slate-700 shadow-sm whitespace-nowrap">
-                                    <Star size={14} className="text-orange-400 fill-orange-400" />
-                                    <span className="text-[12px] font-bold">Rated 4.0+</span>
-                                </div>
-                                <div className="px-4 py-1.5 rounded-full border border-slate-100 bg-white text-slate-700 shadow-sm whitespace-nowrap">
-                                    <span className="text-[12px] font-bold">Veg</span>
-                                </div>
-                                {[...new Set(wishlistItems.map(item => typeof item.subcategory === 'object' ? item.subcategory?.name : item.subcategory))]
-                                    .filter(Boolean)
-                                    .map((sub, idx) => (
-                                        <div key={idx} className="flex items-center gap-1 px-4 py-1.5 rounded-full border border-slate-100 bg-white text-slate-700 shadow-sm whitespace-nowrap">
-                                            <span className="text-[12px] font-bold">{sub}</span>
-                                        </div>
-                                    ))
-                                }
-                            </div>
-                        )}
+                    {/* Main List Area */}
+                    <main className="flex-1 overflow-y-auto no-scrollbar">
 
-                        <div className="p-4 flex flex-col gap-6 md:hidden">
+
+                        <div className="p-3.5 flex flex-col gap-3.5 md:hidden">
                             {filteredItems.length === 0 ? (
-                                <div className="py-20 text-center">
-                                    <HeartOff className="mx-auto text-slate-200 mb-4" size={48} />
-                                    <p className="text-slate-400 font-bold">Your wishlist is empty</p>
+                                <div className="py-24 text-center">
+                                    <div className="w-20 h-20 bg-white rounded-[24px] border border-slate-100 shadow-sm flex items-center justify-center mx-auto mb-6 text-slate-200">
+                                        <HeartOff size={40} />
+                                    </div>
+                                    <h3 className="text-lg font-black text-slate-900 tracking-tight leading-none mb-2">List is Empty</h3>
+                                    <p className="text-slate-400 text-sm font-medium">Add products you love to see them here.</p>
+                                    <button onClick={() => navigate('/home')} className="mt-8 px-8 py-3 bg-slate-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-slate-200">Explore Store</button>
                                 </div>
                             ) : (
                                 <AnimatePresence mode="popLayout">
                                     {filteredItems.map((product) => (
                                         <motion.div
-                                            key={product.id}
+                                            key={product._id || product.id}
                                             layout
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, scale: 0.95 }}
                                         >
-                                            <ProductCard product={product} />
+                                            <ProductCard product={product} layout="list" />
                                         </motion.div>
                                     ))}
                                 </AnimatePresence>
                             )}
                         </div>
 
-                        {/* DESKTOP VIEW - Maintain original structure */}
+                        {/* DESKTOP VIEW */}
                         <div className="hidden md:block max-w-[1400px] mx-auto px-8 w-full mt-10">
                             <div className="flex flex-col gap-8">
                                 <h1 className="text-[32px] font-bold text-slate-900">My list</h1>
@@ -228,7 +209,7 @@ export default function WishlistScreen() {
                                             ))}
                                         </div>
                                     </aside>
-                                    <div className="flex-1 grid grid-cols-3 xl:grid-cols-4 gap-6">
+                                    <div className="flex-1 grid grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
                                         {filteredItems.map(item => <ProductCard key={item.id} product={item} />)}
                                     </div>
                                 </div>

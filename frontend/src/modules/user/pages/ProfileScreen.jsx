@@ -7,50 +7,13 @@ import {
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import PageTransition from '../components/layout/PageTransition'
-import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import { useWallet } from '../contexts/WalletContext'
 
 export default function ProfileScreen() {
   const navigate = useNavigate()
   const { balance, creditLimit, availableCredit } = useWallet()
-  const [isVegMode, setIsVegMode] = useState(false)
-  const [sendingPush, setSendingPush] = useState(false)
 
-  const handleTestPush = async () => {
-    setSendingPush(true)
-    let token = localStorage.getItem(`fcm_token_user`)
-
-    if (!token) {
-      const { requestFCMToken } = await import('@/lib/firebase')
-      token = await requestFCMToken()
-      if (token) {
-        localStorage.setItem(`fcm_token_user`, token)
-        const api = (await import('@/lib/axios')).default;
-        await api.post(`/user/fcm-token`, { token })
-      }
-    }
-
-    if (!token) {
-      alert("No FCM token found. Please allow notifications.")
-      setSendingPush(false)
-      return
-    }
-
-    try {
-      const api = (await import('@/lib/axios')).default;
-      await api.post('/user/test-notification', {
-        fcm_token: token,
-        plateform: 'User Web Dashboard'
-      })
-      alert("Test notification triggered!")
-    } catch (error) {
-      console.error(error)
-      alert("Failed to send test push")
-    } finally {
-      setSendingPush(false)
-    }
-  }
 
   const userData = JSON.parse(localStorage.getItem('userData') || '{}')
 
@@ -94,19 +57,7 @@ export default function ProfileScreen() {
       title: "Others",
       items: [
         { icon: User, label: "Profile settings", path: "/edit-profile" },
-        {
-          icon: null,
-          label: "Veg mode",
-          type: "toggle",
-          isVeg: true
-        },
         { icon: Bell, label: "Notifications", path: "/notifications" },
-        {
-          icon: Bell,
-          label: sendingPush ? "Testing..." : "Test Notification",
-          path: "#",
-          onClick: handleTestPush
-        },
         { icon: Heart, label: "My list", path: "/wishlist" },
         { icon: Info, label: "Contact us", path: "/help-support" },
       ]

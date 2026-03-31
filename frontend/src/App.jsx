@@ -27,6 +27,7 @@ import WishlistScreen from './modules/user/pages/WishlistScreen'
 import CreditInfoScreen from './modules/user/pages/CreditInfoScreen'
 import LocationMapPicker from './modules/user/pages/LocationMapPicker'
 import { WishlistProvider } from './modules/user/contexts/WishlistContext'
+import { FilterProvider } from './modules/user/contexts/FilterContext'
 import { LocationProvider } from './modules/user/contexts/LocationContext'
 import { UserAuthProvider } from './modules/user/contexts/UserAuthContext'
 import UserAuthGuard from './modules/user/components/auth/UserAuthGuard'
@@ -79,7 +80,9 @@ const UserProviders = ({ children }) => (
         <CartProvider>
           <WishlistProvider>
             <WalletProvider>
-              {children}
+              <FilterProvider>
+                {children}
+              </FilterProvider>
             </WalletProvider>
           </WishlistProvider>
         </CartProvider>
