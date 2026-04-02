@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import api from '@/lib/axios';
 import { useFCM } from '@/hooks/useFCM';
 
-const UserAuthContext = createContext();
+export const UserAuthContext = createContext();
 
 export function UserAuthProvider({ children }) {
     const [user, setUser] = useState(() => {
