@@ -115,7 +115,7 @@ export default function PackingScreen() {
     // Enable calibration as soon as at least one item is checked
     const isPackingComplete = order?.items && Object.values(checkedItems).some(v => v === true);
 
-    const [actualWeight, setActualWeight] = useState(42.50);
+    const [actualWeight, setActualWeight] = useState(0);
     const [isWeightLocked, setIsWeightLocked] = useState(false);
     const [isReadingFromScale, setIsReadingFromScale] = useState(false);
 
@@ -124,7 +124,7 @@ export default function PackingScreen() {
         let count = 0;
 
         // Calculate target weight based on real order quantities
-        const totalItemsQty = order.items?.reduce((sum, i) => sum + (Number(itemQuantities[i.productId]) || 0), 0) || 45.32;
+        const totalItemsQty = order.items?.reduce((sum, i) => sum + (Number(itemQuantities[i.productId]) || 0), 0) || 0;
         const target = +(totalItemsQty * (0.95 + Math.random() * 0.1)).toFixed(2); // +/- 5% variance
 
         const interval = setInterval(() => {

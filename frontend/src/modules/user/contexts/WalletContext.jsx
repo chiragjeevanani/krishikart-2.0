@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
-import { useUserAuth } from './UserAuthContext';
+import { UserAuthContext } from './UserAuthContext';
 import api from '@/lib/axios';
 
 const WalletContext = createContext();
@@ -17,7 +17,8 @@ export function WalletProvider({ children }) {
     });
 
     const [isLoading, setIsLoading] = useState(false);
-    const { user } = useUserAuth();
+    const auth = useContext(UserAuthContext);
+    const user = auth?.user;
 
     const syncWalletFromUser = useCallback((userData) => {
         if (!userData) return;

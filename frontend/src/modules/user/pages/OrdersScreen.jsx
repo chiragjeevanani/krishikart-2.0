@@ -61,24 +61,24 @@ export default function OrdersScreen() {
         <PageTransition>
             <div className="bg-white min-h-screen pb-24">
                 {/* Header */}
-                <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md px-4 py-4 border-b border-slate-50 flex items-center gap-4">
+                <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-md px-4 py-3 border-b border-slate-50 flex items-center gap-3">
                     <button
                         onClick={() => navigate(-1)}
-                        className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-600 active:scale-90 transition-transform"
+                        className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-600 active:scale-90 transition-transform"
                     >
-                        <ArrowLeft size={20} />
+                        <ArrowLeft size={18} />
                     </button>
-                    <h1 className="text-xl font-black text-slate-900 tracking-tight">My Orders</h1>
+                    <h1 className="text-lg font-black text-slate-900 tracking-tight">My Orders</h1>
                 </div>
 
-                <div className="p-6 space-y-4">
+                <div className="p-4 space-y-4">
                     {orders.length === 0 ? (
                         <div className="text-center py-20">
-                            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mx-auto mb-6">
-                                <Package size={40} />
+                            <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 mx-auto mb-4">
+                                <Package size={32} />
                             </div>
-                            <h3 className="text-lg font-black text-slate-900">No Orders Yet</h3>
-                            <button onClick={() => navigate('/home')} className="mt-4 text-primary font-black uppercase text-xs tracking-widest">Start Shopping</button>
+                            <h3 className="text-base font-black text-slate-900">No Orders Yet</h3>
+                            <button onClick={() => navigate('/home')} className="mt-3 text-primary font-black uppercase text-[10px] tracking-widest">Start Shopping</button>
                         </div>
                     ) : (
                         orders.map((order, idx) => {
@@ -87,41 +87,45 @@ export default function OrdersScreen() {
                                 <motion.div
                                     key={order._id}
                                     onClick={() => handleOrderClick(order)}
-                                    className="p-5 rounded-[32px] bg-white border border-slate-100 shadow-sm active:scale-[0.98] transition-all cursor-pointer hover:shadow-md mb-4"
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ delay: idx * 0.1 }}
+                                    className="p-4 rounded-[28px] bg-white border border-slate-100 shadow-sm active:scale-[0.98] transition-all cursor-pointer hover:shadow-md mb-2"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: idx * 0.05 }}
                                 >
-                                    <div className="flex justify-between items-start mb-5">
-                                        <div className="flex gap-4">
-                                            <div className="h-14 w-14 rounded-2xl bg-slate-100 overflow-hidden border border-slate-50 shrink-0">
+                                    <div className="flex items-start justify-between gap-3 mb-4">
+                                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                                            <div className="h-12 w-12 rounded-2xl bg-slate-50 overflow-hidden border border-slate-50 shrink-0">
                                                 <img
                                                     src={order.items?.[0]?.image || 'https://images.unsplash.com/photo-1610348725531-843dff563e2c?w=100&q=80'}
                                                     alt="order"
                                                     className="h-full w-full object-cover"
                                                 />
                                             </div>
-                                            <div className="flex flex-col justify-center h-14">
-                                                <p className="text-[12px] font-bold text-slate-300 tracking-tight leading-none mb-2">#{order._id.slice(-8).toUpperCase()}</p>
-                                                <h3 className="text-[13.5px] font-black text-slate-900 tracking-tight leading-none uppercase">{order.items?.length || 0} Products</h3>
-                                                <p className="text-[11px] font-bold text-slate-400 mt-2 leading-none">{new Date(order.createdAt).toLocaleDateString()}</p>
+                                            <div className="flex flex-col min-w-0 overflow-hidden">
+                                                <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-0.5 leading-none">#{order._id.slice(-8).toUpperCase()}</span>
+                                                <h3 className="text-[15px] font-black text-slate-900 tracking-tight leading-tight uppercase truncate">
+                                                    {order.items?.length || 0} {order.items?.length === 1 ? 'Product' : 'Products'}
+                                                </h3>
+                                                <div className="text-[10px] font-bold text-slate-400 capitalize mt-1.5 flex items-center gap-1.5 leading-none">
+                                                    <Clock size={10} className="text-slate-300" />
+                                                    Ordered {new Date(order.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                                </div>
                                             </div>
                                         </div>
-                                        <Badge className={cn("rounded-xl border font-black text-[9px] py-1.5 px-3 flex items-center gap-1.5 shadow-sm bg-opacity-50", getStatusColor(displayStatus))}>
-                                            <div className="w-1.5 h-1.5 rounded-full bg-current opacity-80" />
-                                            <span className="uppercase tracking-widest">{displayStatus?.replace(/_/g, ' ')}</span>
+                                        <Badge variant="outline" className={cn("rounded-lg border-[0.5px] font-black text-[8px] py-1 px-2.5 flex items-center gap-1.5 shrink-0 bg-opacity-40 mt-0.5", getStatusColor(displayStatus))}>
+                                            <div className="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
+                                            <span className="uppercase tracking-[0.15em]">{displayStatus?.replace(/_/g, ' ')}</span>
                                         </Badge>
                                     </div>
 
-                                    <div className="flex justify-between items-center bg-slate-50/50 p-4 rounded-2xl border border-slate-50">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm text-primary">
-                                                <Receipt size={14} />
-                                            </div>
-                                            <div className="text-lg font-black text-slate-900 tracking-tighter italic">₹{(order.totalAmount || 0).toLocaleString()}</div>
+                                    <div className="flex items-center bg-slate-50/70 p-3 rounded-2xl border border-slate-50 gap-4">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5 opacity-80">Final Payable</p>
+                                            <div className="text-base font-black text-slate-900 tracking-tighter italic">₹{(order.totalAmount || 0).toLocaleString()}</div>
                                         </div>
-                                        <div className="flex items-center gap-1 text-[10px] font-black text-primary uppercase tracking-widest">
-                                            Details <ChevronRight size={14} strokeWidth={3} />
+                                        <div className="h-8 w-[1px] bg-slate-200/50" />
+                                        <div className="flex items-center gap-1 text-[9px] font-black text-primary uppercase tracking-[0.2em] shrink-0 pl-1">
+                                            Details <ChevronRight size={14} strokeWidth={4} />
                                         </div>
                                     </div>
                                 </motion.div>

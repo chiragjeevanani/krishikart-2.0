@@ -44,49 +44,49 @@ export default function OrderTrackingScreen() {
 
     return (
         <PageTransition>
-            <div className="bg-slate-50 min-h-screen pb-32">
+            <div className="bg-[#f8fafc] min-h-screen pb-32">
                 {/* Header */}
-                <div className="bg-white/95 backdrop-blur-xl px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] border-b border-slate-100/80 shadow-[0_1px_10px_rgba(0,0,0,0.04)] flex items-center justify-between sticky top-0 z-40 md:px-6 md:py-4 md:pt-4">
-                    <div className="flex items-center gap-4">
-                        <button onClick={() => navigate(-1)} className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white border border-slate-100 shadow-sm text-slate-600 active:scale-95 transition-transform md:bg-slate-50 md:border-0 md:shadow-none">
-                            <ArrowLeft size={20} />
+                <div className="bg-white/90 backdrop-blur-xl px-4 py-2 pt-[max(0.75rem,env(safe-area-inset-top))] border-b border-slate-100/80 sticky top-0 z-40 flex items-center justify-between">
+                    <div className="flex items-center gap-3 py-1">
+                        <button onClick={() => navigate(-1)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-50 text-slate-600 active:scale-95 transition-transform">
+                            <ArrowLeft size={18} />
                         </button>
-                        <div>
-                            <h1 className="text-xl font-black text-slate-900 tracking-tight">Track Order</h1>
-                            <p className="text-[10px] font-black text-primary uppercase tracking-widest">{id}</p>
+                        <div className="flex flex-col">
+                            <h1 className="text-base font-black text-slate-900 tracking-tight leading-none mb-1">Track Order</h1>
+                            <p className="text-[8px] font-black text-emerald-600 uppercase tracking-[0.2em] leading-none">Manifest: #{order?._id.slice(-8).toUpperCase()}</p>
                         </div>
                     </div>
                 </div>
 
-                <div className="p-6 space-y-6">
-                    {/* Status Hero */}
-                    <div className="bg-slate-900 rounded-[40px] p-10 text-center relative overflow-hidden shadow-2xl shadow-slate-200">
+                <div className="p-4 space-y-4">
+                    {/* Status Overview Context */}
+                    <div className="bg-slate-900 rounded-[24px] p-6 text-center relative overflow-hidden shadow-xl shadow-slate-200">
                         <div className="relative z-10">
                             <motion.div
                                 animate={{ scale: [1, 1.05, 1] }}
                                 transition={{ repeat: Infinity, duration: 4 }}
-                                className="w-20 h-20 bg-primary/20 rounded-[30px] flex items-center justify-center text-primary mx-auto mb-6 border border-primary/20"
+                                className="w-14 h-14 bg-primary/20 rounded-2xl flex items-center justify-center text-primary mx-auto mb-4 border border-primary/20 shadow-inner shadow-primary/10"
                             >
-                                <Truck size={40} strokeWidth={2.5} />
+                                <Truck size={28} strokeWidth={2.5} />
                             </motion.div>
-                            <h2 className="text-2xl font-black text-white leading-tight uppercase tracking-tight italic">
-                                {order?.orderStatus?.replace(/_/g, ' ') || 'Processing'}
+                            <h2 className="text-xl font-black text-white leading-tight uppercase tracking-tight italic">
+                                {order?.orderStatus?.replace(/_/g, ' ') || 'Syncing...'}
                             </h2>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-3">
-                                Manifest synchronization active
+                            <p className="text-[8px] text-slate-500 font-bold uppercase tracking-[0.25em] mt-2">
+                                Encrypted Trace Active
                             </p>
                         </div>
-                        {/* Abstract Background Design */}
-                        <div className="absolute top-0 left-0 w-full h-full opacity-20">
-                            <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-primary rounded-full blur-[100px]" />
-                            <div className="absolute bottom-[-20%] left-[-10%] w-64 h-64 bg-slate-700 rounded-full blur-[100px]" />
+                        {/* High-end Abstract Background */}
+                        <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+                            <div className="absolute top-[-40%] right-[-10%] w-48 h-48 bg-primary rounded-full blur-[80px]" />
+                            <div className="absolute bottom-[-40%] left-[-10%] w-48 h-48 bg-emerald-700 rounded-full blur-[80px]" />
                         </div>
                     </div>
 
-                    {/* Timeline */}
-                    <div className="bg-white rounded-[40px] p-8 border border-slate-100 shadow-sm">
-                        <div className="space-y-8 relative">
-                            <div className="absolute left-[19px] top-6 bottom-6 w-0.5 bg-slate-100" />
+                    {/* Timeline Log Manifest */}
+                    <div className="bg-white rounded-[24px] p-6 border border-slate-100 shadow-sm">
+                        <div className="space-y-6 relative">
+                            <div className="absolute left-[17.5px] top-4 bottom-4 w-[1px] bg-slate-100" />
                             {steps.map((step, i) => {
                                 const orderStatusHistory = order?.statusHistory || [];
                                 const historyEntry = orderStatusHistory.find(h => h.status === step.status);
@@ -95,25 +95,25 @@ export default function OrderTrackingScreen() {
                                 const time = historyEntry ? new Date(historyEntry.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
 
                                 return (
-                                    <div key={i} className="flex items-start gap-6 relative z-10">
-                                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border-4 border-white shadow-sm ${isCompleted ? 'bg-primary text-white' :
-                                            isCurrent ? 'bg-orange-500 text-white' :
+                                    <div key={i} className="flex items-start gap-4 p-0.5 relative z-10">
+                                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center border-4 border-white shadow-sm ring-1 ring-slate-100 shrink-0 ${isCompleted ? 'bg-primary text-white shadow-primary/20' :
+                                            isCurrent ? 'bg-orange-500 text-white shadow-orange-200' :
                                                 'bg-slate-50 text-slate-300'
                                             }`}>
-                                            <step.icon size={18} />
+                                            <step.icon size={16} strokeWidth={2.5} />
                                         </div>
-                                        <div className="flex-1">
-                                            <div className="flex justify-between items-center">
-                                                <h3 className={`text-sm font-black ${!isCompleted && !isCurrent ? 'text-slate-300' : 'text-slate-900'}`}>{step.label}</h3>
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase">{time}</span>
+                                        <div className="flex-1 min-w-0 pt-0.5">
+                                            <div className="flex justify-between items-center gap-2 mb-1">
+                                                <h3 className={`text-[11px] font-black uppercase tracking-tight ${!isCompleted && !isCurrent ? 'text-slate-300' : 'text-slate-900'}`}>{step.label}</h3>
+                                                <span className="text-[8px] font-black text-slate-400 tabular-nums">{time}</span>
                                             </div>
-                                            <p className="text-xs text-slate-400 font-medium mt-1">
-                                                {step.status === 'Placed' ? 'Your order has been placed successfully.' :
-                                                    step.status === 'Procuring' ? 'Some items are being procured from our vendor network.' :
-                                                        step.status === 'Packed' ? 'The items are being packed for you.' :
-                                                            step.status === 'Dispatched' ? 'Package is on its way to you.' :
-                                                                step.status === 'Delivered' ? 'Package reached its destination.' :
-                                                                    'Thank you for confirming receipt!'}
+                                            <p className={`text-[10px] leading-relaxed ${!isCompleted && !isCurrent ? 'text-slate-200' : 'text-slate-500'} font-medium`}>
+                                                {step.status === 'Placed' ? 'Registration successful.' :
+                                                    step.status === 'Procuring' ? 'Aggregating from vendor network.' :
+                                                        step.status === 'Packed' ? 'Verification & sealing in progress.' :
+                                                            step.status === 'Dispatched' ? 'Enroute to distribution hub.' :
+                                                                step.status === 'Delivered' ? 'Relay point arrival confirmed.' :
+                                                                    'End-to-end cycle complete.'}
                                             </p>
                                         </div>
                                     </div>
@@ -122,32 +122,33 @@ export default function OrderTrackingScreen() {
                         </div>
                     </div>
 
-
-                    {/* Final Verification Flow */}
+                    {/* On-Site Verification Portal */}
                     {order?.orderStatus === 'Delivered' && (
-                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <div className="p-8 rounded-[40px] bg-emerald-50 border border-emerald-100">
-                                <div className="flex items-center gap-4 mb-6">
-                                    <div className="w-14 h-14 rounded-2xl bg-emerald-500 flex items-center justify-center text-white shrink-0 shadow-lg shadow-emerald-200">
-                                        <Package size={28} />
+                        <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 pt-2 pb-6">
+                            <div className="p-5 rounded-[28px] bg-emerald-50 border border-emerald-100 shadow-sm relative overflow-hidden">
+                                <div className="flex items-center gap-3.5 mb-4 relative z-10">
+                                    <div className="w-11 h-11 rounded-xl bg-emerald-500 flex items-center justify-center text-white shrink-0 shadow-lg shadow-emerald-100">
+                                        <ShieldCheck size={20} strokeWidth={3} />
                                     </div>
-                                    <div>
-                                        <h4 className="text-lg font-black text-emerald-900 leading-tight">Order On-Site</h4>
-                                        <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest mt-0.5">Please verify all items</p>
+                                    <div className="min-w-0">
+                                        <h4 className="text-[14px] font-black text-emerald-900 tracking-tight leading-none mb-1.5 uppercase">Final Verification</h4>
+                                        <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest leading-none">Complete cycle reconciliation</p>
                                     </div>
                                 </div>
 
-                                <p className="text-sm font-medium text-emerald-800/80 leading-relaxed mb-8">
-                                    Your harvest has arrived. Please check the quantities carefully. Since this is a bulk order, ensure nothing is missing before the final confirmation.
+                                <p className="text-[11px] font-bold text-emerald-800/70 leading-relaxed mb-6 relative z-10">
+                                    Your harvest has completed its journey. Please confirm receipt of all items after verifying quantity and quality.
                                 </p>
 
                                 <Button
                                     onClick={handleConfirmReceived}
                                     disabled={isUpdating}
-                                    className="w-full h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-100 disabled:opacity-50"
+                                    className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-emerald-100 relative z-10"
                                 >
-                                    {isUpdating ? 'Verifying...' : 'Items Verified & Received'}
+                                    {isUpdating ? 'Synchronizing...' : 'Reconcile & Finish'}
                                 </Button>
+                                
+                                <CheckCircle2 className="absolute -bottom-6 -right-6 w-32 h-32 text-emerald-500/5 rotate-12" />
                             </div>
                         </div>
                     )}
