@@ -29,6 +29,9 @@ const subAdminSchema = new mongoose.Schema(
             default: [],
         },
 
+        otp: String,
+        otpExpiresAt: Date,
+
         status: {
             type: String,
             enum: ["active", "blocked"],

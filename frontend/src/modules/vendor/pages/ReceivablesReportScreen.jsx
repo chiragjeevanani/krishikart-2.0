@@ -115,8 +115,8 @@ export default function ReceivablesReportScreen() {
                             Reports
                         </h1>
                         <p className="text-[11px] text-slate-500 mt-2 max-w-xl leading-relaxed">
-                            Sirf tab dikhega jab delivery / handoff complete ho chuka ho (pickup ready ya
-                            franchise ne receive kar liya). Sirf aapke account se judi requests.
+                            Only visible once delivery or handoff is complete (pickup ready or 
+                            received by franchise). Shows requests linked to your account.
                         </p>
                     </div>
                 </div>
@@ -141,7 +141,7 @@ export default function ReceivablesReportScreen() {
                     </div>
                     <div>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                            Delivery ke baad — admin se total
+                            Post-delivery - total from admin
                         </p>
                         <div className="flex items-baseline gap-2 mt-2">
                             <IndianRupee className="w-6 h-6 text-emerald-400 opacity-90" />
@@ -150,7 +150,7 @@ export default function ReceivablesReportScreen() {
                             </span>
                         </div>
                         <p className="text-[11px] text-slate-500 mt-2">
-                            {count} procurement line{count !== 1 ? 's' : ''} (sirf aapke liye)
+                            {count} procurement line{count !== 1 ? 's' : ''} (for your account)
                         </p>
                     </div>
                 </div>
@@ -172,10 +172,10 @@ export default function ReceivablesReportScreen() {
 
                 {rows.length === 0 ? (
                     <div className="py-16 text-center rounded-[32px] border border-dashed border-slate-200 bg-white">
-                        <p className="text-slate-600 font-bold text-sm">Abhi koi post-delivery amount nahi</p>
+                        <p className="text-slate-600 font-bold text-sm">No post-delivery amounts yet</p>
                         <p className="text-[11px] text-slate-400 mt-2 max-w-md mx-auto">
-                            Jab tak dispatch ready_for_pickup ya completed stage par nahi hota, yahan amount
-                            show nahi hoga.
+                            Amounts will show here once dispatch reaches the ready for pickup 
+                            or completed stages.
                         </p>
                     </div>
                 ) : (

@@ -165,9 +165,15 @@ export const forgotMasterAdminPassword = async (req, res) => {
     if (!email)
       return handleResponse(res, 400, "Email required");
 
-    const admin = await MasterAdmin.findOne({ email });
+    const trimmedEmail = email.trim().toLowerCase();
+    
+    let admin = await MasterAdmin.findOne({ email: trimmedEmail });
+    if (!admin) {
+      admin = await SubAdmin.findOne({ email: trimmedEmail });
+    }
+
     if (!admin)
-      return handleResponse(res, 404, "MasterAdmin not found");
+      return handleResponse(res, 404, "Admin not found with this email");
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -175,12 +181,13 @@ export const forgotMasterAdminPassword = async (req, res) => {
     admin.otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
     await admin.save();
 
-    console.log("MasterAdmin Reset OTP:", otp);
+    console.log(`[MasterAdmin/SubAdmin] Reset OTP for ${trimmedEmail}:`, otp);
     // 📧 Email service integrate here
 
     return handleResponse(res, 200, "OTP sent to email");
   } catch (err) {
-    return handleResponse(res, 500, "Server error");
+    console.error("[Forgot Password Error]:", err);
+    return handleResponse(res, 500, "Server error", { error: err.message });
   }
 };
 
@@ -283,9 +290,15 @@ export const resetMasterAdminPassword = async (req, res) => {
     if (!email || !otp || !newPassword)
       return handleResponse(res, 400, "All fields required");
 
-    const admin = await MasterAdmin.findOne({ email });
+    const trimmedEmail = email.trim().toLowerCase();
+
+    let admin = await MasterAdmin.findOne({ email: trimmedEmail });
+    if (!admin) {
+      admin = await SubAdmin.findOne({ email: trimmedEmail });
+    }
+
     if (!admin)
-      return handleResponse(res, 404, "MasterAdmin not found");
+      return handleResponse(res, 404, "Admin profile not found");
 
     if (admin.otp !== otp)
       return handleResponse(res, 400, "Invalid OTP");
@@ -293,7 +306,8 @@ export const resetMasterAdminPassword = async (req, res) => {
     if (admin.otpExpiresAt < new Date())
       return handleResponse(res, 400, "OTP expired");
 
-    admin.password = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    admin.password = hashedPassword;
     admin.otp = null;
     admin.otpExpiresAt = null;
 
@@ -301,7 +315,8 @@ export const resetMasterAdminPassword = async (req, res) => {
 
     return handleResponse(res, 200, "Password reset successful");
   } catch (err) {
-    return handleResponse(res, 500, "Server error");
+    console.error("[Reset Password Error]:", err);
+    return handleResponse(res, 500, "Server error", { error: err.message });
   }
 };
 /**

@@ -6,6 +6,7 @@ import { useLocation } from '../contexts/LocationContext';
 import { ArrowLeft, MapPin, Search as SearchIcon, Crosshair } from 'lucide-react';
 import { geocodeAddressFrontend, getCurrentLocation } from '@/lib/geo';
 import { toast } from 'sonner';
+import { GOOGLE_MAPS_API_KEY, GOOGLE_MAPS_LIBRARIES, GOOGLE_MAPS_LOADER_ID } from '@/lib/mapsConfig';
 
 const containerStyle = {
     width: '100%',
@@ -25,9 +26,9 @@ export default function LocationMapPicker() {
     } = useLocation();
 
     const { isLoaded } = useJsApiLoader({
-        id: 'kk-google-maps',
-        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
-        libraries: ['places'],
+        id: GOOGLE_MAPS_LOADER_ID,
+        googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+        libraries: GOOGLE_MAPS_LIBRARIES,
     });
 
     const initialCenter =

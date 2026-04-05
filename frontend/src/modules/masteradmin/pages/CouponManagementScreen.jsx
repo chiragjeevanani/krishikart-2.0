@@ -126,8 +126,8 @@ export default function CouponManagementScreen() {
     };
 
     const handleSubmit = async () => {
-        if (!form.code || !form.title) {
-            toast.error("Code and Title are required");
+        if (!form.code || !form.title || !form.startDate || !form.endDate) {
+            toast.error("Code, Title, Start Date and End Date are required");
             return;
         }
 
@@ -135,7 +135,6 @@ export default function CouponManagementScreen() {
         try {
             const payload = { ...form };
             if (!payload.usageLimit) payload.usageLimit = null;
-            if (!payload.endDate) payload.endDate = null;
 
             if (isEditing) {
                 await api.put(`/coupons/admin/${form.id}`, payload);
@@ -308,7 +307,7 @@ export default function CouponManagementScreen() {
                                     <div className="space-y-4">
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-1.5">
-                                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] ml-0.5">Start Date</label>
+                                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] ml-0.5">Start Date *</label>
                                                 <input
                                                     type="date"
                                                     min={new Date().toISOString().split('T')[0]}
@@ -327,7 +326,7 @@ export default function CouponManagementScreen() {
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
-                                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] ml-0.5">End Date</label>
+                                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] ml-0.5">End Date *</label>
                                                 <input
                                                     type="date"
                                                     min={form.startDate || new Date().toISOString().split('T')[0]}

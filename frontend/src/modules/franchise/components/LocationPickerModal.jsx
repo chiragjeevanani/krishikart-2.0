@@ -10,8 +10,7 @@ import {
   debounce,
   geocodeAddressFrontend
 } from '@/lib/geo';
-
-const libraries = ['places'];
+import { GOOGLE_MAPS_API_KEY, GOOGLE_MAPS_LIBRARIES, GOOGLE_MAPS_LOADER_ID } from '@/lib/mapsConfig';
 
 const mapContainerStyle = {
   width: '100%',
@@ -48,8 +47,9 @@ export default function LocationPickerModal({
   const [searchQuery, setSearchQuery] = useState('');
 
   const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-    libraries,
+    id: GOOGLE_MAPS_LOADER_ID,
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
 
   // Initialize map center on open

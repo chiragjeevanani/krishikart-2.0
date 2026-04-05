@@ -57,9 +57,12 @@ const couponSchema = new mongoose.Schema({
     },
     startDate: {
         type: Date,
-        default: Date.now
+        required: true
     },
-    endDate: Date,
+    endDate: {
+        type: Date,
+        required: true
+    },
     usageLimit: {
         type: Number,
         default: null // null means unlimited

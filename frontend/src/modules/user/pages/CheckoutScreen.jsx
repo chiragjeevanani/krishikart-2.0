@@ -1125,14 +1125,20 @@ export default function CheckoutScreen() {
                                             <input
                                                 type="text"
                                                 value={addressDetails.city}
-                                                onChange={(e) => setAddressDetails(prev => ({ ...prev, city: e.target.value }))}
+                                                onChange={(e) => {
+                                                    const val = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                                                    setAddressDetails(prev => ({ ...prev, city: val }));
+                                                }}
                                                 placeholder="City *"
                                                 className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                                             />
                                             <input
                                                 type="text"
                                                 value={addressDetails.state}
-                                                onChange={(e) => setAddressDetails(prev => ({ ...prev, state: e.target.value }))}
+                                                onChange={(e) => {
+                                                    const val = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                                                    setAddressDetails(prev => ({ ...prev, state: val }));
+                                                }}
                                                 placeholder="State *"
                                                 className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                                             />

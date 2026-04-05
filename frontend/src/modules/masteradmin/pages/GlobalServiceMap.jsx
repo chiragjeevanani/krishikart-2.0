@@ -4,6 +4,7 @@ import { cellToBoundary } from "h3-js";
 import { useAdmin } from '../contexts/AdminContext';
 import { Map as MapIcon, Loader2, RefreshCw, Layers, MapPin, Navigation } from 'lucide-react';
 import { cn } from "@/lib/utils";
+import { GOOGLE_MAPS_API_KEY, GOOGLE_MAPS_LIBRARIES, GOOGLE_MAPS_LOADER_ID } from '@/lib/mapsConfig';
 
 const mapContainerStyle = {
     width: '100%',
@@ -26,8 +27,9 @@ export default function GlobalServiceMap() {
     const [map, setMap] = useState(null);
 
     const { isLoaded } = useJsApiLoader({
-        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
-        libraries: ["places"]
+        id: GOOGLE_MAPS_LOADER_ID,
+        googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+        libraries: GOOGLE_MAPS_LIBRARIES
     });
 
     const loadData = useCallback(async () => {

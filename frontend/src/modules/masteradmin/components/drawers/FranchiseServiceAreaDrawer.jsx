@@ -32,6 +32,7 @@ import { useAdmin } from "../../contexts/AdminContext";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { geocodeAddressFrontend } from "@/lib/geo";
+import { GOOGLE_MAPS_API_KEY, GOOGLE_MAPS_LIBRARIES, GOOGLE_MAPS_LOADER_ID } from '@/lib/mapsConfig';
 
 const mapContainerStyle = {
   width: "100%",
@@ -39,7 +40,6 @@ const mapContainerStyle = {
   borderRadius: "0px",
 };
 
-const LIBRARIES = ["places"];
 const DEFAULT_CENTER = { lat: 22.7196, lng: 75.8577 }; // Indore, India
 
 export default function FranchiseServiceAreaDrawer({
@@ -140,8 +140,9 @@ export default function FranchiseServiceAreaDrawer({
   }, []);
 
   const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
-    libraries: LIBRARIES,
+    id: GOOGLE_MAPS_LOADER_ID,
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
 
   // Initialize selected hexagons and coordinates

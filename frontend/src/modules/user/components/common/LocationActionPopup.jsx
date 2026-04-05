@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Autocomplete, useJsApiLoader } from '@react-google-maps/api'
 import { ArrowLeft, Crosshair, MapPin, Search, X } from 'lucide-react'
 import { geocodeAddressFrontend } from '@/lib/geo'
+import { GOOGLE_MAPS_API_KEY, GOOGLE_MAPS_LIBRARIES, GOOGLE_MAPS_LOADER_ID } from '@/lib/mapsConfig'
 
 export default function LocationActionPopup({
     isOpen,
@@ -17,9 +18,9 @@ export default function LocationActionPopup({
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     const { isLoaded } = useJsApiLoader({
-        id: 'kk-google-places-inline',
-        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
-        libraries: ['places'],
+        id: GOOGLE_MAPS_LOADER_ID,
+        googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+        libraries: GOOGLE_MAPS_LIBRARIES,
     })
 
     if (!isOpen) return null
