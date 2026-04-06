@@ -47,6 +47,25 @@ export function OrderProvider({ children }) {
 
         const socket = initSocket();
 
+        const syncOrderById = async (orderId) => {
+            if (!orderId) return;
+            try {
+                const response = await api.get(`/orders/${orderId}`);
+                if (response.data.success && response.data.result) {
+                    const updatedOrder = response.data.result;
+                    setOrders((prev) => {
+                        const exists = prev.some((order) => order._id === orderId);
+                        if (exists) {
+                            return prev.map((order) => (order._id === orderId ? updatedOrder : order));
+                        }
+                        return [updatedOrder, ...prev];
+                    });
+                }
+            } catch (error) {
+                console.error('Sync order by id error:', error);
+            }
+        };
+
         const onReturnRequestReviewed = async (payload) => {
             if (!payload?.orderId) return;
 
@@ -59,10 +78,24 @@ export function OrderProvider({ children }) {
             await fetchMyOrders();
         };
 
+        const onOrderStatusChanged = async (payload) => {
+            if (!payload?.orderId) return;
+            await syncOrderById(payload.orderId);
+        };
+
+        const onReturnPickupStatusUpdated = async (payload) => {
+            if (!payload?.orderId) return;
+            await syncOrderById(payload.orderId);
+        };
+
         socket.on('return_request_reviewed', onReturnRequestReviewed);
+        socket.on('order_status_changed', onOrderStatusChanged);
+        socket.on('return_pickup_status_updated', onReturnPickupStatusUpdated);
 
         return () => {
             socket.off('return_request_reviewed', onReturnRequestReviewed);
+            socket.off('order_status_changed', onOrderStatusChanged);
+            socket.off('return_pickup_status_updated', onReturnPickupStatusUpdated);
         };
     }, []);
 
