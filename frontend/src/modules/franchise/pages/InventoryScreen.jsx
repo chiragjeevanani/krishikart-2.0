@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     PackageSearch,
-    QrCode,
     Plus,
     Search,
     Filter,
@@ -154,9 +153,6 @@ export default function InventoryScreen() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <button className="w-8 h-8 rounded-sm bg-slate-900 text-white flex items-center justify-center shadow-lg active:scale-95 transition-all">
-                            <QrCode size={18} />
-                        </button>
                         <button
                             onClick={handleReset}
                             disabled={isResetting}
