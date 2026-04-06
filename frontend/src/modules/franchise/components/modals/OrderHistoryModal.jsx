@@ -7,14 +7,21 @@ import { cn } from '@/lib/utils';
 
 export default function OrderHistoryModal({ isOpen, onClose }) {
     const { fetchOrdersByDate } = useFranchiseOrders();
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const today = new Date().toISOString().split('T')[0];
+    const [selectedDate, setSelectedDate] = useState(today);
     const [orders, setOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
     const loadHistory = async () => {
+        const safeSelectedDate = selectedDate > today ? today : selectedDate;
+        if (safeSelectedDate !== selectedDate) {
+            setSelectedDate(today);
+            return;
+        }
+
         setIsLoading(true);
-        const data = await fetchOrdersByDate(selectedDate);
+        const data = await fetchOrdersByDate(safeSelectedDate);
         setOrders(data);
         setIsLoading(false);
     };
@@ -114,7 +121,8 @@ export default function OrderHistoryModal({ isOpen, onClose }) {
                             <input
                                 type="date"
                                 value={selectedDate}
-                                onChange={(e) => setSelectedDate(e.target.value)}
+                                max={today}
+                                onChange={(e) => setSelectedDate(e.target.value > today ? today : e.target.value)}
                                 className="text-[11px] font-black text-slate-900 outline-none uppercase bg-white cursor-pointer"
                             />
                         </div>
