@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Search, IndianRupee, ShoppingBag, History } from 'lucide-react';
+import { X, Search, ShoppingBag, History } from 'lucide-react';
 import { useFranchiseOrders } from '../../contexts/FranchiseOrdersContext';
 import DataGrid from '../tables/DataGrid';
 import { cn } from '@/lib/utils';
@@ -110,8 +110,7 @@ export default function OrderHistoryModal({ isOpen, onClose }) {
 
                     {/* Filter Bar */}
                     <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center gap-4 shrink-0">
-                        <div className="flex items-center gap-3 bg-white border border-slate-200 p-1.5 rounded-sm px-4">
-                            <Calendar size={14} className="text-slate-400" />
+                        <div className="flex items-center bg-white border border-slate-200 p-1.5 rounded-sm px-4">
                             <input
                                 type="date"
                                 value={selectedDate}
