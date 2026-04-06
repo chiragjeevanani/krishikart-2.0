@@ -28,6 +28,7 @@ import { useAdmin } from '../contexts/AdminContext';
 // Enterprise Components
 import MetricRow from '../components/cards/MetricRow';
 import FilterBar from '../components/tables/FilterBar';
+import { toast } from 'sonner';
 import FranchiseOnboardingDrawer from '../components/drawers/FranchiseOnboardingDrawer';
 import FranchiseServiceAreaDrawer from '../components/drawers/FranchiseServiceAreaDrawer';
 
@@ -59,6 +60,24 @@ export default function FranchiseManagementScreen() {
     useEffect(() => {
         fetchFranchises();
     }, []);
+
+    const handleStatusChange = async (id, newStatus) => {
+        const action = newStatus === 'blocked' ? 'decommission' : 'reactivate';
+        if (!window.confirm(`Are you sure you want to ${action} this node?`)) return;
+
+        try {
+            const response = await api.put(`/masteradmin/franchises/${id}/status`, { status: newStatus });
+            if (response.data.success) {
+                toast.success(`Node ${newStatus === 'blocked' ? 'decommissioned' : 'reactivated'} successfully`);
+                fetchFranchises();
+            } else {
+                toast.error(response.data.message || 'Failed to update status');
+            }
+        } catch (error) {
+            console.error("Error updating franchise status:", error);
+            toast.error(error.response?.data?.message || 'Server error occurred');
+        }
+    };
 
     const filteredFranchises = franchises.filter(f => {
         const name = (f.franchiseName || "").toLowerCase();
@@ -300,23 +319,25 @@ export default function FranchiseManagementScreen() {
                                                             </div>
 
                                                             <div className="p-4 grid grid-cols-1 gap-2 bg-slate-100/30">
-                                                                <button className="bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest py-2 rounded-sm hover:bg-slate-800 transition-all flex items-center justify-center gap-2">
-                                                                    <ExternalLink size={12} />
-                                                                    Network Portal
-                                                                </button>
                                                                 <button
                                                                     onClick={() => {
                                                                         setSelectedFranchise(franchise);
                                                                         setIsCoverageOpen(true);
                                                                     }}
-                                                                    className="bg-white border border-slate-200 text-slate-900 text-[9px] font-black uppercase tracking-widest py-2 rounded-sm hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+                                                                    className="bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest py-2 rounded-sm hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
                                                                 >
                                                                     <Globe size={12} />
                                                                     Manage Coverage
                                                                 </button>
-                                                                <button className="bg-white border border-slate-200 text-rose-600 text-[9px] font-black uppercase tracking-widest py-2 rounded-sm hover:bg-rose-50 transition-all flex items-center justify-center gap-2 group">
+                                                                <button
+                                                                    onClick={() => handleStatusChange(franchise._id, franchise.status === 'blocked' ? 'active' : 'blocked')}
+                                                                    className={cn(
+                                                                        "bg-white border text-[9px] font-black uppercase tracking-widest py-2 rounded-sm transition-all flex items-center justify-center gap-2 group",
+                                                                        franchise.status === 'blocked' ? "border-emerald-200 text-emerald-600 hover:bg-emerald-50" : "border-slate-200 text-rose-600 hover:bg-rose-50"
+                                                                    )}
+                                                                >
                                                                     <Power size={12} />
-                                                                    Decommission Node
+                                                                    {franchise.status === 'blocked' ? 'Reactivate Node' : 'Decommission Node'}
                                                                 </button>
                                                             </div>
                                                         </div>

@@ -66,7 +66,8 @@ export const getAllVendors = async (req, res) => {
 
     const vendors = await Vendor.find(query)
       .select("-password -resetPasswordToken -resetPasswordExpires")
-      .populate("products", "name category");
+      .populate("products", "name category")
+      .sort({ updatedAt: -1 });
 
     return handleResponse(res, 200, "Vendors fetched successfully", vendors);
   } catch (err) {
@@ -286,9 +287,9 @@ export const getAllFranchises = async (req, res) => {
     const { status } = req.query;
     const query = status ? { status } : {};
 
-    const franchises = await Franchise.find(query).select(
-      "-password -resetPasswordToken -resetPasswordExpires",
-    );
+    const franchises = await Franchise.find(query)
+      .select("-password -resetPasswordToken -resetPasswordExpires")
+      .sort({ updatedAt: -1 });
 
     return handleResponse(
       res,
@@ -422,7 +423,9 @@ export const getPendingKYCFranchises = async (req, res) => {
     if (status === "all") {
       query = { "kyc.status": { $ne: "unsubmitted" } };
     }
-    const franchises = await Franchise.find(query).select("-password");
+    const franchises = await Franchise.find(query)
+      .select("-password")
+      .sort({ updatedAt: -1 });
     return handleResponse(res, 200, "KYC franchises fetched", franchises);
   } catch (err) {
     return handleResponse(res, 500, "Server error");
@@ -572,7 +575,15 @@ export const createFranchiseByAdmin = async (req, res) => {
     }
 
     if (req.body.aadhaarNumber) {
-      franchiseData.kyc.aadhaarNumber = String(req.body.aadhaarNumber).trim();
+      const aadhaarDigits = String(req.body.aadhaarNumber).replace(/\D/g, "");
+      if (aadhaarDigits.length !== 12) {
+        return handleResponse(
+          res,
+          400,
+          "Aadhaar number must be exactly 12 digits",
+        );
+      }
+      franchiseData.kyc.aadhaarNumber = aadhaarDigits;
     }
 
     if (req.body.panNumber) {
@@ -624,7 +635,9 @@ export const createFranchiseByAdmin = async (req, res) => {
 
 export const getAllCustomers = async (req, res) => {
   try {
-    const customers = await User.find().select("-password -otp -otpExpiresAt");
+    const customers = await User.find()
+      .select("-password -otp -otpExpiresAt")
+      .sort({ updatedAt: -1 });
 
     return handleResponse(
       res,
@@ -1831,9 +1844,9 @@ export const getAllDeliveryPartners = async (req, res) => {
       query.$or = [{ approvalStatus: "approved" }, { isApproved: true }];
     }
 
-    const partners = await Delivery.find(query).select(
-      "-password -otp -otpExpiresAt",
-    );
+    const partners = await Delivery.find(query)
+      .select("-password -otp -otpExpiresAt")
+      .sort({ updatedAt: -1 });
     return handleResponse(
       res,
       200,

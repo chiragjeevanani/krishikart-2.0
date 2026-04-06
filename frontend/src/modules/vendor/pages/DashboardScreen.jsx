@@ -264,7 +264,7 @@ export default function DashboardScreen() {
                                 <div className="mt-4 w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
                                     <div
                                         className="h-full bg-blue-500"
-                                        style={{ width: `${Math.min(100, Math.max(0, payoutCycleDays > 0 ? ((7 - Math.min(payoutCycleDays, 7)) / 7) * 100 : 0))}%` }}
+                                        style={{ width: `${Math.min(100, Math.max(0, payoutCycleDays >= 0 ? ((7 - Math.min(payoutCycleDays, 7)) / 7) * 100 : 0))}%` }}
                                     />
                                 </div>
                             </div>

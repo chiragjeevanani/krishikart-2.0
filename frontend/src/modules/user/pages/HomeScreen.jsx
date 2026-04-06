@@ -37,6 +37,7 @@ import { useLocation } from '../contexts/LocationContext'
 import LocationPermissionPopup from '../components/common/LocationPermissionPopup'
 import { useFilter } from '../contexts/FilterContext'
 import { appendLocationToProductParams, getBrowseLocationParams } from '../utils/storefrontParams'
+import ServiceUnavailable from '../components/common/ServiceUnavailable'
 
 const isMobile = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches
 
@@ -206,22 +207,11 @@ export default function HomeScreen() {
             </div>
             <PageTransition>
                 {isUnsupportedLocation ? (
-                    <div className="min-h-screen bg-[var(--color-brand-subtle)] md:bg-white pt-24 md:pt-10 pb-24">
-                        <div className="max-w-3xl mx-auto px-5 md:px-8 min-h-[calc(100vh-9rem)] md:min-h-[calc(100vh-5rem)] flex items-center justify-center">
-                            <motion.div
-                                initial={{ opacity: 0, y: 18 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="w-full overflow-hidden rounded-[36px] border border-emerald-100 bg-white shadow-[0_24px_80px_rgba(16,185,129,0.12)]"
-                            >
-                                <div className="relative px-6 py-8 md:px-10 md:py-12 bg-gradient-to-br from-emerald-600 via-emerald-500 to-lime-300 text-white">
-                                    <h1 className="mt-4 text-[30px] leading-tight font-black md:text-5xl md:max-w-xl">Service coming soon</h1>
-                                    <p className="mt-3 max-w-2xl text-sm font-medium text-emerald-50 md:text-base">We are not available at this location right now.</p>
-                                    <div className="mt-4 rounded-2xl bg-white/12 px-4 py-3 text-sm font-semibold text-emerald-50 backdrop-blur-sm">
-                                        {address || (browseCoords ? `${browseCoords.lat.toFixed(4)}, ${browseCoords.lng.toFixed(4)}` : 'Selected location')}
-                                    </div>
-                                </div>
-                            </motion.div>
-                        </div>
+                    <div className="min-h-screen bg-white pt-24 md:pt-10 pb-24">
+                        <ServiceUnavailable 
+                            address={address} 
+                            coords={browseCoords} 
+                        />
                     </div>
                 ) : (
                     <div className="bg-[var(--color-brand-subtle)] md:bg-white pb-32 min-h-screen pt-24 md:pt-0">

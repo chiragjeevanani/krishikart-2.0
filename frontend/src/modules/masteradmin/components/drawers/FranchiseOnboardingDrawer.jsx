@@ -45,7 +45,14 @@ export default function FranchiseOnboardingDrawer({ isOpen, onClose, onSave }) {
         payload.append('state', form.state);
         if (form.email) payload.append('email', form.email);
         if (form.area) payload.append('area', form.area);
-        if (form.aadhaarNumber) payload.append('aadhaarNumber', form.aadhaarNumber);
+        const aadhaarDigits = String(form.aadhaarNumber || '').replace(/\D/g, '');
+        if (aadhaarDigits) {
+            if (aadhaarDigits.length !== 12) {
+                alert('Aadhaar number must be exactly 12 digits.');
+                return;
+            }
+            payload.append('aadhaarNumber', aadhaarDigits);
+        }
         if (form.panNumber) payload.append('panNumber', form.panNumber);
         const fssaiDigits = String(form.fssaiNumber || '').replace(/\D/g, '');
         if (fssaiDigits) {
@@ -138,7 +145,20 @@ export default function FranchiseOnboardingDrawer({ isOpen, onClose, onSave }) {
                                     <p className="text-[11px] text-slate-500 mt-1">Numbers and document uploads (optional if you will collect later).</p>
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <Input label="Aadhaar Number" value={form.aadhaarNumber} onChange={(v) => setValue('aadhaarNumber', v)} />
+                                    <div>
+                                        <Input
+                                            label="Aadhaar Number (12 digits)"
+                                            type="tel"
+                                            inputMode="numeric"
+                                            maxLength={12}
+                                            placeholder="123456789012"
+                                            value={form.aadhaarNumber}
+                                            onChange={(v) => setValue('aadhaarNumber', v.replace(/\D/g, '').slice(0, 12))}
+                                        />
+                                        <p className="text-[10px] text-slate-500 mt-1">
+                                            {form.aadhaarNumber.length}/12 digits
+                                        </p>
+                                    </div>
                                     <Input label="PAN Number" value={form.panNumber} onChange={(v) => setValue('panNumber', v.toUpperCase())} />
                                     <FileField label="Aadhaar image / PDF" onChange={(f) => setValue('aadhaarImage', f)} file={form.aadhaarImage} />
                                     <FileField label="PAN image / PDF" onChange={(f) => setValue('panImage', f)} file={form.panImage} />

@@ -31,6 +31,15 @@ export const submitKYC = async (req, res) => {
       return handleResponse(res, 400, "KYC already verified");
     }
 
+    const aadhaarDigits = String(aadhaarNumber ?? "").replace(/\D/g, "");
+    if (aadhaarNumber !== undefined && aadhaarDigits.length !== 12) {
+      return handleResponse(
+        res,
+        400,
+        "Aadhaar number must be exactly 12 digits",
+      );
+    }
+
     const fssaiDigits = String(fssaiNumber ?? "").replace(/\D/g, "");
     if (fssaiDigits.length !== 14) {
       return handleResponse(res, 400, "FSSAI number must be exactly 14 digits");

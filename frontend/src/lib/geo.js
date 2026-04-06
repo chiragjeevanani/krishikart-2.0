@@ -97,7 +97,7 @@ export const getCurrentLocation = () => {
             (err) => {
                 reject(new Error(err.message || 'Failed to get current location'));
             },
-            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
         );
     });
 };

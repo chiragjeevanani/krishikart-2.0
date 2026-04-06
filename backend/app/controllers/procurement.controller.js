@@ -1101,7 +1101,7 @@ export const getVendorDashboardStats = async (req, res) => {
             activeOps,
             pendingSettlement,
             totalTurnover,
-            payoutCycleDays: Number(avgPrepDays.toFixed(1)),
+            payoutCycleDays: avgPrepDays > 0 ? Number(avgPrepDays.toFixed(1)) : 7.0,
             verificationStatus: vendor?.status === "active" ? "Alpha Verified" : "Pending Verification",
             syncMinutes,
             trends: {

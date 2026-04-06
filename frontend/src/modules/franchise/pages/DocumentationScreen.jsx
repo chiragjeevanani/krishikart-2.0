@@ -96,7 +96,7 @@ export default function DocumentationScreen() {
     const { franchise } = useFranchiseAuth();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState({
-        aadhaarNumber: franchise?.kyc?.aadhaarNumber || '',
+        aadhaarNumber: String(franchise?.kyc?.aadhaarNumber || '').replace(/\D/g, '').slice(0, 12),
         panNumber: franchise?.kyc?.panNumber || '',
         fssaiNumber: String(franchise?.kyc?.fssaiNumber || '').replace(/\D/g, '').slice(0, 14),
         gstNumber: normalizeGst14Input(franchise?.kyc?.gstNumber || ''),
@@ -155,6 +155,11 @@ export default function DocumentationScreen() {
             toast.error('Please fill in Aadhaar and PAN numbers');
             return;
         }
+        const aadhaarDigits = String(formData.aadhaarNumber || '').replace(/\D/g, '');
+        if (aadhaarDigits.length !== 12) {
+            toast.error('Aadhaar number must be exactly 12 digits');
+            return;
+        }
         const fssaiDigits = String(formData.fssaiNumber || '').replace(/\D/g, '');
         if (fssaiDigits.length !== 14) {
             toast.error('FSSAI number must be exactly 14 digits');
@@ -191,7 +196,7 @@ export default function DocumentationScreen() {
         setIsSubmitting(true);
         try {
             const data = new FormData();
-            data.append('aadhaarNumber', formData.aadhaarNumber.trim());
+            data.append('aadhaarNumber', aadhaarDigits);
             data.append('panNumber', formData.panNumber.trim());
             data.append('fssaiNumber', fssaiDigits);
             data.append('gstNumber', formData.gstNumber);
@@ -270,15 +275,21 @@ export default function DocumentationScreen() {
                                 Aadhaar Number
                             </label>
                             <input
-                                type="text"
-                                placeholder="1234 5678 9012"
+                                type="tel"
+                                inputMode="numeric"
+                                placeholder="123456789012"
+                                maxLength={12}
                                 value={formData.aadhaarNumber}
                                 readOnly={readOnly}
-                                onChange={(e) =>
-                                    setFormData((prev) => ({ ...prev, aadhaarNumber: e.target.value }))
-                                }
+                                onChange={(e) => {
+                                    const digits = e.target.value.replace(/\D/g, '').slice(0, 12);
+                                    setFormData((prev) => ({ ...prev, aadhaarNumber: digits }));
+                                }}
                                 className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all disabled:opacity-50"
                             />
+                            <p className="text-[10px] text-slate-400 font-medium mt-1">
+                                {formData.aadhaarNumber.length}/12 digits
+                            </p>
                         </div>
                         <DocUploadZone
                             preview={previews.aadhaar}

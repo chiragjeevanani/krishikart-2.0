@@ -15,6 +15,7 @@ import { toast } from 'sonner'
 import { useLocation } from '../contexts/LocationContext'
 import { appendLocationToProductParams, getBrowseLocationParams } from '../utils/storefrontParams'
 import { useFilter } from '../contexts/FilterContext'
+import ServiceUnavailable from '../components/common/ServiceUnavailable'
 import {
     Sheet,
     SheetContent,
@@ -557,8 +558,17 @@ export default function ProductListScreen() {
 
                                     {filteredProducts.length === 0 && (
                                         <div className="py-20 text-center">
-                                            <Search className="mx-auto text-slate-200 mb-4" size={48} />
-                                            <p className="text-slate-400 font-bold">No products found</p>
+                                            {(!isLoading && products.length === 0 && getBrowseLocationParams(locationCtx).hasPinned) ? (
+                                                <ServiceUnavailable 
+                                                   address={locationCtx.address} 
+                                                   coords={getBrowseLocationParams(locationCtx).coords} 
+                                                />
+                                            ) : (
+                                                <>
+                                                    <Search className="mx-auto text-slate-200 mb-4" size={48} />
+                                                    <p className="text-slate-400 font-bold">No products found</p>
+                                                </>
+                                            )}
                                         </div>
                                     )}
                                 </>
@@ -701,9 +711,25 @@ export default function ProductListScreen() {
                                                     Searching Network SKUs...
                                                 </div>
                                             )}
-                                            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
-                                                {filteredProducts.map((product, index) => <ProductCard key={product._id || product.id || index} product={product} />)}
-                                            </div>
+                                            {filteredProducts.length === 0 ? (
+                                                <div className="py-20 text-center bg-white rounded-3xl border border-dashed border-slate-200">
+                                                    {(!isLoading && products.length === 0 && getBrowseLocationParams(locationCtx).hasPinned) ? (
+                                                        <ServiceUnavailable 
+                                                            address={locationCtx.address} 
+                                                            coords={getBrowseLocationParams(locationCtx).coords} 
+                                                        />
+                                                    ) : (
+                                                        <>
+                                                            <Search className="mx-auto text-slate-200 mb-4" size={48} />
+                                                            <p className="text-slate-400 font-bold">No products found</p>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
+                                                    {filteredProducts.map((product, index) => <ProductCard key={product._id || product.id || index} product={product} />)}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
