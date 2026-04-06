@@ -1,6 +1,6 @@
 import { Bell, Search, UserCircle, RefreshCw, X, ShoppingCart, Users, Box } from 'lucide-react';
 import { useLocation, Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/lib/axios';
 import { cn } from '@/lib/utils';
@@ -10,10 +10,12 @@ export default function TopBar() {
     const location = useLocation();
     const { admin, logout } = useMasterAdminAuth();
     const [showNotifications, setShowNotifications] = useState(false);
+    const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [notifications, setNotifications] = useState([
         { id: 1, title: "New Vendor Registration", time: "2m ago", read: false },
         { id: 2, title: "Order #8868431 Delivered", time: "1h ago", read: true },
     ]);
+    const profileMenuRef = useRef(null);
 
     const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -43,6 +45,17 @@ export default function TopBar() {
 
         return () => clearTimeout(delayDebounceFn);
     }, [searchQuery]);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+                setShowProfileMenu(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const getLink = (category, item) => {
         switch (category) {
@@ -179,7 +192,14 @@ export default function TopBar() {
                 </div>
 
                 {/* Identity Module */}
-                <div className="flex items-center gap-3 pl-4 border-l border-slate-200 group relative cursor-pointer group">
+                <div className="flex items-center gap-3 pl-4 border-l border-slate-200 relative" ref={profileMenuRef}>
+                    <button
+                        type="button"
+                        onClick={() => setShowProfileMenu((prev) => !prev)}
+                        className="flex items-center gap-3 text-left rounded-sm hover:bg-slate-50 transition-colors px-1.5 py-1"
+                        aria-label="Open profile menu"
+                        aria-expanded={showProfileMenu}
+                    >
                     <div className="text-right hidden sm:block">
                         <p className="text-[11px] font-black text-slate-900 leading-none uppercase tracking-tight">
                             {admin?.fullName || 'Administrator'}
@@ -188,23 +208,54 @@ export default function TopBar() {
                             {admin?.role?.replace('_', ' ') || 'Main Control'}
                         </p>
                     </div>
-                    <div className="w-8 h-8 rounded-sm bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 group-hover:border-slate-900 transition-colors overflow-hidden">
+                    <div className="w-8 h-8 rounded-sm bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 hover:border-slate-900 transition-colors overflow-hidden">
                         {admin?.profilePicture ? (
                             <img src={admin.profilePicture} alt="Profile" className="w-full h-full object-cover" />
                         ) : (
                             <UserCircle size={24} />
                         )}
                     </div>
+                    </button>
 
-                    {/* Simple Logout Dropdown */}
-                    <div className="absolute top-full right-0 mt-2 w-40 bg-white border border-slate-200 shadow-xl rounded-sm py-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all z-[100]">
-                        <button
-                            onClick={logout}
-                            className="w-full text-left px-4 py-2 text-[11px] font-bold text-rose-600 hover:bg-rose-50 transition-colors uppercase tracking-widest"
-                        >
-                            Sign Out
-                        </button>
-                    </div>
+                    <AnimatePresence>
+                        {showProfileMenu && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 8 }}
+                                className="absolute top-full right-0 mt-2 w-64 bg-white border border-slate-200 shadow-xl rounded-sm overflow-hidden z-[100]"
+                            >
+                                <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">
+                                    <p className="text-[11px] font-black text-slate-900 uppercase tracking-tight">
+                                        {admin?.fullName || 'Administrator'}
+                                    </p>
+                                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+                                        {admin?.email || admin?.role?.replace('_', ' ') || 'Main Control'}
+                                    </p>
+                                </div>
+
+                                <div className="py-1">
+                                    <Link
+                                        to="/masteradmin/settings?section=profile"
+                                        onClick={() => setShowProfileMenu(false)}
+                                        className="block px-4 py-2 text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition-colors uppercase tracking-widest"
+                                    >
+                                        View Profile
+                                    </Link>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setShowProfileMenu(false);
+                                            logout();
+                                        }}
+                                        className="w-full text-left px-4 py-2 text-[11px] font-bold text-rose-600 hover:bg-rose-50 transition-colors uppercase tracking-widest"
+                                    >
+                                        Sign Out
+                                    </button>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </div>
         </header>
