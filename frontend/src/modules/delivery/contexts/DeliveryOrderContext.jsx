@@ -85,11 +85,13 @@ export function DeliveryOrderProvider({ children }) {
 
     useEffect(() => {
         if (delivery?._id) {
-            joinDeliveryRoom(delivery._id);
-            fetchDispatchedOrders();
-            fetchReturnPickups();
-
             const socket = getSocket();
+            const syncDeliveryTasks = () => {
+                joinDeliveryRoom(delivery._id);
+                fetchDispatchedOrders();
+                fetchReturnPickups();
+            };
+
             const handleNewTask = (data) => {
                 setNewTaskData(data);
                 setIsAlertOpen(true);
@@ -98,8 +100,14 @@ export function DeliveryOrderProvider({ children }) {
                 fetchReturnPickups();
             };
 
+            syncDeliveryTasks();
+            socket.on('connect', syncDeliveryTasks);
             socket.on('new_task', handleNewTask);
-            return () => socket.off('new_task', handleNewTask);
+
+            return () => {
+                socket.off('connect', syncDeliveryTasks);
+                socket.off('new_task', handleNewTask);
+            };
         }
     }, [delivery]);
 
