@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 export default function FilterBar({
     onSearch,
     onRefresh,
+    searchValue,
     activeFilter,
     onFilterChange,
     filters = ['All', 'Pending', 'Verified'],
@@ -18,6 +19,7 @@ export default function FilterBar({
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={13} />
                     <input
                         type="search"
+                        value={searchValue ?? undefined}
                         placeholder="Filter data..."
                         onChange={(e) => onSearch?.(e.target.value.trim())}
                         className="w-full bg-white border border-slate-200 rounded-sm pl-8 pr-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 transition-all placeholder:text-slate-400"
