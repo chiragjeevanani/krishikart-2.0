@@ -3,13 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Truck,
     User,
-    Phone,
     CheckCircle2,
     Search,
     MapPin,
     Package,
-    Clock,
-    UserPlus,
     Ghost,
     Home,
     ChevronRight,
@@ -19,22 +16,48 @@ import {
 } from 'lucide-react';
 import { useFranchiseOrders } from '../contexts/FranchiseOrdersContext';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 // Enterprise Components
 import MetricRow from '../components/cards/MetricRow';
-import DataGrid from '../components/tables/DataGrid';
 import FilterBar from '../components/tables/FilterBar';
 
 export default function DeliveryScreen() {
-    const { orders, updateOrderStatus, deliveryPartners, assignDeliveryPartner } = useFranchiseOrders();
+    const {
+        orders,
+        updateOrderStatus,
+        deliveryPartners,
+        assignDeliveryPartner,
+        refreshOrders,
+        refreshPartners
+    } = useFranchiseOrders();
     const [activeTab, setActiveTab] = useState('active'); // 'active' or 'history'
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     useEffect(() => {
         const timer = setTimeout(() => setIsLoading(false), 600);
         return () => clearTimeout(timer);
     }, []);
+
+    const handleRefresh = async () => {
+        if (isRefreshing) return;
+
+        setIsRefreshing(true);
+        try {
+            await Promise.all([
+                refreshOrders?.(),
+                refreshPartners?.()
+            ]);
+            toast.success('Dispatch data refreshed');
+        } catch (error) {
+            console.error('Refresh dispatch data error:', error);
+            toast.error('Failed to refresh dispatch data');
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
 
     const filteredOrders = orders.filter(o => {
         const matchesSearch = (o.hotelName?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
@@ -140,8 +163,15 @@ export default function DeliveryScreen() {
                                     className="bg-white border border-slate-200 rounded-sm py-1.5 pl-9 pr-4 outline-none text-[11px] font-black text-slate-900 placeholder:text-slate-400 focus:border-slate-400 transition-all font-sans min-w-[240px]"
                                 />
                             </div>
-                            <button className="p-1.5 border border-slate-200 rounded-sm hover:bg-slate-100 transition-colors text-slate-400 bg-white">
-                                <RefreshCw size={14} />
+                            <button
+                                type="button"
+                                onClick={handleRefresh}
+                                disabled={isRefreshing}
+                                title="Refresh dispatch data"
+                                aria-label="Refresh dispatch data"
+                                className="p-1.5 border border-slate-200 rounded-sm hover:bg-slate-100 transition-colors text-slate-400 bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                <RefreshCw size={14} className={cn(isRefreshing && 'animate-spin')} />
                             </button>
                         </div>
                     }

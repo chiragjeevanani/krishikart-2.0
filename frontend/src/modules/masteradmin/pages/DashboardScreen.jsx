@@ -13,7 +13,6 @@ import {
     ChevronRight,
     Search,
     RefreshCw,
-    MoreHorizontal,
     Activity,
     Layers,
     FileText,
@@ -147,16 +146,6 @@ export default function DashboardScreen() {
             header: 'Date',
             key: 'date',
             render: (val) => <span className="text-[10px] text-slate-400 font-bold uppercase tabular-nums">{val}</span>
-        },
-        {
-            header: '',
-            key: 'actions',
-            align: 'right',
-            render: () => (
-                <button className="p-1 hover:bg-slate-100 rounded-sm text-slate-400 transition-colors">
-                    <MoreHorizontal size={14} />
-                </button>
-            )
         }
     ];
 

@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft, MapPin, Phone, MessageSquare, Package, Truck, CheckCircle2, ShoppingBag, Zap, ClipboardList } from 'lucide-react'
+import { ArrowLeft, Package, Truck, CheckCircle2, ShoppingBag, Zap, ClipboardList, ShieldCheck } from 'lucide-react'
 import PageTransition from '../components/layout/PageTransition'
 import { Button } from '@/components/ui/button'
 import { useOrders } from '@/modules/user/contexts/OrderContext'
@@ -18,10 +18,34 @@ const steps = [
 export default function OrderTrackingScreen() {
     const navigate = useNavigate()
     const { id } = useParams()
-    const { orders, updateOrderStatus } = useOrders()
+    const { orders, updateOrderStatus, getOrderById } = useOrders()
     const [isUpdating, setIsUpdating] = useState(false)
+    const [orderDetails, setOrderDetails] = useState(null)
 
-    const order = orders.find(o => o._id === id)
+    const orderFromContext = useMemo(() => orders.find((item) => item._id === id), [orders, id])
+    const order = orderFromContext || orderDetails
+
+    useEffect(() => {
+        let isMounted = true
+
+        const loadOrder = async () => {
+            if (!id) return
+            if (orderFromContext) {
+                setOrderDetails(orderFromContext)
+                return
+            }
+
+            const freshOrder = await getOrderById(id)
+            if (isMounted && freshOrder) {
+                setOrderDetails(freshOrder)
+            }
+        }
+
+        loadOrder()
+        return () => {
+            isMounted = false
+        }
+    }, [getOrderById, id, orderFromContext])
 
     const handleMarkDelivered = () => {
         setIsUpdating(true)
@@ -42,6 +66,19 @@ export default function OrderTrackingScreen() {
         }
     }
 
+    if (!order) {
+        return (
+            <PageTransition>
+                <div className="bg-[#f8fafc] min-h-screen flex items-center justify-center p-6">
+                    <div className="text-center">
+                        <h2 className="text-lg font-black text-slate-900">Loading Order Trace</h2>
+                        <p className="text-sm text-slate-400 mt-2">Syncing the latest order status...</p>
+                    </div>
+                </div>
+            </PageTransition>
+        )
+    }
+
     return (
         <PageTransition>
             <div className="bg-[#f8fafc] min-h-screen pb-32">
@@ -53,7 +90,7 @@ export default function OrderTrackingScreen() {
                         </button>
                         <div className="flex flex-col">
                             <h1 className="text-base font-black text-slate-900 tracking-tight leading-none mb-1">Track Order</h1>
-                            <p className="text-[8px] font-black text-emerald-600 uppercase tracking-[0.2em] leading-none">Manifest: #{order?._id.slice(-8).toUpperCase()}</p>
+                            <p className="text-[8px] font-black text-emerald-600 uppercase tracking-[0.2em] leading-none">Manifest: #{order._id.slice(-8).toUpperCase()}</p>
                         </div>
                     </div>
                 </div>
@@ -70,7 +107,7 @@ export default function OrderTrackingScreen() {
                                 <Truck size={28} strokeWidth={2.5} />
                             </motion.div>
                             <h2 className="text-xl font-black text-white leading-tight uppercase tracking-tight italic">
-                                {order?.orderStatus?.replace(/_/g, ' ') || 'Syncing...'}
+                                {order.orderStatus?.replace(/_/g, ' ') || 'Syncing...'}
                             </h2>
                             <p className="text-[8px] text-slate-500 font-bold uppercase tracking-[0.25em] mt-2">
                                 Encrypted Trace Active
@@ -88,10 +125,10 @@ export default function OrderTrackingScreen() {
                         <div className="space-y-6 relative">
                             <div className="absolute left-[17.5px] top-4 bottom-4 w-[1px] bg-slate-100" />
                             {steps.map((step, i) => {
-                                const orderStatusHistory = order?.statusHistory || [];
+                                const orderStatusHistory = order.statusHistory || [];
                                 const historyEntry = orderStatusHistory.find(h => h.status === step.status);
                                 const isCompleted = !!historyEntry;
-                                const isCurrent = order?.orderStatus === step.status;
+                                const isCurrent = order.orderStatus === step.status;
                                 const time = historyEntry ? new Date(historyEntry.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
 
                                 return (
@@ -123,7 +160,7 @@ export default function OrderTrackingScreen() {
                     </div>
 
                     {/* On-Site Verification Portal */}
-                    {order?.orderStatus === 'Delivered' && (
+                    {order.orderStatus === 'Delivered' && (
                         <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 pt-2 pb-6">
                             <div className="p-5 rounded-[28px] bg-emerald-50 border border-emerald-100 shadow-sm relative overflow-hidden">
                                 <div className="flex items-center gap-3.5 mb-4 relative z-10">

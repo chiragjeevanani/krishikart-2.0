@@ -11,6 +11,7 @@ import {
   ShoppingCart,
   ChevronDown,
   Activity,
+  RefreshCw,
   ChevronLeft,
   Users,
   MapPin,
@@ -23,6 +24,7 @@ import {
   UploadCloud,
   Edit3,
   ExternalLink,
+  X,
 } from "lucide-react";
 import api from "@/lib/axios";
 import StockAlertBadge from "../components/badges/StockAlertBadge";
@@ -102,6 +104,19 @@ export default function FranchiseStockMonitoringScreen() {
       fetchNetworkOverview();
     }
   }, [viewMode]);
+
+  const handleRefresh = () => {
+    if (isLoading) return;
+
+    if (viewMode === "network") {
+      fetchNetworkOverview();
+      return;
+    }
+
+    if (selectedFranchiseId) {
+      fetchFranchiseDetails(selectedFranchiseId);
+    }
+  };
 
   const handleFranchiseClick = (id) => {
     setSelectedFranchiseId(id);
@@ -514,13 +529,24 @@ export default function FranchiseStockMonitoringScreen() {
               </button>
             )}
             <button
-              onClick={() =>
+              type="button"
+              onClick={handleRefresh}
+              disabled={isLoading}
+              aria-label={
                 viewMode === "network"
-                  ? fetchNetworkOverview()
-                  : fetchFranchiseDetails(selectedFranchiseId)
+                  ? "Refresh stock monitoring overview"
+                  : "Refresh franchise stock details"
               }
-              className="p-1.5 border border-slate-200 rounded-sm hover:bg-slate-50 text-slate-400 transition-colors">
-              <Activity size={14} />
+              title={
+                viewMode === "network"
+                  ? "Refresh stock monitoring overview"
+                  : "Refresh franchise stock details"
+              }
+              className="p-1.5 border border-slate-200 rounded-sm hover:bg-slate-50 text-slate-400 transition-colors disabled:cursor-not-allowed disabled:opacity-60">
+              <RefreshCw
+                size={14}
+                className={isLoading ? "animate-spin" : ""}
+              />
             </button>
           </div>
         </div>

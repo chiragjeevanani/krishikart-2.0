@@ -32,6 +32,15 @@ export const useFCM = (isAuthenticated, userType) => {
             const unsubscribe = onMessage(messaging, async (payload) => {
                 const data = payload.data || {};
 
+                window.dispatchEvent(
+                    new CustomEvent('kk:fcm-message', {
+                        detail: {
+                            userType,
+                            payload,
+                        },
+                    }),
+                );
+
                 // Show UI toast for immediate feedback
                 toast.info(payload.notification.title, {
                     description: payload.notification.body

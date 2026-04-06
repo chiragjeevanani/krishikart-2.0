@@ -19,6 +19,30 @@ export const initSocket = (server) => {
             console.log(`Socket ${socket.id} joined room order_${orderId}`);
         });
 
+        socket.on("join_user_room", (payload) => {
+            try {
+                let userIdFromToken = null;
+                if (payload && typeof payload === "object" && payload.token) {
+                    const decoded = jwt.verify(payload.token, process.env.JWT_SECRET);
+                    userIdFromToken = decoded.id;
+                } else if (typeof payload === "string" && payload) {
+                    const decoded = jwt.verify(payload, process.env.JWT_SECRET);
+                    userIdFromToken = decoded.id;
+                }
+
+                if (!userIdFromToken) {
+                    console.warn(`join_user_room: Missing or invalid token from socket ${socket.id}`);
+                    return;
+                }
+
+                const roomName = `user_${userIdFromToken}`;
+                socket.join(roomName);
+                console.log(`Socket ${socket.id} joined ${roomName} (secured via token)`);
+            } catch (err) {
+                console.error("join_user_room auth error:", err.message);
+            }
+        });
+
         socket.on("join_admin_delivery", () => {
             socket.join("admin_delivery_tracking");
             console.log(`Socket ${socket.id} joined admin_delivery_tracking`);
@@ -116,5 +140,11 @@ export const emitToDelivery = (deliveryId, event, data) => {
 export const emitToVendor = (vendorId, event, data) => {
     if (io) {
         io.to(`vendor_${vendorId}`).emit(event, data);
+    }
+};
+
+export const emitToUser = (userId, event, data) => {
+    if (io) {
+        io.to(`user_${userId}`).emit(event, data);
     }
 };

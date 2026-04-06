@@ -1,13 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search,
-    Filter,
     ShoppingBag,
     Truck,
-    Package,
     CheckCircle2,
-    Clock,
     Zap,
     History,
     Home,
@@ -63,6 +60,22 @@ export default function OrdersScreen() {
     const [isAssigning, setIsAssigning] = useState(false);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
     const [rejectingOrderId, setRejectingOrderId] = useState(null);
+    const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
+    const [quickFilter, setQuickFilter] = useState('all');
+    const filterMenuRef = useRef(null);
+
+    useEffect(() => {
+        if (!isFilterMenuOpen) return;
+
+        const handleClickOutside = (event) => {
+            if (filterMenuRef.current && !filterMenuRef.current.contains(event.target)) {
+                setIsFilterMenuOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isFilterMenuOpen]);
 
     const handleAcceptOrder = async (orderId) => {
         setProcessingOrderId(orderId);
@@ -155,8 +168,29 @@ export default function OrdersScreen() {
         const orderId = (order._id || order.id || '').toString();
         const matchesSearch = orderId.toLowerCase().includes(searchQuery.toLowerCase()) ||
             hotelName.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesTab && matchesSearch;
+        const hasShortage = order.items.some(i => i.isShortage) && !order.allowPartialFulfillment;
+        const hasDeliveryPartner = !!order.deliveryPartner;
+        const isAutoAssigned = !!order.franchiseAutoAccepted;
+        const isPartialFulfillment = !!order.allowPartialFulfillment;
+
+        let matchesQuickFilter = true;
+        if (quickFilter === 'auto-assigned') matchesQuickFilter = isAutoAssigned;
+        if (quickFilter === 'procurement-needed') matchesQuickFilter = hasShortage;
+        if (quickFilter === 'delivery-assigned') matchesQuickFilter = hasDeliveryPartner;
+        if (quickFilter === 'partial-fulfillment') matchesQuickFilter = isPartialFulfillment;
+
+        return matchesTab && matchesSearch && matchesQuickFilter;
     });
+
+    const filterOptions = [
+        { id: 'all', label: 'All Orders' },
+        { id: 'auto-assigned', label: 'Auto Assigned' },
+        { id: 'procurement-needed', label: 'Needs Procurement' },
+        { id: 'delivery-assigned', label: 'Delivery Assigned' },
+        { id: 'partial-fulfillment', label: 'Partial Fulfillment' },
+    ];
+
+    const activeFilterLabel = filterOptions.find((option) => option.id === quickFilter)?.label || 'All Orders';
 
     const orderColumns = [
         {
@@ -328,9 +362,56 @@ export default function OrdersScreen() {
                         >
                             <RefreshCw size={16} className={cn(isLoading && "animate-spin")} />
                         </button>
-                        <button className="p-2 text-slate-400 hover:text-slate-900 transition-colors border border-slate-200 rounded-sm bg-white">
-                            <Settings2 size={16} />
-                        </button>
+                        <div className="relative" ref={filterMenuRef}>
+                            <button
+                                type="button"
+                                onClick={() => setIsFilterMenuOpen((prev) => !prev)}
+                                aria-label="Open order filters"
+                                title={quickFilter === 'all' ? 'Filter orders' : `Filter active: ${activeFilterLabel}`}
+                                className={cn(
+                                    "p-2 transition-colors border border-slate-200 rounded-sm bg-white",
+                                    quickFilter === 'all'
+                                        ? "text-slate-400 hover:text-slate-900"
+                                        : "text-slate-900 border-slate-300 bg-slate-50"
+                                )}
+                            >
+                                <Settings2 size={16} />
+                            </button>
+                            <AnimatePresence>
+                                {isFilterMenuOpen && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -6 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -6 }}
+                                        className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-sm shadow-xl z-40 overflow-hidden"
+                                    >
+                                        <div className="px-3 py-2 border-b border-slate-100">
+                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Quick Filters</p>
+                                        </div>
+                                        <div className="p-1">
+                                            {filterOptions.map((option) => (
+                                                <button
+                                                    key={option.id}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setQuickFilter(option.id);
+                                                        setIsFilterMenuOpen(false);
+                                                    }}
+                                                    className={cn(
+                                                        "w-full text-left px-3 py-2 rounded-sm text-[11px] font-black uppercase tracking-wide transition-colors",
+                                                        quickFilter === option.id
+                                                            ? "bg-slate-900 text-white"
+                                                            : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                                                    )}
+                                                >
+                                                    {option.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
                         <button
                             onClick={() => setIsHistoryModalOpen(true)}
                             className="bg-slate-900 text-white px-4 py-2 rounded-sm text-xs font-bold flex items-center gap-2 hover:bg-slate-800 transition-colors shadow-sm uppercase tracking-widest"

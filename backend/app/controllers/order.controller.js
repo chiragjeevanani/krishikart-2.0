@@ -24,6 +24,8 @@ import {
   computeSplitCheckoutPayload,
   resolveCheckoutCoordinates,
 } from "../utils/checkoutOrderSplit.js";
+import { createAdminNotification } from "../utils/adminNotification.js";
+import { createUserNotification } from "../utils/userNotification.js";
 
 /**
  * Helper to calculate price based on quantity and bulk pricing rules
@@ -229,6 +231,18 @@ export const createOrder = async (req, res) => {
         note: `Order paid via business credit ${appliedCouponCode ? "(Coupon: " + appliedCouponCode + ")" : ""}`,
         createdAt: new Date(),
       });
+      await createAdminNotification({
+        type: "new_order",
+        title: "New Order Placed",
+        message: `${user.fullName} placed order #${order._id.toString().slice(-6)} for ₹${Number(order.totalAmount || 0).toFixed(2)}.`,
+        link: "/masteradmin/orders",
+        meta: {
+          orderId: order._id.toString(),
+          orderGroupId: orderGroupId || null,
+          amount: order.totalAmount,
+          customerName: user.fullName,
+        },
+      });
     }
 
     const createdOrders = [];
@@ -264,6 +278,19 @@ export const createOrder = async (req, res) => {
 
       await order.save();
       createdOrders.push(order);
+
+      await createUserNotification({
+        userId,
+        type: "order",
+        title: "Order Placed",
+        message: `Your order #${order._id.toString().slice(-6)} has been placed successfully.`,
+        link: `/order-detail/${order._id}`,
+        meta: {
+          orderId: order._id.toString(),
+          amount: order.totalAmount,
+          paymentMethod,
+        },
+      });
 
       try {
         await assignOrderToFranchise(order._id);
@@ -483,6 +510,18 @@ export const createReturnRequest = async (req, res) => {
     });
 
     await order.save();
+
+    await createUserNotification({
+      userId: order.userId,
+      type: "return",
+      title: "Return Request Submitted",
+      message: `We have received your return request for order #${order._id.toString().slice(-6)}.`,
+      link: `/order-detail/${order._id}`,
+      meta: {
+        orderId: order._id.toString(),
+        requestStatus: "pending",
+      },
+    });
 
     return handleResponse(
       res,
@@ -810,6 +849,25 @@ export const updateReturnPickupStatus = async (req, res) => {
 
     await order.save();
 
+    await createUserNotification({
+      userId: order.userId,
+      type: "return",
+      title:
+        status === "completed"
+          ? "Return Completed"
+          : "Return Pickup Updated",
+      message:
+        status === "completed"
+          ? `Your return for order #${order._id.toString().slice(-6)} has been completed.${request.items?.length ? " Refund processed to wallet if applicable." : ""}`
+          : `Return pickup for order #${order._id.toString().slice(-6)} is now ${status.replace("_", " ")}.`,
+      link: `/order-detail/${order._id}`,
+      meta: {
+        orderId: order._id.toString(),
+        requestIndex: Number(requestIndex),
+        status,
+      },
+    });
+
     // Socket Notifications
     emitToOrderRoom(order._id, "return_pickup_status_updated", {
       orderId: order._id,
@@ -1106,6 +1164,18 @@ export const updateOrderStatus = async (req, res) => {
                 createdAt: new Date(),
               });
               await user.save();
+              await createUserNotification({
+                userId: user._id,
+                type: "wallet",
+                title: "Loyalty Bonus Added",
+                message: `${points} loyalty points were added to your account for order #${order._id.toString().slice(-6)}.`,
+                link: "/wallet",
+                meta: {
+                  orderId: order._id.toString(),
+                  points,
+                  transactionType: "loyalty_bonus",
+                },
+              });
             }
           }
         }
@@ -1314,6 +1384,16 @@ export const updateOrderStatus = async (req, res) => {
       .populate("franchiseId", "franchiseName ownerName city");
 
     emitToAdmin("order_status_updated", populatedOrder);
+    await createAdminNotification({
+      type: "order_status_updated",
+      title: "Order Status Updated",
+      message: `Order #${order._id.toString().slice(-6)} moved to ${status}.`,
+      link: "/masteradmin/orders",
+      meta: {
+        orderId: order._id.toString(),
+        status,
+      },
+    });
     emitToOrderRoom(order._id, "order_status_changed", {
       orderId: order._id,
       status: status,
@@ -1327,6 +1407,18 @@ export const updateOrderStatus = async (req, res) => {
         updatedAt: new Date(),
       });
     }
+
+    await createUserNotification({
+      userId: order.userId,
+      type: "order_update",
+      title: "Order Status Updated",
+      message: `Your order #${order._id.toString().slice(-6)} is now ${status}.`,
+      link: `/order-detail/${order._id}`,
+      meta: {
+        orderId: order._id.toString(),
+        status,
+      },
+    });
 
     return handleResponse(res, 200, `Order status updated to ${status}`, order);
   } catch (error) {
@@ -1763,6 +1855,17 @@ export const rejectFranchiseOrder = async (req, res) => {
       orderId: order._id,
       rejectedByFranchiseId: franchiseId,
       reason: reason || null,
+    });
+    await createAdminNotification({
+      type: "order_franchise_rejected",
+      title: "Franchise Rejected Order",
+      message: `Order #${order._id.toString().slice(-6)} was rejected by a franchise${reason ? `: ${reason}` : "."}`,
+      link: "/masteradmin/orders",
+      meta: {
+        orderId: order._id.toString(),
+        rejectedByFranchiseId: franchiseId.toString(),
+        reason: reason || "",
+      },
     });
 
     return handleResponse(

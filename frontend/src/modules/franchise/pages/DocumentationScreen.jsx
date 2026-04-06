@@ -16,7 +16,15 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useFranchiseAuth } from '../contexts/FranchiseAuthContext';
 import api from '@/lib/axios';
-import { countGst14Parts, isValidGst14, normalizeGst14Input } from '../utils/gstin14';
+import {
+    countGst14Parts,
+    isValidFssai,
+    isValidGst14,
+    isValidPan,
+    normalizeFssaiInput,
+    normalizeGst14Input,
+    normalizePanInput,
+} from '../utils/gstin14';
 
 const FILE_FIELDS = {
     aadhaar: { formKey: 'aadhaarImage', previewKey: 'aadhaar' },
@@ -34,6 +42,7 @@ function DocUploadZone({
     title,
     subtitle,
     inputId,
+    error,
 }) {
     return (
         <div className="space-y-2">
@@ -88,6 +97,7 @@ function DocUploadZone({
                     </label>
                 )}
             </div>
+            {error ? <p className="text-[11px] font-medium text-rose-600">{error}</p> : null}
         </div>
     );
 }
@@ -96,7 +106,7 @@ export default function DocumentationScreen() {
     const { franchise } = useFranchiseAuth();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState({
-        aadhaarNumber: String(franchise?.kyc?.aadhaarNumber || '').replace(/\D/g, '').slice(0, 12),
+        aadhaarNumber: franchise?.kyc?.aadhaarNumber || '',
         panNumber: franchise?.kyc?.panNumber || '',
         fssaiNumber: String(franchise?.kyc?.fssaiNumber || '').replace(/\D/g, '').slice(0, 14),
         gstNumber: normalizeGst14Input(franchise?.kyc?.gstNumber || ''),
@@ -114,12 +124,79 @@ export default function DocumentationScreen() {
         shopEstablishment: franchise?.kyc?.shopEstablishmentCertificate || null,
         gst: franchise?.kyc?.gstCertificate || null,
     });
+    const [errors, setErrors] = useState({});
 
     const isVerified = franchise?.kyc?.status === 'verified';
     const isPending = franchise?.kyc?.status === 'pending';
     const franchiseAccountPending = franchise && !franchise.isVerified;
     const readOnly = isVerified || isPending;
     const gstParts = countGst14Parts(formData.gstNumber);
+
+    const validateForm = () => {
+        const nextErrors = {};
+        const aadhaarNumber = formData.aadhaarNumber.trim();
+        const panNumber = normalizePanInput(formData.panNumber);
+        const fssaiDigits = normalizeFssaiInput(formData.fssaiNumber);
+        const gstNumber = normalizeGst14Input(formData.gstNumber);
+
+        if (!aadhaarNumber) {
+            nextErrors.aadhaarNumber = 'Enter the Aadhaar number shown on the card.';
+        }
+
+        if (!panNumber) {
+            nextErrors.panNumber = 'Enter your PAN card number.';
+        } else if (!isValidPan(panNumber)) {
+            nextErrors.panNumber = 'Enter a valid PAN in this format: ABCDE1234F.';
+        }
+
+        if (!fssaiDigits) {
+            nextErrors.fssaiNumber = 'Enter your 14-digit FSSAI license number.';
+        } else if (!isValidFssai(fssaiDigits)) {
+            nextErrors.fssaiNumber = 'FSSAI number must contain exactly 14 digits.';
+        }
+
+        if (!gstNumber) {
+            nextErrors.gstNumber = 'Enter your 15-character GST number.';
+        } else if (!isValidGst14(gstNumber)) {
+            nextErrors.gstNumber = 'Enter a valid GST number like 27ABCDE1234F1Z5.';
+        }
+
+        if (!formData.aadhaarImage && !previews.aadhaar) {
+            nextErrors.aadhaarImage = 'Upload a clear Aadhaar image.';
+        }
+        if (!formData.panImage && !previews.pan) {
+            nextErrors.panImage = 'Upload a clear PAN card image.';
+        }
+        if (!formData.fssaiCertificate && !previews.fssai) {
+            nextErrors.fssaiCertificate = 'Upload your FSSAI certificate.';
+        }
+        if (!formData.shopEstablishmentCertificate && !previews.shopEstablishment) {
+            nextErrors.shopEstablishmentCertificate = 'Upload your shop establishment certificate.';
+        }
+        if (!formData.gstCertificate && !previews.gst) {
+            nextErrors.gstCertificate = 'Upload your GST certificate.';
+        }
+
+        return {
+            nextErrors,
+            normalizedValues: {
+                aadhaarNumber,
+                panNumber,
+                fssaiDigits,
+                gstNumber,
+            },
+        };
+    };
+
+    const handleFieldChange = (field, value) => {
+        setFormData((prev) => ({ ...prev, [field]: value }));
+        setErrors((prev) => {
+            if (!prev[field]) return prev;
+            const updated = { ...prev };
+            delete updated[field];
+            return updated;
+        });
+    };
 
     const handleFileChange = (e, fieldId) => {
         if (readOnly) return;
@@ -131,6 +208,12 @@ export default function DocumentationScreen() {
                 return;
             }
             setFormData((prev) => ({ ...prev, [formKey]: file }));
+            setErrors((prev) => {
+                if (!prev[formKey]) return prev;
+                const updated = { ...prev };
+                delete updated[formKey];
+                return updated;
+            });
             const reader = new FileReader();
             reader.onloadend = () => {
                 setPreviews((prev) => ({ ...prev, [previewKey]: reader.result }));
@@ -155,11 +238,6 @@ export default function DocumentationScreen() {
             toast.error('Please fill in Aadhaar and PAN numbers');
             return;
         }
-        const aadhaarDigits = String(formData.aadhaarNumber || '').replace(/\D/g, '');
-        if (aadhaarDigits.length !== 12) {
-            toast.error('Aadhaar number must be exactly 12 digits');
-            return;
-        }
         const fssaiDigits = String(formData.fssaiNumber || '').replace(/\D/g, '');
         if (fssaiDigits.length !== 14) {
             toast.error('FSSAI number must be exactly 14 digits');
@@ -172,31 +250,11 @@ export default function DocumentationScreen() {
             return;
         }
 
-        if (!formData.aadhaarImage && !previews.aadhaar) {
-            toast.error('Please upload Aadhaar image');
-            return;
-        }
-        if (!formData.panImage && !previews.pan) {
-            toast.error('Please upload PAN image');
-            return;
-        }
-        if (!formData.fssaiCertificate && !previews.fssai) {
-            toast.error('Please upload FSSAI certificate');
-            return;
-        }
-        if (!formData.shopEstablishmentCertificate && !previews.shopEstablishment) {
-            toast.error('Please upload shop establishment certificate');
-            return;
-        }
-        if (!formData.gstCertificate && !previews.gst) {
-            toast.error('Please upload GST certificate');
-            return;
-        }
-
+        setErrors({});
         setIsSubmitting(true);
         try {
             const data = new FormData();
-            data.append('aadhaarNumber', aadhaarDigits);
+            data.append('aadhaarNumber', formData.aadhaarNumber.trim());
             data.append('panNumber', formData.panNumber.trim());
             data.append('fssaiNumber', fssaiDigits);
             data.append('gstNumber', formData.gstNumber);
@@ -257,7 +315,6 @@ export default function DocumentationScreen() {
             )}
 
             <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Aadhaar */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -281,15 +338,11 @@ export default function DocumentationScreen() {
                                 maxLength={12}
                                 value={formData.aadhaarNumber}
                                 readOnly={readOnly}
-                                onChange={(e) => {
-                                    const digits = e.target.value.replace(/\D/g, '').slice(0, 12);
-                                    setFormData((prev) => ({ ...prev, aadhaarNumber: digits }));
-                                }}
+                                onChange={(e) =>
+                                    setFormData((prev) => ({ ...prev, aadhaarNumber: e.target.value }))
+                                }
                                 className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all disabled:opacity-50"
                             />
-                            <p className="text-[10px] text-slate-400 font-medium mt-1">
-                                {formData.aadhaarNumber.length}/12 digits
-                            </p>
                         </div>
                         <DocUploadZone
                             preview={previews.aadhaar}
@@ -297,13 +350,13 @@ export default function DocumentationScreen() {
                             title="National ID Image"
                             subtitle="Upload Aadhaar Front/Back"
                             inputId="doc-aadhaar"
+                            error={errors.aadhaarImage}
                             onPick={(e) => handleFileChange(e, 'aadhaar')}
                             onRemove={() => handleRemoveFile('aadhaar')}
                         />
                     </div>
                 </motion.div>
 
-                {/* PAN */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -326,14 +379,20 @@ export default function DocumentationScreen() {
                                 placeholder="ABCDE1234F"
                                 value={formData.panNumber}
                                 readOnly={readOnly}
-                                onChange={(e) =>
-                                    setFormData((prev) => ({
-                                        ...prev,
-                                        panNumber: e.target.value.toUpperCase(),
-                                    }))
-                                }
-                                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all uppercase disabled:opacity-50"
+                                maxLength={10}
+                                onChange={(e) => handleFieldChange('panNumber', normalizePanInput(e.target.value))}
+                                className={cn(
+                                    'w-full bg-slate-50 border rounded-lg px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all uppercase disabled:opacity-50',
+                                    errors.panNumber ? 'border-rose-400 bg-rose-50/40' : 'border-slate-200',
+                                )}
                             />
+                            {errors.panNumber ? (
+                                <p className="text-[11px] font-medium text-rose-600">{errors.panNumber}</p>
+                            ) : (
+                                <p className="text-[10px] text-slate-400 font-medium mt-1">
+                                    Use your PAN in this format: AAAAA9999A
+                                </p>
+                            )}
                         </div>
                         <DocUploadZone
                             preview={previews.pan}
@@ -341,13 +400,13 @@ export default function DocumentationScreen() {
                             title="PAN Card Image"
                             subtitle="Upload PAN Card Image"
                             inputId="doc-pan"
+                            error={errors.panImage}
                             onPick={(e) => handleFileChange(e, 'pan')}
                             onRemove={() => handleRemoveFile('pan')}
                         />
                     </div>
                 </motion.div>
 
-                {/* FSSAI */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -375,15 +434,19 @@ export default function DocumentationScreen() {
                                 title="14 digits only"
                                 value={formData.fssaiNumber}
                                 readOnly={readOnly}
-                                onChange={(e) => {
-                                    const digits = e.target.value.replace(/\D/g, '').slice(0, 14);
-                                    setFormData((prev) => ({ ...prev, fssaiNumber: digits }));
-                                }}
-                                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm font-bold tracking-widest focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all disabled:opacity-50"
+                                onChange={(e) => handleFieldChange('fssaiNumber', normalizeFssaiInput(e.target.value))}
+                                className={cn(
+                                    'w-full bg-slate-50 border rounded-lg px-4 py-3 text-sm font-bold tracking-widest focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all disabled:opacity-50',
+                                    errors.fssaiNumber ? 'border-rose-400 bg-rose-50/40' : 'border-slate-200',
+                                )}
                             />
-                            <p className="text-[10px] text-slate-400 font-medium mt-1">
-                                {formData.fssaiNumber.length}/14 digits
-                            </p>
+                            {errors.fssaiNumber ? (
+                                <p className="text-[11px] font-medium text-rose-600">{errors.fssaiNumber}</p>
+                            ) : (
+                                <p className="text-[10px] text-slate-400 font-medium mt-1">
+                                    {formData.fssaiNumber.length}/14 digits entered
+                                </p>
+                            )}
                         </div>
                         <DocUploadZone
                             preview={previews.fssai}
@@ -391,13 +454,13 @@ export default function DocumentationScreen() {
                             title="FSSAI Certificate"
                             subtitle="Upload FSSAI license / certificate"
                             inputId="doc-fssai"
+                            error={errors.fssaiCertificate}
                             onPick={(e) => handleFileChange(e, 'fssai')}
                             onRemove={() => handleRemoveFile('fssai')}
                         />
                     </div>
                 </motion.div>
 
-                {/* GST */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -411,28 +474,35 @@ export default function DocumentationScreen() {
                     <div className="p-6 space-y-6">
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">
-                                GST number (7 letters + 7 digits, any order)
+                                GST Number
                             </label>
                             <input
                                 type="text"
                                 inputMode="text"
                                 autoComplete="off"
-                                placeholder="e.g. A1B2C3D4E5F6G7"
-                                maxLength={14}
-                                title="Exactly 7 letters and 7 digits, 14 characters total"
+                                placeholder="27ABCDE1234F1Z5"
+                                maxLength={15}
+                                title="Valid GSTIN format: 2 digits + PAN + entity code + Z + checksum"
                                 value={formData.gstNumber}
                                 readOnly={readOnly}
-                                onChange={(e) =>
-                                    setFormData((prev) => ({
-                                        ...prev,
-                                        gstNumber: normalizeGst14Input(e.target.value),
-                                    }))
-                                }
-                                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm font-bold tracking-wide focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all disabled:opacity-50 font-mono"
+                                onChange={(e) => handleFieldChange('gstNumber', normalizeGst14Input(e.target.value))}
+                                className={cn(
+                                    'w-full bg-slate-50 border rounded-lg px-4 py-3 text-sm font-bold tracking-wide focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all disabled:opacity-50 font-mono',
+                                    errors.gstNumber ? 'border-rose-400 bg-rose-50/40' : 'border-slate-200',
+                                )}
                             />
-                            <p className="text-[10px] text-slate-400 font-medium mt-1">
-                                Letters {gstParts.letters}/7 · Digits {gstParts.digits}/7
-                            </p>
+                            {errors.gstNumber ? (
+                                <p className="text-[11px] font-medium text-rose-600">{errors.gstNumber}</p>
+                            ) : (
+                                <>
+                                    <p className="text-[10px] text-slate-400 font-medium mt-1">
+                                        Format: state code + PAN + entity code + Z + checksum
+                                    </p>
+                                    <p className="text-[10px] text-slate-400 font-medium">
+                                        Letters {gstParts.letters} · Digits {gstParts.digits}
+                                    </p>
+                                </>
+                            )}
                         </div>
                         <DocUploadZone
                             preview={previews.gst}
@@ -440,13 +510,13 @@ export default function DocumentationScreen() {
                             title="GST Certificate"
                             subtitle="Upload GST registration certificate"
                             inputId="doc-gst"
+                            error={errors.gstCertificate}
                             onPick={(e) => handleFileChange(e, 'gst')}
                             onRemove={() => handleRemoveFile('gst')}
                         />
                     </div>
                 </motion.div>
 
-                {/* Shop establishment — full width */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -464,9 +534,10 @@ export default function DocumentationScreen() {
                             <DocUploadZone
                                 preview={previews.shopEstablishment}
                                 disabled={readOnly}
-                                title="Certificate upload"
+                                title="Certificate Upload"
                                 subtitle="Upload shop / establishment proof (Shop Act, Udyam, etc.)"
                                 inputId="doc-shop"
+                                error={errors.shopEstablishmentCertificate}
                                 onPick={(e) => handleFileChange(e, 'shopEstablishment')}
                                 onRemove={() => handleRemoveFile('shopEstablishment')}
                             />
@@ -484,7 +555,7 @@ export default function DocumentationScreen() {
                                 Verification Protocol
                             </h4>
                             <p className="text-xs text-emerald-800/80 font-medium leading-relaxed">
-                                Our KYC team will verify these documents within 24–48 business hours. Ensure images
+                                Our KYC team will verify these documents within 24-48 business hours. Ensure images
                                 are clear and numbers match the uploaded certificates for faster activation.
                             </p>
                         </div>

@@ -16,6 +16,7 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import admin from "../services/firebaseAdmin.js";
 import razorpay from "../utils/razorpay.js";
+import { createUserNotification } from "../utils/userNotification.js";
 
 
 /**
@@ -583,6 +584,18 @@ export const verifyWalletRecharge = async (req, res) => {
     await recharge.save();
     await user.save();
 
+    await createUserNotification({
+      userId,
+      type: "wallet",
+      title: "Wallet Recharged",
+      message: `Rs${Number(recharge.amount || 0).toFixed(2)} has been added to your wallet successfully.`,
+      link: "/wallet",
+      meta: {
+        amount: Number(recharge.amount || 0),
+        transactionType: "wallet_recharge",
+      },
+    });
+
     return handleResponse(res, 200, "Wallet recharged successfully", user);
   } catch (error) {
     console.error("Wallet recharge error:", error);
@@ -698,6 +711,18 @@ export const verifyCreditRepayment = async (req, res) => {
     await recharge.save();
     await user.save();
 
+    await createUserNotification({
+      userId,
+      type: "wallet",
+      title: "Credit Repaid",
+      message: `Your KK Credit repayment of Rs${Number(paidAmount || 0).toFixed(2)} was successful.`,
+      link: "/wallet",
+      meta: {
+        amount: Number(paidAmount || 0),
+        transactionType: "credit_repayment",
+      },
+    });
+
     return handleResponse(res, 200, "Credit balance cleared successfully", user);
   } catch (error) {
     console.error("Credit repayment verify error:", error);
@@ -751,6 +776,20 @@ export const redeemLoyaltyPoints = async (req, res) => {
     });
 
     await user.save();
+
+    await createUserNotification({
+      userId,
+      type: "wallet",
+      title: "Loyalty Redeemed",
+      message: `You redeemed ${pointsConsumed} loyalty points and received Rs${redeemRupees} in your wallet.`,
+      link: "/wallet",
+      meta: {
+        pointsConsumed,
+        amount: redeemRupees,
+        transactionType: "loyalty_redemption",
+      },
+    });
+
     return handleResponse(res, 200, "Loyalty points redeemed successfully", user);
   } catch (error) {
     console.error("Redeem loyalty points error:", error);

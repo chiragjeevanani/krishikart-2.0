@@ -1,20 +1,27 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Search, IndianRupee, ShoppingBag, History } from 'lucide-react';
+import { X, Search, ShoppingBag, History } from 'lucide-react';
 import { useFranchiseOrders } from '../../contexts/FranchiseOrdersContext';
 import DataGrid from '../tables/DataGrid';
 import { cn } from '@/lib/utils';
 
 export default function OrderHistoryModal({ isOpen, onClose }) {
     const { fetchOrdersByDate } = useFranchiseOrders();
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const today = new Date().toISOString().split('T')[0];
+    const [selectedDate, setSelectedDate] = useState(today);
     const [orders, setOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
     const loadHistory = async () => {
+        const safeSelectedDate = selectedDate > today ? today : selectedDate;
+        if (safeSelectedDate !== selectedDate) {
+            setSelectedDate(today);
+            return;
+        }
+
         setIsLoading(true);
-        const data = await fetchOrdersByDate(selectedDate);
+        const data = await fetchOrdersByDate(safeSelectedDate);
         setOrders(data);
         setIsLoading(false);
     };
@@ -110,12 +117,12 @@ export default function OrderHistoryModal({ isOpen, onClose }) {
 
                     {/* Filter Bar */}
                     <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center gap-4 shrink-0">
-                        <div className="flex items-center gap-3 bg-white border border-slate-200 p-1.5 rounded-sm px-4">
-                            <Calendar size={14} className="text-slate-400" />
+                        <div className="flex items-center bg-white border border-slate-200 p-1.5 rounded-sm px-4">
                             <input
                                 type="date"
                                 value={selectedDate}
-                                onChange={(e) => setSelectedDate(e.target.value)}
+                                max={today}
+                                onChange={(e) => setSelectedDate(e.target.value > today ? today : e.target.value)}
                                 className="text-[11px] font-black text-slate-900 outline-none uppercase bg-white cursor-pointer"
                             />
                         </div>

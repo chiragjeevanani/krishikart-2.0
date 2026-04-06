@@ -11,11 +11,16 @@ import GlobalSetting from "../models/globalSetting.js";
 import LoyaltyConfigHistory from "../models/loyaltyConfigHistory.js";
 import DeliveryCodRemittance from "../models/deliveryCodRemittance.js";
 import FranchiseAdminPayout from "../models/franchiseAdminPayout.js";
+import AdminNotification from "../models/adminNotification.js";
 import handleResponse from "../utils/helper.js";
 import bcrypt from "bcryptjs";
 import Delivery from "../models/delivery.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import {
+  isValidFssaiNumber,
+  isValidPanNumber,
+  normalizeFssaiNumber,
+  normalizePanNumber,
   isValidFranchiseGst14,
   normalizeFranchiseGst14,
 } from "../utils/gstFranchiseKyc.js";
@@ -31,6 +36,7 @@ import {
   LEGAL_CMS_KEYS,
   LEGAL_CMS_DESCRIPTIONS,
 } from "../constants/legalCmsKeys.js";
+import { mapAdminNotificationForViewer } from "../utils/adminNotification.js";
 
 /* ================= VENDOR MANAGEMENT ================= */
 
@@ -587,12 +593,20 @@ export const createFranchiseByAdmin = async (req, res) => {
     }
 
     if (req.body.panNumber) {
-      franchiseData.kyc.panNumber = String(req.body.panNumber).trim();
+      const panNorm = normalizePanNumber(req.body.panNumber);
+      if (!isValidPanNumber(panNorm)) {
+        return handleResponse(
+          res,
+          400,
+          "PAN number must be in valid format like ABCDE1234F",
+        );
+      }
+      franchiseData.kyc.panNumber = panNorm;
     }
 
     if (req.body.fssaiNumber) {
-      const fssaiDigits = String(req.body.fssaiNumber).replace(/\D/g, "");
-      if (fssaiDigits.length !== 14) {
+      const fssaiDigits = normalizeFssaiNumber(req.body.fssaiNumber);
+      if (!isValidFssaiNumber(fssaiDigits)) {
         return handleResponse(
           res,
           400,
@@ -608,7 +622,7 @@ export const createFranchiseByAdmin = async (req, res) => {
         return handleResponse(
           res,
           400,
-          "GST number must be 14 characters: exactly 7 letters (A-Z) and 7 digits (0-9), in any order",
+          "GST number must be a valid 15-character GSTIN",
         );
       }
       franchiseData.kyc.gstNumber = gstNorm;
@@ -1759,6 +1773,71 @@ export const testPushNotification = async (req, res) => {
     );
   } catch (err) {
     console.error("Test Push Notification Error:", err);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+export const getAdminNotifications = async (req, res) => {
+  try {
+    const limitRaw = Number(req.query?.limit || 20);
+    const limit = Number.isFinite(limitRaw)
+      ? Math.min(Math.max(limitRaw, 1), 50)
+      : 20;
+    const adminId = req.masteradmin?._id;
+
+    const notifications = await AdminNotification.find()
+      .sort({ createdAt: -1 })
+      .limit(limit);
+
+    const rows = notifications.map((notification) =>
+      mapAdminNotificationForViewer(notification, adminId),
+    );
+
+    return handleResponse(res, 200, "Admin notifications fetched", {
+      notifications: rows,
+      unreadCount: rows.filter((row) => !row.read).length,
+    });
+  } catch (err) {
+    console.error("Get admin notifications error:", err);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+export const markAdminNotificationRead = async (req, res) => {
+  try {
+    const adminId = req.masteradmin?._id;
+    const { id } = req.params;
+
+    const notification = await AdminNotification.findByIdAndUpdate(
+      id,
+      { $addToSet: { readBy: adminId } },
+      { new: true },
+    );
+
+    if (!notification) {
+      return handleResponse(res, 404, "Notification not found");
+    }
+
+    return handleResponse(res, 200, "Notification marked as read", {
+      notification: mapAdminNotificationForViewer(notification, adminId),
+    });
+  } catch (err) {
+    console.error("Mark admin notification read error:", err);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+export const markAllAdminNotificationsRead = async (req, res) => {
+  try {
+    const adminId = req.masteradmin?._id;
+    await AdminNotification.updateMany(
+      { readBy: { $ne: adminId } },
+      { $addToSet: { readBy: adminId } },
+    );
+
+    return handleResponse(res, 200, "All notifications marked as read");
+  } catch (err) {
+    console.error("Mark all admin notifications read error:", err);
     return handleResponse(res, 500, "Server error");
   }
 };

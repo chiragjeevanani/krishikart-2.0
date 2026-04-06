@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
     Users,
     Search,
@@ -39,9 +39,22 @@ export default function VendorManagementScreen() {
     const [isOnboardOpen, setIsOnboardOpen] = useState(false);
     const [selectedVendor, setSelectedVendor] = useState(null);
     const [productDrawerVendor, setProductDrawerVendor] = useState(null);
+    const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
+    const filterMenuRef = useRef(null);
 
     useEffect(() => {
         fetchVendors(); // Fetch all vendors
+    }, []);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (filterMenuRef.current && !filterMenuRef.current.contains(event.target)) {
+                setIsFilterMenuOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
     const filteredVendors = (vendors || []).filter(v => {
@@ -54,7 +67,8 @@ export default function VendorManagementScreen() {
         );
         const matchesStatus = statusFilter === 'All' ||
             (statusFilter === 'Verified' && v.status === 'active') ||
-            (statusFilter === 'Pending' && v.status === 'pending');
+            (statusFilter === 'Pending' && v.status === 'pending') ||
+            (statusFilter === 'Blocked' && v.status === 'blocked');
 
         return matchesSearch && matchesStatus;
     });
@@ -201,14 +215,73 @@ export default function VendorManagementScreen() {
             <div className="flex flex-col gap-0 p-px">
                 <FilterBar
                     onSearch={(v) => setSearchTerm(typeof v === 'string' ? v.trim() : v)}
+                    searchValue={searchTerm}
                     activeFilter={statusFilter}
                     onFilterChange={setStatusFilter}
                     onRefresh={() => fetchVendors()}
                     actions={
-                        <div className="flex items-center gap-2">
-                            <button className="p-1.5 border border-slate-200 rounded-sm hover:bg-slate-100 transition-colors text-slate-400">
+                        <div className="flex items-center gap-2 relative" ref={filterMenuRef}>
+                            <button
+                                type="button"
+                                onClick={() => setIsFilterMenuOpen((prev) => !prev)}
+                                aria-label="Open vendor filter options"
+                                aria-expanded={isFilterMenuOpen}
+                                title="Vendor filter options"
+                                className={cn(
+                                    "p-1.5 border border-slate-200 rounded-sm transition-colors",
+                                    isFilterMenuOpen
+                                        ? "bg-slate-900 text-white border-slate-900"
+                                        : "hover:bg-slate-100 text-slate-400"
+                                )}
+                            >
                                 <Settings2 size={14} />
                             </button>
+
+                            {isFilterMenuOpen && (
+                                <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-slate-200 rounded-sm shadow-xl z-20 overflow-hidden">
+                                    <div className="px-3 py-2 border-b border-slate-100 bg-slate-50">
+                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                            Vendor Filters
+                                        </p>
+                                    </div>
+
+                                    <div className="p-2 space-y-1">
+                                        {['All', 'Pending', 'Verified', 'Blocked'].map((filter) => (
+                                            <button
+                                                key={filter}
+                                                type="button"
+                                                onClick={() => {
+                                                    setStatusFilter(filter);
+                                                    setIsFilterMenuOpen(false);
+                                                }}
+                                                className={cn(
+                                                    "w-full flex items-center justify-between px-3 py-2 rounded-sm text-[11px] font-bold transition-colors",
+                                                    statusFilter === filter
+                                                        ? "bg-slate-900 text-white"
+                                                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                                                )}
+                                            >
+                                                <span>{filter}</span>
+                                                {statusFilter === filter ? <CheckCircle2 size={12} /> : null}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <div className="px-2 py-2 border-t border-slate-100 bg-slate-50/70">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setStatusFilter('All');
+                                                setSearchTerm('');
+                                                setIsFilterMenuOpen(false);
+                                            }}
+                                            className="w-full px-3 py-2 rounded-sm text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 hover:bg-white transition-colors"
+                                        >
+                                            Clear Filters
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     }
                 />
