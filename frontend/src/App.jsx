@@ -30,6 +30,7 @@ import { WishlistProvider } from './modules/user/contexts/WishlistContext'
 import { FilterProvider } from './modules/user/contexts/FilterContext'
 import { LocationProvider } from './modules/user/contexts/LocationContext'
 import { UserAuthProvider } from './modules/user/contexts/UserAuthContext'
+import { UserNotificationsProvider } from './modules/user/contexts/UserNotificationsContext'
 import UserAuthGuard from './modules/user/components/auth/UserAuthGuard'
 import FranchiseAuthGuard from './modules/franchise/components/auth/FranchiseAuthGuard'
 import FranchiseVerificationGuard from './modules/franchise/components/auth/FranchiseVerificationGuard'
@@ -75,19 +76,21 @@ import { Toaster } from 'sonner'
 
 const UserProviders = ({ children }) => (
   <UserAuthProvider>
-    <LocationProvider>
-      <OrderProvider>
-        <CartProvider>
-          <WishlistProvider>
-            <WalletProvider>
-              <FilterProvider>
-                {children}
-              </FilterProvider>
-            </WalletProvider>
-          </WishlistProvider>
-        </CartProvider>
-      </OrderProvider>
-    </LocationProvider>
+    <UserNotificationsProvider>
+      <LocationProvider>
+        <OrderProvider>
+          <CartProvider>
+            <WishlistProvider>
+              <WalletProvider>
+                <FilterProvider>
+                  {children}
+                </FilterProvider>
+              </WalletProvider>
+            </WishlistProvider>
+          </CartProvider>
+        </OrderProvider>
+      </LocationProvider>
+    </UserNotificationsProvider>
   </UserAuthProvider>
 );
 

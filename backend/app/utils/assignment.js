@@ -3,6 +3,7 @@ import Franchise from "../models/franchise.js";
 import Order from "../models/order.js";
 import Delivery from "../models/delivery.js";
 import { sendNotificationToUser } from "./pushNotificationHelper.js";
+import { createUserNotification } from "./userNotification.js";
 import { emitToFranchise, emitToDelivery } from "../lib/socket.js";
 import { latLngToCell } from "h3-js";
 import { getDistance } from "./geo.js";
@@ -246,6 +247,18 @@ export const assignOrderToFranchise = async (orderId) => {
       });
 
       await order.save();
+
+      await createUserNotification({
+        userId: order.userId,
+        type: "order_update",
+        title: "Order Accepted",
+        message: `Your order #${order._id.toString().slice(-6)} has been accepted and assigned for processing.`,
+        link: `/order-detail/${order._id}`,
+        meta: {
+          orderId: order._id.toString(),
+          status: "Accepted",
+        },
+      });
 
       console.log(
         `[Assignment] Order ${orderId} auto-assigned to franchise ${franchise._id}. Triggering FCM + socket...`,

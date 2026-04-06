@@ -38,6 +38,14 @@ export const joinOrderRoom = (orderId) => {
     const s = getSocket();
     s.emit("join_order_room", orderId);
 };
+export const joinUserRoom = () => {
+    const s = getSocket();
+    const token = localStorage.getItem("userToken");
+    if (!token) {
+        return;
+    }
+    s.emit("join_user_room", { token });
+};
 export const joinFranchiseRoom = () => {
     const s = getSocket();
     const token = localStorage.getItem("franchiseToken");

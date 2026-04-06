@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useCart } from '../../contexts/CartContext'
 import { useWishlist } from '../../contexts/WishlistContext'
 import { useLocation } from '../../contexts/LocationContext'
+import { useUserNotifications } from '../../contexts/UserNotificationsContext'
 import { cn } from '@/lib/utils'
 import MobileProfileDrawer from './MobileProfileDrawer'
 import { useDebounce } from '@/hooks/useDebounce'
@@ -25,6 +26,7 @@ export default function DesktopNavbar() {
     const { cartCount } = useCart()
     const { wishlistCount } = useWishlist()
     const { address, updateFranchiseLocation, setPinnedFranchiseLocation, loading } = useLocation()
+    const { unreadCount } = useUserNotifications()
 
     const [index, setIndex] = useState(0)
     const routeLocation = useRouteLocation()
@@ -185,9 +187,14 @@ export default function DesktopNavbar() {
                     <button
                         onClick={() => navigate('/notifications')}
                         aria-label="Notifications"
-                        className="w-11 h-11 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-900 transition-all active:scale-95"
+                        className="relative w-11 h-11 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-900 transition-all active:scale-95"
                     >
                         <Bell size={20} strokeWidth={2.5} />
+                        {unreadCount > 0 && (
+                            <span className="absolute -top-1 -right-1 min-w-[20px] h-[20px] px-1 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white">
+                                {unreadCount > 99 ? '99+' : unreadCount}
+                            </span>
+                        )}
                     </button>
 
                     {/* Cart */}

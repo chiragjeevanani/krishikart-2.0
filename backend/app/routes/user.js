@@ -26,6 +26,11 @@ import {
     toggleWishlist,
     removeFromWishlist
 } from "../controllers/user.action.controller.js";
+import {
+    getUserNotifications,
+    markUserNotificationRead,
+    markAllUserNotificationsRead
+} from "../controllers/user.notification.controller.js";
 import { protect } from "../middlewares/authmiddleware.js";
 
 const router = express.Router();
@@ -54,6 +59,9 @@ router.delete("/cart/remove/:productId", protect, removeFromCart);
 router.get("/wishlist", protect, getWishlist);
 router.post("/wishlist/toggle", protect, toggleWishlist);
 router.delete("/wishlist/remove/:productId", protect, removeFromWishlist);
+router.get("/notifications", protect, getUserNotifications);
+router.post("/notifications/read-all", protect, markAllUserNotificationsRead);
+router.post("/notifications/:id/read", protect, markUserNotificationRead);
 router.post("/fcm-token", protect, saveFCMToken);
 router.post("/test-notification", protect, testPushByToken);
 router.get("/test/make-overdue", protect, makeOverdueTest);
