@@ -11,6 +11,7 @@ import GlobalSetting from "../models/globalSetting.js";
 import LoyaltyConfigHistory from "../models/loyaltyConfigHistory.js";
 import DeliveryCodRemittance from "../models/deliveryCodRemittance.js";
 import FranchiseAdminPayout from "../models/franchiseAdminPayout.js";
+import AdminNotification from "../models/adminNotification.js";
 import handleResponse from "../utils/helper.js";
 import bcrypt from "bcryptjs";
 import Delivery from "../models/delivery.js";
@@ -31,6 +32,7 @@ import {
   LEGAL_CMS_KEYS,
   LEGAL_CMS_DESCRIPTIONS,
 } from "../constants/legalCmsKeys.js";
+import { mapAdminNotificationForViewer } from "../utils/adminNotification.js";
 
 /* ================= VENDOR MANAGEMENT ================= */
 
@@ -1746,6 +1748,71 @@ export const testPushNotification = async (req, res) => {
     );
   } catch (err) {
     console.error("Test Push Notification Error:", err);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+export const getAdminNotifications = async (req, res) => {
+  try {
+    const limitRaw = Number(req.query?.limit || 20);
+    const limit = Number.isFinite(limitRaw)
+      ? Math.min(Math.max(limitRaw, 1), 50)
+      : 20;
+    const adminId = req.masteradmin?._id;
+
+    const notifications = await AdminNotification.find()
+      .sort({ createdAt: -1 })
+      .limit(limit);
+
+    const rows = notifications.map((notification) =>
+      mapAdminNotificationForViewer(notification, adminId),
+    );
+
+    return handleResponse(res, 200, "Admin notifications fetched", {
+      notifications: rows,
+      unreadCount: rows.filter((row) => !row.read).length,
+    });
+  } catch (err) {
+    console.error("Get admin notifications error:", err);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+export const markAdminNotificationRead = async (req, res) => {
+  try {
+    const adminId = req.masteradmin?._id;
+    const { id } = req.params;
+
+    const notification = await AdminNotification.findByIdAndUpdate(
+      id,
+      { $addToSet: { readBy: adminId } },
+      { new: true },
+    );
+
+    if (!notification) {
+      return handleResponse(res, 404, "Notification not found");
+    }
+
+    return handleResponse(res, 200, "Notification marked as read", {
+      notification: mapAdminNotificationForViewer(notification, adminId),
+    });
+  } catch (err) {
+    console.error("Mark admin notification read error:", err);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+export const markAllAdminNotificationsRead = async (req, res) => {
+  try {
+    const adminId = req.masteradmin?._id;
+    await AdminNotification.updateMany(
+      { readBy: { $ne: adminId } },
+      { $addToSet: { readBy: adminId } },
+    );
+
+    return handleResponse(res, 200, "All notifications marked as read");
+  } catch (err) {
+    console.error("Mark all admin notifications read error:", err);
     return handleResponse(res, 500, "Server error");
   }
 };

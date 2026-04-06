@@ -24,6 +24,7 @@ import {
   computeSplitCheckoutPayload,
   resolveCheckoutCoordinates,
 } from "../utils/checkoutOrderSplit.js";
+import { createAdminNotification } from "../utils/adminNotification.js";
 
 /**
  * Helper to calculate price based on quantity and bulk pricing rules
@@ -228,6 +229,18 @@ export const createOrder = async (req, res) => {
         status: "Success",
         note: `Order paid via business credit ${appliedCouponCode ? "(Coupon: " + appliedCouponCode + ")" : ""}`,
         createdAt: new Date(),
+      });
+      await createAdminNotification({
+        type: "new_order",
+        title: "New Order Placed",
+        message: `${user.fullName} placed order #${order._id.toString().slice(-6)} for ₹${Number(order.totalAmount || 0).toFixed(2)}.`,
+        link: "/masteradmin/orders",
+        meta: {
+          orderId: order._id.toString(),
+          orderGroupId: orderGroupId || null,
+          amount: order.totalAmount,
+          customerName: user.fullName,
+        },
       });
     }
 
@@ -1314,6 +1327,16 @@ export const updateOrderStatus = async (req, res) => {
       .populate("franchiseId", "franchiseName ownerName city");
 
     emitToAdmin("order_status_updated", populatedOrder);
+    await createAdminNotification({
+      type: "order_status_updated",
+      title: "Order Status Updated",
+      message: `Order #${order._id.toString().slice(-6)} moved to ${status}.`,
+      link: "/masteradmin/orders",
+      meta: {
+        orderId: order._id.toString(),
+        status,
+      },
+    });
     emitToOrderRoom(order._id, "order_status_changed", {
       orderId: order._id,
       status: status,
@@ -1763,6 +1786,17 @@ export const rejectFranchiseOrder = async (req, res) => {
       orderId: order._id,
       rejectedByFranchiseId: franchiseId,
       reason: reason || null,
+    });
+    await createAdminNotification({
+      type: "order_franchise_rejected",
+      title: "Franchise Rejected Order",
+      message: `Order #${order._id.toString().slice(-6)} was rejected by a franchise${reason ? `: ${reason}` : "."}`,
+      link: "/masteradmin/orders",
+      meta: {
+        orderId: order._id.toString(),
+        rejectedByFranchiseId: franchiseId.toString(),
+        reason: reason || "",
+      },
     });
 
     return handleResponse(

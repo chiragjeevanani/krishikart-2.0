@@ -51,6 +51,9 @@ import {
   getAdminDashboardStats,
   getAdminAnalyticsStats,
   testPushNotification,
+  getAdminNotifications,
+  markAdminNotificationRead,
+  markAllAdminNotificationsRead,
   globalSearch,
   getAllDeliveryPartners,
   updateDeliveryStatus,
@@ -77,6 +80,17 @@ router.post("/change-password", protectMasterAdmin, changeMasterAdminPassword);
 router.post("/forgot-password", forgotMasterAdminPassword);
 router.post("/reset-password", resetMasterAdminPassword);
 router.post("/fcm-token", protectMasterAdmin, saveFCMToken);
+router.get("/notifications", protectMasterAdmin, getAdminNotifications);
+router.post(
+  "/notifications/read-all",
+  protectMasterAdmin,
+  markAllAdminNotificationsRead,
+);
+router.post(
+  "/notifications/:id/read",
+  protectMasterAdmin,
+  markAdminNotificationRead,
+);
 
 /* 🏪 Vendor Management */
 router.get(
