@@ -17,6 +17,10 @@ import bcrypt from "bcryptjs";
 import Delivery from "../models/delivery.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import {
+  isValidFssaiNumber,
+  isValidPanNumber,
+  normalizeFssaiNumber,
+  normalizePanNumber,
   isValidFranchiseGst14,
   normalizeFranchiseGst14,
 } from "../utils/gstFranchiseKyc.js";
@@ -578,12 +582,20 @@ export const createFranchiseByAdmin = async (req, res) => {
     }
 
     if (req.body.panNumber) {
-      franchiseData.kyc.panNumber = String(req.body.panNumber).trim();
+      const panNorm = normalizePanNumber(req.body.panNumber);
+      if (!isValidPanNumber(panNorm)) {
+        return handleResponse(
+          res,
+          400,
+          "PAN number must be in valid format like ABCDE1234F",
+        );
+      }
+      franchiseData.kyc.panNumber = panNorm;
     }
 
     if (req.body.fssaiNumber) {
-      const fssaiDigits = String(req.body.fssaiNumber).replace(/\D/g, "");
-      if (fssaiDigits.length !== 14) {
+      const fssaiDigits = normalizeFssaiNumber(req.body.fssaiNumber);
+      if (!isValidFssaiNumber(fssaiDigits)) {
         return handleResponse(
           res,
           400,
@@ -599,7 +611,7 @@ export const createFranchiseByAdmin = async (req, res) => {
         return handleResponse(
           res,
           400,
-          "GST number must be 14 characters: exactly 7 letters (A-Z) and 7 digits (0-9), in any order",
+          "GST number must be a valid 15-character GSTIN",
         );
       }
       franchiseData.kyc.gstNumber = gstNorm;
