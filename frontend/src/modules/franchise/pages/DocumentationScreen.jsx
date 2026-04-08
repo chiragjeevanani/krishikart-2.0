@@ -84,7 +84,7 @@ function DocUploadZone({
                         </div>
                         <span className="text-sm font-bold text-slate-900 mb-1">{subtitle}</span>
                         <span className="text-[10px] text-slate-400 font-medium font-mono uppercase">
-                            PDF, JPG or PNG (Max 5MB)
+                            PDF, JPG or PNG (Max 20MB)
                         </span>
                         <input
                             id={inputId}
@@ -203,8 +203,8 @@ export default function DocumentationScreen() {
         const { formKey, previewKey } = FILE_FIELDS[fieldId];
         const file = e.target.files?.[0];
         if (file) {
-            if (file.size > 5 * 1024 * 1024) {
-                toast.error('File size should be less than 5MB');
+            if (file.size > 20 * 1024 * 1024) {
+                toast.error('File size should be less than 20MB');
                 return;
             }
             setFormData((prev) => ({ ...prev, [formKey]: file }));

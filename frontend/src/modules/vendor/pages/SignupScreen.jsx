@@ -136,7 +136,7 @@ export default function SignupScreen() {
                             {formData[name]?.name || "Click to upload document"}
                         </p>
                         <p className="text-[8px] font-medium text-slate-400">
-                            JPG, PNG or PDF (Max 5MB)
+                            JPG, PNG or PDF (Max 20MB)
                         </p>
                     </div>
                     {formData[name] && (

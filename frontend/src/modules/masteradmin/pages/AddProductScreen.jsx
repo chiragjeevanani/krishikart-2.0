@@ -864,7 +864,7 @@ export default function AddProductScreen() {
                                             </div>
                                             <div className="text-center">
                                                 <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Upload Primary Asset</p>
-                                                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Single high-res image (Max 10MB)</p>
+                                                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Single high-res image (Max 20MB)</p>
                                             </div>
                                             <input
                                                 type="file"
