@@ -1,13 +1,16 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '@/lib/axios';
+import { useFranchiseAuth } from '@/modules/franchise/contexts/FranchiseAuthContext';
 
 const InventoryContext = React.createContext();
 
 export const InventoryProvider = ({ children }) => {
+    const { isAuthenticated } = useFranchiseAuth();
     const [inventory, setInventory] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const fetchInventory = async () => {
+        if (!isAuthenticated) return;
         setLoading(true);
         try {
             const response = await api.get('/franchise/inventory');
@@ -42,8 +45,12 @@ export const InventoryProvider = ({ children }) => {
     };
 
     useEffect(() => {
-        fetchInventory();
-    }, []);
+        if (isAuthenticated) {
+            fetchInventory();
+        } else {
+            setInventory([]);
+        }
+    }, [isAuthenticated]);
 
     const getLowStockItems = () => {
         return inventory.filter(item => item.currentStock <= item.mbq);

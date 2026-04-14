@@ -8,7 +8,7 @@ import { useNotificationSound } from '@/hooks/useNotificationSound';
 const FranchiseOrdersContext = createContext();
 
 export function FranchiseOrdersProvider({ children }) {
-    const { franchise } = useFranchiseAuth();
+    const { franchise, isAuthenticated } = useFranchiseAuth();
     const [liveOrders, setLiveOrders] = useState([]);
     const [deliveryPartners, setDeliveryPartners] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -23,6 +23,7 @@ export function FranchiseOrdersProvider({ children }) {
     const knownOrderIdsRef = useRef(new Set());
 
     const fetchOrders = async () => {
+        if (!isAuthenticated) return;
         setLoading(true);
         try {
             const response = await api.get('/orders/franchise/all');
@@ -31,7 +32,6 @@ export function FranchiseOrdersProvider({ children }) {
                 const incomingIds = new Set(incomingOrders.map((o) => String(o._id)));
                 const knownIds = knownOrderIdsRef.current;
 
-                // For polling fallback: alert only when a truly new order appears after initial load.
                 if (knownIds.size > 0) {
                     const newlyAddedOrder = incomingOrders.find((o) => !knownIds.has(String(o._id)));
                     if (newlyAddedOrder) {
@@ -52,6 +52,7 @@ export function FranchiseOrdersProvider({ children }) {
     };
 
     const fetchDeliveryPartners = async () => {
+        if (!isAuthenticated) return;
         try {
             const response = await api.get('/delivery/partners');
             if (response.data.success) {
@@ -63,16 +64,17 @@ export function FranchiseOrdersProvider({ children }) {
     };
 
     useEffect(() => {
+        if (!isAuthenticated) return;
+        
         fetchOrders();
         fetchDeliveryPartners();
 
-        // Auto-poll for new orders every 30 seconds
         const pollInterval = setInterval(() => {
             fetchOrders();
         }, 30000);
 
         return () => clearInterval(pollInterval);
-    }, []);
+    }, [isAuthenticated]);
 
     useEffect(() => {
         if (!franchise?._id) return;
@@ -193,7 +195,7 @@ export function FranchiseOrdersProvider({ children }) {
     /** Reject auto-assigned order → backend reassigns to next nearest franchise (same category rules). */
     const rejectFranchiseOrder = async (orderId, reason = '') => {
         try {
-            const response = await api.put(`/orders/franchise/${orderId}/rejection`, { reason });
+            const response = await api.put(`/orders/franchise/${orderId}/reject`, { reason });
             if (response.data.success) {
                 toast.success(response.data.message || 'Order rejected');
                 fetchOrders();

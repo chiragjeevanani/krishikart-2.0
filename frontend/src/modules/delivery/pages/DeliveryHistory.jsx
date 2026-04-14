@@ -76,6 +76,7 @@ const DeliveryHistory = () => {
                         <input
                             type="date"
                             value={dateFilter}
+                            max={new Date().toLocaleDateString('en-CA')}
                             onChange={(e) => setDateFilter(e.target.value)}
                             className="p-3 w-12 text-transparent rounded-2xl border border-border bg-white text-foreground active:scale-95 shadow-sm absolute inset-0 opacity-0 z-10 cursor-pointer"
                         />

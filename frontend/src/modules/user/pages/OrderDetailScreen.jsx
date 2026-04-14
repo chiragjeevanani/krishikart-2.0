@@ -11,18 +11,33 @@ import { Button } from '@/components/ui/button'
 import { useOrders } from '@/modules/user/contexts/OrderContext'
 import { useCart } from '@/modules/user/contexts/CartContext'
 import { cn } from '@/lib/utils'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
+import { useRequireAuth } from '../hooks/useRequireAuth'
+import { joinOrderRoom } from '@/lib/socket'
 
 export default function OrderDetailScreen() {
     const navigate = useNavigate()
     const { id } = useParams()
-    const { orders, requestReturn } = useOrders()
+    const { orders, requestReturn, fetchMyOrders } = useOrders()
+    const { requireAuth } = useRequireAuth()
     const { addToCart } = useCart()
     const [returnQuantities, setReturnQuantities] = useState({})
     const [returnReason, setReturnReason] = useState('')
     const [isSubmittingReturn, setIsSubmittingReturn] = useState(false)
     const order = orders.find(o => o._id === id)
+
+    // Ensure orders are loaded if user lands here directly
+    useEffect(() => {
+        if (orders.length === 0) {
+            fetchMyOrders()
+        }
+    }, [orders.length, fetchMyOrders])
+
+    // Explicitly join the socket room so this page gets live updates
+    useEffect(() => {
+        if (id) joinOrderRoom(id)
+    }, [id])
 
     if (!order) return (
         <div className="h-screen w-full flex items-center justify-center bg-slate-50">
@@ -100,7 +115,7 @@ export default function OrderDetailScreen() {
 
     const isOrderActive = !['delivered', 'received', 'cancelled'].includes(order.orderStatus?.toLowerCase());
 
-    const handleReorder = async () => {
+    const handleReorder = requireAuth(async () => {
         toast.promise(
             Promise.all(order.items.map(item =>
                 addToCart({ _id: item.productId, ...item }, item.quantity)
@@ -114,7 +129,7 @@ export default function OrderDetailScreen() {
                 error: 'Failed to reorder items'
             }
         );
-    };
+    });
 
     return (
         <PageTransition>

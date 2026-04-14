@@ -29,12 +29,14 @@ import { useCart } from '../contexts/CartContext'
 import { useWishlist } from '../contexts/WishlistContext'
 import { useLocation } from '../contexts/LocationContext'
 import { getBrowseLocationParams } from '../utils/storefrontParams'
+import { useRequireAuth } from '../hooks/useRequireAuth'
 
 export default function ProductDetailScreen() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { addToCart, cartItems, updateQuantity } = useCart()
   const { toggleWishlist, isWishlisted } = useWishlist()
+  const { requireAuth } = useRequireAuth()
   const locationCtx = useLocation()
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -97,6 +99,27 @@ export default function ProductDetailScreen() {
     return applicableBulk ? applicableBulk.price : baseUnit
   }, [product, quantity])
 
+  const handleShare = async () => {
+    const shareData = {
+      title: product?.name || 'Krishikart Product',
+      text: `Check out this product on Krishikart: ${product?.name}`,
+      url: window.location.href,
+    }
+    
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData)
+      } else {
+        await navigator.clipboard.writeText(window.location.href)
+        toast.success('Link copied to clipboard')
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error('Error sharing:', err)
+      }
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -133,11 +156,11 @@ export default function ProductDetailScreen() {
             <ArrowLeft size={20} />
           </button>
           <div className="flex gap-2 pointer-events-auto">
-            <button className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white/90 shadow-sm border border-slate-100 text-slate-900 active:scale-90 transition-transform">
+            <button onClick={handleShare} className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white/90 shadow-sm border border-slate-100 text-slate-900 active:scale-90 transition-transform">
               <Share2 size={18} />
             </button>
             <button
-              onClick={() => toggleWishlist(product)}
+              onClick={requireAuth(() => toggleWishlist(product))}
               className={cn(
                 "min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white/90 shadow-sm border border-slate-100 transition-all active:scale-90",
                 isFavorite ? "text-red-500" : "text-slate-900"
@@ -338,7 +361,7 @@ export default function ProductDetailScreen() {
                 </div>
 
                 <Button
-                  onClick={() => {
+                  onClick={requireAuth(() => {
                     const finalQty = Number(quantity) || 1;
                     if (cartItem) {
                       const delta = finalQty - cartItem.quantity;
@@ -349,7 +372,7 @@ export default function ProductDetailScreen() {
                       addToCart({ ...product, price: currentPrice }, finalQty);
                     }
                     navigate('/cart')
-                  }}
+                  })}
                   className="flex-1 h-12 rounded-lg bg-primary hover:bg-primary/90 text-md font-bold transition-all active:scale-[0.98]"
                 >
                   {cartItem ? 'Update Cart' : 'Add to Cart'}
@@ -397,7 +420,7 @@ export default function ProductDetailScreen() {
             </div>
 
             <Button
-              onClick={() => {
+              onClick={requireAuth(() => {
                 const finalQty = Number(quantity) || 1;
                 if (cartItem) {
                   const delta = finalQty - cartItem.quantity;
@@ -408,7 +431,7 @@ export default function ProductDetailScreen() {
                   addToCart({ ...product, price: currentPrice }, finalQty);
                 }
                 navigate('/cart')
-              }}
+              })}
               className="flex-1 min-h-[46px] h-11 rounded-xl bg-primary hover:bg-primary/90 text-sm font-black shadow-md shadow-primary/20 transition-all active:scale-[0.98] flex flex-col justify-center items-center gap-0"
             >
               <span className="text-white/80 text-[9px] font-bold uppercase tracking-[0.18em] leading-none mb-0.5">

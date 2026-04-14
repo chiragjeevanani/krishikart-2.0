@@ -2,18 +2,20 @@ import { ShoppingBasket, Heart, ShoppingBag, UserCircle } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { cn } from '../../../../lib/utils'
 import { useWishlist } from '../../contexts/WishlistContext'
+import { useRequireAuth } from '../../hooks/useRequireAuth'
 
 const navItems = [
-    { icon: ShoppingBasket, label: 'Shop', path: '/home' },
-    { icon: Heart, label: 'My list', path: '/wishlist', key: 'wishlist' },
-    { icon: ShoppingBag, label: 'Orders', path: '/orders' },
-    { icon: UserCircle, label: 'Account', path: '/profile' }
+    { icon: ShoppingBasket, label: 'Shop', path: '/home', secure: false },
+    { icon: Heart, label: 'My list', path: '/wishlist', key: 'wishlist', secure: true },
+    { icon: ShoppingBag, label: 'Orders', path: '/orders', secure: true },
+    { icon: UserCircle, label: 'Account', path: '/profile', secure: true }
 ]
 
 export default function BottomNav() {
     const navigate = useNavigate()
     const location = useLocation()
     const { wishlistCount } = useWishlist()
+    const { requireAuth } = useRequireAuth()
 
     return (
         <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t-2 border-[var(--color-brand-primary)]/20 flex items-center justify-around min-h-[52px] py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] shadow-[0_-2px_16px_rgba(22,163,74,0.08)]">
@@ -24,7 +26,13 @@ export default function BottomNav() {
                 return (
                     <button
                         key={item.label}
-                        onClick={() => navigate(item.path)}
+                        onClick={() => {
+                            if (item.secure) {
+                                requireAuth(() => navigate(item.path))()
+                            } else {
+                                navigate(item.path)
+                            }
+                        }}
                         aria-current={isActive ? 'page' : undefined}
                         className="flex-1 flex flex-col items-center justify-center gap-0.5 py-1 min-h-[44px] min-w-[44px] transition-all duration-150 active:scale-95"
                     >

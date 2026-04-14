@@ -383,7 +383,7 @@ const SignupScreen = () => {
                                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                     ) : (
                                         <>
-                                            Register & Login <ShieldCheck className="w-4 h-4" />
+                                            Register <ShieldCheck className="w-4 h-4" />
                                         </>
                                     )}
                                 </motion.button>

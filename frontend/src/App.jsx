@@ -134,31 +134,35 @@ function App() {
           <Route path="/login" element={<UserProviders><LoginScreen /></UserProviders>} />
 
           {/* User Module */}
-          <Route element={<UserProviders><UserAuthGuard /></UserProviders>}>
+          <Route element={<UserProviders><Outlet /></UserProviders>}>
             <Route element={<AppLayout />}>
               <Route path="/home" element={<HomeScreen />} />
               <Route path="/offers" element={<HomeScreen />} />
               <Route path="/categories" element={<CategoriesScreen />} />
               <Route path="/products/:category" element={<ProductListScreen />} />
               <Route path="/product/:id" element={<ProductDetailScreen />} />
-              <Route path="/cart" element={<CartScreen />} />
-              <Route path="/checkout" element={<CheckoutScreen />} />
-              <Route path="/profile" element={<ProfileScreen />} />
-              <Route path="/orders" element={<OrdersScreen />} />
-              <Route path="/edit-profile" element={<EditProfileScreen />} />
-              <Route path="/address-book" element={<AddressBookScreen />} />
-              <Route path="/track-order/:id" element={<OrderTrackingScreen />} />
-              <Route path="/order-summary/:id" element={<OrderSummaryScreen />} />
-              <Route path="/order-detail/:id" element={<OrderDetailScreen />} />
-              <Route path="/wallet" element={<WalletScreen />} />
-              <Route path="/credit-info" element={<CreditInfoScreen />} />
-              <Route path="/notifications" element={<NotificationsScreen />} />
-              <Route path="/favorites" element={<FavoritesScreen />} />
-              <Route path="/wishlist" element={<WishlistScreen />} />
-              <Route path="/location-picker" element={<LocationMapPicker />} />
-              <Route path="/verification" element={<VerificationScreen />} />
-              <Route path="/help-support" element={<HelpSupportScreen />} />
-              <Route path="/about" element={<AboutScreen />} />
+              
+              {/* Protected User Routes */}
+              <Route element={<UserAuthGuard />}>
+                <Route path="/cart" element={<CartScreen />} />
+                <Route path="/checkout" element={<CheckoutScreen />} />
+                <Route path="/profile" element={<ProfileScreen />} />
+                <Route path="/orders" element={<OrdersScreen />} />
+                <Route path="/edit-profile" element={<EditProfileScreen />} />
+                <Route path="/address-book" element={<AddressBookScreen />} />
+                <Route path="/track-order/:id" element={<OrderTrackingScreen />} />
+                <Route path="/order-summary/:id" element={<OrderSummaryScreen />} />
+                <Route path="/order-detail/:id" element={<OrderDetailScreen />} />
+                <Route path="/wallet" element={<WalletScreen />} />
+                <Route path="/credit-info" element={<CreditInfoScreen />} />
+                <Route path="/notifications" element={<NotificationsScreen />} />
+                <Route path="/favorites" element={<FavoritesScreen />} />
+                <Route path="/wishlist" element={<WishlistScreen />} />
+                <Route path="/location-picker" element={<LocationMapPicker />} />
+                <Route path="/verification" element={<VerificationScreen />} />
+                <Route path="/help-support" element={<HelpSupportScreen />} />
+                <Route path="/about" element={<AboutScreen />} />
+              </Route>
             </Route>
           </Route>
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Phone, ArrowRight, ShieldCheck, CheckCircle2, Sprout } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -18,6 +18,8 @@ export default function LoginScreen() {
     const [phone, setPhone] = useState('')
     const [otp, setOtp] = useState(['', '', '', '', '', ''])
     const navigate = useNavigate()
+    const location = useLocation()
+    const from = location.state?.from?.pathname || '/home'
 
     const [isLoading, setIsLoading] = useState(false)
     const [timer, setTimer] = useState(120)
@@ -91,7 +93,7 @@ export default function LoginScreen() {
                     fetchCart();
                     fetchWishlist();
 
-                    navigate('/home')
+                    navigate(from, { replace: true })
                 } catch (error) {
                     console.error(error);
                     alert(error.response?.data?.message || 'Verification failed');

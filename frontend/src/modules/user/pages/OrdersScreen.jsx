@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Package, CheckCircle2, Clock, Truck, ChevronRight, Zap, Receipt } from 'lucide-react'
@@ -9,7 +9,11 @@ import { useOrders } from '@/modules/user/contexts/OrderContext'
 
 export default function OrdersScreen() {
     const navigate = useNavigate()
-    const { orders } = useOrders()
+    const { orders, fetchMyOrders } = useOrders()
+
+    useEffect(() => {
+        fetchMyOrders()
+    }, [fetchMyOrders])
 
     const getDisplayStatus = (order) => {
         const latestReturn = [...(order.returnRequests || [])]

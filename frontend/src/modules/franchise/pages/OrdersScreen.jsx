@@ -16,7 +16,8 @@ import {
     MoreHorizontal,
     IndianRupee,
     RefreshCw,
-    Info
+    Info,
+    Package
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useFranchiseOrders } from '../contexts/FranchiseOrdersContext';

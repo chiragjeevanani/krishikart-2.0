@@ -1868,9 +1868,42 @@ export const rejectFranchiseOrder = async (req, res) => {
       },
     });
 
-    return handleResponse(
-      res,
-      200,
+    // Real-time update for the user module
+    emitToOrderRoom(order._id, "order_status_changed", {
+      orderId: order._id,
+      status: updated?.orderStatus || "Placed",
+      message: updated?.franchiseId 
+        ? "Finding a better store for your delivery..." 
+        : "Store is currently unavailable; our team is reviewing your order."
+    });
+
+    await createUserNotification({
+      userId: order.userId,
+      type: "order_update",
+      title: "Order Update",
+      message: updated?.franchiseId
+        ? "We've shifted your order to a different nearby store for faster fulfillment."
+        : "One of our storefronts is currently unavailable; we are working on assigning your order.",
+      link: `/order-detail/${order._id}`,
+      meta: {
+          orderId: order._id.toString(),
+          status: updated?.orderStatus || "Placed",
+      },
+    });
+
+    await sendNotificationToUser(order.userId, {
+      title: "Order Update",
+      body: updated?.franchiseId
+        ? "We've shifted your order to a different nearby store for faster fulfillment."
+        : "Store is currently unavailable; we are working on assigning your order.",
+      data: {
+          type: "order_update",
+          orderId: order._id.toString(),
+          status: updated?.orderStatus || "Placed"
+      }
+    }, "user");
+
+    return handleResponse(res, 200,
       updated?.franchiseId
         ? "Order rejected and reassigned to another franchise"
         : "Order rejected; no other franchise available — admin may need to assign manually",

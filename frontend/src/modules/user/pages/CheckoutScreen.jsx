@@ -553,11 +553,23 @@ export default function CheckoutScreen() {
                         </p>
                     )}
 
+                    <div className="mt-8 w-full max-w-md space-y-3">
+                        {lastPlacement?.orders?.map((order, idx) => (
+                            <Button
+                                key={order._id || idx}
+                                onClick={() => navigate(`/track-order/${order._id}`)}
+                                className="w-full h-16 md:h-14 rounded-3xl md:rounded-lg bg-primary text-xl font-black md:font-bold md:text-lg shadow-lg shadow-green-100 active:scale-95 transition-all"
+                            >
+                                {lastPlacement.orders.length > 1 ? `Track Order ${idx + 1}` : 'Track My Order'}
+                            </Button>
+                        ))}
+                    </div>
                     <Button
-                        onClick={() => navigate(`/track-order/${lastPlacement?.orders?.[0]?._id}`)}
-                        className="mt-12 w-full max-w-md h-16 md:h-14 rounded-3xl md:rounded-lg bg-primary text-xl font-black md:font-bold md:text-lg shadow-lg shadow-green-100 active:scale-95 transition-all"
+                        onClick={() => navigate('/orders')}
+                        variant="outline"
+                        className="mt-4 w-full max-w-md h-14 rounded-3xl md:rounded-lg text-slate-500 font-bold border-slate-200"
                     >
-                        {(lastPlacement?.orders?.length ?? 0) > 1 ? 'Track first order' : 'Track My Order'}
+                        View All Orders
                     </Button>
                 </div>
             </PageTransition>

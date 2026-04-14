@@ -1,9 +1,11 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '@/lib/axios';
+import { useFranchiseAuth } from '@/modules/franchise/contexts/FranchiseAuthContext';
 
 const ProcurementContext = createContext();
 
 export const ProcurementProvider = ({ children }) => {
+    const { isAuthenticated } = useFranchiseAuth();
     const [procurementRequests, setProcurementRequests] = useState([]);
     const [cart, setCart] = useState(() => {
         const savedCart = localStorage.getItem('procurementCart');
@@ -30,6 +32,7 @@ export const ProcurementProvider = ({ children }) => {
     };
 
     const fetchRequests = async () => {
+        if (!isAuthenticated) return;
         try {
             const response = await api.get('/procurement/franchise/my-requests');
             if (response.data.success) {
@@ -41,8 +44,12 @@ export const ProcurementProvider = ({ children }) => {
     };
 
     useEffect(() => {
-        fetchRequests();
-    }, []);
+        if (isAuthenticated) {
+            fetchRequests();
+        } else {
+            setProcurementRequests([]);
+        }
+    }, [isAuthenticated]);
 
     const updateRequestStatus = (id, status, extraData = {}) => {
         // Optimistic update, ideally should call API

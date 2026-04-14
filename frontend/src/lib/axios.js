@@ -15,7 +15,7 @@ api.interceptors.request.use((config) => {
     const currentPath = window.location.pathname.toLowerCase();
 
     // Determine context based on URL or current page
-    const isAdminRequest = requestUrl.includes('/masteradmin') || requestUrl.includes('/admin') || requestUrl.includes('/procurement');
+    const isAdminRequest = requestUrl.includes('/masteradmin') || requestUrl.includes('/admin') || (requestUrl.includes('/procurement') && !requestUrl.includes('/franchise'));
     const isFranchiseRequest = requestUrl.includes('/franchise');
     const isVendorRequest = requestUrl.includes('/vendor');
     const isDeliveryRequest = requestUrl.includes('/delivery');

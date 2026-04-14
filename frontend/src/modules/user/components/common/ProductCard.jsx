@@ -8,11 +8,13 @@ import { useWishlist } from '../../contexts/WishlistContext'
 import { cn } from '@/lib/utils'
 import QuantityModal from './QuantityModal'
 import MobileQuantitySheet from './MobileQuantitySheet'
+import { useRequireAuth } from '../../hooks/useRequireAuth'
 
 export default function ProductCard({ product, layout = 'grid' }) {
     const navigate = useNavigate()
     const { cartItems, addToCart, updateQuantity, removeFromCart, setQuantity } = useCart()
     const { toggleWishlist, isWishlisted } = useWishlist()
+    const { requireAuth } = useRequireAuth()
 
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [isMobile, setIsMobile] = useState(false)
@@ -44,31 +46,31 @@ export default function ProductCard({ product, layout = 'grid' }) {
     const isLoved = isWishlisted(productId)
     const productImage = product.primaryImage || product.image
 
-    const handleAddToCart = (e) => {
+    const handleAddToCart = requireAuth((e) => {
         e.stopPropagation()
         setIsModalOpen(true)
-    }
+    })
 
-    const handleWishlist = (e) => {
+    const handleWishlist = requireAuth((e) => {
         e.stopPropagation()
         toggleWishlist(product)
-    }
+    })
 
-    const handleIncrement = (e) => {
+    const handleIncrement = requireAuth((e) => {
         e.stopPropagation()
         updateQuantity(productId, 1)
-    }
+    })
 
-    const handleDecrement = (e) => {
+    const handleDecrement = requireAuth((e) => {
         e.stopPropagation()
         if (quantity > 1) {
             updateQuantity(productId, -1)
         } else {
             removeFromCart(productId)
         }
-    }
+    })
 
-    const handleQuantityInput = (e) => {
+    const handleQuantityInput = requireAuth((e) => {
         e.stopPropagation()
         const value = e.target.value
         if (value === '') {
@@ -84,7 +86,7 @@ export default function ProductCard({ product, layout = 'grid' }) {
                 setQuantity(productId, newQty)
             }
         }
-    }
+    })
 
     const handleBlur = () => {
         if (localQuantity === '' || isNaN(parseInt(localQuantity))) {
