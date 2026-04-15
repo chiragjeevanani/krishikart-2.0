@@ -1869,12 +1869,16 @@ export const rejectFranchiseOrder = async (req, res) => {
     });
 
     // Real-time update for the user module
+    emitToOrderRoom(order._id, "order_rejected_by_store", {
+      orderId: order._id,
+      status: updated?.orderStatus || "Placed",
+      message: "The assigned store rejected your order. We are finding a better store for your delivery!"
+    });
+    
     emitToOrderRoom(order._id, "order_status_changed", {
       orderId: order._id,
       status: updated?.orderStatus || "Placed",
-      message: updated?.franchiseId 
-        ? "Finding a better store for your delivery..." 
-        : "Store is currently unavailable; our team is reviewing your order."
+      message: "Finding a better store for your delivery..." 
     });
 
     await createUserNotification({

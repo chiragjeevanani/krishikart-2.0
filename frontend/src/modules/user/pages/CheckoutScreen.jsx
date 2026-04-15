@@ -716,9 +716,9 @@ export default function CheckoutScreen() {
 
 
                             {/* Shift Timing */}
-                            <section className="mt-12 md:mt-0 pt-2 md:pt-0 border-t border-slate-200/60 md:border-0">
-                                <div className="mb-3 md:mb-4 space-y-1">
-                                    <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest md:text-sm md:normal-case md:tracking-normal md:text-slate-900 md:text-base md:font-bold">
+                            <section className="mt-6 md:mt-0 pt-2 md:pt-0 border-t border-slate-200/60 md:border-0">
+                                <div className="mb-2 md:mb-3 space-y-1">
+                                    <h2 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest md:text-sm md:normal-case md:tracking-normal md:text-slate-900 md:text-base md:font-bold">
                                         Delivery Shift Timing
                                     </h2>
                                     <p className="text-[10px] md:text-xs text-slate-400 font-medium leading-snug">
@@ -767,12 +767,11 @@ export default function CheckoutScreen() {
                                 )}
                             </section>
 
-                            <div className="h-4"></div>
 
                             {/* Promo Code */}
-                            <section>
-                                <div className="flex items-center justify-between mb-4">
-                                    <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest md:normal-case md:tracking-normal md:text-slate-900 md:text-base">Apply Coupon</h2>
+                            <section className="mt-4 md:mt-0">
+                                <div className="flex items-center justify-between mb-3">
+                                    <h2 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest md:normal-case md:tracking-normal md:text-slate-900 md:text-base">Apply Coupon</h2>
                                     {availableCoupons.length > 0 && (
                                         <button
                                             onClick={() => setShowCouponList(prev => !prev)}
@@ -880,12 +879,11 @@ export default function CheckoutScreen() {
                                 </div>
                             </section>
 
-                            <div className="h-8"></div>
 
                             {/* Payment Method */}
-                            <section>
-                                <div className="flex items-center justify-between mb-4">
-                                    <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest md:normal-case md:tracking-normal md:text-slate-900 md:text-base">Select Payment Method</h2>
+                            <section className="mt-4 md:mt-0">
+                                <div className="flex items-center justify-between mb-3">
+                                    <h2 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest md:normal-case md:tracking-normal md:text-slate-900 md:text-base">Select Payment Method</h2>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     {(() => {
@@ -944,9 +942,9 @@ export default function CheckoutScreen() {
                         </div>
 
                         {/* Order Summary Sidebar */}
-                        <div className="w-full md:w-100 shrink-0 mt-10 md:mt-0 px-4 md:px-0">
-                            <div className="bg-white rounded-[40px] md:rounded-xl p-8 space-y-6 border border-slate-100 shadow-sm sticky top-24">
-                                <h3 className="text-base font-bold text-slate-900 mb-4">Checkout Summary</h3>
+                        <div className="w-full md:w-100 shrink-0 mt-8 md:mt-0 px-4 md:px-0">
+                            <div className="bg-white rounded-[32px] md:rounded-xl p-6 space-y-4 border border-slate-100 shadow-sm sticky top-24">
+                                <h3 className="text-base font-bold text-slate-900 mb-2">Checkout Summary</h3>
 
                                 <div className="space-y-4 pt-2">
                                     <div className="flex justify-between items-center text-sm font-medium text-slate-500">

@@ -53,7 +53,7 @@ export default function ProductListScreen() {
         setActiveFilters(prev => ({ ...prev, veg: vegMode }))
     }, [vegMode])
     const [showSearch, setShowSearch] = useState(false)
-    const debouncedSearch = useDebounce(searchQuery, 500)
+    const debouncedSearch = useDebounce(searchQuery, 300)
     const activeSidebarRef = useRef(null)
     const sidebarListRef = useRef(null)
     const [activeBarTop, setActiveBarTop] = useState(19)
@@ -220,15 +220,14 @@ export default function ProductListScreen() {
 
     const filteredProducts = useMemo(() => {
         const normalizedSearch = searchQuery.trim().toLowerCase()
-
+        const keywords = normalizedSearch.split(/\s+/).filter(k => k.length > 0)
+        
         let result = (products || []).filter(p => {
             const tagsText = Array.isArray(p.tags) ? p.tags.join(' ') : (p.tags || '')
-            const matchesSearch = !normalizedSearch ||
-                p.name?.toLowerCase().includes(normalizedSearch) ||
-                p.skuCode?.toLowerCase().includes(normalizedSearch) ||
-                p.description?.toLowerCase().includes(normalizedSearch) ||
-                tagsText.toLowerCase().includes(normalizedSearch)
-            const matchesRating = !activeFilters.rating || (p.rating >= 4.0 || p.comparePrice > p.price) // Simplified rating logic or deal logic
+            const searchableText = `${p.name} ${p.skuCode} ${p.description} ${p.shortDescription || ''} ${tagsText}`.toLowerCase()
+            
+            const matchesSearch = keywords.length === 0 || keywords.every(word => searchableText.includes(word))
+            const matchesRating = !activeFilters.rating || (p.rating >= 4.0 || p.comparePrice > p.price)
             const matchesVeg = !activeFilters.veg || (p.dietaryType === 'veg' || p.dietaryType === 'none')
             const matchesInStock = !activeFilters.inStock || (p.stock > 0)
             return matchesSearch && matchesRating && matchesVeg && matchesInStock

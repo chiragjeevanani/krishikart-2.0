@@ -173,6 +173,15 @@ export default function ProductCard({ product, layout = 'grid' }) {
                         onAdd={(prod, qty) => addToCart(prod, qty)}
                     />
                 )}
+                {/* Mobile Quantity Sheet */}
+                {isMobile && (
+                    <MobileQuantitySheet
+                        isOpen={isModalOpen}
+                        onClose={() => setIsModalOpen(false)}
+                        product={product}
+                        onAdd={(prod, qty) => addToCart(prod, qty)}
+                    />
+                )}
             </>
         )
     }

@@ -18,6 +18,7 @@ import {
 // import { useProcurement } from '../../franchise/contexts/ProcurementContext'; // Removed context
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useAdmin } from '../contexts/AdminContext';
 
 export default function VendorQuotationScreen() {
     const [quotations, setQuotations] = useState([]);
@@ -25,9 +26,17 @@ export default function VendorQuotationScreen() {
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [editedItems, setEditedItems] = useState([]);
 
+    const { newQuotationData } = useAdmin();
+
     useEffect(() => {
         fetchQuotations();
     }, []);
+
+    useEffect(() => {
+        if (newQuotationData) {
+            fetchQuotations();
+        }
+    }, [newQuotationData]);
 
     useEffect(() => {
         if (selectedRequest) {

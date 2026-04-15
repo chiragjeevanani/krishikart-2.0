@@ -180,14 +180,22 @@ export const getProducts = async (req, res) => {
         if (showOnStorefront === 'true') filter.showOnStorefront = { $ne: false };
         if (showOnStorefront === 'false') filter.showOnStorefront = false;
         if (search && search !== 'null' && search !== 'undefined') {
-            const searchRegex = { $regex: search, $options: 'i' };
-            filter.$or = [
-                { name: searchRegex },
-                { skuCode: searchRegex },
-                { description: searchRegex },
-                { shortDescription: searchRegex },
-                { tags: searchRegex }
-            ];
+            const keywords = search.trim().split(/\s+/).filter(k => k.length > 0);
+            if (keywords.length > 0) {
+                const searchConditions = keywords.map(word => {
+                    const searchRegex = { $regex: word, $options: 'i' };
+                    return {
+                        $or: [
+                            { name: searchRegex },
+                            { skuCode: searchRegex },
+                            { description: searchRegex },
+                            { shortDescription: searchRegex },
+                            { tags: searchRegex }
+                        ]
+                    };
+                });
+                filter.$and = searchConditions; // Matches all words (intersection)
+            }
         }
 
         const lat = req.query.lat != null ? parseFloat(req.query.lat) : null;

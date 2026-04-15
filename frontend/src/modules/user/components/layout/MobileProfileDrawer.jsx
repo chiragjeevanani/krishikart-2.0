@@ -116,20 +116,15 @@ export default function MobileProfileDrawer() {
                                 {/* Header */}
                                 <div className="bg-white p-6 pt-12 pb-6 border-b border-slate-100 relative">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 overflow-hidden shrink-0">
-                                            <img
-                                                src={user?.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.fullName || 'User'}`}
-                                                alt="avatar"
-                                                className="w-full h-full object-cover"
-                                            />
+                                        <div className="w-16 h-16 rounded-full bg-slate-900 flex items-center justify-center shrink-0 shadow-sm">
+                                            <span className="text-2xl font-black text-white uppercase">
+                                                {user?.fullName ? user.fullName.charAt(0) : 'G'}
+                                            </span>
                                         </div>
                                         <div className="min-w-0">
                                             <SheetTitle className="text-2xl font-bold text-slate-900 tracking-tight leading-none mb-1 text-left">
-                                                {user?.fullName || 'Guest User'}
+                                                {user?.fullName ? user.fullName.split(' ')[0] : 'Guest'}
                                             </SheetTitle>
-                                            <SheetDescription className="text-sm font-medium text-slate-500 text-left">
-                                                {user?.legalEntityName || user?.mobile || 'Guest Account'}
-                                            </SheetDescription>
                                         </div>
                                     </div>
                                 </div>

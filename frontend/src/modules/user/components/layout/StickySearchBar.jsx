@@ -28,9 +28,10 @@ export default function StickySearchBar() {
     const [index, setIndex] = useState(0)
     const routeLocation = useRouteLocation()
     const searchParams = new URLSearchParams(routeLocation.search)
-    const [searchValue, setSearchValue] = useState(searchParams.get('search') || "")
-    const [isMobile, setIsMobile] = useState(false)
     const [showLocationPopup, setShowLocationPopup] = useState(false)
+    const [searchResults, setSearchResults] = useState([])
+    const [isSearching, setIsSearching] = useState(false)
+    const [showOverlay, setShowOverlay] = useState(false)
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -45,20 +46,55 @@ export default function StickySearchBar() {
         return () => window.removeEventListener('resize', check)
     }, [])
 
-    const debouncedSearch = useDebounce(searchValue, 500)
+    const debouncedSearch = useDebounce(searchValue, 300)
     // useDebounce is imported at the top
 
     useEffect(() => {
-        const currentSearch = new URLSearchParams(routeLocation.search).get('search') || ""
-        if (debouncedSearch.trim() !== currentSearch) {
-            const currentPath = routeLocation.pathname
-            // If already on a product list page, keep the current category
-            const targetPath = currentPath.startsWith('/products/') ? currentPath : '/products/all'
-            
-            if (debouncedSearch.trim()) {
-                navigate(`${targetPath}?search=${encodeURIComponent(debouncedSearch.trim())}`)
-            } else if (currentPath.startsWith('/products/')) {
-                // If search is cleared and we're on a product list, just show the category
+        const fetchResults = async () => {
+            if (!debouncedSearch.trim()) {
+                setSearchResults([])
+                setShowOverlay(false)
+                return
+            }
+
+            setIsSearching(true)
+            try {
+                const response = await api.get('/products', {
+                    params: { 
+                        search: debouncedSearch.trim(),
+                        showOnStorefront: true,
+                        limit: 6
+                    }
+                })
+                if (response.data.success) {
+                    setSearchResults(response.data.results)
+                    setShowOverlay(true)
+                }
+            } catch (error) {
+                console.error('Search overlay error:', error)
+            } finally {
+                setIsSearching(false)
+            }
+        }
+
+        const currentPath = routeLocation.pathname
+        if (debouncedSearch.trim()) {
+            if (currentPath.startsWith('/products/')) {
+                // If already on product list, keep live URL sync
+                const targetPath = currentPath
+                const currentSearch = new URLSearchParams(routeLocation.search).get('search') || ""
+                if (debouncedSearch.trim() !== currentSearch) {
+                    navigate(`${targetPath}?search=${encodeURIComponent(debouncedSearch.trim())}`)
+                }
+            } else {
+                // On Home or other pages, fetch for overlay instead of redirecting
+                fetchResults()
+            }
+        } else {
+            setSearchResults([])
+            setShowOverlay(false)
+            if (currentPath.startsWith('/products/')) {
+                const targetPath = currentPath
                 navigate(targetPath)
             }
         }
@@ -196,6 +232,74 @@ export default function StickySearchBar() {
                     )}
                 </div>
             </form>
+            
+            {/* Search Results Overlay */}
+            <AnimatePresence>
+                {showOverlay && searchValue.trim() && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="absolute top-full left-0 right-0 mt-2 mx-3 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-50 max-h-[70vh] flex flex-col"
+                    >
+                        <div className="p-4 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                                {isSearching ? 'Searching...' : `Found ${searchResults.length} results`}
+                            </span>
+                            {isSearching && <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full" />}
+                        </div>
+
+                        <div className="overflow-y-auto no-scrollbar py-2">
+                            {searchResults.length > 0 ? (
+                                searchResults.map((product) => (
+                                    <div
+                                        key={product._id}
+                                        onClick={() => {
+                                            navigate(`/product/${product._id}`)
+                                            setShowOverlay(false)
+                                            setSearchValue('')
+                                        }}
+                                        className="px-4 py-3 flex items-center gap-3 hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer border-b border-slate-50 last:border-0"
+                                    >
+                                        <div className="w-12 h-12 rounded-lg bg-slate-50 overflow-hidden shrink-0 border border-slate-100">
+                                            <img src={product.primaryImage || product.image} className="w-full h-full object-cover" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-bold text-slate-900 truncate">{product.name}</p>
+                                            <p className="text-[10px] font-medium text-slate-400">₹{product.effectiveStorefrontPrice || product.price} • {product.unitValue} {product.unit}</p>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : !isSearching && (
+                                <div className="py-8 text-center">
+                                    <p className="text-sm font-medium text-slate-400">No products found</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {searchResults.length > 0 && (
+                            <button
+                                onClick={() => {
+                                    const targetPath = routeLocation.pathname.startsWith('/products/') ? routeLocation.pathname : '/products/all'
+                                    navigate(`${targetPath}?search=${encodeURIComponent(searchValue.trim())}`)
+                                    setShowOverlay(false)
+                                }}
+                                className="w-full py-3.5 bg-slate-50 text-primary text-[13px] font-bold border-t border-slate-100 hover:bg-slate-100 transition-colors"
+                            >
+                                See all results
+                            </button>
+                        )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+            
+            {/* Overlay Backdrop */}
+            {showOverlay && (
+                <div 
+                    className="fixed inset-0 bg-black/10 backdrop-blur-[2px] z-30" 
+                    onClick={() => setShowOverlay(false)}
+                />
+            )}
                 </motion.div>
             </motion.div>
             <LocationActionPopup

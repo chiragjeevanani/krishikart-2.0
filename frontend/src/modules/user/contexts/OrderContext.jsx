@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef } f
 import api from '@/lib/axios';
 import { toast } from 'sonner';
 import { initSocket, joinOrderRoom, joinUserRoom } from '@/lib/socket';
-import { useUserAuth } from './UserAuthContext'; // Import to listen to auth changes
+import { UserAuthContext } from './UserAuthContext';
 
 const OrderContext = createContext();
 
@@ -32,7 +32,8 @@ const getStatusToastMessage = (status, orderId) => {
 };
 
 export function OrderProvider({ children }) {
-    const { isAuthenticated } = useUserAuth(); // Hook into auth
+    const authContext = useContext(UserAuthContext);
+    const isAuthenticated = authContext?.isAuthenticated || false;
     const [orders, setOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const pollingIntervalRef = useRef(null);
@@ -166,6 +167,18 @@ export function OrderProvider({ children }) {
             await syncOrderById(payload.orderId, payload.status, payload.message);
         };
 
+        const onOrderRejectedByStore = async (payload) => {
+            if (!payload?.orderId) return;
+            toast.error(payload.message || 'Your order was rejected by the originally assigned store.', {
+                duration: 8000,
+                action: {
+                    label: 'View Order →',
+                    onClick: () => { window.location.href = `/order-detail/${payload.orderId}`; },
+                },
+            });
+            await syncOrderById(payload.orderId, payload.status);
+        };
+
         const onReturnPickupStatusUpdated = async (payload) => {
             if (!payload?.orderId) return;
             await syncOrderById(payload.orderId);
@@ -184,12 +197,14 @@ export function OrderProvider({ children }) {
 
         socket.on('return_request_reviewed', onReturnRequestReviewed);
         socket.on('order_status_changed', onOrderStatusChanged);
+        socket.on('order_rejected_by_store', onOrderRejectedByStore);
         socket.on('return_pickup_status_updated', onReturnPickupStatusUpdated);
         socket.on('reconnect', onReconnect);
 
         return () => {
             socket.off('return_request_reviewed', onReturnRequestReviewed);
             socket.off('order_status_changed', onOrderStatusChanged);
+            socket.off('order_rejected_by_store', onOrderRejectedByStore);
             socket.off('return_pickup_status_updated', onReturnPickupStatusUpdated);
             socket.off('reconnect', onReconnect);
         };

@@ -25,6 +25,7 @@ import DataGrid from '../components/tables/DataGrid';
 import VendorBackBar from '../components/navigation/VendorBackBar';
 
 import api from '@/lib/axios';
+import { useVendorAuth } from '../contexts/VendorAuthContext';
 
 export default function OrdersScreen() {
     const navigate = useNavigate();
@@ -50,20 +51,28 @@ export default function OrdersScreen() {
         })); */
 
     const [procurementRequests, setProcurementRequests] = useState([]);
+    const { newAssignmentData } = useVendorAuth();
+
+    const fetchAssignments = async () => {
+        try {
+            const response = await api.get('/procurement/vendor/my-assignments');
+            if (response.data.success) {
+                setProcurementRequests(response.data.results);
+            }
+        } catch (error) {
+            console.error("Failed to fetch vendor assignments", error);
+        }
+    };
 
     useEffect(() => {
-        const fetchAssignments = async () => {
-            try {
-                const response = await api.get('/procurement/vendor/my-assignments');
-                if (response.data.success) {
-                    setProcurementRequests(response.data.results);
-                }
-            } catch (error) {
-                console.error("Failed to fetch vendor assignments", error);
-            }
-        };
         fetchAssignments();
     }, []);
+
+    useEffect(() => {
+        if (newAssignmentData) {
+            fetchAssignments();
+        }
+    }, [newAssignmentData]);
 
     const mappedProcurementRequests = procurementRequests.map(req => ({
         id: req._id,

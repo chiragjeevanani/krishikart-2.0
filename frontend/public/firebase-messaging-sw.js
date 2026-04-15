@@ -3,6 +3,14 @@ importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-comp
 
 let messaging = null;
 
+// Handle the 'push' event at the top level to satisfy browser requirements.
+// Initial evaluation of the worker MUST add this listener.
+self.addEventListener('push', (event) => {
+    // If messaging is initialized, Firebase handles this. 
+    // If not, we still need this listener to exist at top level.
+    console.log('[firebase-messaging-sw.js] Push event received');
+});
+
 // Initialize Firebase in the service worker using config sent from the main app
 self.addEventListener('message', (event) => {
     const data = event.data || {};
@@ -12,39 +20,35 @@ self.addEventListener('message', (event) => {
         try {
             if (!firebase.apps || firebase.apps.length === 0) {
                 firebase.initializeApp(data.payload.firebaseConfig);
-                console.log('[firebase-messaging-sw.js] Firebase initialized from app config:', {
-                    projectId: data.payload.firebaseConfig.projectId,
-                    messagingSenderId: data.payload.firebaseConfig.messagingSenderId,
-                });
-            } else {
-                console.log('[firebase-messaging-sw.js] Firebase already initialized, reusing existing app');
-            }
-
-            if (!messaging) {
                 messaging = firebase.messaging();
-                console.log('[firebase-messaging-sw.js] Firebase Messaging instance created');
-
-                messaging.onBackgroundMessage((payload) => {
-                    console.log('[firebase-messaging-sw.js] onBackgroundMessage payload:', payload);
-                    const notificationTitle = payload.notification?.title || 'Kisaankart Update';
-                    const notificationOptions = {
-                        body: payload.notification?.body || 'New update available',
-                        icon: '/favicon.png',
-                        tag: 'kisaankart-notification',
-                        data: payload.data || {},
-                        badge: '/favicon.png',
-                        vibrate: [200, 100, 200]
-                    };
-
-                    console.log('[firebase-messaging-sw.js] Showing background notification with title:', notificationTitle);
-                    return self.registration.showNotification(notificationTitle, notificationOptions);
-                });
+                setupBackgroundHandler();
+                console.log('[firebase-messaging-sw.js] Firebase initialized from app config');
             }
         } catch (err) {
-            console.error('[firebase-messaging-sw.js] Error during Firebase init or messaging setup:', err);
+            console.error('[firebase-messaging-sw.js] Error during Firebase init:', err);
         }
     }
 });
+
+function setupBackgroundHandler() {
+    if (!messaging) return;
+    
+    messaging.onBackgroundMessage((payload) => {
+        console.log('[firebase-messaging-sw.js] onBackgroundMessage payload:', payload);
+        const notificationTitle = payload.notification?.title || 'Kisaankart Update';
+        const notificationOptions = {
+            body: payload.notification?.body || 'New update available',
+            icon: '/favicon.png',
+            tag: 'kisaankart-notification',
+            data: payload.data || {},
+            badge: '/favicon.png',
+            vibrate: [200, 100, 200]
+        };
+
+        console.log('[firebase-messaging-sw.js] Showing background notification');
+        return self.registration.showNotification(notificationTitle, notificationOptions);
+    });
+}
 
 self.addEventListener('install', (event) => {
     console.log('[firebase-messaging-sw.js] Installed');

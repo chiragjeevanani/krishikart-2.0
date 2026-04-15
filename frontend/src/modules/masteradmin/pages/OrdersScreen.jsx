@@ -33,6 +33,7 @@ import { getSocket, joinAdminDeliveryTracking } from '@/lib/socket';
 
 import OrderDetailModal from '../components/modals/OrderDetailModal';
 import { exportToCSV } from '@/lib/exportToCSV';
+import { useNotificationSound } from '@/hooks/useNotificationSound';
 
 export default function OrdersScreen() {
     const [isLoading, setIsLoading] = useState(true);
@@ -45,6 +46,7 @@ export default function OrdersScreen() {
     const [procurementQuantities, setProcurementQuantities] = useState({});
     const [procurementMode, setProcurementMode] = useState('full'); // 'full' or 'partial'
     const [selectedProcurementIds, setSelectedProcurementIds] = useState(new Set());
+    const { playNotificationSound } = useNotificationSound();
 
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
@@ -104,6 +106,7 @@ export default function OrdersScreen() {
         joinAdminDeliveryTracking();
 
         socket.on('new_order_placed', (data) => {
+            playNotificationSound();
             toast.info(data.message || "A new order has been placed!", {
                 description: `Order ID: #${data.orderId.slice(-6)}`
             });

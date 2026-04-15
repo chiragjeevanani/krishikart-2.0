@@ -70,18 +70,15 @@ export default function ProfileScreen() {
         {/* Profile Header */}
         <div className="bg-white px-5 pt-8 pb-5 rounded-b-[28px] shadow-sm mb-4">
           <div className="flex items-center gap-3.5" onClick={() => navigate('/edit-profile')}>
-            <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center overflow-hidden border border-blue-100">
-              <img
-                src={userData.profileImage || "https://cdni.iconscout.com/illustration/premium/thumb/delivery-man-job-3829562-3199859.png"}
-                className="w-full h-full object-cover scale-150"
-                alt="avatar"
-              />
+            <div className="w-12 h-12 rounded-full bg-slate-900 flex items-center justify-center border border-slate-900 shrink-0">
+              <span className="text-xl font-black text-white uppercase">
+                {userData.fullName ? userData.fullName.charAt(0) : 'G'}
+              </span>
             </div>
             <div className="flex flex-col">
               <h1 className="text-[18px] font-black text-slate-900 leading-tight tracking-tight">
-                {userData.fullName || 'Guest User'}
+                {userData.fullName ? userData.fullName.split(' ')[0] : 'Guest'}
               </h1>
-              <p className="text-[12px] font-medium text-slate-400">{userData.legalEntityName || 'Guest Account'}</p>
             </div>
           </div>
         </div>

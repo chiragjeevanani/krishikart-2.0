@@ -254,7 +254,7 @@ export default function HomeScreen() {
                                                 <div className="p-1.5 bg-red-100 rounded-lg md:rounded-md"><Flame size={16} className="text-red-500 fill-red-500 md:w-5 md:h-5" /></div>
                                                 <h2 className="text-xl md:text-3xl font-black text-slate-900 tracking-tight whitespace-nowrap">Flash Deals</h2>
                                             </div>
-                                            <div className="flex items-center gap-2"><Timer size={14} className="text-slate-400" /><span className="text-[11px] font-black text-slate-400 uppercase tracking-widest md:normal-case md:font-medium">Ending in 02:45:12</span></div>
+
                                         </div>
                                         <button onClick={() => navigate('/products/all')} className="text-primary text-[10px] md:text-sm font-black md:font-bold uppercase md:normal-case tracking-widest md:tracking-tight bg-primary/5 px-4 py-2 rounded-full hover:bg-primary/10 transition-all active:scale-95">See All</button>
                                     </div>
