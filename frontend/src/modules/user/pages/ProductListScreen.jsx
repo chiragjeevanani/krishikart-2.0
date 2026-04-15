@@ -40,6 +40,12 @@ export default function ProductListScreen() {
     const { vegMode, setVegMode } = useFilter()
     const [isLoading, setIsLoading] = useState(true)
     const [selectedCategory, setSelectedCategory] = useState(category || 'all')
+    
+    // Sync selectedCategory with URL param
+    useEffect(() => {
+        setSelectedCategory(category || 'all')
+    }, [category])
+
     const [activeSubCategory, setActiveSubCategory] = useState('all')
     const [activeFilters, setActiveFilters] = useState({
         rating: false,
@@ -65,10 +71,12 @@ export default function ProductListScreen() {
         setSelectedCategory(category || 'all')
     }, [category])
 
-    // Update searchQuery when URL search param changes
+    // Only sync searchQuery from URL on initial mount or if user manually changes category
     useEffect(() => {
-        setSearchQuery(queryFromUrl)
-    }, [queryFromUrl])
+        if (queryFromUrl) {
+            setSearchQuery(queryFromUrl)
+        }
+    }, [category]) // Only when category changes, not on queryFromUrl changes
 
     // Fetch Categories (area-filtered when location is pinned)
     useEffect(() => {
@@ -94,14 +102,18 @@ export default function ProductListScreen() {
         locationCtx?.hasFranchisePinned,
     ])
 
-    // Fetch Products and Subcategories when Category or Search changes
+    // Fetch Products and Subcategories when Category changes, or INITIAL search
     useEffect(() => {
         const fetchData = async () => {
-            setIsLoading(true)
+            // Only show full loader if we don't have products yet (initial load or category change)
+            const shouldShowFullLoader = !products.length || category !== selectedCategory;
+            if (shouldShowFullLoader) setIsLoading(true);
+            
             try {
                 const { coords, hasPinned } = getBrowseLocationParams(locationCtx)
                 const locArg = { franchiseLocation: coords, hasFranchisePinned: hasPinned }
-                // Products
+                
+                // Products - use queryFromUrl for backend search sync
                 const params = appendLocationToProductParams(
                     {
                         ...(selectedCategory !== 'all' ? { category: selectedCategory } : {}),
@@ -132,8 +144,7 @@ export default function ProductListScreen() {
         fetchData()
     }, [
         selectedCategory,
-        category,
-        queryFromUrl,
+        // Remove queryFromUrl from here to handle search purely through debounced navigation and local filtering
         locationCtx?.deliveryLocation,
         locationCtx?.hasDeliveryPinned,
         locationCtx?.franchiseLocation,

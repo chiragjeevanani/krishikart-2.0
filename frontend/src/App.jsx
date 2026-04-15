@@ -140,6 +140,7 @@ function App() {
               <Route path="/offers" element={<HomeScreen />} />
               <Route path="/categories" element={<CategoriesScreen />} />
               <Route path="/products/:category" element={<ProductListScreen />} />
+              <Route path="/search" element={<ProductListScreen />} />
               <Route path="/product/:id" element={<ProductDetailScreen />} />
               
               {/* Protected User Routes */}

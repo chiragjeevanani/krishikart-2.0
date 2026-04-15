@@ -96,12 +96,12 @@ export default function DesktopNavbar() {
 
         const currentPath = routeLocation.pathname
         if (debouncedSearch.trim()) {
-            if (currentPath.startsWith('/products/')) {
-                // If already on product list, keep live URL sync
+            if (currentPath.startsWith('/products/') || currentPath.startsWith('/search')) {
+                // If already on product list or search page, keep live URL sync
                 const targetPath = currentPath
                 const currentSearch = new URLSearchParams(routeLocation.search).get('search') || ""
                 if (debouncedSearch.trim() !== currentSearch) {
-                    navigate(`${targetPath}?search=${encodeURIComponent(debouncedSearch.trim())}`)
+                    navigate(`${targetPath}${targetPath.includes('?') ? '&' : '?'}search=${encodeURIComponent(debouncedSearch.trim())}`)
                 }
             } else {
                 // On Home or other pages, fetch for overlay instead of redirecting
@@ -110,7 +110,7 @@ export default function DesktopNavbar() {
         } else {
             setSearchResults([])
             setShowOverlay(false)
-            if (currentPath.startsWith('/products/')) {
+            if (currentPath.startsWith('/products/') || currentPath.startsWith('/search')) {
                 const targetPath = currentPath
                 navigate(targetPath)
             }
@@ -179,13 +179,15 @@ export default function DesktopNavbar() {
                     <form
                         onSubmit={(e) => {
                             e.preventDefault();
+                            if (!searchValue.trim()) return;
+                            
                             const currentPath = routeLocation.pathname
-                            const targetPath = currentPath.startsWith('/products/') ? currentPath : '/products/all'
-                            if (searchValue.trim()) {
-                                navigate(`${targetPath}?search=${encodeURIComponent(searchValue.trim())}`);
-                            } else if (currentPath.startsWith('/products/')) {
-                                navigate(targetPath)
-                            }
+                            const targetBase = (currentPath.startsWith('/products/') || currentPath.startsWith('/search')) 
+                                ? currentPath 
+                                : '/search'
+                            
+                            navigate(`${targetBase}?search=${encodeURIComponent(searchValue.trim())}`);
+                            setShowOverlay(false);
                         }}
                         className="relative group"
                     >

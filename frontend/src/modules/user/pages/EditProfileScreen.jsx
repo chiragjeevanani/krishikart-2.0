@@ -119,8 +119,8 @@ export default function EditProfileScreen() {
     const isValidPan = (pan) => !pan || /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan)
 
     const handleSaveProfile = async () => {
-        // Email Validation
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        // Email Validation (Strict)
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
         if (editData.email && !emailRegex.test(editData.email)) {
             alert('Please enter a valid email address (e.g., user@example.com)');
             return;
