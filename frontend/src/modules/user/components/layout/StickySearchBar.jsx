@@ -9,6 +9,7 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { toast } from 'sonner'
 import { getReadableLocationError } from '@/lib/geo'
 import LocationActionPopup from '../common/LocationActionPopup'
+import api from '@/lib/axios'
 
 const PLACEHOLDERS = [
     "Fresh Apples",
@@ -28,6 +29,8 @@ export default function StickySearchBar() {
     const [index, setIndex] = useState(0)
     const routeLocation = useRouteLocation()
     const searchParams = new URLSearchParams(routeLocation.search)
+    const [searchValue, setSearchValue] = useState(searchParams.get('search') || "")
+    const [isMobile, setIsMobile] = useState(false)
     const [showLocationPopup, setShowLocationPopup] = useState(false)
     const [searchResults, setSearchResults] = useState([])
     const [isSearching, setIsSearching] = useState(false)

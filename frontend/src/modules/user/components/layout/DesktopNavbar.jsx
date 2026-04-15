@@ -12,6 +12,7 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { toast } from 'sonner'
 import { getReadableLocationError } from '@/lib/geo'
 import LocationActionPopup from '../common/LocationActionPopup'
+import api from '@/lib/axios'
 
 const PLACEHOLDERS = [
     "Search 'Spring Caps'",
