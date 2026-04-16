@@ -74,6 +74,7 @@ export default function CheckoutScreen() {
     const locationCtx = useLocation()
     const ctxDeliveryAddress = locationCtx?.deliveryAddress
     const ctxDeliveryLocation = locationCtx?.deliveryLocation
+    const ctxDeliveryComponents = locationCtx?.deliveryAddressComponents
     const ctxHasDeliveryPinned = locationCtx?.hasDeliveryPinned
     const ctxUpdateDeliveryLocation = locationCtx?.updateDeliveryLocation
     const { placeOrder } = useOrders()
@@ -103,7 +104,8 @@ export default function CheckoutScreen() {
         colony: '',
         landmark: '',
         city: 'Indore',
-        state: 'Madhya Pradesh'
+        state: 'Madhya Pradesh',
+        pincode: '',
     });
     const [deliveryShift, setDeliveryShift] = useState('');
     /** Re-render every minute so past slots become disabled without refresh */
@@ -136,7 +138,7 @@ export default function CheckoutScreen() {
     }
 
     const buildFullAddress = (details) => (
-        `Flat: ${details.flat}, Floor: ${details.floor}, ${details.colony}, Landmark: ${details.landmark}, ${details.city}, ${details.state}`
+        `Flat: ${details.flat}, Floor: ${details.floor}, ${details.colony}, Landmark: ${details.landmark}, ${details.city}, ${details.state}${details.pincode ? `, ${details.pincode}` : ''}`
     )
 
     const parseAddressToDetails = (address = '') => {
@@ -240,11 +242,22 @@ export default function CheckoutScreen() {
     useEffect(() => {
         if (!ctxDeliveryAddress) return;
         setDeliveryAddress(ctxDeliveryAddress);
-        const parsed = parseAddressToDetails(ctxDeliveryAddress);
-        if (parsed) {
-            setAddressDetails(parsed);
+
+        if (ctxDeliveryComponents) {
+            setAddressDetails(prev => ({
+                ...prev,
+                city: ctxDeliveryComponents.city || prev.city,
+                state: ctxDeliveryComponents.state || prev.state,
+                colony: ctxDeliveryComponents.area || prev.colony,
+                pincode: ctxDeliveryComponents.pincode || prev.pincode,
+            }));
+        } else {
+            const parsed = parseAddressToDetails(ctxDeliveryAddress);
+            if (parsed) {
+                setAddressDetails(parsed);
+            }
         }
-    }, [ctxDeliveryAddress])
+    }, [ctxDeliveryAddress, ctxDeliveryComponents])
 
     const fetchProfile = async () => {
         try {
@@ -1153,6 +1166,16 @@ export default function CheckoutScreen() {
                                                 className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                                             />
                                         </div>
+                                        <input
+                                            type="text"
+                                            value={addressDetails.pincode}
+                                            onChange={(e) => {
+                                                const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 6);
+                                                setAddressDetails(prev => ({ ...prev, pincode: val }));
+                                            }}
+                                            placeholder="Pincode (Optional)"
+                                            className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                                        />
                                     </div>
                                     <Button
                                         onClick={async () => {
@@ -1160,6 +1183,17 @@ export default function CheckoutScreen() {
                                                 toast.error("Please fill all required fields");
                                                 return;
                                             }
+
+                                            // Validation: Check if manual city matches pinned city
+                                            if (ctxDeliveryComponents?.city) {
+                                                const manualCity = addressDetails.city.trim().toLowerCase();
+                                                const pinnedCity = ctxDeliveryComponents.city.trim().toLowerCase();
+                                                if (manualCity && !pinnedCity.includes(manualCity) && !manualCity.includes(pinnedCity)) {
+                                                    toast.error(`Address mismatch: Your manual city is '${addressDetails.city}', but the pinned location is in '${ctxDeliveryComponents.city}'. Please fix one of them.`);
+                                                    return;
+                                                }
+                                            }
+
                                             const fullAddress = buildFullAddress(addressDetails)
                                             try {
                                                 await persistAddressToProfile(fullAddress)

@@ -131,16 +131,17 @@ export const reverseGeocode = async (lat, lng) => {
 };
 
 /**
- * Extracts address components (city, area, state, country) from Google Geocoding API result
+ * Extracts address components (city, area, state, country, pincode) from Google Geocoding API result
  * @param {Object} googleResult - The result object from Google Geocoding API
- * @returns {{city: string, area: string, state: string, country: string}}
+ * @returns {{city: string, area: string, state: string, country: string, pincode: string}}
  */
 export const extractAddressComponents = (googleResult) => {
     const components = {
         city: '',
         area: '',
         state: '',
-        country: ''
+        country: '',
+        pincode: ''
     };
 
     if (!googleResult || !googleResult.address_components) {
@@ -171,6 +172,11 @@ export const extractAddressComponents = (googleResult) => {
         if (types.includes('country')) {
             components.country = component.long_name;
         }
+
+        // Pincode (postal_code)
+        if (types.includes('postal_code')) {
+            components.pincode = component.long_name;
+        }
     });
 
     return components;
@@ -180,7 +186,7 @@ export const extractAddressComponents = (googleResult) => {
  * Reverse geocodes coordinates and returns both formatted address and extracted components
  * @param {number} lat 
  * @param {number} lng 
- * @returns {Promise<{formattedAddress: string, addressComponents: {city: string, area: string, state: string, country: string}} | null>}
+ * @returns {Promise<{formattedAddress: string, addressComponents: {city: string, area: string, state: string, country: string, pincode: string}} | null>}
  */
 export const reverseGeocodeWithComponents = async (lat, lng) => {
     try {

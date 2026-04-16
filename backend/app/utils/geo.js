@@ -3,7 +3,7 @@ import axios from 'axios';
 /**
  * Geocodes an address or city using Google Geocoding API
  * @param {string} query The address or city to geocode
- * @returns {Promise<{lat: number, lng: number} | null>}
+ * @returns {Promise<{lat: number, lng: number, city: string, pincode: string} | null>}
  */
 export const geocodeAddress = async (query) => {
     try {
@@ -20,10 +20,28 @@ export const geocodeAddress = async (query) => {
         const data = response.data;
 
         if (data.status === 'OK' && data.results && data.results.length > 0) {
-            const { lat, lng } = data.results[0].geometry.location;
+            const result = data.results[0];
+            const { lat, lng } = result.geometry.location;
+
+            let city = "";
+            let pincode = "";
+
+            if (result.address_components) {
+                for (const component of result.address_components) {
+                    if (component.types.includes("locality")) {
+                        city = component.long_name;
+                    }
+                    if (component.types.includes("postal_code")) {
+                        pincode = component.long_name;
+                    }
+                }
+            }
+
             return {
                 lat: parseFloat(lat),
-                lng: parseFloat(lng)
+                lng: parseFloat(lng),
+                city,
+                pincode
             };
         }
         console.warn('Geocoding status:', data.status);

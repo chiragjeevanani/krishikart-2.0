@@ -72,14 +72,14 @@ export default function CategoryManagementScreen() {
                             className="bg-white rounded-sm shadow-2xl w-full max-w-md relative z-10 overflow-hidden"
                         >
                             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                                <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">New Category Induction</h3>
+                                <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">New Category</h3>
                                 <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-900">
                                     <X size={16} />
                                 </button>
                             </div>
                             <div className="p-6 space-y-6">
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Category Title</label>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Category Name</label>
                                     <input
                                         autoFocus
                                         type="text"
@@ -90,7 +90,7 @@ export default function CategoryManagementScreen() {
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Summary Description</label>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Description</label>
                                     <textarea
                                         rows={3}
                                         value={newCat.description}
@@ -111,7 +111,7 @@ export default function CategoryManagementScreen() {
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Category Visual Asset</label>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Category Image</label>
                                     <div className="relative aspect-video bg-slate-50 border-2 border-dashed border-slate-200 rounded-sm flex flex-col items-center justify-center space-y-2 group/upload cursor-pointer hover:bg-white hover:border-emerald-500 transition-all overflow-hidden">
                                         {newCat.image ? (
                                             <>
@@ -173,27 +173,29 @@ export default function CategoryManagementScreen() {
                             className="bg-white rounded-sm shadow-2xl w-full max-w-md relative z-10 overflow-hidden"
                         >
                             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                                <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Modify Category</h3>
+                                <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Edit Category</h3>
                                 <button onClick={() => setShowEditModal(false)} className="text-slate-400 hover:text-slate-900">
                                     <X size={16} />
                                 </button>
                             </div>
                             <div className="p-6 space-y-6">
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Category Title</label>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Category Name</label>
                                     <input
                                         type="text"
                                         value={editCat.name}
                                         onChange={(e) => setEditCat(prev => ({ ...prev, name: e.target.value }))}
+                                        placeholder="e.g. Organic Dairy"
                                         className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-3 text-sm font-bold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Summary Description</label>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Description</label>
                                     <textarea
                                         rows={3}
                                         value={editCat.description}
                                         onChange={(e) => setEditCat(prev => ({ ...prev, description: e.target.value }))}
+                                        placeholder="Briefly define the scope..."
                                         className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-3 text-sm font-medium focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none"
                                     ></textarea>
                                 </div>
@@ -203,6 +205,7 @@ export default function CategoryManagementScreen() {
                                         type="number"
                                         value={editCat.adminCommission}
                                         onChange={(e) => setEditCat(prev => ({ ...prev, adminCommission: e.target.value }))}
+                                        placeholder="0"
                                         className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-3 text-sm font-bold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
                                     />
                                 </div>
@@ -219,7 +222,7 @@ export default function CategoryManagementScreen() {
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Category Visual Asset</label>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Category Image</label>
                                     <div className="relative aspect-video bg-slate-50 border-2 border-dashed border-slate-200 rounded-sm flex flex-col items-center justify-center space-y-2 group/upload cursor-pointer hover:bg-white hover:border-emerald-500 transition-all overflow-hidden">
                                         {(editCat.image || editCat.file) ? (
                                             <>

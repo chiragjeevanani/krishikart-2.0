@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { getCurrentLocation, reverseGeocode } from '@/lib/geo';
+import { getCurrentLocation, reverseGeocode, reverseGeocodeWithComponents } from '@/lib/geo';
 
 const LocationContext = createContext();
 
@@ -25,6 +25,7 @@ export function LocationProvider({ children }) {
     // Delivery drop location (accurate pin from map)
     const [deliveryLocation, setDeliveryLocation] = useState(null);
     const [deliveryAddress, setDeliveryAddress] = useState(null);
+    const [deliveryAddressComponents, setDeliveryAddressComponents] = useState(null);
     const [hasDeliveryPinned, setHasDeliveryPinned] = useState(false);
 
     const [loading, setLoading] = useState(false);
@@ -44,10 +45,12 @@ export function LocationProvider({ children }) {
         // Delivery (checkout)
         const savedDelLoc = localStorage.getItem('kk_delivery_location');
         const savedDelAddr = localStorage.getItem('kk_delivery_address');
+        const savedDelComp = localStorage.getItem('kk_delivery_address_components');
         const savedDelPinned = localStorage.getItem('kk_delivery_location_pinned');
 
         if (savedDelLoc) setDeliveryLocation(JSON.parse(savedDelLoc));
         if (savedDelAddr) setDeliveryAddress(savedDelAddr);
+        if (savedDelComp) setDeliveryAddressComponents(JSON.parse(savedDelComp));
         if (savedDelPinned === 'true') setHasDeliveryPinned(true);
     }, []);
 
@@ -84,17 +87,22 @@ export function LocationProvider({ children }) {
         setDeliveryLocation(normalized);
         localStorage.setItem('kk_delivery_location', JSON.stringify(normalized));
 
-        let addr = loc.address || null;
-        if (!addr) {
-            addr = await reverseGeocode(lat, lng);
+        let res = null;
+        if (loc.address && loc.addressComponents) {
+            res = { formattedAddress: loc.address, addressComponents: loc.addressComponents };
+        } else {
+            res = await reverseGeocodeWithComponents(lat, lng);
         }
 
-        if (addr) {
-            setDeliveryAddress(addr);
-            localStorage.setItem('kk_delivery_address', addr);
+        if (res) {
+            setDeliveryAddress(res.formattedAddress);
+            setDeliveryAddressComponents(res.addressComponents);
+            localStorage.setItem('kk_delivery_address', res.formattedAddress);
+            localStorage.setItem('kk_delivery_address_components', JSON.stringify(res.addressComponents));
         } else {
             const fallbackAddr = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
             setDeliveryAddress(fallbackAddr);
+            setDeliveryAddressComponents(null);
         }
 
         setHasDeliveryPinned(true);
@@ -161,6 +169,7 @@ export function LocationProvider({ children }) {
         // delivery fields
         deliveryLocation,
         deliveryAddress,
+        deliveryAddressComponents,
         hasDeliveryPinned,
         setPinnedDeliveryLocation,
         updateDeliveryLocation,
@@ -176,6 +185,7 @@ export function LocationProvider({ children }) {
         updateFranchiseLocation,
         deliveryLocation,
         deliveryAddress,
+        deliveryAddressComponents,
         hasDeliveryPinned,
         loading,
         error,

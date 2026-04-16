@@ -34,6 +34,7 @@ export async function fetchFranchiseCandidatesForLocation(
   lng,
   excludeIds = [],
   categoryIds = [],
+  city = null,
 ) {
   const orderHex = latLngToCell(lat, lng, 8);
 
@@ -44,6 +45,11 @@ export async function fetchFranchiseCandidatesForLocation(
     status: "active",
     _id: { $nin: excludeIds },
   };
+
+  // Strict City Filter
+  if (city) {
+    baseQuery.city = { $regex: new RegExp(`^${city}$`, "i") };
+  }
 
   const categoryObjectIds = (categoryIds || [])
     .map((id) => {
@@ -104,8 +110,8 @@ export async function fetchFranchiseCandidatesForLocation(
 }
 
 /** Franchises that can serve this pin (no category filter) — for browsing / inventory union. */
-export async function findFranchisesServingLocation(lat, lng) {
-  return fetchFranchiseCandidatesForLocation(lat, lng, [], []);
+export async function findFranchisesServingLocation(lat, lng, city = null) {
+  return fetchFranchiseCandidatesForLocation(lat, lng, [], [], city);
 }
 
 /**
@@ -119,6 +125,7 @@ export const findNearestFranchise = async (
   location,
   excludeIds = [],
   categoryIds = [],
+  city = null,
 ) => {
   try {
     const { lat, lng } = location;
@@ -130,6 +137,7 @@ export const findNearestFranchise = async (
       lng,
       excludeIds,
       categoryIds,
+      city,
     );
 
     const currentTime = new Intl.DateTimeFormat("en-GB", {
@@ -224,10 +232,22 @@ export const assignOrderToFranchise = async (orderId) => {
       lng: Number(coords[0]),
     };
 
+    // Extract city from shippingAddress if available
+    let city = null;
+    if (order.shippingAddress) {
+        const parts = order.shippingAddress.split(',');
+        // Usually city is the second to last part in the buildFullAddress logic
+        // Flat, Floor, Colony, Landmark, City, State
+        if (parts.length >= 2) {
+            city = parts[parts.length - 2].trim();
+        }
+    }
+
     const franchise = await findNearestFranchise(
       location,
       excludeIds,
       categoryIds,
+      city
     );
 
     if (franchise) {

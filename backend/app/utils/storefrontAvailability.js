@@ -16,8 +16,8 @@ export function franchiseServesCategory(franchise, categoryId) {
  * that serves the product category. Values are plain numbers / ObjectIds.
  * @returns {Map<string, { franchiseId: import('mongoose').Types.ObjectId, listPrice: number, effectivePrice: number }>}
  */
-export async function getStorefrontOffersByProduct(lat, lng) {
-  const franchises = await findFranchisesServingLocation(lat, lng);
+export async function getStorefrontOffersByProduct(lat, lng, city = null) {
+  const franchises = await findFranchisesServingLocation(lat, lng, city);
   if (!franchises.length) return new Map();
 
   const franchiseIds = franchises.map((f) => f._id);
@@ -153,13 +153,13 @@ export async function getStorefrontOffersByProduct(lat, lng) {
   return offerMap;
 }
 
-export async function getStorefrontProductIdsForLocation(lat, lng) {
-  const m = await getStorefrontOffersByProduct(lat, lng);
+export async function getStorefrontProductIdsForLocation(lat, lng, city = null) {
+  const m = await getStorefrontOffersByProduct(lat, lng, city);
   return [...m.keys()];
 }
 
-export async function getStorefrontCategoryIdsForLocation(lat, lng) {
-  const franchises = await findFranchisesServingLocation(lat, lng);
+export async function getStorefrontCategoryIdsForLocation(lat, lng, city = null) {
+  const franchises = await findFranchisesServingLocation(lat, lng, city);
   if (!franchises.length) return [];
 
   const explicitCategoryIds = new Set();

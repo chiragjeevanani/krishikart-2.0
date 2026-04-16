@@ -200,6 +200,7 @@ export const getProducts = async (req, res) => {
 
         const lat = req.query.lat != null ? parseFloat(req.query.lat) : null;
         const lng = req.query.lng != null ? parseFloat(req.query.lng) : null;
+        const city = req.query.city || null;
         const useLocationFilter =
             Number.isFinite(lat) &&
             Number.isFinite(lng) &&
@@ -210,7 +211,7 @@ export const getProducts = async (req, res) => {
 
         let offersByProduct = null;
         if (useLocationFilter) {
-            offersByProduct = await getStorefrontOffersByProduct(lat, lng);
+            offersByProduct = await getStorefrontOffersByProduct(lat, lng, city);
             const allowedIds = [...offersByProduct.keys()];
             if (!allowedIds.length) {
                 return handleResponse(res, 200, "SKU inventory fetched", []);
@@ -256,6 +257,7 @@ export const getProductById = async (req, res) => {
         const { id } = req.params;
         const lat = req.query.lat != null ? parseFloat(req.query.lat) : null;
         const lng = req.query.lng != null ? parseFloat(req.query.lng) : null;
+        const city = req.query.city || null;
         const useLocationFilter =
             Number.isFinite(lat) &&
             Number.isFinite(lng) &&
@@ -275,7 +277,7 @@ export const getProductById = async (req, res) => {
 
         let payload = product;
         if (useLocationFilter) {
-            const offers = await getStorefrontOffersByProduct(lat, lng);
+            const offers = await getStorefrontOffersByProduct(lat, lng, city);
             const offer = offers.get(id);
             if (offer) {
                 payload = {

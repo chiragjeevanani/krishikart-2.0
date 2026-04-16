@@ -72,27 +72,27 @@ export default function SubcategoryManagementScreen() {
                             className="bg-white rounded-sm shadow-2xl w-full max-w-md relative z-10 overflow-hidden"
                         >
                             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                                <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">New Secondary Branch</h3>
+                                <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">New Subcategory</h3>
                                 <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-900">
                                     <X size={16} />
                                 </button>
                             </div>
                             <div className="p-6 space-y-6">
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Primary Category Map</label>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Parent Category</label>
                                     <select
                                         value={newSub.categoryId}
                                         onChange={(e) => setNewSub(prev => ({ ...prev, categoryId: e.target.value }))}
                                         className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-3 text-sm font-bold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all appearance-none cursor-pointer"
                                     >
-                                        <option value="">Select Parent Taxonomy...</option>
+                                        <option value="">Select Parent Category...</option>
                                         {categories.map(cat => (
                                             <option key={cat._id} value={cat._id}>{cat.name}</option>
                                         ))}
                                     </select>
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Subcategory Title</label>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Subcategory Name</label>
                                     <input
                                         autoFocus
                                         type="text"
@@ -104,7 +104,7 @@ export default function SubcategoryManagementScreen() {
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Subcategory Visual Asset</label>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Subcategory Image</label>
                                     <div className="relative aspect-video bg-slate-50 border-2 border-dashed border-slate-200 rounded-sm flex flex-col items-center justify-center space-y-2 group/upload cursor-pointer hover:bg-white hover:border-emerald-500 transition-all overflow-hidden">
                                         {newSub.image ? (
                                             <>
@@ -166,32 +166,33 @@ export default function SubcategoryManagementScreen() {
                             className="bg-white rounded-sm shadow-2xl w-full max-w-md relative z-10 overflow-hidden"
                         >
                             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                                <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Modify Branch</h3>
+                                <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Edit Subcategory</h3>
                                 <button onClick={() => setShowEditModal(false)} className="text-slate-400 hover:text-slate-900">
                                     <X size={16} />
                                 </button>
                             </div>
                             <div className="p-6 space-y-6">
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Primary Category Map</label>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Parent Category</label>
                                     <select
                                         value={editSub.categoryId}
                                         onChange={(e) => setEditSub(prev => ({ ...prev, categoryId: e.target.value }))}
                                         className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-3 text-sm font-bold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all appearance-none cursor-pointer"
                                     >
-                                        <option value="">Select Parent Taxonomy...</option>
+                                        <option value="">Select Parent Category...</option>
                                         {categories.map(cat => (
                                             <option key={cat._id} value={cat._id}>{cat.name}</option>
                                         ))}
                                     </select>
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Subcategory Title</label>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Subcategory Name</label>
                                     <input
                                         type="text"
                                         value={editSub.name}
                                         onChange={(e) => setEditSub(prev => ({ ...prev, name: e.target.value }))}
-                                        className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-3 text-sm font-bold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                                        placeholder="e.g. Exotic Fruits"
+                                        className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-3 text-sm font-bold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-300"
                                     />
                                 </div>
 
@@ -207,7 +208,7 @@ export default function SubcategoryManagementScreen() {
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Subcategory Visual Asset</label>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Subcategory Image</label>
                                     <div className="relative aspect-video bg-slate-50 border-2 border-dashed border-slate-200 rounded-sm flex flex-col items-center justify-center space-y-2 group/upload cursor-pointer hover:bg-white hover:border-emerald-500 transition-all overflow-hidden">
                                         {(editSub.image || editSub.file) ? (
                                             <>

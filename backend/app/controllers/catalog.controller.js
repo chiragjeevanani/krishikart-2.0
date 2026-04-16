@@ -46,6 +46,7 @@ export const getCategories = async (req, res) => {
   try {
     const lat = req.query.lat != null ? parseFloat(req.query.lat) : null;
     const lng = req.query.lng != null ? parseFloat(req.query.lng) : null;
+    const city = req.query.city || null;
     const useLocation =
       Number.isFinite(lat) &&
       Number.isFinite(lng) &&
@@ -59,7 +60,7 @@ export const getCategories = async (req, res) => {
       return handleResponse(res, 200, "Categories fetched", categories);
     }
 
-    const catIds = await getStorefrontCategoryIdsForLocation(lat, lng);
+    const catIds = await getStorefrontCategoryIdsForLocation(lat, lng, city);
     if (!catIds.length) {
       return handleResponse(res, 200, "Categories fetched", []);
     }
@@ -200,7 +201,17 @@ export const updateSubcategory = async (req, res) => {
     }
 
     if (name) subcategory.name = capitalizeFirst(name);
-    if (category) subcategory.category = category;
+    
+    const oldCategory = subcategory.category.toString();
+    if (category && category.toString() !== oldCategory) {
+        subcategory.category = category;
+        // Update all products in this subcategory to the new parent category
+        await Product.updateMany(
+            { subcategory: id },
+            { $set: { category: category } }
+        );
+    }
+
     if (isVisible !== undefined) subcategory.isVisible = isVisible;
 
     if (req.file) {
@@ -221,6 +232,16 @@ export const updateSubcategory = async (req, res) => {
 export const deleteSubcategory = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Check if products exist in this subcategory
+    const productExists = await Product.findOne({ subcategory: id });
+    if (productExists) {
+        return handleResponse(
+            res,
+            400,
+            "Cannot delete subcategory with active products. Please reassign products first.",
+        );
+    }
 
     const subcategory = await Subcategory.findByIdAndDelete(id);
     if (!subcategory) {

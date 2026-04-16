@@ -1,9 +1,11 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import api from '@/lib/axios';
+import { useUserAuth } from './UserAuthContext';
 
 const WishlistContext = createContext();
 
 export function WishlistProvider({ children }) {
+    const { isAuthenticated } = useUserAuth();
     const [wishlistItems, setWishlistItems] = useState([]);
     const hasFetchedRef = useRef(false);
 
@@ -37,6 +39,7 @@ export function WishlistProvider({ children }) {
                         id: p._id // Ensure compatibility
                     }));
                 setWishlistItems(items);
+                localStorage.setItem('kk_wishlist', JSON.stringify(items));
             }
         } catch (error) {
             if (import.meta.env.DEV && error?.response?.status !== 500) {
@@ -47,10 +50,8 @@ export function WishlistProvider({ children }) {
     };
 
     useEffect(() => {
-        if (hasFetchedRef.current) return;
-        hasFetchedRef.current = true;
         fetchWishlist();
-    }, []);
+    }, [isAuthenticated]);
 
     const toggleWishlist = async (product) => {
         const token = localStorage.getItem('userToken') || localStorage.getItem('token');
@@ -58,12 +59,12 @@ export function WishlistProvider({ children }) {
 
         // Optimistic update
         setWishlistItems((prev) => {
-            const isExist = prev.find((item) => item.id === productId);
+            const isExist = prev.find((item) => (item._id || item.id) === productId);
             let newItems;
             if (isExist) {
-                newItems = prev.filter((item) => item.id !== productId);
+                newItems = prev.filter((item) => (item._id || item.id) !== productId);
             } else {
-                newItems = [...prev, { ...product, id: productId }];
+                newItems = [...prev, { ...product, id: productId, _id: productId }];
             }
             localStorage.setItem('kk_wishlist', JSON.stringify(newItems));
             return newItems;
@@ -71,15 +72,27 @@ export function WishlistProvider({ children }) {
 
         if (token) {
             try {
-                await api.post('/user/wishlist/toggle', { productId });
+                const response = await api.post('/user/wishlist/toggle', { productId });
+                if (response.data.success) {
+                    const items = (response.data.result?.products || [])
+                        .filter(p => p)
+                        .map(p => ({
+                            ...p,
+                            id: p._id
+                        }));
+                    setWishlistItems(items);
+                    localStorage.setItem('kk_wishlist', JSON.stringify(items));
+                }
             } catch (error) {
                 console.error("Toggle wishlist API error:", error);
+                // Revert on error or fetch fresh
+                fetchWishlist();
             }
         }
     };
 
     const isWishlisted = (productId) => {
-        return wishlistItems.some((item) => item.id === productId);
+        return wishlistItems.some((item) => (item._id || item.id) === productId);
     };
 
     const wishlistCount = wishlistItems.length;

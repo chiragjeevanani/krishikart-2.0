@@ -39,9 +39,28 @@ export async function resolveCheckoutCoordinates(shippingAddress, shippingLocati
     parsedLng <= 180;
 
   if (hasValidClientCoords) {
-    return { lat: parsedLat, lng: parsedLng };
+    // If coordinates are from client pin, we still need to geocode once to get the city/pincode 
+    // for validation, OR we trust the shippingAddress string. 
+    // To be strict, let's geocode the lat/lng to get the official city.
+    const reverse = await geocodeAddress(`${parsedLat},${parsedLng}`);
+    return { 
+      lat: parsedLat, 
+      lng: parsedLng, 
+      city: reverse?.city || "", 
+      pincode: reverse?.pincode || "" 
+    };
   }
-  return geocodeAddress(shippingAddress);
+
+  const geo = await geocodeAddress(shippingAddress);
+  if (geo) {
+    return {
+      lat: geo.lat,
+      lng: geo.lng,
+      city: geo.city,
+      pincode: geo.pincode
+    };
+  }
+  return null;
 }
 
 /**
@@ -68,6 +87,7 @@ export async function computeSplitCheckoutPayload({
   const offers = await getStorefrontOffersByProduct(
     resolvedLocation.lat,
     resolvedLocation.lng,
+    resolvedLocation.city,
   );
 
   const lines = [];
