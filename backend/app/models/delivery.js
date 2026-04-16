@@ -91,6 +91,22 @@ const deliverySchema = new mongoose.Schema(
     fcmTokens: {
       type: [String],
       default: []
+    },
+
+    pendingDocs: {
+      aadharNumber: String,
+      aadharImage: String,
+      panNumber: String,
+      panImage: String,
+      licenseNumber: String,
+      licenseImage: String,
+      status: {
+        type: String,
+        enum: ["none", "pending", "approved", "rejected"],
+        default: "none"
+      },
+      rejectionReason: String,
+      submittedAt: Date
     }
   },
   { timestamps: true }

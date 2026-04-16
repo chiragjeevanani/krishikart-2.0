@@ -10,7 +10,8 @@ import {
     X,
     Loader2,
     Layers,
-    Check
+    Check,
+    ScrollText
 } from 'lucide-react';
 import api from '@/lib/axios';
 import { useFranchiseAuth } from '../contexts/FranchiseAuthContext';
@@ -55,7 +56,8 @@ export default function ProfileScreen() {
         {
             group: 'Settings',
             items: [
-                { id: 'notifications', label: 'Notifications', icon: Bell, sub: 'Manage order alerts', toggle: true }
+                { id: 'notifications', label: 'Notifications', icon: Bell, sub: 'Manage order alerts', toggle: true },
+                { id: 'terms', label: 'Terms & Conditions', icon: ScrollText, sub: 'Review franchise protocol', onClick: () => navigate('/franchise/terms') }
             ]
         }
     ];

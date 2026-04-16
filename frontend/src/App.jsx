@@ -26,6 +26,7 @@ import AboutScreen from './modules/user/pages/AboutScreen'
 import WishlistScreen from './modules/user/pages/WishlistScreen'
 import CreditInfoScreen from './modules/user/pages/CreditInfoScreen'
 import LocationMapPicker from './modules/user/pages/LocationMapPicker'
+import TermsScreen from './modules/user/pages/TermsScreen'
 import { WishlistProvider } from './modules/user/contexts/WishlistContext'
 import { FilterProvider } from './modules/user/contexts/FilterContext'
 import { LocationProvider } from './modules/user/contexts/LocationContext'
@@ -60,6 +61,8 @@ const FranchiseLogin = lazy(() => import('./modules/franchise/pages/LoginScreen'
 const FranchiseSignup = lazy(() => import('./modules/franchise/pages/SignupScreen'));
 const FranchisePaymentSettings = lazy(() => import('./modules/franchise/pages/PaymentSettingsScreen'));
 const FranchiseReports = lazy(() => import('./modules/franchise/pages/ReportsScreen'));
+const FranchiseTerms = lazy(() => import('./modules/franchise/pages/TermsScreen'));
+const FranchiseHelpSupport = lazy(() => import('./modules/franchise/pages/HelpSupportScreen'));
 
 // Master Admin Module Imports
 import { MasterAdminAuthProvider } from './modules/masteradmin/contexts/MasterAdminAuthContext';
@@ -131,6 +134,7 @@ function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/splash" element={<SplashScreen />} />
+          <Route path="/terms" element={<TermsScreen />} />
           <Route path="/login" element={<UserProviders><LoginScreen /></UserProviders>} />
 
           {/* User Module */}
@@ -172,6 +176,7 @@ function App() {
             <Route index element={<Navigate to="login" replace />} />
             <Route path="login" element={<FranchiseLogin />} />
             <Route path="signup" element={<FranchiseSignup />} />
+            <Route path="terms" element={<FranchiseTerms />} />
             <Route element={<FranchiseAuthGuard />}>
               <Route element={<FranchiseVerificationGuard />}>
               <Route element={<FranchiseLayout />}>
@@ -189,6 +194,7 @@ function App() {
                 <Route path="profile" element={<FranchiseProfile />} />
                 <Route path="payment-settings" element={<FranchisePaymentSettings />} />
                 <Route path="documentation" element={<DocumentationScreen />} />
+                <Route path="help-support" element={<FranchiseHelpSupport />} />
               </Route>
               </Route>
             </Route>

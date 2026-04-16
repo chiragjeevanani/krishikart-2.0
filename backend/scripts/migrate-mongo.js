@@ -5,8 +5,8 @@
 
 import { MongoClient } from 'mongodb';
 
-const SOURCE_URI = 'mongodb+srv://prachi:7694900512@cluster0.nd3xlri.mongodb.net/krishikart?retryWrites=true&w=majority';
-const DEST_URI = 'mongodb+srv://zookretail99_db_user:Krishikart%21%40%23123@cluster0.ombrukk.mongodb.net/Krishikart?retryWrites=true&w=majority';
+const SOURCE_URI = 'mongodb+srv://prachi:7694900512@cluster0.nd3xlri.mongodb.net/kisaankart?retryWrites=true&w=majority';
+const DEST_URI = 'mongodb+srv://zookretail99_db_user:kisaankart%21%40%23123@cluster0.ombrukk.mongodb.net/kisaankart?retryWrites=true&w=majority';
 
 async function migrate() {
   let sourceClient;

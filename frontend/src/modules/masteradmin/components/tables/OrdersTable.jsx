@@ -63,11 +63,11 @@ export default function OrdersTable({ orders, onAction, onOrderClick, onProcure,
                                         "font-bold text-[11px] tracking-widest uppercase",
                                         order.franchiseId ? "text-slate-900" : "text-amber-600"
                                     )}>
-                                        {order.franchiseId ? (order.franchiseId.shopName || order.franchiseId.ownerName) : 'Unassigned'}
+                                        {order.franchiseId ? (order.franchiseId.franchiseName || order.franchiseId.ownerName) : 'Unassigned'}
                                     </span>
                                     {order.franchiseId && (
                                         <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wide mt-0.5">
-                                            {order.franchiseId.shopName ? order.franchiseId.ownerName : order.franchiseId.mobile}
+                                            {order.franchiseId.franchiseName ? order.franchiseId.ownerName : order.franchiseId.mobile}
                                         </span>
                                     )}
                                 </div>

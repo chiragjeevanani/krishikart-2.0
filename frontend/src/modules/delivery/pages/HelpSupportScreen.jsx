@@ -1,12 +1,13 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { HelpCircle, Phone, Mail, ArrowLeft, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import api from '@/lib/axios';
 
 export default function HelpSupportScreen() {
     const navigate = useNavigate();
-
-    const faqs = [
+    const [openIndex, setOpenIndex] = useState(null);
+    const [faqs, setFaqs] = useState([
         {
             q: "How do I accept a delivery?",
             a: "Go to the 'Task Feed' from your dashboard and click 'Accept Task' on any available delivery request."
@@ -23,7 +24,24 @@ export default function HelpSupportScreen() {
             q: "How to update my vehicle info?",
             a: "Go to your Profile and select 'Vehicle Information' to update your vehicle details."
         }
-    ];
+    ]);
+
+    React.useEffect(() => {
+        const fetchFaqs = async () => {
+            try {
+                const { data } = await api.get('/masteradmin/public-faqs', { params: { audience: 'delivery' } });
+                if (data.success) {
+                    const list = data.results || data.result || [];
+                    if (list.length > 0) {
+                        setFaqs(list.map(f => ({ q: f.question, a: f.answer })));
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch delivery FAQs", error);
+            }
+        };
+        fetchFaqs();
+    }, []);
 
     return (
         <div className="flex flex-col min-h-full bg-slate-50 pb-20">
@@ -37,18 +55,24 @@ export default function HelpSupportScreen() {
             <div className="p-6 space-y-8">
                 {/* Contact Options */}
                 <div className="grid grid-cols-2 gap-4">
-                    <button className="bg-white p-6 rounded-3xl border border-border shadow-sm flex flex-col items-center gap-3 active:scale-95 transition-all">
-                        <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center">
+                    <a
+                        href="tel:+918555454446"
+                        className="bg-white p-6 rounded-3xl border border-border shadow-sm flex flex-col items-center gap-3 active:scale-95 hover:shadow-md hover:border-primary/20 transition-all cursor-pointer group"
+                    >
+                        <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
                             <Phone className="w-6 h-6 text-blue-500" />
                         </div>
                         <span className="text-xs font-black uppercase tracking-widest text-foreground">Call Us</span>
-                    </button>
-                    <button className="bg-white p-6 rounded-3xl border border-border shadow-sm flex flex-col items-center gap-3 active:scale-95 transition-all">
-                        <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center">
+                    </a>
+                    <a
+                        href="mailto:support@kisaankart.com"
+                        className="bg-white p-6 rounded-3xl border border-border shadow-sm flex flex-col items-center gap-3 active:scale-95 hover:shadow-md hover:border-primary/20 transition-all cursor-pointer group"
+                    >
+                        <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
                             <Mail className="w-6 h-6 text-purple-500" />
                         </div>
                         <span className="text-xs font-black uppercase tracking-widest text-foreground">Email Support</span>
-                    </button>
+                    </a>
                 </div>
 
                 {/* FAQ Section */}
@@ -56,21 +80,38 @@ export default function HelpSupportScreen() {
                     <h2 className="text-sm font-black uppercase tracking-wider text-muted-foreground px-2">Common Questions</h2>
                     <div className="space-y-3">
                         {faqs.map((faq, i) => (
-                            <motion.div
+                            <div
                                 key={i}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: i * 0.1 }}
-                                className="bg-white rounded-2xl p-5 border border-border shadow-sm"
+                                className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden"
                             >
-                                <div className="flex justify-between items-center gap-4 mb-2">
+                                <button
+                                    onClick={() => setOpenIndex(openIndex === i ? null : i)}
+                                    className="w-full flex justify-between items-center gap-4 p-5 text-left transition-colors hover:bg-slate-50/50"
+                                >
                                     <h3 className="text-sm font-bold text-foreground">{faq.q}</h3>
-                                    <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                                </div>
-                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                    {faq.a}
-                                </p>
-                            </motion.div>
+                                    <motion.div
+                                        animate={{ rotate: openIndex === i ? 180 : 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="text-muted-foreground flex-shrink-0"
+                                    >
+                                        <ChevronDown className="w-4 h-4" />
+                                    </motion.div>
+                                </button>
+                                <AnimatePresence>
+                                    {openIndex === i && (
+                                        <motion.div
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: 'auto', opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            transition={{ duration: 0.3, ease: 'easeInOut' }}
+                                        >
+                                            <div className="px-5 pb-5 text-sm text-muted-foreground leading-relaxed border-t border-slate-50 pt-3">
+                                                {faq.a}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
                         ))}
                     </div>
                 </div>

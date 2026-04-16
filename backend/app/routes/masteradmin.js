@@ -57,6 +57,7 @@ import {
   globalSearch,
   getAllDeliveryPartners,
   updateDeliveryStatus,
+  reviewDeliveryDocs,
   createFAQ,
   getAllFAQs,
   getPublicFAQs,
@@ -197,6 +198,12 @@ router.put(
   protectMasterAdmin,
   requirePermission("approvals"),
   updateDeliveryStatus,
+);
+router.put(
+  "/delivery-partners/:id/docs-review",
+  protectMasterAdmin,
+  requirePermission("approvals"),
+  reviewDeliveryDocs,
 );
 
 /* 👥 Customer Management */

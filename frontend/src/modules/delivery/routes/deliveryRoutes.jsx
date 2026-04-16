@@ -4,6 +4,7 @@ import DeliveryLayout from '../components/layout/DeliveryLayout';
 
 const DeliveryPartnerLogin = lazy(() => import('../pages/DeliveryPartnerLogin'));
 const DeliveryPartnerSignup = lazy(() => import('../pages/SignupScreen'));
+const TermsScreen = lazy(() => import('../pages/TermsScreen'));
 const Dashboard = lazy(() => import('../pages/Dashboard'));
 const DeliveryRequests = lazy(() => import('../pages/DeliveryRequests'));
 const ActiveDelivery = lazy(() => import('../pages/ActiveDelivery'));
@@ -19,6 +20,8 @@ const NotificationSettings = lazy(() => import('../pages/NotificationSettingsScr
 const PrivacySecurity = lazy(() => import('../pages/PrivacySecurityScreen'));
 const ReturnPickupsScreen = lazy(() => import('../pages/ReturnPickupsScreen'));
 const CodRemittanceScreen = lazy(() => import('../pages/CodRemittanceScreen'));
+
+const MyDocumentsScreen = lazy(() => import('../pages/MyDocumentsScreen'));
 
 import { useDeliveryAuth } from '../contexts/DeliveryAuthContext';
 
@@ -56,6 +59,7 @@ export const deliveryRoutes = (
         <Route index element={<Navigate to="login" replace />} />
         <Route path="login" element={withSuspense(DeliveryPartnerLogin)} />
         <Route path="signup" element={withSuspense(DeliveryPartnerSignup)} />
+        <Route path="terms" element={withSuspense(TermsScreen)} />
         <Route element={<ProtectedDeliveryRoute />}>
             <Route element={<DeliveryLayout />}>
                 <Route path="dashboard" element={withSuspense(Dashboard)} />
@@ -71,6 +75,7 @@ export const deliveryRoutes = (
                 <Route path="assignment" element={withSuspense(B2BAssignment)} />
                 <Route path="vehicle" element={withSuspense(VehicleInfo)} />
                 <Route path="help" element={withSuspense(HelpSupport)} />
+                <Route path="documents" element={withSuspense(MyDocumentsScreen)} />
                 <Route path="notifications" element={withSuspense(NotificationSettings)} />
                 <Route path="privacy" element={withSuspense(PrivacySecurity)} />
             </Route>

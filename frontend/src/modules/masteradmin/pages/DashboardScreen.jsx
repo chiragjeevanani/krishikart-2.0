@@ -235,14 +235,13 @@ export default function DashboardScreen() {
             </div>
 
             {/* Operational Grid */}
-            <div className="flex flex-col gap-0">
-
-                {/* Visual Analytics */}
+            <div className="flex flex-col gap-0">                {/* Visual Analytics */}
                 <div className="grid grid-cols-1 xl:grid-cols-2 bg-slate-200 gap-px border-b border-slate-200">
                     <ChartPanel
                         title="Order Statistics"
                         subtitle="Order fulfillment rate"
                         height={340}
+                        data={orderFlow}
                     >
                         <ComparisonChart
                             data={orderFlow}
@@ -256,13 +255,14 @@ export default function DashboardScreen() {
                             targetLabel="SLA Threshold"
                         />
                     </ChartPanel>
-
+ 
                     <ChartPanel
                         title="Revenue Trends"
                         subtitle="Daily revenue (Last 24 hours)"
                         height={340}
+                        data={revenueFlow}
                     >
-                        <ResponsiveContainer width="100%" height="100%" debounce={50}>
+                        <ResponsiveContainer width="100%" height="100%" debounce={50}>50}>
                             <AreaChart data={revenueFlow} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">

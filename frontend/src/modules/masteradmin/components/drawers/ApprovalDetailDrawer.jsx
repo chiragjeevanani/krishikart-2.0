@@ -67,8 +67,32 @@ export default function ApprovalDetailDrawer({ isOpen, onClose, item, type, onAp
         ] :
             isDelivery ? [
                 { type: 'Aadhar Card', fileName: item.aadharNumber || 'Verification Image', url: item.aadharImage, submitted: !!item.aadharImage },
+                ...(item.pendingDocs?.aadharImage || item.pendingDocs?.aadharNumber ? [{
+                    type: 'New Aadhar Request',
+                    fileName: `Update: ${item.pendingDocs.aadharNumber || 'New Image'}`,
+                    url: item.pendingDocs.aadharImage,
+                    isPending: true,
+                    submitted: true
+                }] : []),
+
                 { type: 'PAN Card', fileName: item.panNumber || 'Verification Image', url: item.panImage, submitted: !!item.panImage },
+                ...(item.pendingDocs?.panImage || item.pendingDocs?.panNumber ? [{
+                    type: 'New PAN Request',
+                    fileName: `Update: ${item.pendingDocs.panNumber || 'New Image'}`,
+                    url: item.pendingDocs.panImage,
+                    isPending: true,
+                    submitted: true
+                }] : []),
+
                 { type: 'License Image', fileName: item.licenseNumber || 'Verification Image', url: item.licenseImage, submitted: !!item.licenseImage },
+                ...(item.pendingDocs?.licenseImage || item.pendingDocs?.licenseNumber ? [{
+                    type: 'New License Request',
+                    fileName: `Update: ${item.pendingDocs.licenseNumber || 'New Image'}`,
+                    url: item.pendingDocs.licenseImage,
+                    isPending: true,
+                    submitted: true
+                }] : []),
+
                 { type: 'Vehicle', fileName: `${item.vehicleType?.toUpperCase()}: ${item.vehicleNumber}`, url: null, submitted: true }
             ] :
                 item.supportingDocs || [];

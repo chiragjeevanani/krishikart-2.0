@@ -115,6 +115,21 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
+    const reviewDeliveryDocs = async (id, action, reason) => {
+        try {
+            const response = await api.put(`/masteradmin/delivery-partners/${id}/docs-review`, { action, reason });
+            if (response.data.success) {
+                toast.success(`Delivery documents ${action}d`);
+                return true;
+            }
+            toast.error(response.data?.message || 'Review failed');
+            return false;
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Review failed');
+            return false;
+        }
+    };
+
     const fetchProducts = async () => {
         try {
             const response = await api.get('/products');
@@ -252,6 +267,7 @@ export const AdminProvider = ({ children }) => {
             deliveryPartners,
             fetchDeliveryPartners,
             updateDeliveryPartnerStatus,
+            reviewDeliveryDocs,
             isQuotationAlertOpen,
             setIsQuotationAlertOpen,
             newQuotationData

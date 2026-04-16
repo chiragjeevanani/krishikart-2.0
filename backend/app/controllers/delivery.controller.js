@@ -141,14 +141,14 @@ export const createCodRazorpayOrder = async (req, res) => {
         const options = {
             amount: Math.round(amount * 100),
             currency: "INR",
-            receipt: `remit_dlv_${req.delivery._id}_${Date.now()}`,
+            receipt: `rcpt_${String(req.delivery._id).slice(-6)}_${Date.now().toString().slice(-8)}`,
         };
 
         const order = await razorpay.orders.create(options);
         return handleResponse(res, 200, "Razorpay order created", order);
     } catch (error) {
         console.error("Razorpay create remit order error:", error);
-        return handleResponse(res, 500, "Payment initialization failed");
+        return handleResponse(res, 500, error.message || "Payment initialization failed");
     }
 };
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Bell,
@@ -16,8 +17,9 @@ import api from '@/lib/axios';
 import { toast } from 'sonner';
 
 const Dashboard = () => {
+    const navigate = useNavigate();
     const { delivery, setDelivery, loading: authLoading, isAuthenticated, logout } = useDeliveryAuth();
-    const { dispatchedOrders } = useDeliveryOrders();
+    const { dispatchedOrders, taskCount } = useDeliveryOrders();
     const [isOnline, setIsOnline] = useState(delivery?.isOnline ?? true);
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -33,32 +35,38 @@ const Dashboard = () => {
         }
     }, [delivery]);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const response = await api.get('/orders/delivery/history');
-                if (response.data.success) {
-                    setHistory(response.data.results || []);
-                }
-            } catch (error) {
-                console.error('Fetch history error:', error);
-                if (error.response?.status === 401) {
-                    // Only logout if session is truly invalid; centralize cleanup in auth context.
-                    logout?.();
-                    return;
-                }
-                // alert('Fetch failed: ' + (error.response?.status || error.message)); // Optional alert for user feedback
-            } finally {
-                setLoading(false);
+    const fetchHistory = async () => {
+        try {
+            const response = await api.get('/orders/delivery/history');
+            if (response.data.success) {
+                setHistory(response.data.results || []);
             }
-        };
+        } catch (error) {
+            console.error('Fetch history error:', error);
+            if (error.response?.status === 401) {
+                logout?.();
+                return;
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         if (authLoading) return;
         if (!isAuthenticated) {
             setLoading(false);
             return;
         }
-        fetchData();
+        fetchHistory();
     }, [authLoading, isAuthenticated, logout]);
+
+    // Re-fetch history whenever dispatched orders count changes (a delivery was completed)
+    useEffect(() => {
+        if (isAuthenticated && !authLoading) {
+            fetchHistory();
+        }
+    }, [dispatchedOrders.length]);
 
     const toggleOnline = async () => {
         if (isUpdating) return;
@@ -88,8 +96,16 @@ const Dashboard = () => {
         }
     };
 
-    const today = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-    const completedCount = history.filter(item => item.date === today).length;
+    // Use local YYYY-MM-DD for reliable date comparison (same approach as DeliveryHistory page)
+    const todayStr = new Date().toLocaleDateString('en-CA'); // 'en-CA' gives YYYY-MM-DD
+    const completedCount = history.filter(item => {
+        const itemDate = item.rawDate
+            ? new Date(item.rawDate).toLocaleDateString('en-CA')
+            : item.date
+                ? new Date(item.date).toLocaleDateString('en-CA')
+                : null;
+        return itemDate === todayStr;
+    }).length;
 
     if (loading) {
         return (
@@ -117,9 +133,16 @@ const Dashboard = () => {
                 </div>
                 <div className="flex items-center gap-3">
 
-                    <button className="relative p-3 rounded-2xl bg-muted/30 text-foreground active:scale-95 transition-all">
+                    <button
+                        onClick={() => navigate('/delivery/notifications')}
+                        className="relative p-3 rounded-2xl bg-muted/30 text-foreground active:scale-95 transition-all hover:bg-muted/50"
+                    >
                         <Bell className="w-5 h-5" />
-                        <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
+                        {taskCount > 0 && (
+                            <span className="absolute top-2 right-2 min-w-[16px] h-4 bg-rose-500 rounded-full border-2 border-white flex items-center justify-center text-[8px] font-black text-white px-0.5">
+                                {taskCount > 9 ? '9+' : taskCount}
+                            </span>
+                        )}
                     </button>
                     <button
                         onClick={toggleOnline}
@@ -155,7 +178,7 @@ const Dashboard = () => {
                 <div className="grid grid-cols-2 gap-4">
                     <MetricCard
                         title="New Tasks"
-                        value={dispatchedOrders.length}
+                        value={taskCount}
                         icon={Package}
                         color="bg-blue-600 shadow-blue-200"
                     />
@@ -196,9 +219,18 @@ const Dashboard = () => {
                         </h3>
                     </div>
 
-                    {history.filter(item => item.date === today).length > 0 ? (
+                    {(() => {
+                        const todayItems = history.filter(item => {
+                            const itemDate = item.rawDate
+                                ? new Date(item.rawDate).toLocaleDateString('en-CA')
+                                : item.date
+                                    ? new Date(item.date).toLocaleDateString('en-CA')
+                                    : null;
+                            return itemDate === todayStr;
+                        });
+                        return todayItems.length > 0 ? (
                         <div className="space-y-3">
-                            {history.filter(item => item.date === today).map((task) => (
+                            {todayItems.map((task) => (
                                 <motion.div
                                     key={task.id}
                                     whileTap={{ scale: 0.98 }}
@@ -220,7 +252,9 @@ const Dashboard = () => {
                                 </motion.div>
                             ))}
                         </div>
-                    ) : (
+                        ) : null;
+                    })()}
+                    {completedCount === 0 && (
                         <div className="py-6 text-center bg-slate-50 rounded-3xl border border-dashed border-slate-200">
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No deliveries yet today</p>
                         </div>

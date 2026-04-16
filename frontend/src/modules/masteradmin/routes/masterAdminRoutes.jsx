@@ -10,6 +10,7 @@ import {
 // Public Screens
 import LoginScreen from "../pages/LoginScreen";
 import ForgotPasswordScreen from "../pages/ForgotPasswordScreen";
+import TermsScreen from "../pages/TermsScreen";
 
 // Lazy loaded screens
 const Dashboard = lazy(() => import("../pages/DashboardScreen"));
@@ -62,6 +63,7 @@ const CodRemittance = lazy(() => import("../pages/CodRemittanceScreen"));
 const FAQManagement = lazy(() => import("../pages/FAQManagementScreen"));
 const LegalPagesManagement = lazy(() => import("../pages/LegalPagesManagementScreen"));
 const GlobalServiceMap = lazy(() => import("../pages/GlobalServiceMap"));
+const CustomerManagement = lazy(() => import("../pages/CustomerManagementScreen"));
 
 const AdminRootRedirect = () => {
   const { isAuthenticated, loading } = useMasterAdminAuth();
@@ -152,6 +154,7 @@ export const masterAdminRoutes = (
     {/* Public Routes - No Auth Required */}
     <Route path="login" element={<LoginScreen />} />
     <Route path="forgot-password" element={<ForgotPasswordScreen />} />
+    <Route path="terms" element={<TermsScreen />} />
 
     {/* Protected System Environment */}
     <Route element={<ProtectedAdminRoute />}>
@@ -199,6 +202,11 @@ export const masterAdminRoutes = (
           path="credit"
           element={<PermissionRoute permissionKey="credit" />}>
           <Route index element={<CreditManagement />} />
+        </Route>
+        <Route
+          path="customers"
+          element={<PermissionRoute permissionKey="credit" />}>
+          <Route index element={<CustomerManagement />} />
         </Route>
         <Route
           path="ledger"

@@ -283,6 +283,14 @@ const DeliveryPartnerLogin = () => {
                         <span className="text-[10px] font-black tracking-widest text-slate-500 uppercase italic">Enterprise Encryption</span>
                     </div>
 
+                    <button 
+                        type="button"
+                        onClick={() => navigate('/delivery/terms')}
+                        className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] hover:text-primary transition-colors border-b border-slate-100"
+                    >
+                        Terms & Conditions
+                    </button>
+
                     <p className="text-center text-[10px] text-slate-400 leading-relaxed uppercase tracking-[0.2em] font-bold">
                         Need Help? Contact <br />
                         <span className="text-slate-900">Fleet Support Team</span>

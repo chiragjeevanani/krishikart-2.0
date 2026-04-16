@@ -13,8 +13,10 @@ import {
 export const getVendorInventory = async (req, res) => {
     try {
         const vendorId = req.vendor._id;
+        console.log(`[Debug] Fetching inventory for Vendor ID: ${vendorId}`);
 
         const inventory = await syncInventoryToAssignedProducts(vendorId);
+        console.log(`[Debug] Sync result for ${vendorId}:`, inventory ? 'Success' : 'Failed (null)');
         if (!inventory) {
             return handleResponse(res, 404, "Vendor not found");
         }

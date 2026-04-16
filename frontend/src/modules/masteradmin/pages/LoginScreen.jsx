@@ -138,7 +138,14 @@ export default function LoginScreen() {
                     </button>
                 </form>
 
-                <div className="mt-12 pt-8 border-t border-slate-50 text-center">
+                <div className="mt-12 pt-8 border-t border-slate-50 text-center space-y-3">
+                    <button 
+                        type="button"
+                        onClick={() => navigate('/masteradmin/terms')}
+                        className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] hover:text-primary underline underline-offset-4 decoration-slate-200"
+                    >
+                        Review Network Terms
+                    </button>
                     <p className="text-[10px] text-slate-300 font-bold uppercase tracking-[0.2em]">
                         Part of Appzeto Kisaankart Ecosystem
                     </p>

@@ -421,3 +421,39 @@ export const updateDeliveryProfile = async (req, res) => {
     return handleResponse(res, 500, "Server error");
   }
 };
+
+/* ================= SUBMIT DOCUMENT UPDATE ================= */
+export const submitDocumentUpdate = async (req, res) => {
+  try {
+    const deliveryId = req.delivery._id;
+    const { aadharNumber, panNumber, licenseNumber } = req.body;
+
+    const updateData = {
+      status: "pending",
+      submittedAt: new Date()
+    };
+
+    if (aadharNumber) updateData.aadharNumber = aadharNumber;
+    if (panNumber) updateData.panNumber = panNumber;
+    if (licenseNumber) updateData.licenseNumber = licenseNumber;
+
+    if (req.files?.aadharImage?.[0]) {
+      updateData.aadharImage = await uploadToCloudinary(req.files.aadharImage[0].buffer, "delivery/pending/aadhar");
+    }
+    if (req.files?.panImage?.[0]) {
+      updateData.panImage = await uploadToCloudinary(req.files.panImage[0].buffer, "delivery/pending/pan");
+    }
+    if (req.files?.licenseImage?.[0]) {
+      updateData.licenseImage = await uploadToCloudinary(req.files.licenseImage[0].buffer, "delivery/pending/license");
+    }
+
+    await Delivery.findByIdAndUpdate(deliveryId, {
+      $set: { pendingDocs: updateData }
+    });
+
+    return handleResponse(res, 200, "Document update request submitted for admin approval");
+  } catch (err) {
+    console.error("Submit document update error:", err);
+    return handleResponse(res, 500, "Server error: " + err.message);
+  }
+};

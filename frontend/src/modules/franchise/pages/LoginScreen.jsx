@@ -126,7 +126,7 @@ export default function LoginScreen() {
                     </div>
                     <div className="flex flex-col">
                         <span className="text-white text-lg font-black tracking-tight leading-none uppercase">Kisaankart</span>
-                        <span className="text-[10px] text-slate-500 font-bold tracking-[0.3em] uppercase">Franchise Partner</span>
+                        <span className="text-[10px] text-slate-500 font-bold tracking-[0.3em] uppercase">Franchise Terminal</span>
                     </div>
                 </div>
 
@@ -136,7 +136,7 @@ export default function LoginScreen() {
                     </div>
                     <h1 className="text-5xl font-black text-white tracking-tighter leading-[0.9] uppercase">
                         Franchise <br />
-                        Partner <br />
+                        Access <br />
                         Login.
                     </h1>
                     <p className="text-slate-400 text-sm font-medium leading-relaxed uppercase tracking-tight">
@@ -177,7 +177,7 @@ export default function LoginScreen() {
                             <span className="text-slate-900 border-b border-slate-900 pb-px">Login</span>
                         </div>
                         <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter leading-none">Account Access</h2>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Verify your partner identity</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Verify your franchise identity</p>
                     </div>
 
                     <form onSubmit={mode === 'mobile' ? handleNext : handleLogin} className="space-y-6">
@@ -221,7 +221,7 @@ export default function LoginScreen() {
                                         onClick={() => navigate('/franchise/signup')}
                                         className="w-full text-[10px] font-black text-slate-400 uppercase tracking-widest py-2 hover:text-slate-900 transition-colors underline underline-offset-8 decoration-slate-200"
                                     >
-                                        Register as New Partner
+                                        Register as New Franchise
                                     </button>
                                 </motion.div>
                             ) : (
@@ -289,8 +289,8 @@ export default function LoginScreen() {
                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em]">Secure Connection Active</span>
                         </div>
                         <p className="text-[9px] text-slate-300 font-bold uppercase tracking-widest text-center leading-relaxed">
-                            Kisaankart Partner Security Protocol v2.4.0<br />
-                            By logging in, you agree to our partner terms and compliance.
+                            Kisaankart Franchise Security Protocol v2.4.0<br />
+                            By logging in, you agree to our <button type="button" onClick={() => navigate('/franchise/terms')} className="text-slate-900 border-b border-slate-900">Franchise Terms</button> and compliance.
                         </p>
                     </div>
                 </motion.div>

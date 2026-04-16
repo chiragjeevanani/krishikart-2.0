@@ -9,7 +9,8 @@ import {
     LogOut,
     ChevronRight,
     Star,
-    Settings
+    Settings,
+    FileText
 } from 'lucide-react';
 import { useDeliveryAuth } from '../contexts/DeliveryAuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -19,7 +20,8 @@ const Profile = () => {
     const navigate = useNavigate();
 
     const menuItems = [
-        { label: 'Vehicle Information', icon: Truck, color: 'text-blue-500', bg: 'bg-blue-50', path: '/delivery/vehicle' },
+        { label: 'My Documents', icon: FileText, color: 'text-blue-500', bg: 'bg-blue-50', path: '/delivery/documents' },
+        { label: 'Vehicle Information', icon: Truck, color: 'text-amber-500', bg: 'bg-amber-50', path: '/delivery/vehicle' },
         { label: 'COD Remittance', icon: Settings, color: 'text-emerald-500', bg: 'bg-emerald-50', path: '/delivery/cod-remittance' },
         { label: 'Help & Support', icon: HelpCircle, color: 'text-purple-500', bg: 'bg-purple-50', path: '/delivery/help' },
     ];

@@ -7,6 +7,7 @@ import {
   forgotDeliveryPassword,
   resetDeliveryPassword,
   updateDeliveryProfile,
+  submitDocumentUpdate,
 } from "../controllers/delivery.auth.js";
 
 
@@ -44,6 +45,11 @@ router.get("/me", protectDelivery, getDeliveryMe);
 router.post("/forgot-password", forgotDeliveryPassword);
 router.post("/reset-password", resetDeliveryPassword);
 router.put("/profile", protectDelivery, updateDeliveryProfile);
+router.put("/profile/documents", protectDelivery, upload.fields([
+  { name: "aadharImage", maxCount: 1 },
+  { name: "panImage", maxCount: 1 },
+  { name: "licenseImage", maxCount: 1 }
+]), submitDocumentUpdate);
 
 // Public/Franchise access to partners list
 router.get(

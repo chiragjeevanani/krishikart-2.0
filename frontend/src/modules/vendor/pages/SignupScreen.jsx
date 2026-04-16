@@ -447,6 +447,13 @@ export default function SignupScreen() {
                         </div>
                     </div>
 
+                    <div className="md:col-span-2 text-center py-2">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
+                           By registering, you agree to our <br/>
+                           <button type="button" onClick={() => navigate('/vendor/terms')} className="text-slate-900 border-b border-slate-200">Vendor Terms & Conditions</button>
+                        </p>
+                    </div>
+
                     <button
                         type="submit"
                         disabled={isLoading}

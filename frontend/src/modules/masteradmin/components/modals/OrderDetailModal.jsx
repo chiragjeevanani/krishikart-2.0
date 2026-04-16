@@ -406,7 +406,7 @@ const OrderDetailModal = ({ isOpen, onClose, orderId, onProcure, onAllowPartial 
                                                             <Building2 size={16} />
                                                         </div>
                                                         <div>
-                                                            <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-tight">{order.franchiseId?.shopName || order.franchiseId?.storeName || 'Primary Facility'}</h4>
+                                                            <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-tight">{order.franchiseId?.franchiseName || order.franchiseId?.storeName || 'Primary Facility'}</h4>
                                                             <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Assigned Unit</p>
                                                         </div>
                                                     </div>

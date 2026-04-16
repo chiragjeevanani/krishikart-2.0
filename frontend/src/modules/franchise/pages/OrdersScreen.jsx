@@ -195,7 +195,7 @@ export default function OrdersScreen() {
 
     const orderColumns = [
         {
-            header: 'Store / Shop',
+            header: 'Customer Name',
             key: 'hotelName',
             render: (val, row) => (
                 <div className="flex flex-col">
@@ -482,7 +482,7 @@ export default function OrdersScreen() {
                                 <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" size={14} />
                                 <input
                                     type="text"
-                                    placeholder="Search by Order ID or Store..."
+                                    placeholder="Search by Order ID or Customer..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value.trim())}
                                     className="bg-white border border-slate-200 rounded-sm py-1.5 pl-9 pr-4 outline-none text-[11px] font-black text-slate-900 placeholder:text-slate-400 focus:border-slate-400 transition-all font-sans min-w-[240px]"

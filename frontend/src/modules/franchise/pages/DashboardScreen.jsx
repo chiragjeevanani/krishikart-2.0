@@ -108,7 +108,7 @@ export default function DashboardScreen() {
 
     const orderColumns = [
         {
-            header: 'Store / Shop',
+            header: 'Customer Name',
             key: 'hotelName',
             render: (val, row) => (
                 <div className="flex flex-col">

@@ -251,7 +251,7 @@ export default function OrderDetailScreen() {
                         {/* Summary Header */}
                         <div className="bg-slate-900 p-8 text-white rounded-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden">
                             <div className="relative z-10">
-                                <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.3em] mb-2 leading-none">Store Details</p>
+                                <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.3em] mb-2 leading-none">Customer Details</p>
                                 <h2 className="text-3xl font-black tracking-tighter uppercase leading-none mb-4">{order.customer || order.hotelName}</h2>
                                 <div className="flex items-center gap-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                                     <div className="flex items-center gap-1.5">

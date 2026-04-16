@@ -190,7 +190,7 @@ export default function LandingPage() {
             {/* ── NAVBAR ── */}
             <nav className={`lp-navbar ${scrolled ? 'scrolled' : ''}`}>
                 <Link to="/" className="lp-navbar-logo">
-                    <img src="/logo.png" alt="KrishiKart" className="lp-navbar-logo-img" />
+                    <img src="/logo.png" alt="kisaankart" className="lp-navbar-logo-img" />
                 </Link>
                 <div className="lp-navbar-center">
                     <a href="#quality" className="lp-navbar-link">Quality</a>

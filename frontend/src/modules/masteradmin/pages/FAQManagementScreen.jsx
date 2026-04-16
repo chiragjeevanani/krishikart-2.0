@@ -13,8 +13,16 @@ export default function FAQManagementScreen() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Form State
-    const [newFaq, setNewFaq] = useState({ question: '', answer: '', category: 'General', displayOrder: 0 });
-    const [editFaq, setEditFaq] = useState({ id: '', question: '', answer: '', category: 'General', displayOrder: 0, status: 'active' });
+    const [newFaq, setNewFaq] = useState({ question: '', answer: '', category: 'General', displayOrder: 0, audience: 'all' });
+    const [editFaq, setEditFaq] = useState({ id: '', question: '', answer: '', category: 'General', displayOrder: 0, status: 'active', audience: 'all' });
+
+    const audiences = [
+        { value: 'all', label: 'All Ecosystem' },
+        { value: 'user', label: 'Customers' },
+        { value: 'vendor', label: 'Vendors' },
+        { value: 'franchise', label: 'Franchise/Admin' },
+        { value: 'delivery', label: 'Delivery Partners' }
+    ];
 
     const fetchFaqs = async () => {
         try {
@@ -162,6 +170,16 @@ export default function FAQManagementScreen() {
                                         />
                                     </div>
                                 </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Target Audience</label>
+                                    <select
+                                        value={newFaq.audience}
+                                        onChange={(e) => setNewFaq(prev => ({ ...prev, audience: e.target.value }))}
+                                        className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-3 text-sm font-bold outline-none"
+                                    >
+                                        {audiences.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
+                                    </select>
+                                </div>
                                 <button
                                     onClick={handleAdd}
                                     disabled={isSubmitting}
@@ -239,6 +257,16 @@ export default function FAQManagementScreen() {
                                         </select>
                                     </div>
                                 </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Target Audience</label>
+                                    <select
+                                        value={editFaq.audience}
+                                        onChange={(e) => setEditFaq(prev => ({ ...prev, audience: e.target.value }))}
+                                        className="w-full bg-slate-50/50 border border-slate-200 rounded-sm px-4 py-3 text-sm font-bold outline-none"
+                                    >
+                                        {audiences.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
+                                    </select>
+                                </div>
                                 <button
                                     onClick={handleUpdate}
                                     disabled={isSubmitting}
@@ -300,6 +328,9 @@ export default function FAQManagementScreen() {
                                                     <span className="px-2 py-0.5 bg-slate-100 text-[8px] font-black uppercase text-slate-500 rounded-sm">
                                                         {faq.category || 'General'}
                                                     </span>
+                                                    <span className="px-2 py-0.5 bg-blue-50 text-[8px] font-black uppercase text-blue-500 rounded-sm">
+                                                        Target: {faq.audience || 'All'}
+                                                    </span>
                                                     <h4 className="text-xs font-black text-slate-900">{faq.question}</h4>
                                                 </div>
                                                 <p className="text-[11px] text-slate-500 font-medium leading-relaxed mt-2">{faq.answer}</p>
@@ -313,7 +344,8 @@ export default function FAQManagementScreen() {
                                                             answer: faq.answer,
                                                             category: faq.category,
                                                             displayOrder: faq.displayOrder,
-                                                            status: faq.status
+                                                            status: faq.status,
+                                                            audience: faq.audience || 'all'
                                                         });
                                                         setShowEditModal(true);
                                                     }}

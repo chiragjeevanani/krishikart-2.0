@@ -264,7 +264,8 @@ export default function LoginScreen() {
                         <div className="flex items-center gap-3 border-t border-slate-100 pt-6">
                             <ShieldCheck className="text-green-500 w-5 h-5" />
                             <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
-                                Your data is protected by industry standard encryption. <br /> Safe and secure login powered by Kisaankart.
+                                Your data is protected by industry standard encryption. <br /> 
+                                By continuing, you agree to our <button type="button" onClick={() => navigate('/terms')} className="text-primary border-b border-primary/20">Terms & Conditions</button>.
                             </p>
                         </div>
                     </div>

@@ -351,7 +351,7 @@ export const getOrderById = async (req, res) => {
     const order = await Order.findById(req.params.id)
       .populate("items.productId")
       .populate("userId", "fullName mobile address")
-      .populate("franchiseId", "storeName shopName ownerName mobile")
+      .populate("franchiseId", "storeName franchiseName ownerName mobile")
       .populate(
         "deliveryPartnerId",
         "fullName mobile vehicleNumber vehicleType",
@@ -736,7 +736,7 @@ export const getDeliveryReturnPickups = async (req, res) => {
       },
     })
       .populate("userId", "fullName mobile address")
-      .populate("franchiseId", "shopName address location")
+      .populate("franchiseId", "franchiseName address location")
       .sort({ updatedAt: -1 });
 
     const pickups = [];
@@ -755,7 +755,7 @@ export const getDeliveryReturnPickups = async (req, res) => {
           customerName: order.userId?.fullName || "Customer",
           customerMobile: order.userId?.mobile || "",
           pickupAddress: order.shippingAddress,
-          franchiseName: order.franchiseId?.shopName || "Franchise",
+          franchiseName: order.franchiseId?.franchiseName || "Franchise",
           franchiseAddress: order.franchiseId?.address || "",
           franchiseId: order.franchiseId,
           userId: order.userId,
@@ -1432,7 +1432,7 @@ export const getAllOrders = async (req, res) => {
     const orders = await Order.find()
       .populate("items.productId")
       .populate("userId", "fullName mobile")
-      .populate("franchiseId", "shopName ownerName mobile cityArea")
+      .populate("franchiseId", "franchiseName ownerName mobile cityArea")
       .populate("deliveryPartnerId", "fullName mobile")
       .sort({ createdAt: -1 });
 
@@ -2039,7 +2039,7 @@ export const getDispatchedOrders = async (req, res) => {
       return {
         id: order._id,
         _id: order._id,
-        franchise: order.franchiseId?.shopName || "Kisaankart Store",
+        franchise: order.franchiseId?.franchiseName || "Kisaankart Store",
         franchiseAddress: order.franchiseId?.address || "N/A",
         customerName: order.userId?.fullName || "Customer",
         customerAddress: order.shippingAddress,
@@ -2112,7 +2112,7 @@ export const getDeliveryOrderHistory = async (req, res) => {
       deliveryPartnerId: partnerId,
     })
       .populate("userId", "fullName")
-      .populate("franchiseId", "shopName address")
+      .populate("franchiseId", "franchiseName address")
       .sort({ updatedAt: -1 });
 
     const formatted = orders.map((order) => {

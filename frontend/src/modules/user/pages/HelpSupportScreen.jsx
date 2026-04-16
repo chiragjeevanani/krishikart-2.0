@@ -48,7 +48,7 @@ export default function HelpSupportScreen() {
                 }
 
                 // Fetch Dynamic FAQs (admin-added from masteradmin)
-                const faqRes = await api.get('/masteradmin/public-faqs')
+                const faqRes = await api.get('/masteradmin/public-faqs', { params: { audience: 'user' } })
                 if (faqRes.data.success) {
                     const list = faqRes.data.results || faqRes.data.result || []
                     if (list.length > 0) setFaqs(list)

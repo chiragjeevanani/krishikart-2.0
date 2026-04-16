@@ -101,11 +101,11 @@ export default function ProductDetailScreen() {
 
   const handleShare = async () => {
     const shareData = {
-      title: product?.name || 'Krishikart Product',
-      text: `Check out this product on Krishikart: ${product?.name}`,
+      title: product?.name || 'kisaankart Product',
+      text: `Check out this product on kisaankart: ${product?.name}`,
       url: window.location.href,
     }
-    
+
     try {
       if (navigator.share) {
         await navigator.share(shareData)

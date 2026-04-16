@@ -19,6 +19,7 @@ import {
     Undo2,
     Lock,
     BarChart3,
+    HelpCircle,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -60,6 +61,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                 { icon: User, label: 'Node Profile', path: '/franchise/profile' },
                 { icon: CreditCard, label: 'Payment Settings', path: '/franchise/payment-settings' },
                 { icon: Settings, label: 'Documentation', path: '/franchise/documentation' },
+                { icon: HelpCircle, label: 'Help & Support', path: '/franchise/help-support' },
             ]
         }
     ];

@@ -167,7 +167,7 @@ const ReceivingScreen = () => {
                     <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-500">
                         {(row.vendor || row.vendorName || row.assignedVendorName || row.assignedVendorId || 'V')?.[0] || 'V'}
                     </div>
-                    <span className="text-[10px] font-black text-slate-700 uppercase">{row.vendor || row.vendorName || row.assignedVendorName || row.assignedVendorId || 'Kisaankart Partner'}</span>
+                    <span className="text-[10px] font-black text-slate-700 uppercase">{row.vendor || row.vendorName || row.assignedVendorName || row.assignedVendorId || 'Kisaankart Franchise'}</span>
                 </div>
             )
         },
@@ -295,7 +295,7 @@ const ReceivingScreen = () => {
                                     </button>
                                     <div>
                                         <h2 className="text-sm font-black text-slate-900 uppercase tracking-tight">Audit Session: {selectedPO.invoice?.invoiceNumber || selectedPO._id}</h2>
-                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{selectedPO.vendor || selectedPO.vendorName || selectedPO.assignedVendorName || selectedPO.assignedVendorId || 'Kisaankart Partner'}</p>
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{selectedPO.vendor || selectedPO.vendorName || selectedPO.assignedVendorName || selectedPO.assignedVendorId || 'Kisaankart Franchise'}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
@@ -484,7 +484,7 @@ const ReceivingScreen = () => {
                             price: i.price,
                             quotedPrice: i.quotedPrice
                         })),
-                    vendor: selectedPO.vendor || selectedPO.vendorName || selectedPO.assignedVendorName || selectedPO.assignedVendorId || 'Kisaankart Partner',
+                    vendor: selectedPO.vendor || selectedPO.vendorName || selectedPO.assignedVendorName || selectedPO.assignedVendorId || 'Kisaankart Franchise',
                     franchise: 'My Franchise Node', // Ideally from context
                     handlingFee: 40
                 } : null}

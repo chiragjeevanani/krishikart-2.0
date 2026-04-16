@@ -45,9 +45,12 @@ export default function ApprovalCard({ item, type, onApprove, onReject, onViewDo
                     </div>
                 </div>
                 <div className={cn(
-                    "px-1.5 py-0.5 rounded-sm text-[8px] font-black uppercase tracking-widest",
+                    "px-1.5 py-0.5 rounded-sm text-[8px] font-black uppercase tracking-widest flex items-center gap-1",
                     isAlreadyApproved ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"
                 )}>
+                    {isDelivery && item.pendingDocs?.status === 'pending' && (
+                        <span className="bg-blue-100 text-blue-600 px-1 rounded-sm">DOC UPDATE</span>
+                    )}
                     {isVendor ? item.status : isDelivery ? (item.isApproved || item.approvalStatus === 'approved' ? 'Approved' : 'Pending') : item.kyc?.status || 'Pending'}
                 </div>
             </div>

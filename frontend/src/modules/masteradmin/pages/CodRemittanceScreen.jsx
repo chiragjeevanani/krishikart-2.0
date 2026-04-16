@@ -12,6 +12,8 @@ export default function CodRemittanceScreen() {
     const [status, setStatus] = useState('submitted');
     const [search, setSearch] = useState('');
     const [rows, setRows] = useState([]);
+    const [rejectionModal, setRejectionModal] = useState({ open: false, id: null });
+    const [rejectionReason, setRejectionReason] = useState('');
 
     const fetchRemittances = useCallback(async () => {
         try {
@@ -42,13 +44,16 @@ export default function CodRemittanceScreen() {
         );
     }, [rows, search]);
 
-    const reviewRemittance = async (remittanceId, action) => {
+    const reviewRemittance = async (remittanceId, action, reason = '') => {
         try {
             const response = await api.put(`/masteradmin/cod/remittances/${remittanceId}/review`, {
-                action
+                action,
+                reason
             });
             if (response.data.success) {
                 toast.success(`Remittance ${action}d`);
+                setRejectionModal({ open: false, id: null });
+                setRejectionReason('');
                 fetchRemittances();
             }
         } catch (error) {
@@ -122,7 +127,7 @@ export default function CodRemittanceScreen() {
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                reviewRemittance(_id, 'reject');
+                                setRejectionModal({ open: true, id: _id });
                             }}
                             className="px-2 py-1 rounded bg-rose-600 text-white text-[10px] font-bold flex items-center gap-1"
                         >
@@ -190,6 +195,46 @@ export default function CodRemittanceScreen() {
                     />
                 </div>
             </div>
+
+            {/* Rejection Modal */}
+            {rejectionModal.open && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200">
+                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white">
+                            <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Rejection Subject</h3>
+                            <button onClick={() => setRejectionModal({ open: false, id: null })} className="text-slate-400 hover:text-rose-500 transition-colors">
+                                <XCircle size={20} />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Reason for Rejection</label>
+                                <textarea
+                                    value={rejectionReason}
+                                    onChange={(e) => setRejectionReason(e.target.value)}
+                                    placeholder="Enter rejection subject or reason here..."
+                                    className="w-full h-32 bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-primary/10 transition-all resize-none"
+                                />
+                            </div>
+                        </div>
+                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3">
+                            <button
+                                onClick={() => setRejectionModal({ open: false, id: null })}
+                                className="px-4 py-2 text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-slate-900 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                disabled={!rejectionReason.trim()}
+                                onClick={() => reviewRemittance(rejectionModal.id, 'reject', rejectionReason)}
+                                className="px-6 py-2 bg-rose-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest shadow-lg shadow-rose-200 hover:bg-rose-700 transition-all disabled:opacity-50 disabled:shadow-none"
+                            >
+                                Confirm Rejection
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

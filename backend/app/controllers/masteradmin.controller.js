@@ -1906,17 +1906,22 @@ export const getAllDeliveryPartners = async (req, res) => {
     const { status } = req.query;
     let query = {};
     if (status === "pending") {
-      // Only show awaiting review; exclude approved and rejected
+      // Show awaiting initial review OR awaiting document update review
       query = {
-        $and: [
-          { approvalStatus: { $nin: ["approved", "rejected"] } },
-          { isApproved: { $ne: true } },
+        $or: [
           {
-            $or: [
-              { approvalStatus: "pending" },
-              { approvalStatus: { $exists: false } },
+            $and: [
+              { approvalStatus: { $nin: ["approved", "rejected"] } },
+              { isApproved: { $ne: true } },
+              {
+                $or: [
+                  { approvalStatus: "pending" },
+                  { approvalStatus: { $exists: false } },
+                ],
+              },
             ],
           },
+          { "pendingDocs.status": "pending" }
         ],
       };
     } else if (status === "verified") {
@@ -1962,17 +1967,59 @@ export const updateDeliveryStatus = async (req, res) => {
   }
 };
 
+/* ================= REVIEW DELIVERY DOCUMENTS ================= */
+export const reviewDeliveryDocs = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { action, reason = "" } = req.body;
+
+    if (!["approve", "reject"].includes(action)) {
+      return handleResponse(res, 400, "Action must be approve or reject");
+    }
+
+    const partner = await Delivery.findById(id);
+    if (!partner) return handleResponse(res, 404, "Delivery partner not found");
+
+    if (!partner.pendingDocs || partner.pendingDocs.status !== "pending") {
+      return handleResponse(res, 400, "No pending document update request found");
+    }
+
+    if (action === "approve") {
+      // Move pending docs to main fields
+      if (partner.pendingDocs.aadharNumber) partner.aadharNumber = partner.pendingDocs.aadharNumber;
+      if (partner.pendingDocs.aadharImage) partner.aadharImage = partner.pendingDocs.aadharImage;
+      if (partner.pendingDocs.panNumber) partner.panNumber = partner.pendingDocs.panNumber;
+      if (partner.pendingDocs.panImage) partner.panImage = partner.pendingDocs.panImage;
+      if (partner.pendingDocs.licenseNumber) partner.licenseNumber = partner.pendingDocs.licenseNumber;
+      if (partner.pendingDocs.licenseImage) partner.licenseImage = partner.pendingDocs.licenseImage;
+
+      partner.pendingDocs.status = "approved";
+    } else {
+      partner.pendingDocs.status = "rejected";
+      partner.pendingDocs.rejectionReason = reason;
+    }
+
+    await partner.save();
+
+    return handleResponse(res, 200, `Delivery documents ${action}d successfully`, partner);
+  } catch (err) {
+    console.error("Review delivery docs error:", err);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
 /* ================= FAQ MANAGEMENT ================= */
 
 export const createFAQ = async (req, res) => {
   try {
-    const { question, answer, category, displayOrder, status } = req.body;
+    const { question, answer, category, displayOrder, status, audience } = req.body;
     const faq = new FAQ({
       question,
       answer,
       category: category || "General",
       displayOrder: displayOrder ?? 0,
       status: status === "inactive" ? "inactive" : "active",
+      audience: audience || "all",
     });
     await faq.save();
     return handleResponse(res, 201, "FAQ created successfully", faq);
@@ -1994,7 +2041,14 @@ export const getAllFAQs = async (req, res) => {
 
 export const getPublicFAQs = async (req, res) => {
   try {
-    const faqs = await FAQ.find({ status: "active" }).sort({
+    const { audience } = req.query;
+    const query = { status: "active" };
+
+    if (audience) {
+      query.audience = { $in: [audience, "all"] };
+    }
+
+    const faqs = await FAQ.find(query).sort({
       displayOrder: 1,
       createdAt: -1,
     });

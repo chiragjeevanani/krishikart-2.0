@@ -26,6 +26,11 @@ const faqSchema = new mongoose.Schema(
             enum: ["active", "inactive"],
             default: "active",
         },
+        audience: {
+            type: String,
+            enum: ["user", "vendor", "franchise", "delivery", "all"],
+            default: "all",
+        },
     },
     { timestamps: true }
 );

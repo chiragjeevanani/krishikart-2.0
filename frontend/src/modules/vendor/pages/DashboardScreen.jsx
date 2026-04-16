@@ -12,7 +12,6 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Bell } from 'lucide-react';
 import MetricCard from '../components/cards/MetricCard';
 import DataGrid from '../components/tables/DataGrid';
 import api from '@/lib/axios';
@@ -45,40 +44,7 @@ export default function DashboardScreen() {
         }
     });
 
-    const [sendingPush, setSendingPush] = useState(false);
 
-    const handleTestPush = async () => {
-        setSendingPush(true);
-        let token = localStorage.getItem(`fcm_token_vendor`);
-
-        if (!token) {
-            const { requestFCMToken } = await import('@/lib/firebase');
-            token = await requestFCMToken();
-            if (token) {
-                localStorage.setItem(`fcm_token_vendor`, token);
-                await api.post(`/vendor/fcm-token`, { token });
-            }
-        }
-
-        if (!token) {
-            alert("No FCM token found. Please allow notifications in your browser.");
-            setSendingPush(false);
-            return;
-        }
-
-        try {
-            await api.post('/vendor/test-notification', {
-                fcm_token: token,
-                plateform: 'Vendor Web Dashboard'
-            });
-            alert("Test notification triggered!");
-        } catch (error) {
-            console.error(error);
-            alert("Failed to send test push");
-        } finally {
-            setSendingPush(false);
-        }
-    };
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -164,12 +130,7 @@ export default function DashboardScreen() {
                     <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-tight">Procurement Pulse</h1>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <p className="text-[9px] sm:text-[10px] font-black text-slate-300 uppercase tracking-[0.15em] sm:tracking-[0.2em]">Operational Status: Active</p>
-                        {activeOps > 0 && (
-                            <span className="flex items-center gap-1.5 px-2.5 sm:px-3 py-0.5 bg-primary/10 text-primary rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-widest animate-pulse border border-primary/20">
-                                <div className="w-1 h-1 rounded-full bg-primary" />
-                                {activeOps} Live Ops
-                            </span>
-                        )}
+
                     </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 sm:justify-end sm:shrink-0">
@@ -180,15 +141,6 @@ export default function DashboardScreen() {
                     >
                         <Settings className="h-4 w-4 sm:h-[17px] sm:w-[17px] text-slate-600 shrink-0" strokeWidth={2} />
                         Settings
-                    </button>
-                    <button
-                        type="button"
-                        onClick={handleTestPush}
-                        disabled={sendingPush}
-                        className="h-10 sm:h-11 min-h-[44px] px-3 sm:px-5 bg-white border border-slate-200 text-slate-900 rounded-xl sm:rounded-2xl inline-flex items-center justify-center gap-1.5 sm:gap-2 shadow-xl shadow-slate-100 hover:bg-slate-50 transition-all font-black text-[9px] sm:text-[10px] uppercase tracking-wide sm:tracking-widest disabled:opacity-50 active:scale-[0.98]"
-                    >
-                        <Bell className={`h-4 w-4 sm:h-[18px] sm:w-[18px] ${sendingPush ? 'animate-pulse text-indigo-500' : 'text-indigo-500'}`} strokeWidth={2} />
-                        {sendingPush ? 'Testing...' : 'Test Push'}
                     </button>
                 </div>
             </header>

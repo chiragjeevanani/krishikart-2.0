@@ -213,7 +213,7 @@ export default function SignupScreen() {
               Kisaankart
             </span>
             <span className="text-[10px] text-slate-500 font-bold tracking-[0.3em] uppercase">
-              Franchise Partner
+              Franchise Node
             </span>
           </div>
         </div>
@@ -225,7 +225,7 @@ export default function SignupScreen() {
           <h1 className="text-5xl font-black text-white tracking-tighter leading-[0.9] uppercase">
             Become a <br />
             Franchise <br />
-            Partner.
+            Node.
           </h1>
           <p className="text-slate-400 text-sm font-medium leading-relaxed uppercase tracking-tight">
             Join our network and start managing orders in your area. Quick
@@ -284,7 +284,7 @@ export default function SignupScreen() {
               </span>
             </div>
             <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter leading-none">
-              Partner Details
+              Franchise Details
             </h2>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
               Enter your business information
@@ -438,7 +438,7 @@ export default function SignupScreen() {
                     type="button"
                     onClick={() => navigate("/franchise/login")}
                     className="w-full text-[10px] font-black text-slate-400 uppercase tracking-widest py-2 hover:text-slate-900 transition-colors underline underline-offset-8 decoration-slate-200">
-                    Already a partner? Login
+                    Already a franchise? Login
                   </button>
                 </motion.div>
               ) : (
@@ -514,6 +514,9 @@ export default function SignupScreen() {
                 System Status: Online
               </span>
             </div>
+            <p className="text-[9px] text-slate-300 font-bold uppercase tracking-widest text-center leading-relaxed">
+                By registering, you agree to our <button type="button" onClick={() => navigate('/franchise/terms')} className="text-slate-900 border-b border-slate-900">Franchise Terms & Conditions</button>.
+            </p>
           </div>
         </motion.div>
       </div>

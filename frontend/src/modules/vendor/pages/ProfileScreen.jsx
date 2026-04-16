@@ -16,6 +16,7 @@ import {
     Award,
     Activity,
     ShieldCheck,
+    HelpCircle,
     X,
     Loader2
 } from 'lucide-react';
@@ -64,8 +65,24 @@ const EditProfileModal = ({ isOpen, onClose, vendorData, onUpdate }) => {
     });
     const [isLoading, setIsLoading] = useState(false);
 
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+        }
+        return () => {
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
+        };
+    }, [isOpen]);
+
     const handleChange = (e) => {
         const { name, value } = e.target;
+        if (name === 'fullName' || name === 'bankAccountHolderName') {
+            const lettersAndSpacesOnly = value.replace(/[^A-Za-z\s]/g, '');
+            setFormData({ ...formData, [name]: lettersAndSpacesOnly });
+            return;
+        }
         if (name === 'bankAccountNumber') {
             const digitsOnly = value.replace(/\D/g, '').slice(0, 16);
             setFormData({ ...formData, [name]: digitsOnly });
@@ -77,8 +94,23 @@ const EditProfileModal = ({ isOpen, onClose, vendorData, onUpdate }) => {
             return;
         }
         if (name === 'bankIfscCode') {
-            const ifsc = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 11);
-            setFormData({ ...formData, [name]: ifsc });
+            const upper = value.toUpperCase();
+            let result = '';
+            for (let i = 0; i < upper.length && result.length < 11; i++) {
+                const ch = upper[i];
+                const pos = result.length;
+                if (pos < 4) {
+                    // Positions 0-3: alphabets only
+                    if (/[A-Z]/.test(ch)) result += ch;
+                } else if (pos === 4) {
+                    // Position 4: only '0'
+                    if (ch === '0') result += ch;
+                } else {
+                    // Positions 5-10: digits only
+                    if (/[0-9]/.test(ch)) result += ch;
+                }
+            }
+            setFormData({ ...formData, [name]: result });
             return;
         }
         if (name === 'fssaiLicense') {
@@ -97,8 +129,8 @@ const EditProfileModal = ({ isOpen, onClose, vendorData, onUpdate }) => {
             return;
         }
         const ifsc = (formData.bankIfscCode || '').trim();
-        if (ifsc && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) {
-            alert('Invalid IFSC code. Format: 4 letters, then 0, then 6 alphanumeric (e.g. HDFC0001234).');
+        if (ifsc && !/^[A-Z]{4}0\d{6}$/.test(ifsc)) {
+            alert('Invalid IFSC code. Format: 4 letters, then 0, then 6 digits (e.g. HDFC0001234).');
             return;
         }
         const fssai = (formData.fssaiLicense || '').trim();
@@ -135,7 +167,11 @@ const EditProfileModal = ({ isOpen, onClose, vendorData, onUpdate }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onWheel={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
+        >
             <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -151,7 +187,7 @@ const EditProfileModal = ({ isOpen, onClose, vendorData, onUpdate }) => {
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-1">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
-                        <input name="fullName" value={formData.fullName} onChange={handleChange} className="w-full bg-slate-50 rounded-xl p-3 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20" />
+                        <input name="fullName" value={formData.fullName} onChange={handleChange} pattern="[A-Za-z\s]+" title="Only alphabets and spaces allowed" placeholder="Full Name" className="w-full bg-slate-50 rounded-xl p-3 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20" />
                     </div>
                     <div className="space-y-1">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mobile</label>
@@ -175,7 +211,7 @@ const EditProfileModal = ({ isOpen, onClose, vendorData, onUpdate }) => {
                             </div>
                             <div className="space-y-1">
                                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Account Name</label>
-                                <input name="bankAccountHolderName" value={formData.bankAccountHolderName} onChange={handleChange} className="w-full bg-slate-50 rounded-xl p-3 text-xs font-bold outline-none focus:ring-2 focus:ring-primary/20" />
+                                <input name="bankAccountHolderName" value={formData.bankAccountHolderName} onChange={handleChange} pattern="[A-Za-z\s]+" title="Only alphabets and spaces allowed" placeholder="Name on Passbook" className="w-full bg-slate-50 rounded-xl p-3 text-xs font-bold outline-none focus:ring-2 focus:ring-primary/20" />
                             </div>
                             <div className="space-y-1">
                                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Account No.</label>
@@ -405,6 +441,7 @@ export default function ProfileScreen() {
                     </div>
                     <SettingItem icon={User} label="Profile Details" value="Edit Personal Info" color="blue" onClick={() => setIsEditModalOpen(true)} />
                     <SettingItem icon={Shield} label="Security" value="Change Password" color="slate" onClick={() => setIsPasswordModalOpen(true)} />
+                    <SettingItem icon={HelpCircle} label="Help & Support" value="FAQs & Protocols" color="purple" onClick={() => navigate('/vendor/help-support')} />
                     {/* <SettingItem icon={Globe} label="Marketplace Engine" value="Global Store Visibility" color="primary" onClick={() => navigate('/vendor/preview')} /> */}
                 </section>
 

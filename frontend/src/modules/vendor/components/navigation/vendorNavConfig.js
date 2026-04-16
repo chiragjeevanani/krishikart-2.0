@@ -5,6 +5,7 @@ import {
     Truck,
     History,
     UserCircle,
+    HelpCircle,
     FileText,
 } from 'lucide-react';
 
@@ -27,6 +28,7 @@ export const vendorNavItems = [
         label: 'Account Settings',
         shortLabel: 'Account',
     },
+    { id: 'help', path: '/vendor/help-support', icon: HelpCircle, label: 'Help & Support', shortLabel: 'Help' },
 ];
 
 /**

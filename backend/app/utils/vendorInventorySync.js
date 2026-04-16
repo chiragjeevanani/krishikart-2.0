@@ -15,8 +15,13 @@ export async function isProductAssignedToVendor(vendorId, productId) {
  * Preserves stock / availability for rows that still exist after assignment changes.
  */
 export async function syncInventoryToAssignedProducts(vendorId) {
+    console.log(`[Sync] Looking up vendor: ${vendorId}`);
     const vendor = await Vendor.findById(vendorId).select("products").lean();
-    if (!vendor) return null;
+    if (!vendor) {
+        console.warn(`[Sync] Vendor NOT FOUND in DB: ${vendorId}`);
+        return null;
+    }
+    console.log(`[Sync] Vendor found, products count: ${vendor.products?.length || 0}`);
 
     const orderedProductRefs = [];
     const seen = new Set();

@@ -42,7 +42,7 @@ export default function CodRemittanceScreen() {
             }
 
             if (historyRes.data.success) {
-                setHistory(historyRes.data.results || []);
+                setHistory(historyRes.data.result || []);
             }
         } catch (error) {
             console.error('COD fetch error:', error);
@@ -133,6 +133,13 @@ export default function CodRemittanceScreen() {
                             }
                         } catch (err) {
                             toast.error(err.response?.data?.message || 'Verification failed');
+                        } finally {
+                            setSubmitting(false);
+                        }
+                    },
+                    modal: {
+                        ondismiss: () => {
+                            setSubmitting(false);
                         }
                     },
                     prefill: {
@@ -144,6 +151,7 @@ export default function CodRemittanceScreen() {
 
                 const rzp = new window.Razorpay(options);
                 rzp.open();
+                // Note: We don't setSubmitting(false) here because Razorpay is async
             } else {
                 // Cash Flow (Existing)
                 const response = await api.post('/delivery/cod/remittance', {
@@ -158,11 +166,11 @@ export default function CodRemittanceScreen() {
                     setNote('');
                     await fetchData();
                 }
+                setSubmitting(false);
             }
         } catch (error) {
             console.error('COD submit error:', error);
             toast.error(error.response?.data?.message || 'Failed to submit remittance');
-        } finally {
             setSubmitting(false);
         }
     };

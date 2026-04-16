@@ -26,7 +26,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export default function OnboardingApprovalScreen() {
-    const { vendors, franchises, deliveryPartners, isLoading: adminLoading, fetchVendors, fetchPendingFranchises, fetchDeliveryPartners, updateVendorStatus, reviewFranchiseKYC, updateDeliveryPartnerStatus } = useAdmin();
+    const { vendors, franchises, deliveryPartners, isLoading: adminLoading, fetchVendors, fetchPendingFranchises, fetchDeliveryPartners, updateVendorStatus, reviewFranchiseKYC, updateDeliveryPartnerStatus, reviewDeliveryDocs } = useAdmin();
     const [searchParams, setSearchParams] = useSearchParams();
     const activeTab = searchParams.get('type') || 'vendor';
     const [searchTerm, setSearchTerm] = useState('');
@@ -79,8 +79,14 @@ export default function OnboardingApprovalScreen() {
             const success = await reviewFranchiseKYC(idStr, 'verified');
             if (success) setSelectedItem(null);
         } else if (activeTab === 'delivery') {
-            const success = await updateDeliveryPartnerStatus(idStr, true);
-            if (success) setSelectedItem(null);
+            const item = typeof idOrItem === 'object' ? idOrItem : deliveryPartners.find(p => String(p._id || p.id) === idStr);
+            if (item?.pendingDocs?.status === 'pending') {
+                const success = await reviewDeliveryDocs(idStr, 'approve');
+                if (success) setSelectedItem(null);
+            } else {
+                const success = await updateDeliveryPartnerStatus(idStr, true);
+                if (success) setSelectedItem(null);
+            }
         }
     };
 
@@ -99,8 +105,14 @@ export default function OnboardingApprovalScreen() {
             const success = await reviewFranchiseKYC(idStr, 'rejected', reason);
             if (success) setSelectedItem(null);
         } else if (activeTab === 'delivery') {
-            const success = await updateDeliveryPartnerStatus(idStr, false);
-            if (success) setSelectedItem(null);
+            const item = typeof idOrItem === 'object' ? idOrItem : deliveryPartners.find(p => String(p._id || p.id) === idStr);
+            if (item?.pendingDocs?.status === 'pending') {
+                const success = await reviewDeliveryDocs(idStr, 'reject', reason);
+                if (success) setSelectedItem(null);
+            } else {
+                const success = await updateDeliveryPartnerStatus(idStr, false);
+                if (success) setSelectedItem(null);
+            }
         }
     };
 

@@ -147,8 +147,12 @@ export default function LoginScreen() {
                     </button>
                 </form>
 
-                <div className="mt-10 text-center">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                <div className="mt-10 text-center space-y-3">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
+                        By logging in, you agree to our <br/>
+                        <button type="button" onClick={() => navigate('/vendor/terms')} className="text-slate-900 border-b border-slate-200">Vendor Terms & Conditions</button>
+                    </p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4">
                         Don't have a vendor account?
                     </p>
                     <button onClick={() => navigate('/vendor/signup')} className="mt-2 text-primary font-black text-xs hover:underline">

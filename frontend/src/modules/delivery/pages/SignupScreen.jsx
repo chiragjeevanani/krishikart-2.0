@@ -315,6 +315,13 @@ const SignupScreen = () => {
                                     </div>
                                 </div>
 
+                                <div className="text-center py-2">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
+                                        By joining, you agree to our <br/>
+                                        <button type="button" onClick={() => navigate('/delivery/terms')} className="text-primary border-b border-primary/20">Logistics Terms & Conditions</button>
+                                    </p>
+                                </div>
+
                                 <motion.button
                                     whileTap={{ scale: 0.96 }}
                                     disabled={loading || !formData.name || formData.phone.length !== 10 || !formData.vehicleNumber || !formData.aadharImage || !formData.panImage || !formData.licenseImage}

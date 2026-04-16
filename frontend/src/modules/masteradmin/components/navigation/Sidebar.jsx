@@ -168,6 +168,12 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
           permissionKey: "vendors",
         },
         {
+          icon: UserCircle,
+          label: "User List",
+          path: "/masteradmin/customers",
+          permissionKey: "credit",
+        },
+        {
           icon: FileText,
           label: "Vendor Invoices",
           path: "/masteradmin/vendor-reports",
