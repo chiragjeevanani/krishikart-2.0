@@ -207,7 +207,14 @@ const OrderDetailModal = ({ isOpen, onClose, orderId, onProcure, onAllowPartial 
                                 <h1 className="text-sm font-black text-slate-900 tracking-tighter uppercase tabular-nums">
                                     {isLoading ? 'Loading Order...' : `Order #${order?._id?.slice(-8)}`}
                                 </h1>
-                                {!isLoading && order && <StatusBadge status={order.orderStatus} />}
+                                {!isLoading && order && (
+                                    <StatusBadge status={
+                                        Array.isArray(order.assignmentAttempts) &&
+                                        order.assignmentAttempts.some(a => a.reason === 'rejected')
+                                            ? 'franchise_rejected'
+                                            : order.orderStatus
+                                    } />
+                                )}
                             </div>
 
                             <div className="flex items-center gap-3">

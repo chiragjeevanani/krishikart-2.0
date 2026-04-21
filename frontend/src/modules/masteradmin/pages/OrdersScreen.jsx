@@ -21,7 +21,8 @@ import {
     Briefcase,
     FileText,
     Settings2,
-    AlertCircle
+    AlertCircle,
+    XCircle
 } from 'lucide-react';
 import api from '@/lib/axios';
 import { toast } from 'sonner';
@@ -256,6 +257,12 @@ export default function OrdersScreen() {
         return () => clearTimeout(timer);
     }, []);
 
+    // Orders that were rejected by at least one franchise
+    const franchiseRejectedCount = allOrders.filter(order =>
+        Array.isArray(order.assignmentAttempts) &&
+        order.assignmentAttempts.some(a => a.reason === 'rejected')
+    ).length;
+
     const filteredOrders = allOrders.filter(order => {
         const customerName = (order.userId?.fullName || 'Unknown').toLowerCase();
         const customerMobile = (order.userId?.mobile || '').toLowerCase();
@@ -266,7 +273,16 @@ export default function OrdersScreen() {
             customerName.includes(keyword) || customerMobile.includes(keyword)
         );
 
-        const matchesFilter = activeFilter === 'all' || order.orderStatus.toLowerCase() === activeFilter.toLowerCase();
+        let matchesFilter;
+        if (activeFilter === 'all') {
+            matchesFilter = true;
+        } else if (activeFilter === 'franchise_rejected') {
+            matchesFilter = Array.isArray(order.assignmentAttempts) &&
+                order.assignmentAttempts.some(a => a.reason === 'rejected');
+        } else {
+            matchesFilter = order.orderStatus.toLowerCase() === activeFilter.toLowerCase();
+        }
+
         return matchesSearch && matchesFilter;
     });
 
@@ -323,6 +339,46 @@ export default function OrdersScreen() {
             <div className="flex flex-col gap-0 p-px">
 
                 <div className="bg-white border-t border-slate-200">
+                    {/* Filter Tabs */}
+                    <div className="px-4 border-b border-slate-200 flex items-center gap-1 overflow-x-auto no-scrollbar">
+                        {[
+                            { id: 'all', label: 'All Orders', count: allOrders.length },
+                            { id: 'Placed', label: 'Placed' },
+                            { id: 'Accepted', label: 'Accepted' },
+                            { id: 'Packed', label: 'Packed' },
+                            { id: 'Dispatched', label: 'Dispatched' },
+                            { id: 'Delivered', label: 'Delivered' },
+                            { id: 'Cancelled', label: 'Cancelled' },
+                            { id: 'franchise_rejected', label: 'Franchise Rejected', count: franchiseRejectedCount, highlight: true },
+                        ].map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveFilter(tab.id)}
+                                className={cn(
+                                    'flex items-center gap-1.5 px-3 py-2.5 text-[10px] font-black uppercase tracking-widest whitespace-nowrap border-b-2 transition-all',
+                                    activeFilter === tab.id
+                                        ? tab.highlight
+                                            ? 'border-rose-500 text-rose-600'
+                                            : 'border-slate-900 text-slate-900'
+                                        : 'border-transparent text-slate-400 hover:text-slate-600'
+                                )}
+                            >
+                                {tab.highlight && <XCircle size={11} />}
+                                {tab.label}
+                                {tab.count !== undefined && (
+                                    <span className={cn(
+                                        'px-1.5 py-0.5 rounded-sm text-[9px] font-black tabular-nums',
+                                        tab.highlight && tab.count > 0
+                                            ? 'bg-rose-100 text-rose-600'
+                                            : 'bg-slate-100 text-slate-500'
+                                    )}>
+                                        {tab.count}
+                                    </span>
+                                )}
+                            </button>
+                        ))}
+                    </div>
+
                     <div className="px-4 py-3 bg-slate-50/50 border-b border-slate-200 flex items-center justify-between">
                         <div className="relative group w-full max-w-sm">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors" size={14} />

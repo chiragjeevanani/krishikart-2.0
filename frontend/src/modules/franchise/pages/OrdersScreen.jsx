@@ -242,6 +242,29 @@ export default function OrdersScreen() {
             render: (items) => <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{items.length} units</span>
         },
         {
+            header: 'Payment',
+            key: 'paymentMode',
+            render: (val) => {
+                const method = (val || 'COD').toUpperCase();
+                const isCOD = method === 'COD';
+                const isUPI = method === 'UPI';
+                const isWallet = method.includes('WALLET');
+                const isCredit = method.includes('CREDIT');
+                return (
+                    <span className={cn(
+                        'inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[9px] font-black uppercase tracking-widest border',
+                        isCOD ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                        isUPI ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                        isWallet ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                        isCredit ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                        'bg-slate-100 text-slate-600 border-slate-200'
+                    )}>
+                        {isCOD ? '💵' : isUPI ? '📲' : isWallet ? '👛' : '💳'} {method}
+                    </span>
+                );
+            }
+        },
+        {
             header: 'Action',
             key: 'actions',
             align: 'right',

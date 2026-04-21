@@ -21,7 +21,8 @@ const statusConfig = {
     preparing: { label: 'Being Packed', bg: 'bg-amber-50', text: 'text-amber-600', dot: 'bg-amber-400' },
     in_transit: { label: 'In Transit', bg: 'bg-purple-50', text: 'text-purple-600', dot: 'bg-purple-400' },
     out_for_delivery: { label: 'Out for Delivery', bg: 'bg-purple-50', text: 'text-purple-600', dot: 'bg-purple-400' },
-    incoming: { label: 'Incoming', bg: 'bg-slate-100', text: 'text-slate-600', dot: 'bg-slate-400' }
+    incoming: { label: 'Incoming', bg: 'bg-slate-100', text: 'text-slate-600', dot: 'bg-slate-400' },
+    franchise_rejected: { label: 'Franchise Rejected', bg: 'bg-orange-50', text: 'text-orange-600', dot: 'bg-orange-500' },
 };
 
 export default function StatusBadge({ status }) {

@@ -88,6 +88,11 @@ export default function OrdersTable({ orders, onAction, onOrderClick, onProcure,
                                             Stock Shortage
                                         </span>
                                     )}
+                                    {Array.isArray(order.assignmentAttempts) && order.assignmentAttempts.some(a => a.reason === 'rejected') && (
+                                        <span className="text-[8px] font-black text-orange-600 bg-orange-50 border border-orange-100 px-1.5 py-0.5 rounded-sm uppercase tracking-tighter">
+                                            Franchise Rejected ×{order.assignmentAttempts.filter(a => a.reason === 'rejected').length}
+                                        </span>
+                                    )}
                                 </div>
                             </td>
                             <td className="px-4 py-4">
@@ -100,7 +105,12 @@ export default function OrdersTable({ orders, onAction, onOrderClick, onProcure,
                                 <PaymentBadge method={order.paymentMethod || 'COD'} />
                             </td>
                             <td className="px-4 py-4">
-                                <StatusBadge status={order.orderStatus} />
+                                <StatusBadge status={
+                                    Array.isArray(order.assignmentAttempts) &&
+                                    order.assignmentAttempts.some(a => a.reason === 'rejected')
+                                        ? 'franchise_rejected'
+                                        : order.orderStatus
+                                } />
                             </td>
                             <td className="px-4 py-4 text-right">
                                 <span className="tabular-nums text-[11px] font-bold text-slate-900">₹{order.totalAmount?.toLocaleString()}</span>

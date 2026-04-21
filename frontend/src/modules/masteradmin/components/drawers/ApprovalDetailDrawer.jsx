@@ -16,26 +16,44 @@ export default function ApprovalDetailDrawer({ isOpen, onClose, item, type, onAp
     const handleDownload = async (doc, idx) => {
         if (!doc?.url) return;
         setDownloadingId(idx);
+
+        const baseName = (doc.type || 'document')
+            .replace(/\s+/g, '_')
+            .replace(/[^a-z0-9_-]/gi, '_')
+            .toLowerCase();
+
+        // Detect extension from URL path (before query string)
+        const urlPath = doc.url.split('?')[0];
+        const urlExt = urlPath.split('.').pop()?.toLowerCase();
+        const knownExts = ['jpg', 'jpeg', 'png', 'pdf', 'webp', 'gif'];
+        const ext = knownExts.includes(urlExt) ? urlExt : 'jpg';
+        const fileName = `${baseName}.${ext}`;
+
         try {
-            const res = await fetch(doc.url, { mode: 'cors', credentials: 'omit' });
-            if (!res.ok) throw new Error('Download failed');
+            // For Cloudinary URLs, inject fl_attachment transform to force browser download
+            let downloadUrl = doc.url;
+            if (doc.url.includes('cloudinary.com') && doc.url.includes('/upload/')) {
+                downloadUrl = doc.url.replace('/upload/', `/upload/fl_attachment:${baseName}/`);
+            }
+
+            const res = await fetch(downloadUrl, { mode: 'cors', credentials: 'omit' });
+            if (!res.ok) throw new Error('fetch failed');
             const blob = await res.blob();
-            const fromUrl = doc.url.split('.').pop()?.split('?')[0]?.toLowerCase();
-            const fromMime = blob.type && blob.type.split('/')[1] ? (blob.type === 'image/jpeg' ? 'jpg' : blob.type.split('/')[1]) : null;
-            const ext = (fromUrl && /^[a-z0-9]+$/i.test(fromUrl)) ? fromUrl : (fromMime || 'pdf');
-            const baseName = (doc.type || 'document').replace(/\s+/g, '_').replace(/[^a-z0-9_-]/gi, '_').toLowerCase();
-            const downloadName = `${baseName}.${ext}`;
-            const url = URL.createObjectURL(blob);
+            const objectUrl = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url;
-            a.download = downloadName;
+            a.href = objectUrl;
+            a.download = fileName;
             a.rel = 'noopener noreferrer';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            URL.revokeObjectURL(objectUrl);
         } catch {
-            window.open(doc.url, '_blank', 'noopener,noreferrer');
+            // Fallback: open Cloudinary URL with fl_attachment so browser prompts save-as
+            const fallback = doc.url.includes('cloudinary.com') && doc.url.includes('/upload/')
+                ? doc.url.replace('/upload/', `/upload/fl_attachment:${baseName}/`)
+                : doc.url;
+            window.open(fallback, '_blank', 'noopener,noreferrer');
         } finally {
             setDownloadingId(null);
         }

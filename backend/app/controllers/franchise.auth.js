@@ -15,6 +15,12 @@ import bcrypt from "bcryptjs";
 import { latLngToCell, gridDisk } from "h3-js";
 
 import { geocodeAddress } from "../utils/geo.js";
+import {
+  isValidFssaiNumber,
+  normalizeFssaiNumber,
+  isValidFranchiseGst14,
+  normalizeFranchiseGst14,
+} from "../utils/gstFranchiseKyc.js";
 
 /* 🔐 TOKEN */
 const generateToken = (id) =>
@@ -35,10 +41,26 @@ export const registerFranchise = async (req, res) => {
       location,
       formattedAddress,
       servedCategories,
+      fssaiNumber,
+      gstNumber,
     } = req.body;
 
     if (!franchiseName || !ownerName || !mobile || !city || !state) {
       return handleResponse(res, 400, "All fields are required");
+    }
+
+    if (!fssaiNumber) {
+      return handleResponse(res, 400, "FSSAI number is required");
+    }
+    if (!isValidFssaiNumber(fssaiNumber)) {
+      return handleResponse(res, 400, "Invalid FSSAI number (must be 14 digits)");
+    }
+
+    if (!gstNumber) {
+      return handleResponse(res, 400, "GST number is required");
+    }
+    if (!isValidFranchiseGst14(gstNumber)) {
+      return handleResponse(res, 400, "Invalid GST number format");
     }
 
     if (servedCategories && !Array.isArray(servedCategories)) {
@@ -136,6 +158,10 @@ export const registerFranchise = async (req, res) => {
         serviceHexagons: initialHexagons,
         isVerified: false,
         status: "pending",
+        kyc: {
+          fssaiNumber: normalizeFssaiNumber(fssaiNumber),
+          gstNumber: normalizeFranchiseGst14(gstNumber),
+        },
       });
     }
 

@@ -11,6 +11,7 @@ import {
     UtensilsCrossed,
     Store,
     Landmark,
+    Download,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -43,7 +44,55 @@ function DocUploadZone({
     subtitle,
     inputId,
     error,
+    docName,
 }) {
+    const [isDownloading, setIsDownloading] = useState(false);
+
+    // A remote URL (already uploaded) vs a local blob/data URL
+    const isRemoteUrl = preview && preview.startsWith('http');
+
+    const handleDownload = async () => {
+        if (!preview) return;
+        setIsDownloading(true);
+
+        const baseName = (docName || title || 'document')
+            .replace(/\s+/g, '_')
+            .toLowerCase();
+
+        const urlPath = preview.split('?')[0];
+        const urlExt = urlPath.split('.').pop()?.toLowerCase();
+        const knownExts = ['jpg', 'jpeg', 'png', 'pdf', 'webp', 'gif'];
+        const ext = knownExts.includes(urlExt) ? urlExt : 'jpg';
+        const fileName = `${baseName}.${ext}`;
+
+        try {
+            // Inject Cloudinary fl_attachment transform to force download
+            let downloadUrl = preview;
+            if (preview.includes('cloudinary.com') && preview.includes('/upload/')) {
+                downloadUrl = preview.replace('/upload/', `/upload/fl_attachment:${baseName}/`);
+            }
+
+            const res = await fetch(downloadUrl, { mode: 'cors', credentials: 'omit' });
+            if (!res.ok) throw new Error('fetch failed');
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch {
+            const fallback = preview.includes('cloudinary.com') && preview.includes('/upload/')
+                ? preview.replace('/upload/', `/upload/fl_attachment:${baseName}/`)
+                : preview;
+            window.open(fallback, '_blank', 'noopener,noreferrer');
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+
     return (
         <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">
@@ -65,13 +114,33 @@ function DocUploadZone({
                             className="absolute inset-0 w-full h-full object-cover"
                         />
                         <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover/upload:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                            <button
-                                type="button"
-                                onClick={onRemove}
-                                className="p-2 bg-white text-rose-600 rounded-full shadow-lg hover:scale-110 transition-transform"
-                            >
-                                <X size={18} />
-                            </button>
+                            {/* Download button — always shown for remote URLs */}
+                            {isRemoteUrl && (
+                                <button
+                                    type="button"
+                                    onClick={handleDownload}
+                                    disabled={isDownloading}
+                                    className="p-2 bg-white text-slate-900 rounded-full shadow-lg hover:scale-110 transition-transform disabled:opacity-70"
+                                    title="Download document"
+                                >
+                                    {isDownloading ? (
+                                        <div className="w-[18px] h-[18px] border-2 border-slate-300 border-t-slate-900 rounded-full animate-spin" />
+                                    ) : (
+                                        <Download size={18} />
+                                    )}
+                                </button>
+                            )}
+                            {/* Remove button — only when not read-only */}
+                            {!disabled && (
+                                <button
+                                    type="button"
+                                    onClick={onRemove}
+                                    className="p-2 bg-white text-rose-600 rounded-full shadow-lg hover:scale-110 transition-transform"
+                                    title="Remove document"
+                                >
+                                    <X size={18} />
+                                </button>
+                            )}
                         </div>
                     </>
                 ) : (
@@ -350,6 +419,7 @@ export default function DocumentationScreen() {
                             title="National ID Image"
                             subtitle="Upload Aadhaar Front/Back"
                             inputId="doc-aadhaar"
+                            docName="aadhaar_card"
                             error={errors.aadhaarImage}
                             onPick={(e) => handleFileChange(e, 'aadhaar')}
                             onRemove={() => handleRemoveFile('aadhaar')}
@@ -400,6 +470,7 @@ export default function DocumentationScreen() {
                             title="PAN Card Image"
                             subtitle="Upload PAN Card Image"
                             inputId="doc-pan"
+                            docName="pan_card"
                             error={errors.panImage}
                             onPick={(e) => handleFileChange(e, 'pan')}
                             onRemove={() => handleRemoveFile('pan')}
@@ -454,6 +525,7 @@ export default function DocumentationScreen() {
                             title="FSSAI Certificate"
                             subtitle="Upload FSSAI license / certificate"
                             inputId="doc-fssai"
+                            docName="fssai_certificate"
                             error={errors.fssaiCertificate}
                             onPick={(e) => handleFileChange(e, 'fssai')}
                             onRemove={() => handleRemoveFile('fssai')}
@@ -510,6 +582,7 @@ export default function DocumentationScreen() {
                             title="GST Certificate"
                             subtitle="Upload GST registration certificate"
                             inputId="doc-gst"
+                            docName="gst_certificate"
                             error={errors.gstCertificate}
                             onPick={(e) => handleFileChange(e, 'gst')}
                             onRemove={() => handleRemoveFile('gst')}
@@ -537,6 +610,7 @@ export default function DocumentationScreen() {
                                 title="Certificate Upload"
                                 subtitle="Upload shop / establishment proof (Shop Act, Udyam, etc.)"
                                 inputId="doc-shop"
+                                docName="shop_establishment_certificate"
                                 error={errors.shopEstablishmentCertificate}
                                 onPick={(e) => handleFileChange(e, 'shopEstablishment')}
                                 onRemove={() => handleRemoveFile('shopEstablishment')}
