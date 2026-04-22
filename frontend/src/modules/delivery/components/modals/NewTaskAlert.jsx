@@ -9,11 +9,10 @@ export default function NewTaskAlert({ isOpen, onClose, data }) {
 
     const handleViewTask = () => {
         onClose();
-        // Adjust path if type is RETURN vs type is DELIVERY
         if (data.type === 'RETURN') {
-            navigate('/delivery/returns');
+            navigate('/delivery/return-pickups');
         } else {
-            navigate('/delivery/assignments');
+            navigate('/delivery/active');
         }
     };
 

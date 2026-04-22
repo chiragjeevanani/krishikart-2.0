@@ -479,13 +479,12 @@ export const adminUpdateProcurementRequest = async (req, res) => {
             console.log(`Request ${requestId} saved. Assigned Vendor: ${request.assignedVendorId}`);
         }
 
-        // Notify Vendor
+        // Notify Vendor only — franchise does not need to know about vendor assignment
         if (requestToAssign.assignedVendorId) {
             emitToVendor(requestToAssign.assignedVendorId, "new_assignment", {
                 requestId: requestToAssign._id,
                 message: "You have a new procurement assignment!"
             });
-            // Push Notification
             sendNotificationToUser(requestToAssign.assignedVendorId.toString(), {
                 title: "New Procurement Assignment",
                 body: "You have received a new procurement request from the Master Admin.",
@@ -495,26 +494,6 @@ export const adminUpdateProcurementRequest = async (req, res) => {
                     link: `/vendor/orders/${requestToAssign._id}`
                 }
             }, 'vendor');
-        }
-
-        // Notify Franchise
-        if (requestToAssign.franchiseId) {
-            emitToFranchise(requestToAssign.franchiseId.toString(), 'procurement_cycle_update', {
-                requestId: requestToAssign._id,
-                status: 'assigned',
-                message: `Master Admin has assigned a vendor for your procurement #${requestToAssign._id.toString().slice(-6)}`
-            });
-            // Push Notification
-            sendNotificationToUser(requestToAssign.franchiseId.toString(), {
-                title: "Procurement Vendor Assigned",
-                body: "A vendor has been assigned to procurement request items for your node.",
-                data: {
-                    type: "procurement",
-                    requestId: requestToAssign._id.toString(),
-                    status: 'assigned',
-                    link: `/franchise/receiving`
-                }
-            }, 'franchise');
         }
 
         // Update Order if exists
@@ -733,11 +712,13 @@ export const franchiseConfirmReceipt = async (req, res) => {
                 const prodId = reqItem.productId;
                 if (!mongoose.Types.ObjectId.isValid(prodId)) continue;
 
-                // Use the reported received quantity for inventory update
-                // If not reported (fallback), use the original requested quantity
-                const quantityToAdd = reqItem.receivedQuantity !== undefined ?
-                    Number(reqItem.receivedQuantity) :
-                    Number(reqItem.quantity);
+                // Only add GOOD stock = received minus damaged
+                // Damaged items should never enter inventory
+                const received = reqItem.receivedQuantity !== undefined
+                    ? Number(reqItem.receivedQuantity)
+                    : Number(reqItem.quantity);
+                const damaged = Number(reqItem.damagedQuantity) || 0;
+                const quantityToAdd = Math.max(0, received - damaged);
 
                 const existingItem = inventory.items.find(i => i.productId.toString() === prodId.toString());
 

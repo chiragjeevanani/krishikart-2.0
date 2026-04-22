@@ -43,6 +43,8 @@ const franchiseSchema = new mongoose.Schema(
       type: String,
       trim: true,
       lowercase: true,
+      unique: true,
+      sparse: true, // allows multiple null values (old records without email)
     },
 
     profilePicture: {

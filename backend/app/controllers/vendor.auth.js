@@ -1,7 +1,7 @@
 import Vendor from "../models/vendor.js";
 import OTP from "../models/otp.js";
 import handleResponse from "../utils/helper.js";
-import { matchesGlobalDefaultOtp, isGlobalDefaultOtpEnabled } from "../utils/otpHelper.js";
+import { generateOTP, hashOTP, verifyHashedOTP, matchesGlobalDefaultOtp, isGlobalDefaultOtpEnabled } from "../utils/otpHelper.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
@@ -22,6 +22,14 @@ export const registerVendor = async (req, res) => {
     try {
         const { fullName, email, mobile, farmLocation, password, fssaiLicense } = req.body;
 
+        if (!fullName || !email || !mobile || !farmLocation || !password) {
+            return handleResponse(res, 400, "Full name, email, mobile, location and password are required");
+        }
+
+        if (!/^[6-9]\d{9}$/.test(mobile)) {
+            return handleResponse(res, 400, "Invalid mobile number");
+        }
+
         // Parse nested bank details if present
         let bankDetails = {};
         if (req.body.bankDetails) {
@@ -30,13 +38,9 @@ export const registerVendor = async (req, res) => {
                     ? JSON.parse(req.body.bankDetails)
                     : req.body.bankDetails;
             } catch (e) {
-                // If it's not JSON string, assume standard object if keys are flat.
-                // Or maybe the frontend sends individual fields like bankAccountNo etc.
-                // Let's rely on JSON string for simpler handling of nested obj in FormData
                 console.error("Bank Details parsing error", e);
             }
         } else {
-            // Try flat structure if user sent individual fields
             bankDetails = {
                 accountHolderName: req.body['bankDetails[accountHolderName]'] || req.body.accountHolderName,
                 accountNumber: req.body['bankDetails[accountNumber]'] || req.body.accountNumber,
@@ -45,37 +49,31 @@ export const registerVendor = async (req, res) => {
             };
         }
 
-        const exists = await Vendor.findOne({ email });
-        if (exists)
-            return handleResponse(res, 409, "Vendor already exists");
+        const existsByEmail = await Vendor.findOne({ email });
+        if (existsByEmail) return handleResponse(res, 409, "Email already registered");
+
+        const existsByMobile = await Vendor.findOne({ mobile });
+        if (existsByMobile) return handleResponse(res, 409, "Mobile number already registered");
 
         if (!farmLocation || typeof farmLocation !== 'string') {
             return handleResponse(res, 400, "Farm / Business location is required");
         }
         const locationTrimmed = farmLocation.trim();
         if (!/^[A-Za-z\s]+,\s*[A-Za-z\s]+$/.test(locationTrimmed)) {
-            return handleResponse(res, 400, "Business location must be in format: City, State (e.g. Indore, Madhya Pradesh)");
+            return handleResponse(res, 400, "Business location must be in format: City, State");
         }
 
-        // Handle File Uploads
+        // Handle File Uploads (all optional)
         let profilePictureUrl = "";
         let aadharCardUrl = "";
         let panCardUrl = "";
         let shopProofUrl = "";
 
         if (req.files) {
-            if (req.files.profilePicture) {
-                profilePictureUrl = await uploadToCloudinary(req.files.profilePicture[0].buffer, "vendors/profiles");
-            }
-            if (req.files.aadharFile) {
-                aadharCardUrl = await uploadToCloudinary(req.files.aadharFile[0].buffer, "vendors/aadhar");
-            }
-            if (req.files.panFile) {
-                panCardUrl = await uploadToCloudinary(req.files.panFile[0].buffer, "vendors/pan");
-            }
-            if (req.files.shopProofFile) {
-                shopProofUrl = await uploadToCloudinary(req.files.shopProofFile[0].buffer, "vendors/shop_proof");
-            }
+            if (req.files.profilePicture) profilePictureUrl = await uploadToCloudinary(req.files.profilePicture[0].buffer, "vendors/profiles");
+            if (req.files.aadharFile) aadharCardUrl = await uploadToCloudinary(req.files.aadharFile[0].buffer, "vendors/aadhar");
+            if (req.files.panFile) panCardUrl = await uploadToCloudinary(req.files.panFile[0].buffer, "vendors/pan");
+            if (req.files.shopProofFile) shopProofUrl = await uploadToCloudinary(req.files.shopProofFile[0].buffer, "vendors/shop_proof");
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -87,16 +85,17 @@ export const registerVendor = async (req, res) => {
             farmLocation: locationTrimmed,
             password: hashedPassword,
             profilePicture: profilePictureUrl,
-            fssaiLicense,
+            fssaiLicense: fssaiLicense || "",
             bankDetails,
             aadharCard: aadharCardUrl,
             panCard: panCardUrl,
-            shopEstablishmentProof: shopProofUrl
+            shopEstablishmentProof: shopProofUrl,
         });
 
         return handleResponse(res, 201, "Vendor registered successfully", {
             id: vendor._id,
             email: vendor.email,
+            mobile: vendor.mobile,
             status: vendor.status,
         });
     } catch (err) {
@@ -105,41 +104,115 @@ export const registerVendor = async (req, res) => {
     }
 };
 
-/* ================= LOGIN ================= */
+/* ================= LOGIN (Email + Password) ================= */
 export const loginVendor = async (req, res) => {
     try {
         const { email, password } = req.body;
 
         const vendor = await Vendor.findOne({ email });
-        if (!vendor)
-            return handleResponse(res, 404, "Vendor not found");
-
-        if (vendor.status === "pending")
-            return handleResponse(res, 403, "Account pending approval");
-
-        if (vendor.status === "blocked")
-            return handleResponse(res, 403, "Account blocked");
+        if (!vendor) return handleResponse(res, 404, "Vendor not found");
+        if (vendor.status === "pending") return handleResponse(res, 403, "Account pending approval");
+        if (vendor.status === "blocked") return handleResponse(res, 403, "Account blocked");
 
         const match = await bcrypt.compare(password, vendor.password);
-        if (!match)
-            return handleResponse(res, 400, "Invalid credentials");
+        if (!match) return handleResponse(res, 400, "Invalid credentials");
 
         const token = generateToken(vendor._id);
-
-        console.log(`[Vendor Login] Success for ${email}`);
         return handleResponse(res, 200, "Login successful", {
-            token,
-            id: vendor._id,
-            email: vendor.email,
-            fullName: vendor.fullName,
-            mobile: vendor.mobile,
-            farmLocation: vendor.farmLocation,
-            profilePicture: vendor.profilePicture,
-            status: vendor.status,
-            role: "vendor"
+            token, id: vendor._id, email: vendor.email,
+            fullName: vendor.fullName, mobile: vendor.mobile,
+            farmLocation: vendor.farmLocation, profilePicture: vendor.profilePicture,
+            status: vendor.status, role: "vendor"
         });
     } catch (err) {
         console.error("[Vendor Login Error]:", err);
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
+/* ================= SEND OTP (Mobile Login) ================= */
+export const sendVendorOTP = async (req, res) => {
+    try {
+        const { mobile } = req.body;
+        if (!mobile || !/^[6-9]\d{9}$/.test(mobile))
+            return handleResponse(res, 400, "Valid mobile number required");
+
+        const vendor = await Vendor.findOne({ mobile });
+        if (!vendor) return handleResponse(res, 404, "No vendor found with this mobile number");
+        if (vendor.status === "blocked") return handleResponse(res, 403, "Account blocked");
+
+        if (isGlobalDefaultOtpEnabled())
+            return handleResponse(res, 200, "Default OTP mode active. Use DEFAULT_OTP to login.");
+
+        const existing = await OTP.findOne({ mobile, role: "vendor" });
+        if (existing) {
+            const diff = (new Date() - existing.updatedAt) / 1000;
+            if (diff < 15) return handleResponse(res, 429, "Wait 15 seconds before requesting another OTP");
+        }
+
+        const otp = generateOTP();
+        const hashedOtp = await hashOTP(otp);
+        await OTP.findOneAndUpdate(
+            { mobile, role: "vendor" },
+            { otp: hashedOtp, expiresAt: new Date(Date.now() + 5 * 60 * 1000), verified: false },
+            { upsert: true }
+        );
+
+        const smsSent = await sendSMS(mobile, otp);
+        if (!smsSent) {
+            await OTP.deleteOne({ mobile, role: "vendor" });
+            return handleResponse(res, 500, "Failed to send SMS. Please try again.");
+        }
+
+        return handleResponse(res, 200, "OTP sent successfully");
+    } catch (err) {
+        console.error("Send Vendor OTP error:", err);
+        return handleResponse(res, 500, "Server error");
+    }
+};
+
+/* ================= VERIFY OTP (Mobile Login) ================= */
+export const verifyVendorOTP = async (req, res) => {
+    try {
+        const { mobile, otp } = req.body;
+        if (!mobile || !otp) return handleResponse(res, 400, "Mobile and OTP are required");
+
+        const vendor = await Vendor.findOne({ mobile });
+        if (!vendor) return handleResponse(res, 404, "Vendor not found");
+        if (vendor.status === "blocked") return handleResponse(res, 403, "Account blocked");
+
+        // Global default OTP
+        if (matchesGlobalDefaultOtp(otp)) {
+            await OTP.deleteOne({ mobile, role: "vendor" });
+            const token = generateToken(vendor._id);
+            return handleResponse(res, 200, "Login successful", {
+                token, id: vendor._id, email: vendor.email,
+                fullName: vendor.fullName, mobile: vendor.mobile,
+                farmLocation: vendor.farmLocation, profilePicture: vendor.profilePicture,
+                status: vendor.status, role: "vendor"
+            });
+        }
+
+        const otpRecord = await OTP.findOne({ mobile, role: "vendor" });
+        if (!otpRecord) return handleResponse(res, 404, "OTP not found or expired");
+        if (otpRecord.expiresAt < new Date()) {
+            await OTP.deleteOne({ mobile, role: "vendor" });
+            return handleResponse(res, 400, "OTP expired");
+        }
+
+        const isMatch = await verifyHashedOTP(otp, otpRecord.otp);
+        if (!isMatch) return handleResponse(res, 400, "Invalid OTP");
+
+        await OTP.deleteOne({ mobile, role: "vendor" });
+        const token = generateToken(vendor._id);
+        return handleResponse(res, 200, "Login successful", {
+            token, id: vendor._id, email: vendor.email,
+            fullName: vendor.fullName, mobile: vendor.mobile,
+            farmLocation: vendor.farmLocation, profilePicture: vendor.profilePicture,
+            status: vendor.status, role: "vendor"
+        });
+    } catch (err) {
+        console.error("Verify Vendor OTP error:", err);
         return handleResponse(res, 500, "Server error");
     }
 };

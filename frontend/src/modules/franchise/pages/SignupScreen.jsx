@@ -13,6 +13,9 @@ import {
   MapPin,
   Building2,
   Mail,
+  Lock,
+  Eye,
+  EyeOff,
   ChevronRight,
   Loader2,
 } from "lucide-react";
@@ -39,11 +42,12 @@ export default function SignupScreen() {
     ownerName: "",
     mobile: "",
     email: "",
+    password: "",
     area: "",
     city: "",
     state: "",
     servedCategories: [],
-    location: null, // {lat, lng}
+    location: null,
     formattedAddress: null,
     fssaiNumber: "",
     gstNumber: "",
@@ -52,6 +56,7 @@ export default function SignupScreen() {
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [categories, setCategories] = useState([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -132,13 +137,22 @@ export default function SignupScreen() {
       formData.mobile.length === 10 &&
       formData.franchiseName &&
       formData.ownerName &&
-      formData.location // Require location selection
+      formData.location
     ) {
-      if (!isValidFssai(formData.fssaiNumber)) {
+      if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        alert("Please enter a valid email address");
+        return;
+      }
+      if (!formData.password || formData.password.length < 6) {
+        alert("Password must be at least 6 characters");
+        return;
+      }
+      // FSSAI/GST optional — validate only if filled
+      if (formData.fssaiNumber && !isValidFssai(formData.fssaiNumber)) {
         alert("Please enter a valid 14-digit FSSAI number");
         return;
       }
-      if (!isValidGst14(formData.gstNumber)) {
+      if (formData.gstNumber && !isValidGst14(formData.gstNumber)) {
         alert("Please enter a valid GST number (e.g. 22AAAAA0000A1Z5)");
         return;
       }
@@ -148,10 +162,11 @@ export default function SignupScreen() {
           franchiseName: formData.franchiseName,
           ownerName: formData.ownerName,
           mobile: formData.mobile,
+          email: formData.email,
+          password: formData.password,
           area: formData.area,
           city: formData.city,
           state: formData.state,
-          email: formData.email,
           servedCategories: formData.servedCategories,
           location: formData.location,
           formattedAddress: formData.formattedAddress,
@@ -386,10 +401,57 @@ export default function SignupScreen() {
                     </div>
                   </div>
 
+                  {/* Email + Password */}
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] px-1">
+                      Email Address <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative group">
+                      <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors">
+                        <Mail size={16} />
+                      </div>
+                      <input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => handleChange("email", e.target.value)}
+                        placeholder="business@email.com"
+                        className="w-full h-12 pl-12 pr-4 bg-slate-50 border border-slate-200 rounded-sm outline-none text-xs font-black text-slate-900 placeholder:text-slate-300 focus:bg-white focus:border-slate-900 transition-all font-sans"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] px-1">
+                      Password <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative group">
+                      <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors">
+                        <Lock size={16} />
+                      </div>
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={formData.password}
+                        onChange={(e) => handleChange("password", e.target.value)}
+                        placeholder="Min. 6 characters"
+                        className="w-full h-12 pl-12 pr-12 bg-slate-50 border border-slate-200 rounded-sm outline-none text-xs font-black text-slate-900 placeholder:text-slate-300 focus:bg-white focus:border-slate-900 transition-all font-sans"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((p) => !p)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-900 transition-colors"
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                    {formData.password && formData.password.length < 6 && (
+                      <p className="text-[9px] text-red-500 font-bold px-1">Min. 6 characters required</p>
+                    )}
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] px-1">
-                        FSSAI Number <span className="text-red-500">*</span>
+                        FSSAI Number
                       </label>
                       <div className="relative group">
                         <input
@@ -414,7 +476,7 @@ export default function SignupScreen() {
                     </div>
                     <div className="space-y-2">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] px-1">
-                        GST Number <span className="text-red-500">*</span>
+                        GST Number
                       </label>
                       <div className="relative group">
                         <input
@@ -499,9 +561,13 @@ export default function SignupScreen() {
                       formData.mobile.length < 10 ||
                       !formData.franchiseName ||
                       !formData.location ||
+                      !formData.email ||
+                      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) ||
+                      !formData.password ||
+                      formData.password.length < 6 ||
                       formData.servedCategories.length === 0 ||
-                      !isValidFssai(formData.fssaiNumber) ||
-                      !isValidGst14(formData.gstNumber)
+                      (formData.fssaiNumber && !isValidFssai(formData.fssaiNumber)) ||
+                      (formData.gstNumber && !isValidGst14(formData.gstNumber))
                     }
                     className="w-full h-14 bg-slate-900 text-white rounded-sm font-black uppercase text-[11px] tracking-[0.3em] shadow-xl hover:bg-slate-800 active:scale-[0.98] transition-all disabled:bg-slate-200 disabled:text-slate-400 flex items-center justify-center gap-3 mt-4">
                     Register Now <ArrowRight size={16} />

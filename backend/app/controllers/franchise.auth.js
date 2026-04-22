@@ -35,6 +35,8 @@ export const registerFranchise = async (req, res) => {
       franchiseName,
       ownerName,
       mobile,
+      email,
+      password,
       city,
       area,
       state,
@@ -49,17 +51,20 @@ export const registerFranchise = async (req, res) => {
       return handleResponse(res, 400, "All fields are required");
     }
 
-    if (!fssaiNumber) {
-      return handleResponse(res, 400, "FSSAI number is required");
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return handleResponse(res, 400, "Valid email address is required");
     }
-    if (!isValidFssaiNumber(fssaiNumber)) {
+
+    if (!password || password.length < 6) {
+      return handleResponse(res, 400, "Password must be at least 6 characters");
+    }
+
+    // FSSAI and GST are optional at registration — validated only if provided
+    if (fssaiNumber && !isValidFssaiNumber(fssaiNumber)) {
       return handleResponse(res, 400, "Invalid FSSAI number (must be 14 digits)");
     }
 
-    if (!gstNumber) {
-      return handleResponse(res, 400, "GST number is required");
-    }
-    if (!isValidFranchiseGst14(gstNumber)) {
+    if (gstNumber && !isValidFranchiseGst14(gstNumber)) {
       return handleResponse(res, 400, "Invalid GST number format");
     }
 
@@ -146,6 +151,7 @@ export const registerFranchise = async (req, res) => {
         franchiseName,
         ownerName,
         mobile,
+        email: email.toLowerCase().trim(),
         city,
         area,
         state,
@@ -158,9 +164,10 @@ export const registerFranchise = async (req, res) => {
         serviceHexagons: initialHexagons,
         isVerified: false,
         status: "pending",
+        password: await bcrypt.hash(password, 10),
         kyc: {
-          fssaiNumber: normalizeFssaiNumber(fssaiNumber),
-          gstNumber: normalizeFranchiseGst14(gstNumber),
+          ...(fssaiNumber ? { fssaiNumber: normalizeFssaiNumber(fssaiNumber) } : {}),
+          ...(gstNumber ? { gstNumber: normalizeFranchiseGst14(gstNumber) } : {}),
         },
       });
     }
@@ -434,6 +441,52 @@ export const verifyFranchiseOTP = async (req, res) => {
     });
   } catch (err) {
     console.error(err);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+/* ================= EMAIL + PASSWORD LOGIN ================= */
+export const loginFranchiseWithPassword = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return handleResponse(res, 400, "Email and password are required");
+    }
+
+    const franchise = await Franchise.findOne({
+      email: email.toLowerCase().trim(),
+    }).select("+password");
+
+    if (!franchise) {
+      return handleResponse(res, 404, "No franchise found with this email");
+    }
+
+    if (franchise.status === "blocked") {
+      return handleResponse(res, 403, "Account blocked");
+    }
+
+    if (!franchise.password) {
+      return handleResponse(
+        res,
+        400,
+        "Password login not set up. Please use OTP login.",
+      );
+    }
+
+    const isMatch = await bcrypt.compare(password, franchise.password);
+    if (!isMatch) {
+      return handleResponse(res, 401, "Incorrect password");
+    }
+
+    const token = generateToken(franchise._id);
+    const hydrated = await Franchise.findById(franchise._id).populate("servedCategories");
+    const franchiseObj = hydrated?.toObject?.() || franchise.toObject();
+    delete franchiseObj.password;
+
+    return handleResponse(res, 200, "Login successful", { ...franchiseObj, token });
+  } catch (err) {
+    console.error("Email login error:", err);
     return handleResponse(res, 500, "Server error");
   }
 };

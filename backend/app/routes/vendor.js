@@ -2,6 +2,8 @@ import express from "express";
 import {
     registerVendor,
     loginVendor,
+    sendVendorOTP,
+    verifyVendorOTP,
     getVendorMe,
     updateVendorProfile,
     forgotVendorPassword,
@@ -28,6 +30,8 @@ router.post("/register", upload.fields([
 ]), registerVendor);
 
 router.post("/login", loginVendor);
+router.post("/send-otp", sendVendorOTP);
+router.post("/verify-otp", verifyVendorOTP);
 router.get("/me", protectVendor, getVendorMe);
 
 router.put("/update", protectVendor, upload.fields([

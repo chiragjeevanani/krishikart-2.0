@@ -7,6 +7,7 @@ import {
   updateFranchiseProfile,
   changeFranchisePassword,
   uploadFranchiseDocuments,
+  loginFranchiseWithPassword,
 } from "../controllers/franchise.auth.js";
 import {
   submitKYC,
@@ -36,6 +37,7 @@ const router = express.Router();
 router.post("/register", registerFranchise);
 router.post("/send-otp", sendFranchiseOTP);
 router.post("/verify-otp", verifyFranchiseOTP);
+router.post("/login", loginFranchiseWithPassword);
 router.get("/me", protectFranchise, getFranchiseMe);
 router.put(
   "/update",
