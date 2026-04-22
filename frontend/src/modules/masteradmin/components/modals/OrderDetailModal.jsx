@@ -209,10 +209,12 @@ const OrderDetailModal = ({ isOpen, onClose, orderId, onProcure, onAllowPartial 
                                 </h1>
                                 {!isLoading && order && (
                                     <StatusBadge status={
-                                        Array.isArray(order.assignmentAttempts) &&
-                                        order.assignmentAttempts.some(a => a.reason === 'rejected')
-                                            ? 'franchise_rejected'
-                                            : order.orderStatus
+                                        order.orderStatus === 'Cancelled'
+                                            ? 'Cancelled'
+                                            : Array.isArray(order.assignmentAttempts) &&
+                                              order.assignmentAttempts.some(a => a.reason === 'rejected')
+                                                ? 'franchise_rejected'
+                                                : order.orderStatus
                                     } />
                                 )}
                             </div>

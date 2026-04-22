@@ -1858,10 +1858,93 @@ export const rejectFranchiseOrder = async (req, res) => {
 
     await order.save();
 
+    let reassigned = false;
     try {
-      await assignOrderToFranchise(order._id);
+      reassigned = await assignOrderToFranchise(order._id);
     } catch (e) {
       console.error("[rejectFranchiseOrder] Reassignment failed:", e);
+    }
+
+    // If no other franchise found → cancel order and refund user
+    if (!reassigned) {
+      const freshOrder = await Order.findById(order._id);
+      if (freshOrder && freshOrder.franchiseId === null) {
+        freshOrder.orderStatus = "Cancelled";
+        freshOrder.statusHistory.push({
+          status: "Cancelled",
+          updatedAt: new Date(),
+          updatedBy: "system:no_franchise_available",
+        });
+        await freshOrder.save();
+
+        try {
+          const user = await User.findById(freshOrder.userId);
+          if (user) {
+            // UPI / Card — refund to wallet
+            if (["UPI", "Card"].includes(freshOrder.paymentMethod) && freshOrder.paymentStatus === "Completed") {
+              user.walletBalance = Number((user.walletBalance + freshOrder.totalAmount).toFixed(2));
+              user.walletTransactions = user.walletTransactions || [];
+              user.walletTransactions.unshift({
+                txnId: `REF-${Date.now()}`,
+                type: "Refund",
+                amount: freshOrder.totalAmount,
+                status: "Success",
+                note: `Refund for order ${freshOrder._id} — no franchise available (${freshOrder.paymentMethod})`,
+                referenceOrderId: freshOrder._id,
+                createdAt: new Date(),
+              });
+              freshOrder.paymentStatus = "Refunded";
+              await freshOrder.save();
+              console.log(`[Refund] ₹${freshOrder.totalAmount} refunded to wallet for user ${freshOrder.userId}`);
+            }
+            // Wallet payment — refund to wallet
+            if (freshOrder.paymentMethod === "Wallet") {
+              user.walletBalance = Number((user.walletBalance + freshOrder.totalAmount).toFixed(2));
+              user.walletTransactions = user.walletTransactions || [];
+              user.walletTransactions.unshift({
+                txnId: `REF-${Date.now()}`,
+                type: "Refund",
+                amount: freshOrder.totalAmount,
+                status: "Success",
+                note: `Refund for order ${freshOrder._id} — no franchise available`,
+                referenceOrderId: freshOrder._id,
+                createdAt: new Date(),
+              });
+              freshOrder.paymentStatus = "Refunded";
+              await freshOrder.save();
+            }
+            // Credit — restore credit limit
+            if (freshOrder.paymentMethod === "Credit" || freshOrder.paymentMethod === "Credit + Online") {
+              const refundedCredit = freshOrder.paymentMethod === "Credit + Online"
+                ? Number(freshOrder.creditAmountUsed || 0)
+                : freshOrder.totalAmount;
+              user.usedCredit = Math.max(0, user.usedCredit - refundedCredit);
+              user.walletTransactions = user.walletTransactions || [];
+              user.walletTransactions.unshift({
+                txnId: `CRR-${Date.now()}`,
+                type: "Credit Refunded",
+                amount: refundedCredit,
+                status: "Success",
+                note: `Credit refunded for order ${freshOrder._id} — no franchise available`,
+                referenceOrderId: freshOrder._id,
+                createdAt: new Date(),
+              });
+            }
+            await user.save();
+          }
+        } catch (refundErr) {
+          console.error("[rejectFranchiseOrder] Refund error:", refundErr);
+        }
+
+        await createUserNotification({
+          userId: freshOrder.userId,
+          type: "order_update",
+          title: "Order Cancelled",
+          message: `Sorry, no store is available to fulfil order #${freshOrder._id.toString().slice(-6)}. Your payment has been refunded.`,
+          link: `/order-detail/${freshOrder._id}`,
+          meta: { orderId: freshOrder._id.toString(), status: "Cancelled" },
+        });
+      }
     }
 
     const updated = await Order.findById(order._id);

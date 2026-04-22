@@ -257,8 +257,9 @@ export default function OrdersScreen() {
         return () => clearTimeout(timer);
     }, []);
 
-    // Orders that were rejected by at least one franchise
+    // Orders that were rejected by at least one franchise (and not yet cancelled/resolved)
     const franchiseRejectedCount = allOrders.filter(order =>
+        order.orderStatus !== 'Cancelled' &&
         Array.isArray(order.assignmentAttempts) &&
         order.assignmentAttempts.some(a => a.reason === 'rejected')
     ).length;
@@ -277,7 +278,8 @@ export default function OrdersScreen() {
         if (activeFilter === 'all') {
             matchesFilter = true;
         } else if (activeFilter === 'franchise_rejected') {
-            matchesFilter = Array.isArray(order.assignmentAttempts) &&
+            matchesFilter = order.orderStatus !== 'Cancelled' &&
+                Array.isArray(order.assignmentAttempts) &&
                 order.assignmentAttempts.some(a => a.reason === 'rejected');
         } else {
             matchesFilter = order.orderStatus.toLowerCase() === activeFilter.toLowerCase();

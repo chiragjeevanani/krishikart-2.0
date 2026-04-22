@@ -59,17 +59,30 @@ export default function OrdersTable({ orders, onAction, onOrderClick, onProcure,
                         >
                             <td className="px-4 py-4">
                                 <div className="flex flex-col">
-                                    <span className={cn(
-                                        "font-bold text-[11px] tracking-widest uppercase",
-                                        order.franchiseId ? "text-slate-900" : "text-amber-600"
-                                    )}>
-                                        {order.franchiseId ? (order.franchiseId.franchiseName || order.franchiseId.ownerName) : 'Unassigned'}
-                                    </span>
-                                    {order.franchiseId && (
-                                        <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wide mt-0.5">
-                                            {order.franchiseId.franchiseName ? order.franchiseId.ownerName : order.franchiseId.mobile}
-                                        </span>
-                                    )}
+                                    {(() => {
+                                        const wasRejected = Array.isArray(order.assignmentAttempts) && order.assignmentAttempts.some(a => a.reason === 'rejected');
+                                        if (order.franchiseId) {
+                                            return (
+                                                <>
+                                                    <span className="font-bold text-[11px] tracking-widest uppercase text-slate-900">
+                                                        {order.franchiseId.franchiseName || order.franchiseId.ownerName}
+                                                    </span>
+                                                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wide mt-0.5">
+                                                        {order.franchiseId.franchiseName ? order.franchiseId.ownerName : order.franchiseId.mobile}
+                                                    </span>
+                                                </>
+                                            );
+                                        }
+                                        if (wasRejected) {
+                                            return (
+                                                <>
+                                                    <span className="font-bold text-[11px] tracking-widest uppercase text-orange-600">Awaiting Reassignment</span>
+                                                    <span className="text-[9px] text-orange-400 font-bold uppercase tracking-wide mt-0.5">Rejected — finding store</span>
+                                                </>
+                                            );
+                                        }
+                                        return <span className="font-bold text-[11px] tracking-widest uppercase text-amber-600">Unassigned</span>;
+                                    })()}
                                 </div>
                             </td>
                             <td className="px-4 py-4">
@@ -106,10 +119,12 @@ export default function OrdersTable({ orders, onAction, onOrderClick, onProcure,
                             </td>
                             <td className="px-4 py-4">
                                 <StatusBadge status={
-                                    Array.isArray(order.assignmentAttempts) &&
-                                    order.assignmentAttempts.some(a => a.reason === 'rejected')
-                                        ? 'franchise_rejected'
-                                        : order.orderStatus
+                                    order.orderStatus === 'Cancelled'
+                                        ? 'Cancelled'
+                                        : Array.isArray(order.assignmentAttempts) &&
+                                          order.assignmentAttempts.some(a => a.reason === 'rejected')
+                                            ? 'franchise_rejected'
+                                            : order.orderStatus
                                 } />
                             </td>
                             <td className="px-4 py-4 text-right">

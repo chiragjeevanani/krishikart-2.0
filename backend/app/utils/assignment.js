@@ -46,9 +46,11 @@ export async function fetchFranchiseCandidatesForLocation(
     _id: { $nin: excludeIds },
   };
 
-  // Strict City Filter
+  // City Filter: flexible partial match (case-insensitive)
+  // Avoids strict prefix match that breaks when area/locality is extracted instead of city
   if (city) {
-    baseQuery.city = { $regex: new RegExp(`^${city}$`, "i") };
+    const escapedCity = city.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    baseQuery.city = { $regex: new RegExp(escapedCity, "i") };
   }
 
   const categoryObjectIds = (categoryIds || [])
@@ -232,22 +234,29 @@ export const assignOrderToFranchise = async (orderId) => {
       lng: Number(coords[0]),
     };
 
-    // Extract city from shippingAddress if available
+    // Extract city: prefer shippingLocation.city (geocoded, accurate),
+    // fallback to parsing shippingAddress string from the END, skipping pincodes.
     let city = null;
-    if (order.shippingAddress) {
-        const parts = order.shippingAddress.split(',');
-        // Usually city is the second to last part in the buildFullAddress logic
-        // Flat, Floor, Colony, Landmark, City, State
-        if (parts.length >= 2) {
-            city = parts[parts.length - 2].trim();
-        }
+    if (order.shippingLocation?.city) {
+      city = order.shippingLocation.city.trim();
+    } else if (order.shippingAddress) {
+      const parts = order.shippingAddress.split(",").map((p) => p.trim()).filter(Boolean);
+      // Walk from the end: skip pure pincodes (digits only) and parts containing digits (e.g. "456010")
+      // First non-numeric part from the end is the city
+      for (let i = parts.length - 1; i >= 0; i--) {
+        const part = parts[i];
+        if (/\d{4,6}/.test(part)) continue; // skip pincode or state+pincode
+        city = part;
+        break;
+      }
     }
+    console.log(`[Assignment] City for order ${orderId}: "${city}"`);
 
     const franchise = await findNearestFranchise(
       location,
       excludeIds,
       categoryIds,
-      city
+      city,
     );
 
     if (franchise) {

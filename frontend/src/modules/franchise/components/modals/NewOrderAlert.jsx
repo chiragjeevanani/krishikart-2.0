@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, X, Bell, ArrowRight, Package } from 'lucide-react';
+import { ShoppingBag, X, Bell, ArrowRight, Package, MapPin, CreditCard } from 'lucide-react';
 import { useFranchiseOrders } from '../../contexts/FranchiseOrdersContext';
 import { useNavigate } from 'react-router-dom';
 import api from '@/lib/axios';
+import sellerAlertSound from '@/assets/sounds/seller_alert.mp3';
 
 const NewOrderAlert = () => {
     const {
@@ -21,6 +22,26 @@ const NewOrderAlert = () => {
 
     const [orderDetail, setOrderDetail] = useState(null);
     const [detailLoading, setDetailLoading] = useState(false);
+    const audioRef = useRef(null);
+
+    // Play sound when alert opens
+    useEffect(() => {
+        if (!isAlertOpen || !newOrderData) return;
+        try {
+            if (!audioRef.current) {
+                audioRef.current = new Audio(sellerAlertSound);
+                audioRef.current.volume = 0.8;
+            }
+            audioRef.current.currentTime = 0;
+            audioRef.current.play().catch(() => {});
+        } catch (_) {}
+        return () => {
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current.currentTime = 0;
+            }
+        };
+    }, [isAlertOpen, newOrderData]);
 
     useEffect(() => {
         if (!isAlertOpen || !orderId) return;
@@ -33,29 +54,18 @@ const NewOrderAlert = () => {
                 if (res.data?.success) setOrderDetail(res.data.result);
                 else setOrderDetail(null);
             })
-            .catch(() => {
-                if (cancelled) return;
-                setOrderDetail(null);
-            })
-            .finally(() => {
-                if (cancelled) return;
-                setDetailLoading(false);
-            });
-
-        return () => {
-            cancelled = true;
-        };
+            .catch(() => { if (!cancelled) setOrderDetail(null); })
+            .finally(() => { if (!cancelled) setDetailLoading(false); });
+        return () => { cancelled = true; };
     }, [isAlertOpen, orderId]);
 
     const statusNormalized = (orderDetail?.orderStatus || newOrderData?.orderStatus || '').toString().toLowerCase();
-    /** System auto-assigned nearest franchise — alert shows reject only (not the same as any "Accepted" order). */
     const autoAccepted =
         newOrderData?.autoAccepted === true ||
         newOrderData?.showRejectOnly === true ||
         newOrderData?.franchiseAutoAccepted === true ||
         orderDetail?.franchiseAutoAccepted === true;
-    const canAccept =
-        !autoAccepted && ['assigned', 'placed', 'pending', 'new'].includes(statusNormalized);
+    const canAccept = !autoAccepted && ['assigned', 'placed', 'pending', 'new'].includes(statusNormalized);
     const canReject = statusNormalized !== 'cancelled' && statusNormalized !== 'delivered';
 
     const hotelName =
@@ -68,11 +78,14 @@ const NewOrderAlert = () => {
 
     const totalAmount = orderDetail?.totalAmount ?? orderDetail?.total ?? newOrderData?.totalAmount ?? 0;
     const items = orderDetail?.items || newOrderData?.items || [];
+    const paymentMethod = orderDetail?.paymentMethod || newOrderData?.paymentMethod || '';
+    const shippingAddress = orderDetail?.shippingAddress || '';
 
     if (!isAlertOpen || !newOrderData) return null;
 
     const onAccept = async () => {
         if (!orderId) return;
+        audioRef.current?.pause();
         const ok = await acceptOrder(orderId);
         if (!ok) return;
         setIsAlertOpen(false);
@@ -81,6 +94,7 @@ const NewOrderAlert = () => {
 
     const onReject = async () => {
         if (!orderId) return;
+        audioRef.current?.pause();
         if (autoAccepted) {
             const ok = await rejectFranchiseOrder(orderId);
             if (!ok) return;
@@ -94,172 +108,203 @@ const NewOrderAlert = () => {
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-6">
+            <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center sm:p-4">
                 {/* Backdrop */}
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    onClick={() => setIsAlertOpen(false)}
-                    className="absolute inset-0 bg-slate-900/80 backdrop-blur-md"
+                    onClick={() => { audioRef.current?.pause(); setIsAlertOpen(false); }}
+                    className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                 />
 
-                {/* Modal Content */}
+                {/* Modal */}
                 <motion.div
-                    initial={{ scale: 0.9, opacity: 0, y: 40 }}
-                    animate={{ scale: 1, opacity: 1, y: 0 }}
-                    exit={{ scale: 0.9, opacity: 0, y: 40 }}
-                    className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-white/20"
+                    initial={{ y: 80, opacity: 0, scale: 0.97 }}
+                    animate={{ y: 0, opacity: 1, scale: 1 }}
+                    exit={{ y: 80, opacity: 0, scale: 0.97 }}
+                    transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+                    className="relative w-full sm:max-w-md bg-white sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden"
                 >
-                    {/* Top Accent Bar */}
-                    <div className="h-3 bg-emerald-500 w-full animate-pulse" />
+                    {/* Top green pulse bar */}
+                    <div className="h-1 w-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-400" />
 
-                    <div className="p-10">
-                        {/* Header Area */}
-                        <div className="flex justify-between items-start mb-8">
+                    {/* Header */}
+                    <div className="px-5 pt-5 pb-4 flex items-start justify-between">
+                        <div className="flex items-center gap-3">
                             <div className="relative">
-                                <div className="absolute inset-0 bg-emerald-400 rounded-full animate-ping opacity-20" />
-                                <div className="relative bg-emerald-50 p-6 rounded-2xl">
-                                    <Bell className="text-emerald-600 w-10 h-10 animate-bounce" />
+                                <div className="absolute inset-0 bg-emerald-400 rounded-full animate-ping opacity-30 scale-110" />
+                                <div className="relative bg-emerald-50 p-2.5 rounded-xl">
+                                    <Bell className="text-emerald-600 w-5 h-5" />
                                 </div>
                             </div>
-                            <button
-                                onClick={() => setIsAlertOpen(false)}
-                                className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-900"
-                            >
-                                <X size={24} />
-                            </button>
+                            <div>
+                                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-0.5">
+                                    {autoAccepted ? 'Auto-Accepted' : 'New Assignment'}
+                                </p>
+                                <h2 className="text-lg font-black text-slate-900 leading-tight">
+                                    {autoAccepted ? 'New Order Incoming' : 'Order Assigned to You'}
+                                </h2>
+                            </div>
                         </div>
+                        <button
+                            onClick={() => { audioRef.current?.pause(); setIsAlertOpen(false); }}
+                            className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors text-slate-400 hover:text-slate-700 mt-0.5"
+                        >
+                            <X size={18} />
+                        </button>
+                    </div>
 
-                        {/* Title & Description */}
-                        <div className="mb-8">
-                            <h2 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">
-                                {autoAccepted ? 'New order — auto-accepted' : 'New Order Assigned!'}
-                            </h2>
-                            <p className="text-slate-500 font-bold text-lg leading-relaxed">
-                                {autoAccepted
-                                    ? 'This order is already accepted for your node. Reject only if you cannot fulfil it — we will try the next nearest franchise serving these categories.'
-                                    : 'A new order has been assigned to your franchise. Accept it to start processing, or reject to cancel.'}
-                            </p>
-                        </div>
+                    {/* Info banner */}
+                    <div className="mx-5 mb-4 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+                        <p className="text-[11px] font-semibold text-amber-700 leading-relaxed">
+                            {autoAccepted
+                                ? 'This order is auto-assigned to your store. Reject only if you cannot fulfil it.'
+                                : 'Accept this order to start processing, or reject to pass it on.'}
+                        </p>
+                    </div>
 
-                        {/* Order Details Card */}
-                        <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 mb-8">
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className="bg-white p-3 rounded-xl shadow-sm">
-                                    <ShoppingBag className="text-slate-900 w-6 h-6" />
-                                </div>
+                    {/* Order Card */}
+                    <div className="mx-5 mb-4 border border-slate-100 rounded-xl overflow-hidden">
+                        {/* Order ID row */}
+                        <div className="bg-slate-50 px-4 py-3 flex items-center justify-between border-b border-slate-100">
+                            <div className="flex items-center gap-2.5">
+                                <ShoppingBag className="text-slate-500 w-4 h-4" />
                                 <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Order Reference</p>
-                                    <p className="text-xl font-black text-slate-900">
-                                        #{orderId ? orderId.toString().slice(-6).toUpperCase() : '---'}
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Order Ref</p>
+                                    <p className="text-sm font-black text-slate-900">
+                                        #{orderId ? orderId.toString().slice(-6).toUpperCase() : '------'}
                                     </p>
                                 </div>
                             </div>
-
-                            <div className="h-px bg-slate-200 w-full my-4" />
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Store / Hotel</span>
-                                    <span className="text-sm font-bold text-slate-900 mt-1 line-clamp-1">{hotelName}</span>
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount</span>
-                                    <span className="text-sm font-bold text-slate-900 mt-1">₹{Number(totalAmount || 0).toLocaleString()}</span>
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Items</span>
-                                    <span className="text-sm font-bold text-slate-900 mt-1">{Array.isArray(items) ? items.length : 0}</span>
-                                </div>
-                            </div>
-
-                            {Array.isArray(items) && items.length > 0 && (
-                                <div className="mt-4">
-                                    <div className="h-px bg-slate-200 w-full mb-3" />
-                                    <div className="space-y-2">
-                                        {items.slice(0, 3).map((it, idx) => (
-                                            <div key={idx} className="flex items-center justify-between text-[11px] font-bold text-slate-600">
-                                                <span className="line-clamp-1">{it.name || it.productName || 'Item'}</span>
-                                                <span className="text-slate-900">{it.quantity ?? it.qty ?? 0}</span>
-                                            </div>
-                                        ))}
-                                        {items.length > 3 && (
-                                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                                +{items.length - 3} more
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="mt-4 flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                    <span className="text-sm font-bold text-slate-600 uppercase tracking-wider">
-                                        Status: {statusNormalized ? statusNormalized : 'auto-assigned'}
-                                    </span>
-                                </div>
-                                <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full uppercase tracking-widest">Priority</span>
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-wider">
+                                    {statusNormalized || 'accepted'}
+                                </span>
                             </div>
                         </div>
 
-                        {/* Actions — auto-accepted: only Reject (per product spec); legacy pool: Accept / Not Now / Reject / View */}
-                        {autoAccepted ? (
-                            <div className="flex flex-col gap-3">
-                                <button
-                                    type="button"
-                                    onClick={onReject}
-                                    disabled={!canReject || detailLoading}
-                                    className="h-16 w-full px-6 rounded-2xl bg-rose-600 text-white font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-rose-200 hover:bg-rose-700 transition-all disabled:opacity-50"
-                                >
-                                    {detailLoading ? 'Loading...' : canReject ? 'Reject order' : '—'}
-                                </button>
+                        {/* Stats row */}
+                        <div className="grid grid-cols-3 divide-x divide-slate-100">
+                            <div className="px-4 py-3">
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Customer</p>
+                                <p className="text-xs font-bold text-slate-800 truncate">{hotelName}</p>
                             </div>
-                        ) : (
-                            <div className="grid grid-cols-2 gap-4">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsAlertOpen(false)}
-                                    className="h-16 px-6 rounded-2xl border-2 border-slate-100 text-slate-500 font-black uppercase text-xs tracking-widest hover:bg-slate-50 hover:border-slate-200 transition-all"
-                                >
-                                    Not Now
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={onAccept}
-                                    disabled={!canAccept || detailLoading}
-                                    className="h-16 px-6 rounded-2xl bg-slate-900 text-white font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-slate-200 hover:bg-slate-800 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 group disabled:opacity-50 disabled:hover:scale-[1]"
-                                >
-                                    {detailLoading ? 'Loading...' : canAccept ? 'Accept' : 'Already Accepted'}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={onReject}
-                                    disabled={!canReject || detailLoading}
-                                    className="h-16 px-6 rounded-2xl bg-rose-600 text-white font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-rose-200 hover:bg-rose-700 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 group disabled:opacity-50 disabled:hover:scale-[1]"
-                                >
-                                    {detailLoading ? 'Loading...' : canReject ? 'Reject' : 'Already Cancelled'}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setIsAlertOpen(false);
-                                        navigate(`/franchise/orders`);
-                                    }}
-                                    className="h-16 px-6 rounded-2xl border-2 border-slate-100 text-slate-700 font-black uppercase text-xs tracking-[0.2em] hover:bg-slate-50 hover:border-slate-200 transition-all flex items-center justify-center gap-3"
-                                >
-                                    View Order
-                                    <ArrowRight size={18} />
-                                </button>
+                            <div className="px-4 py-3">
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Amount</p>
+                                <p className="text-xs font-bold text-slate-800">₹{Number(totalAmount || 0).toLocaleString()}</p>
+                            </div>
+                            <div className="px-4 py-3">
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Items</p>
+                                <p className="text-xs font-bold text-slate-800">{Array.isArray(items) ? items.length : 0}</p>
+                            </div>
+                        </div>
+
+                        {/* Items list */}
+                        {Array.isArray(items) && items.length > 0 && (
+                            <div className="border-t border-slate-100 px-4 py-3 space-y-1.5">
+                                {items.slice(0, 3).map((it, idx) => (
+                                    <div key={idx} className="flex items-center justify-between">
+                                        <span className="text-[11px] font-semibold text-slate-600 truncate max-w-[75%]">
+                                            {it.name || it.productName || 'Item'}
+                                        </span>
+                                        <span className="text-[11px] font-black text-slate-900 bg-slate-100 px-2 py-0.5 rounded-md">
+                                            ×{it.quantity ?? it.qty ?? 0}
+                                        </span>
+                                    </div>
+                                ))}
+                                {items.length > 3 && (
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pt-0.5">
+                                        +{items.length - 3} more items
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Payment + Address row */}
+                        {(paymentMethod || shippingAddress) && (
+                            <div className="border-t border-slate-100 px-4 py-3 flex flex-col gap-1.5">
+                                {paymentMethod && (
+                                    <div className="flex items-center gap-2">
+                                        <CreditCard size={11} className="text-slate-400 shrink-0" />
+                                        <span className="text-[11px] font-semibold text-slate-500">{paymentMethod}</span>
+                                    </div>
+                                )}
+                                {shippingAddress && (
+                                    <div className="flex items-start gap-2">
+                                        <MapPin size={11} className="text-slate-400 shrink-0 mt-0.5" />
+                                        <span className="text-[11px] font-semibold text-slate-500 line-clamp-2 leading-relaxed">{shippingAddress}</span>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
 
-                    {/* Footer Info */}
-                    <div className="bg-slate-900 py-4 px-8 flex items-center justify-center gap-2">
-                        <Package size={14} className="text-emerald-400" />
-                        <span className="text-[10px] font-bold text-white uppercase tracking-[0.3em]">Kisaankart Logistic Engine</span>
+                    {/* Action Buttons */}
+                    <div className="px-5 pb-5">
+                        {autoAccepted ? (
+                            <div className="flex flex-col gap-2.5">
+                                <button
+                                    type="button"
+                                    onClick={() => { audioRef.current?.pause(); setIsAlertOpen(false); navigate(`/franchise/orders`); }}
+                                    className="h-12 w-full rounded-xl bg-emerald-600 text-white font-black uppercase text-xs tracking-[0.15em] hover:bg-emerald-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                                >
+                                    View Order <ArrowRight size={15} />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={onReject}
+                                    disabled={!canReject || detailLoading}
+                                    className="h-11 w-full rounded-xl border-2 border-rose-200 text-rose-600 font-black uppercase text-xs tracking-[0.15em] hover:bg-rose-50 active:scale-[0.98] transition-all disabled:opacity-40"
+                                >
+                                    {detailLoading ? 'Loading...' : 'Reject Order'}
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col gap-2.5">
+                                <div className="grid grid-cols-2 gap-2.5">
+                                    <button
+                                        type="button"
+                                        onClick={onAccept}
+                                        disabled={!canAccept || detailLoading}
+                                        className="h-12 rounded-xl bg-emerald-600 text-white font-black uppercase text-xs tracking-[0.15em] hover:bg-emerald-700 active:scale-[0.98] transition-all disabled:opacity-40"
+                                    >
+                                        {detailLoading ? '...' : canAccept ? 'Accept' : 'Accepted'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={onReject}
+                                        disabled={!canReject || detailLoading}
+                                        className="h-12 rounded-xl border-2 border-rose-200 text-rose-600 font-black uppercase text-xs tracking-[0.15em] hover:bg-rose-50 active:scale-[0.98] transition-all disabled:opacity-40"
+                                    >
+                                        {detailLoading ? '...' : 'Reject'}
+                                    </button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => { audioRef.current?.pause(); setIsAlertOpen(false); }}
+                                        className="h-11 rounded-xl border border-slate-200 text-slate-500 font-bold uppercase text-xs tracking-widest hover:bg-slate-50 transition-all"
+                                    >
+                                        Not Now
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => { audioRef.current?.pause(); setIsAlertOpen(false); navigate(`/franchise/orders`); }}
+                                        className="h-11 rounded-xl border border-slate-200 text-slate-700 font-bold uppercase text-xs tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center gap-1.5"
+                                    >
+                                        View <ArrowRight size={13} />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="bg-slate-900 py-3 px-5 flex items-center justify-center gap-2">
+                        <Package size={12} className="text-emerald-400" />
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em]">Kisaankart Logistic Engine</span>
                     </div>
                 </motion.div>
             </div>
