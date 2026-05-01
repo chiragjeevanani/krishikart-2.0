@@ -18,6 +18,7 @@ import {
   Store
 } from 'lucide-react'
 import PageTransition from '../components/layout/PageTransition'
+import ShareModal from '../components/common/ShareModal'
 import { Button } from '@/components/ui/button'
 import api from '@/lib/axios'
 import { useEffect } from 'react'
@@ -40,6 +41,7 @@ export default function ProductDetailScreen() {
   const locationCtx = useLocation()
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [showShareModal, setShowShareModal] = useState(false)
 
   // Get existing cart item if any
   const cartItem = useMemo(() => cartItems.find(item => item.id === id || item._id === id), [cartItems, id])
@@ -102,23 +104,34 @@ export default function ProductDetailScreen() {
   const handleShare = async () => {
     const shareData = {
       title: product?.name || 'kisaankart Product',
-      text: `Check out this product on kisaankart: ${product?.name}`,
+      text: `Check out ${product?.name} on kisaankart - Fresh products delivered to your doorstep!`,
       url: window.location.href,
     }
 
     try {
-      if (navigator.share) {
+      // Try native share first (works on mobile)
+      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
         await navigator.share(shareData)
+        toast.success('Shared successfully!')
+      } else if (navigator.share) {
+        await navigator.share(shareData)
+        toast.success('Shared successfully!')
       } else {
-        await navigator.clipboard.writeText(window.location.href)
-        toast.success('Link copied to clipboard')
+        // Show custom share modal for desktop
+        setShowShareModal(true)
       }
     } catch (err) {
-      if (err.name !== 'AbortError') {
+      // User cancelled or error occurred
+      if (err.name === 'AbortError') {
+        console.log('Share cancelled by user')
+      } else {
         console.error('Error sharing:', err)
+        // Fallback to custom modal
+        setShowShareModal(true)
       }
     }
   }
+
 
   if (loading) {
     return (
@@ -145,11 +158,12 @@ export default function ProductDetailScreen() {
   const hasComparePrice = comparePrice > Number(currentPrice || 0)
 
   return (
-    <PageTransition>
-      <div className="bg-white pb-32 md:pb-20 min-h-screen">
-        {/* Mobile Header Actions */}
-        <div className="fixed top-0 left-0 right-0 z-50 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 flex justify-between pointer-events-none max-w-md mx-auto md:hidden bg-white/95 backdrop-blur-xl border-b border-slate-100/80 shadow-[0_1px_10px_rgba(0,0,0,0.04)]">
-          <button
+    <>
+      <PageTransition>
+        <div className="bg-white pb-32 md:pb-20 min-h-screen">
+          {/* Mobile Header Actions */}
+          <div className="fixed top-0 left-0 right-0 z-50 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 flex justify-between pointer-events-none max-w-md mx-auto md:hidden bg-white/95 backdrop-blur-xl border-b border-slate-100/80 shadow-[0_1px_10px_rgba(0,0,0,0.04)]">
+            <button
             onClick={() => navigate(-1)}
             className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white/90 shadow-sm border border-slate-100 text-slate-900 active:scale-90 transition-transform pointer-events-auto"
           >
@@ -424,7 +438,15 @@ export default function ProductDetailScreen() {
             </Button>
           </div>
         </div>
-      </div>
-    </PageTransition >
+        </div>
+      </PageTransition>
+
+      {/* Share Modal */}
+      <ShareModal 
+        isOpen={showShareModal} 
+        onClose={() => setShowShareModal(false)} 
+        product={product} 
+      />
+    </>
   )
 }

@@ -106,6 +106,7 @@ export default function DashboardScreen() {
         {
             header: 'Vendor Details',
             key: 'vendor',
+            width: '20%',
             render: (val, row) => (
                 <div className="flex items-center gap-3">
                     <div className="w-7 h-7 rounded-sm bg-slate-100 flex items-center justify-center text-slate-400">
@@ -121,6 +122,7 @@ export default function DashboardScreen() {
         {
             header: 'Status',
             key: 'status',
+            width: '20%',
             render: (val) => (
                 <div className={cn(
                     "px-2 py-0.5 rounded-sm text-[9px] font-bold uppercase tracking-widest border w-fit",
@@ -133,18 +135,22 @@ export default function DashboardScreen() {
         {
             header: 'Amount',
             key: 'amount',
+            width: '20%',
             align: 'right',
             render: (val) => <span className="font-bold text-slate-900 tabular-nums text-[11px]">₹{val.toLocaleString()}</span>
         },
         {
             header: 'Net Payable',
             key: 'netPayable',
+            width: '20%',
             align: 'right',
             render: (_, row) => <span className="font-bold text-blue-600 tabular-nums text-[11px]">₹{(row.amount * 0.95).toLocaleString()}</span>
         },
         {
             header: 'Date',
             key: 'date',
+            width: '20%',
+            align: 'right',
             render: (val) => <span className="text-[10px] text-slate-400 font-bold uppercase tabular-nums">{val}</span>
         }
     ];

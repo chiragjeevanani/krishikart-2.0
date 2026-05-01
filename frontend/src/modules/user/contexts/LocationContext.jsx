@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { getCurrentLocation, reverseGeocode, reverseGeocodeWithComponents } from '@/lib/geo';
+import { getCurrentLocation, getGeolocationPermissionState, reverseGeocode, reverseGeocodeWithComponents } from '@/lib/geo';
 
 const LocationContext = createContext();
 
@@ -31,27 +31,49 @@ export function LocationProvider({ children }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // Load from localStorage on mount
+    // On mount: always try live GPS first, fall back to localStorage only if GPS fails/denied
     useEffect(() => {
-        // Franchise (browsing / nearest franchise)
-        const savedFrLoc = localStorage.getItem('kk_franchise_location');
-        const savedFrAddr = localStorage.getItem('kk_franchise_address');
-        const savedFrPinned = localStorage.getItem('kk_franchise_location_pinned');
+        const init = async () => {
+            // Clear the "declined" flag so the location popup can show again on next visit
+            localStorage.removeItem('kk_location_declined');
 
-        if (savedFrLoc) setFranchiseLocation(JSON.parse(savedFrLoc));
-        if (savedFrAddr) setFranchiseAddress(savedFrAddr);
-        if (savedFrPinned === 'true') setHasFranchisePinned(true);
+            // Always load delivery location from localStorage (user explicitly pinned it)
+            const savedDelLoc = localStorage.getItem('kk_delivery_location');
+            const savedDelAddr = localStorage.getItem('kk_delivery_address');
+            const savedDelComp = localStorage.getItem('kk_delivery_address_components');
+            const savedDelPinned = localStorage.getItem('kk_delivery_location_pinned');
+            if (savedDelLoc) setDeliveryLocation(JSON.parse(savedDelLoc));
+            if (savedDelAddr) setDeliveryAddress(savedDelAddr);
+            if (savedDelComp) setDeliveryAddressComponents(JSON.parse(savedDelComp));
+            if (savedDelPinned === 'true') setHasDeliveryPinned(true);
 
-        // Delivery (checkout)
-        const savedDelLoc = localStorage.getItem('kk_delivery_location');
-        const savedDelAddr = localStorage.getItem('kk_delivery_address');
-        const savedDelComp = localStorage.getItem('kk_delivery_address_components');
-        const savedDelPinned = localStorage.getItem('kk_delivery_location_pinned');
+            // For franchise/browsing location: try live GPS first
+            const permState = await getGeolocationPermissionState();
+            if (permState !== 'denied') {
+                try {
+                    setLoading(true);
+                    const loc = await getCurrentLocation();
+                    // Always reverse-geocode fresh — overwrites any stale localStorage address
+                    await setPinnedFranchiseLocation({ lat: loc.lat, lng: loc.lng });
+                    return; // GPS succeeded — don't load stale localStorage
+                } catch {
+                    // GPS failed — fall through to localStorage
+                } finally {
+                    setLoading(false);
+                }
+            }
 
-        if (savedDelLoc) setDeliveryLocation(JSON.parse(savedDelLoc));
-        if (savedDelAddr) setDeliveryAddress(savedDelAddr);
-        if (savedDelComp) setDeliveryAddressComponents(JSON.parse(savedDelComp));
-        if (savedDelPinned === 'true') setHasDeliveryPinned(true);
+            // GPS unavailable or denied — load last known franchise location from localStorage
+            const savedFrLoc = localStorage.getItem('kk_franchise_location');
+            const savedFrAddr = localStorage.getItem('kk_franchise_address');
+            const savedFrPinned = localStorage.getItem('kk_franchise_location_pinned');
+            if (savedFrLoc) setFranchiseLocation(JSON.parse(savedFrLoc));
+            if (savedFrAddr) setFranchiseAddress(savedFrAddr);
+            if (savedFrPinned === 'true') setHasFranchisePinned(true);
+        };
+
+        init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const setPinnedFranchiseLocation = useCallback(async (loc) => {
@@ -62,18 +84,13 @@ export function LocationProvider({ children }) {
         setFranchiseLocation(normalized);
         localStorage.setItem('kk_franchise_location', JSON.stringify(normalized));
 
-        let addr = loc.address || null;
-        if (!addr) {
-            addr = await reverseGeocode(lat, lng);
-        }
+        // Always reverse-geocode fresh from coordinates — never trust a cached address string
+        // This ensures GPS coordinates always produce the correct current address
+        const addr = await reverseGeocode(lat, lng);
+        const finalAddr = addr || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 
-        if (addr) {
-            setFranchiseAddress(addr);
-            localStorage.setItem('kk_franchise_address', addr);
-        } else {
-            const fallbackAddr = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-            setFranchiseAddress(fallbackAddr);
-        }
+        setFranchiseAddress(finalAddr);
+        localStorage.setItem('kk_franchise_address', finalAddr);
 
         setHasFranchisePinned(true);
         localStorage.setItem('kk_franchise_location_pinned', 'true');

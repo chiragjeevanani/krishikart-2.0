@@ -124,16 +124,6 @@ export default function CodRemittanceScreen() {
                             <CheckCircle2 size={12} />
                             Verify
                         </button>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setRejectionModal({ open: true, id: _id });
-                            }}
-                            className="px-2 py-1 rounded bg-rose-600 text-white text-[10px] font-bold flex items-center gap-1"
-                        >
-                            <XCircle size={12} />
-                            Reject
-                        </button>
                     </div>
                 ) : <span className="text-[10px] text-slate-400">Reviewed</span>
             )

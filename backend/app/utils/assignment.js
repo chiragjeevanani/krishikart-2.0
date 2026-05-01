@@ -235,19 +235,23 @@ export const assignOrderToFranchise = async (orderId) => {
     };
 
     // Extract city: prefer shippingLocation.city (geocoded, accurate),
-    // fallback to parsing shippingAddress string from the END, skipping pincodes.
+    // fallback to parsing shippingAddress string.
+    // Address format: "Flat: X, Floor: Y, Colony, Landmark: Z, City, State[, Pincode]"
+    // City is always at parts.length - 2 (second from end), skipping trailing pincode if present.
     let city = null;
     if (order.shippingLocation?.city) {
       city = order.shippingLocation.city.trim();
     } else if (order.shippingAddress) {
       const parts = order.shippingAddress.split(",").map((p) => p.trim()).filter(Boolean);
-      // Walk from the end: skip pure pincodes (digits only) and parts containing digits (e.g. "456010")
-      // First non-numeric part from the end is the city
-      for (let i = parts.length - 1; i >= 0; i--) {
-        const part = parts[i];
-        if (/\d{4,6}/.test(part)) continue; // skip pincode or state+pincode
-        city = part;
-        break;
+      // Determine if last part is a pincode (pure digits)
+      const lastPart = parts[parts.length - 1];
+      const hasPincode = /^\d{4,6}$/.test(lastPart);
+      // City is second-from-last (before state), or third-from-last if pincode is present
+      // Format without pincode: [..., City, State]      → city = parts[length - 2]
+      // Format with pincode:    [..., City, State, Pin] → city = parts[length - 3]
+      const cityIndex = hasPincode ? parts.length - 3 : parts.length - 2;
+      if (cityIndex >= 0) {
+        city = parts[cityIndex];
       }
     }
     console.log(`[Assignment] City for order ${orderId}: "${city}"`);

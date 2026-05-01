@@ -330,9 +330,10 @@ export default function ProfileScreen() {
             setVendor(data.result);
             localStorage.setItem('vendorData', JSON.stringify(data.result));
             alert('Profile updated successfully!');
+            return data.result;
         } catch (error) {
             console.error('Update failed:', error);
-            alert(error.response?.data?.message || 'Failed to update profile picture');
+            alert(error.response?.data?.message || 'Failed to update profile');
             throw error;
         }
     };
@@ -426,11 +427,11 @@ export default function ProfileScreen() {
                         </div> */}
                     </div>
                     {/* Display uploaded documents status */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <DocumentUploadCard title="Aadhar Card" icon={User} status={vendor.aadharCard ? "verified" : "pending"} url={vendor.aadharCard} />
-                        <DocumentUploadCard title="PAN Card" icon={CreditCard} status={vendor.panCard ? "verified" : "pending"} url={vendor.panCard} />
-                        <DocumentUploadCard title="Shop Proof" icon={Store} status={vendor.shopEstablishmentProof ? "verified" : "pending"} url={vendor.shopEstablishmentProof} />
-                        <DocumentUploadCard title="FSSAI License" icon={FileCheck} status={vendor.fssaiLicense ? "verified" : "pending"} url={vendor.fssaiLicense} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <DocumentUploadCard title="Aadhar Card" icon={User} status={vendor.aadharCard ? "verified" : "pending"} url={vendor.aadharCard} fieldName="aadharFile" onUpload={handleProfileUpdate} />
+                        <DocumentUploadCard title="PAN Card" icon={CreditCard} status={vendor.panCard ? "verified" : "pending"} url={vendor.panCard} fieldName="panFile" onUpload={handleProfileUpdate} />
+                        <DocumentUploadCard title="Shop Proof" icon={Store} status={vendor.shopEstablishmentProof ? "verified" : "pending"} url={vendor.shopEstablishmentProof} fieldName="shopProofFile" onUpload={handleProfileUpdate} />
+                        <DocumentUploadCard title="FSSAI License" icon={FileCheck} status={vendor.fssaiLicense ? "verified" : "pending"} url={vendor.fssaiLicense} fieldName="fssaiLicense" onUpload={handleProfileUpdate} />
                     </div>
                 </section>
 

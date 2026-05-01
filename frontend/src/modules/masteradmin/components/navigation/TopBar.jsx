@@ -327,13 +327,13 @@ export default function TopBar() {
                 fetchNotifications({ silent: true });
               }
             }}
-            className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-sm transition-all relative"
+            className="relative p-2.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-sm transition-all"
             aria-label="Open notifications"
             aria-expanded={showNotifications}
           >
-            <Bell size={18} />
+            <Bell size={20} strokeWidth={1.8} />
             {unreadCount > 0 && (
-              <span className="absolute top-2 right-2 min-w-[14px] h-[14px] px-1 bg-rose-500 rounded-full border border-white text-[8px] font-black text-white flex items-center justify-center">
+              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-rose-500 rounded-full border-2 border-white text-[9px] font-black text-white flex items-center justify-center shadow-sm">
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
@@ -434,10 +434,10 @@ export default function TopBar() {
             aria-expanded={showProfileMenu}
           >
             <div className="text-right hidden sm:block">
-              <p className="text-[11px] font-black text-slate-900 leading-none uppercase tracking-tight">
+              <p className="text-[13px] font-black text-slate-900 leading-none uppercase tracking-tight">
                 {admin?.fullName || "Administrator"}
               </p>
-              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
                 {admin?.role?.replace("_", " ") || "Main Control"}
               </p>
             </div>

@@ -282,7 +282,7 @@ export default function OrdersScreen() {
                 Array.isArray(order.assignmentAttempts) &&
                 order.assignmentAttempts.some(a => a.reason === 'rejected');
         } else {
-            matchesFilter = order.orderStatus.toLowerCase() === activeFilter.toLowerCase();
+            matchesFilter = (order.orderStatus || '').toLowerCase() === activeFilter.toLowerCase();
         }
 
         return matchesSearch && matchesFilter;

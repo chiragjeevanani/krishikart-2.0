@@ -71,7 +71,9 @@ export const geocodeAddressFrontend = async (query) => {
 };
 
 /**
- * Gets the current geolocation of the user
+ * Gets the current geolocation of the user.
+ * Uses watchPosition to get a fresh GPS fix (not a cached position),
+ * resolving once accuracy is ≤ 100m or after 10 seconds (best available).
  * @returns {Promise<{lat: number, lng: number}>}
  */
 export const getCurrentLocation = () => {
@@ -87,18 +89,57 @@ export const getCurrentLocation = () => {
             return;
         }
 
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                resolve({
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude
-                });
-            },
-            (err) => {
+        let watchId = null;
+        let resolved = false;
+        let bestPosition = null;
+
+        const done = (position) => {
+            if (resolved) return;
+            resolved = true;
+            if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+            resolve({
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+            });
+        };
+
+        const onError = (err) => {
+            if (resolved) return;
+            // If we got a best position before the error, use it
+            if (bestPosition) {
+                done(bestPosition);
+            } else {
+                resolved = true;
+                if (watchId !== null) navigator.geolocation.clearWatch(watchId);
                 reject(new Error(err.message || 'Failed to get current location'));
+            }
+        };
+
+        // Use watchPosition so the browser is forced to get a fresh GPS fix
+        watchId = navigator.geolocation.watchPosition(
+            (position) => {
+                bestPosition = position;
+                // Resolve immediately if accuracy is good (≤ 100 metres)
+                if (position.coords.accuracy <= 100) {
+                    done(position);
+                }
             },
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+            onError,
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
         );
+
+        // Hard timeout: after 10s resolve with best position we have, or reject
+        setTimeout(() => {
+            if (!resolved) {
+                if (bestPosition) {
+                    done(bestPosition);
+                } else {
+                    resolved = true;
+                    if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+                    reject(new Error('Location request timed out'));
+                }
+            }
+        }, 10000);
     });
 };
 

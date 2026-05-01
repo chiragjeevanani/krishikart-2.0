@@ -28,7 +28,7 @@ export default function DataGrid({
 
             {/* Main Table */}
             <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-left">
+                <table className="w-full border-collapse text-left table-fixed">
                     <thead className={cn(
                         "bg-white border-b border-slate-200",
                         stickyHeader && "sticky top-0 z-20"

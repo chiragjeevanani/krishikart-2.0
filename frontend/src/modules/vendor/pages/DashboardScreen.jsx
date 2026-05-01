@@ -140,7 +140,7 @@ export default function DashboardScreen() {
                         className="h-10 sm:h-11 min-h-[44px] px-3 sm:px-4 bg-white border border-slate-200 text-slate-900 rounded-xl sm:rounded-2xl inline-flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm hover:bg-slate-50 transition-all font-black text-[9px] sm:text-[10px] uppercase tracking-wide sm:tracking-widest active:scale-[0.98]"
                     >
                         <Settings className="h-4 w-4 sm:h-[17px] sm:w-[17px] text-slate-600 shrink-0" strokeWidth={2} />
-                        Settings
+                        Profile
                     </button>
                 </div>
             </header>

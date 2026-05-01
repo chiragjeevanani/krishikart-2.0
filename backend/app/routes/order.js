@@ -3,6 +3,7 @@ import {
     createOrder,
     getMyOrders,
     getOrderById,
+    getOrdersByGroupId,
     createReturnRequest,
     reviewReturnRequestByFranchise,
     assignReturnPickupDelivery,
@@ -34,6 +35,7 @@ const router = express.Router();
 // User Routes
 router.post("/place", protect, createOrder);
 router.get("/my-orders", protect, getMyOrders);
+router.get("/group/:orderGroupId", protect, getOrdersByGroupId);
 router.put("/:id/status", protect, updateOrderStatus);
 router.post("/:id/return-request", protect, createReturnRequest);
 

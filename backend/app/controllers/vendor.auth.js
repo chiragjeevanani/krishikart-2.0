@@ -30,6 +30,10 @@ export const registerVendor = async (req, res) => {
             return handleResponse(res, 400, "Invalid mobile number");
         }
 
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return handleResponse(res, 400, "Invalid email format");
+        }
+
         // Parse nested bank details if present
         let bankDetails = {};
         if (req.body.bankDetails) {

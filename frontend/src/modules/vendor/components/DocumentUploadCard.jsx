@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Upload,
@@ -9,36 +9,75 @@ import {
     X,
     Loader2,
     Eye,
-    Trash2
+    Trash2,
+    Pencil
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export default function DocumentUploadCard({ title, icon: Icon, status: initialStatus, fileName: initialFileName, uploadDate: initialUploadDate, url }) {
+export default function DocumentUploadCard({ title, icon: Icon, status: initialStatus, fileName: initialFileName, uploadDate: initialUploadDate, url, fieldName, onUpload }) {
     const [status, setStatus] = useState(initialStatus || 'not_uploaded');
     const [fileName, setFileName] = useState(initialFileName || null);
     const [uploadDate, setUploadDate] = useState(initialUploadDate || null);
+    const [currentUrl, setCurrentUrl] = useState(url || null);
     const [isUploading, setIsUploading] = useState(false);
     const [progress, setProgress] = useState(0);
+    const fileInputRef = useRef(null);
 
-    const handleUpload = () => {
-        setIsUploading(true);
-        setProgress(0);
+    const handleFileSelect = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
 
-        const interval = setInterval(() => {
-            setProgress(prev => {
-                if (prev >= 100) {
-                    clearInterval(interval);
-                    setTimeout(() => {
-                        setIsUploading(false);
-                        setStatus('pending');
-                        setFileName('selected_document.pdf');
-                        setUploadDate(new Date().toISOString().split('T')[0]);
-                    }, 500);
-                    return 100;
-                }
-                return prev + 10;
-            });
-        }, 200);
+        // If a real upload handler is provided, use it
+        if (onUpload && fieldName) {
+            setIsUploading(true);
+            setProgress(0);
+
+            // Simulate progress while uploading
+            const progressInterval = setInterval(() => {
+                setProgress(prev => Math.min(prev + 15, 85));
+            }, 200);
+
+            try {
+                const formData = new FormData();
+                formData.append(fieldName, file);
+                const newUrl = await onUpload(formData);
+                clearInterval(progressInterval);
+                setProgress(100);
+                setTimeout(() => {
+                    setIsUploading(false);
+                    setStatus('pending');
+                    setFileName(file.name);
+                    setUploadDate(new Date().toISOString().split('T')[0]);
+                    if (newUrl) setCurrentUrl(newUrl);
+                }, 400);
+            } catch (err) {
+                clearInterval(progressInterval);
+                setIsUploading(false);
+                setProgress(0);
+            }
+        } else {
+            // Fallback: local-only mock upload
+            setIsUploading(true);
+            setProgress(0);
+            const interval = setInterval(() => {
+                setProgress(prev => {
+                    if (prev >= 100) {
+                        clearInterval(interval);
+                        setTimeout(() => {
+                            setIsUploading(false);
+                            setStatus('pending');
+                            setFileName(file.name);
+                            setUploadDate(new Date().toISOString().split('T')[0]);
+                        }, 500);
+                        return 100;
+                    }
+                    return prev + 10;
+                });
+            }, 200);
+        }
+
+        // Reset input so same file can be re-selected
+        e.target.value = '';
     };
 
     const handleRemove = (e) => {
@@ -46,6 +85,7 @@ export default function DocumentUploadCard({ title, icon: Icon, status: initialS
         setStatus('not_uploaded');
         setFileName(null);
         setUploadDate(null);
+        setCurrentUrl(null);
     };
 
     const StatusBadge = () => {
@@ -63,9 +103,18 @@ export default function DocumentUploadCard({ title, icon: Icon, status: initialS
 
     return (
         <div className={cn(
-            "bg-white p-5 rounded-[32px] border transition-all relative overflow-hidden group",
+            "bg-white p-5 rounded-[32px] border transition-all relative overflow-hidden group flex flex-col h-full",
             status === 'not_uploaded' ? "border-slate-100 hover:border-primary/20" : "border-slate-100 shadow-sm"
         )}>
+            {/* Hidden file input */}
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,.pdf"
+                className="hidden"
+                onChange={handleFileSelect}
+            />
+
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                     <div className={cn(
@@ -88,20 +137,42 @@ export default function DocumentUploadCard({ title, icon: Icon, status: initialS
                             exit={{ opacity: 0, scale: 0.8 }}
                             className="flex items-center gap-2"
                         >
+                            {/* View */}
                             <button
                                 type="button"
                                 onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
-                                        window.open(url, '_blank');
+                                    const link = currentUrl || url;
+                                    if (link && (link.startsWith('http://') || link.startsWith('https://'))) {
+                                        window.open(link, '_blank');
                                     }
                                 }}
                                 className="p-2 text-slate-400 hover:text-primary transition-colors bg-slate-50 rounded-lg"
+                                title="View document"
                             >
                                 <Eye size={14} />
                             </button>
-                            <button type="button" onClick={handleRemove} className="p-2 text-slate-400 hover:text-red-500 transition-colors bg-slate-50 rounded-lg">
+                            {/* Edit / Re-upload */}
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    fileInputRef.current?.click();
+                                }}
+                                className="p-2 text-slate-400 hover:text-amber-500 transition-colors bg-slate-50 rounded-lg"
+                                title="Replace document"
+                            >
+                                <Pencil size={14} />
+                            </button>
+                            {/* Delete */}
+                            <button
+                                type="button"
+                                onClick={handleRemove}
+                                className="p-2 text-slate-400 hover:text-red-500 transition-colors bg-slate-50 rounded-lg"
+                                title="Remove document"
+                            >
                                 <Trash2 size={14} />
                             </button>
                         </motion.div>
@@ -110,7 +181,7 @@ export default function DocumentUploadCard({ title, icon: Icon, status: initialS
             </div>
 
             {isUploading ? (
-                <div className="space-y-3 py-2">
+                <div className="space-y-3 py-2 flex-1">
                     <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-400">
                         <span className="flex items-center gap-2"><Loader2 size={12} className="animate-spin" /> Uploading...</span>
                         <span>{progress}%</span>
@@ -125,19 +196,19 @@ export default function DocumentUploadCard({ title, icon: Icon, status: initialS
                 </div>
             ) : status === 'not_uploaded' ? (
                 <button
-                    onClick={handleUpload}
-                    className="w-full py-4 border-2 border-dashed border-slate-100 rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/[0.02] transition-all group/btn"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full flex-1 py-4 border-2 border-dashed border-slate-100 rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/[0.02] transition-all group/btn"
                 >
                     <Upload size={18} className="text-slate-300 group-hover/btn:text-primary transition-colors" />
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover/btn:text-primary transition-colors">Select & Upload File</span>
                 </button>
             ) : (
-                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100/50">
-                    <div className="w-8 h-8 bg-white border border-slate-100 rounded-lg flex items-center justify-center text-primary">
+                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100/50 flex-1">
+                    <div className="w-8 h-8 bg-white border border-slate-100 rounded-lg flex items-center justify-center text-primary shrink-0">
                         <FileText size={16} />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-black text-slate-900 truncate">{fileName}</p>
+                        <p className="text-[10px] font-black text-slate-900 truncate">{fileName || 'Document'}</p>
                         <p className="text-[8px] font-bold text-slate-400 uppercase">Uploaded on {uploadDate}</p>
                     </div>
                 </div>

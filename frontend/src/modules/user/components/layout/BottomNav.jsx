@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { cn } from '../../../../lib/utils'
 import { useWishlist } from '../../contexts/WishlistContext'
 import { useRequireAuth } from '../../hooks/useRequireAuth'
+import { useEffect, useState } from 'react'
 
 const navItems = [
     { icon: ShoppingBasket, label: 'Shop', path: '/home', secure: false },
@@ -16,6 +17,24 @@ export default function BottomNav() {
     const location = useLocation()
     const { wishlistCount } = useWishlist()
     const { requireAuth } = useRequireAuth()
+    const [keyboardOpen, setKeyboardOpen] = useState(false)
+
+    // Hide bottom nav when soft keyboard is open (visual viewport shrinks)
+    useEffect(() => {
+        const vv = window.visualViewport
+        if (!vv) return
+
+        const handleResize = () => {
+            // If visual viewport height is significantly less than window height, keyboard is open
+            const threshold = window.innerHeight * 0.75
+            setKeyboardOpen(vv.height < threshold)
+        }
+
+        vv.addEventListener('resize', handleResize)
+        return () => vv.removeEventListener('resize', handleResize)
+    }, [])
+
+    if (keyboardOpen) return null
 
     return (
         <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t-2 border-[var(--color-brand-primary)]/20 flex items-center justify-around min-h-[52px] py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] shadow-[0_-2px_16px_rgba(22,163,74,0.08)]">

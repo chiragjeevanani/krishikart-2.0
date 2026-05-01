@@ -51,9 +51,9 @@ export default function OrdersTable({ orders, onAction, onOrderClick, onProcure,
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 bg-white">
-                    {orders.map((order) => (
+                    {orders.map((order, idx) => (
                         <tr
-                            key={order._id}
+                            key={order._id || idx}
                             onClick={() => onOrderClick?.(order._id)}
                             className="group hover:bg-slate-50/80 transition-colors cursor-pointer"
                         >

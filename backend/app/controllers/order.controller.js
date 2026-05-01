@@ -354,9 +354,127 @@ export const createOrder = async (req, res) => {
 export const getMyOrders = async (req, res) => {
   try {
     const userId = req.user.id;
-    const orders = await Order.find({ userId }).sort({ createdAt: -1 });
-    return handleResponse(res, 200, "Orders fetched successfully", orders);
+    const orders = await Order.find({ userId })
+      .populate("items.productId")
+      .populate("franchiseId", "storeName franchiseName ownerName mobile")
+      .populate("deliveryPartnerId", "fullName mobile vehicleNumber vehicleType")
+      .sort({ createdAt: -1 });
+
+    // Group orders by orderGroupId for split orders
+    const groupedOrders = [];
+    const processedGroupIds = new Set();
+    const standaloneOrders = [];
+
+    for (const order of orders) {
+      if (order.orderGroupId) {
+        // This is a split order
+        if (!processedGroupIds.has(order.orderGroupId)) {
+          // Find all orders in this group
+          const groupOrders = orders.filter(
+            (o) => o.orderGroupId === order.orderGroupId
+          );
+
+          groupedOrders.push({
+            orderGroupId: order.orderGroupId,
+            isSplitOrder: true,
+            totalOrders: groupOrders.length,
+            grandTotal: groupOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0),
+            createdAt: order.createdAt,
+            paymentMethod: order.paymentMethod,
+            shippingAddress: order.shippingAddress,
+            allDelivered: groupOrders.every((o) =>
+              ["Delivered", "Received"].includes(o.orderStatus)
+            ),
+            anyInProgress: groupOrders.some((o) =>
+              ["Placed", "Assigned", "Accepted", "Packed", "Procuring", "Ready", "Dispatched", "Out for Delivery"].includes(o.orderStatus)
+            ),
+            anyCancelled: groupOrders.some((o) => o.orderStatus === "Cancelled"),
+            orders: groupOrders,
+          });
+
+          processedGroupIds.add(order.orderGroupId);
+        }
+      } else {
+        // Standalone order (not split)
+        standaloneOrders.push({
+          ...order.toObject(),
+          isSplitOrder: false,
+        });
+      }
+    }
+
+    // Combine grouped and standalone orders, sorted by creation date
+    const allOrders = [...groupedOrders, ...standaloneOrders].sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    );
+
+    return handleResponse(res, 200, "Orders fetched successfully", allOrders);
   } catch (error) {
+    console.error("Get my orders error:", error);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+/**
+ * @desc Get all orders in a split order group by orderGroupId
+ * @route GET /api/orders/group/:orderGroupId
+ * @access Private (User must own at least one order in the group)
+ */
+export const getOrdersByGroupId = async (req, res) => {
+  try {
+    const { orderGroupId } = req.params;
+    const userId = req.user.id;
+
+    if (!orderGroupId) {
+      return handleResponse(res, 400, "Order group ID is required");
+    }
+
+    // Find all orders with this orderGroupId
+    const orders = await Order.find({ orderGroupId })
+      .populate("items.productId")
+      .populate("franchiseId", "storeName franchiseName ownerName mobile address location")
+      .populate("deliveryPartnerId", "fullName mobile vehicleNumber vehicleType")
+      .sort({ createdAt: -1 });
+
+    if (!orders || orders.length === 0) {
+      return handleResponse(res, 404, "No orders found for this group");
+    }
+
+    // Verify that at least one order belongs to the requesting user
+    const userOwnsOrder = orders.some(
+      (order) => order.userId && order.userId.toString() === userId.toString()
+    );
+
+    if (!userOwnsOrder) {
+      return handleResponse(res, 403, "Unauthorized access to this order group");
+    }
+
+    // Apply stock shortage flags
+    const enrichedOrders = await applyFranchiseStockShortageFlags(orders);
+
+    // Calculate group summary
+    const groupSummary = {
+      orderGroupId,
+      totalOrders: enrichedOrders.length,
+      grandTotal: enrichedOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0),
+      allDelivered: enrichedOrders.every((order) => 
+        ["Delivered", "Received"].includes(order.orderStatus)
+      ),
+      anyInProgress: enrichedOrders.some((order) => 
+        ["Placed", "Assigned", "Accepted", "Packed", "Procuring", "Ready", "Dispatched", "Out for Delivery"].includes(order.orderStatus)
+      ),
+      anyCancelled: enrichedOrders.some((order) => order.orderStatus === "Cancelled"),
+      orders: enrichedOrders,
+    };
+
+    return handleResponse(
+      res,
+      200,
+      "Split orders fetched successfully",
+      groupSummary
+    );
+  } catch (error) {
+    console.error("Get orders by group ID error:", error);
     return handleResponse(res, 500, "Server error");
   }
 };

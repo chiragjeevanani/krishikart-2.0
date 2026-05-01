@@ -17,6 +17,7 @@ import AddressBookScreen from './modules/user/pages/AddressBookScreen'
 import OrderTrackingScreen from './modules/user/pages/OrderTrackingScreen'
 import OrderSummaryScreen from './modules/user/pages/OrderSummaryScreen'
 import OrderDetailScreen from './modules/user/pages/OrderDetailScreen'
+import SplitOrderTrackingScreen from './modules/user/pages/SplitOrderTrackingScreen'
 import WalletScreen from './modules/user/pages/WalletScreen'
 import NotificationsScreen from './modules/user/pages/NotificationsScreen'
 import FavoritesScreen from './modules/user/pages/FavoritesScreen'
@@ -158,6 +159,7 @@ function App() {
                 <Route path="/track-order/:id" element={<OrderTrackingScreen />} />
                 <Route path="/order-summary/:id" element={<OrderSummaryScreen />} />
                 <Route path="/order-detail/:id" element={<OrderDetailScreen />} />
+                <Route path="/split-order/:orderGroupId" element={<SplitOrderTrackingScreen />} />
                 <Route path="/wallet" element={<WalletScreen />} />
                 <Route path="/credit-info" element={<CreditInfoScreen />} />
                 <Route path="/notifications" element={<NotificationsScreen />} />

@@ -11,7 +11,8 @@ export default function VendorLayout() {
     const location = useLocation();
     const isAuthPage = location.pathname === '/vendor/login' ||
         location.pathname === '/vendor/signup' ||
-        location.pathname === '/vendor/forgot-password';
+        location.pathname === '/vendor/forgot-password' ||
+        location.pathname === '/vendor/terms';
 
     if (isAuthPage) {
         return (
