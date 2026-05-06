@@ -442,6 +442,12 @@ export default function CheckoutScreen() {
     }
 
     const handlePlaceOrder = async () => {
+        if (!user || !user.fullName || user.fullName.toLowerCase() === 'dev user' || user.fullName.toLowerCase() === 'guest user') {
+            toast.error("Please complete your profile (add your name) before placing an order.");
+            navigate('/edit-profile');
+            return;
+        }
+
         if (!addressDetails.flat || !addressDetails.floor || !addressDetails.colony || !addressDetails.landmark || !addressDetails.city || !addressDetails.state) {
             toast.error("Please fill all the address fields");
             setIsEditingAddress(true);

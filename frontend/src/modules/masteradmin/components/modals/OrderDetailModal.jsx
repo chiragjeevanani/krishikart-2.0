@@ -105,7 +105,7 @@ const OrderDetailModal = ({ isOpen, onClose, orderId, onProcure, onAllowPartial 
                     fallback.style.fontSize = '12px';
                     fallback.innerHTML = `
                         <h2>Order #${order._id?.slice(-8) || 'N/A'}</h2>
-                        <p><strong>Customer:</strong> ${order.userId?.fullName || 'Guest'}</p>
+                        <p><strong>Customer:</strong> ${order.userId?.fullName || (order.franchiseId?.mobile === order.userId?.mobile ? order.franchiseId?.ownerName : 'Guest')}</p>
                         <p><strong>Contact:</strong> ${order.userId?.mobile || 'N/A'}</p>
                         <p><strong>Address:</strong> ${order.shippingAddress || 'N/A'}</p>
                         <p><strong>Subtotal:</strong> ₹${(order.subtotal ?? 0).toLocaleString()}</p>
@@ -135,9 +135,11 @@ const OrderDetailModal = ({ isOpen, onClose, orderId, onProcure, onAllowPartial 
     const handleShareOrder = async () => {
         if (!order) return;
 
+        const customerName = order.userId?.fullName || (order.franchiseId?.mobile === order.userId?.mobile ? order.franchiseId?.ownerName : 'Guest');
+
         const shareData = {
             title: `Kisaankart Order #${order._id.slice(-8)}`,
-            text: `Order Details for ${order.userId?.fullName || 'Guest'}. Amount: ₹${order.totalAmount}`,
+            text: `Order Details for ${customerName}. Amount: ₹${order.totalAmount}`,
             url: window.location.href
         };
 
@@ -145,7 +147,7 @@ const OrderDetailModal = ({ isOpen, onClose, orderId, onProcure, onAllowPartial 
             if (navigator.share) {
                 await navigator.share(shareData);
             } else {
-                await navigator.clipboard.writeText(`Order ID: ${order._id}\nAmount: ₹${order.totalAmount}\nCustomer: ${order.userId?.fullName}`);
+                await navigator.clipboard.writeText(`Order ID: ${order._id}\nAmount: ₹${order.totalAmount}\nCustomer: ${customerName}`);
                 toast.success('Order details copied to clipboard');
             }
         } catch (err) {
@@ -376,7 +378,10 @@ const OrderDetailModal = ({ isOpen, onClose, orderId, onProcure, onAllowPartial 
                                                 <div className="space-y-3">
                                                     <div>
                                                         <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">Name</span>
-                                                        <span className="text-xs font-black text-slate-900 uppercase tracking-tight">{order.userId?.fullName || 'Guest Client'}</span>
+                                                        <span className="text-xs font-black text-slate-900 uppercase tracking-tight">
+                                                            {order.userId?.fullName || 
+                                                             (order.franchiseId?.mobile === order.userId?.mobile ? order.franchiseId?.ownerName : 'Unnamed User')}
+                                                        </span>
                                                     </div>
                                                     <div className="flex items-center justify-between">
                                                         <div>

@@ -118,12 +118,12 @@ export default function MobileProfileDrawer() {
                                     <div className="flex items-center gap-4">
                                         <div className="w-16 h-16 rounded-full bg-slate-900 flex items-center justify-center shrink-0 shadow-sm">
                                             <span className="text-2xl font-black text-white uppercase">
-                                                {user?.fullName ? user.fullName.charAt(0) : 'G'}
+                                                {user?.fullName && !['dev user', 'guest user'].includes(user.fullName.toLowerCase()) ? user.fullName.charAt(0) : 'G'}
                                             </span>
                                         </div>
                                         <div className="min-w-0">
                                             <SheetTitle className="text-2xl font-bold text-slate-900 tracking-tight leading-none mb-1 text-left">
-                                                {user?.fullName ? user.fullName.split(' ')[0] : 'Guest'}
+                                                {user?.fullName && !['dev user', 'guest user'].includes(user.fullName.toLowerCase()) ? user.fullName.split(' ')[0] : 'Guest'}
                                             </SheetTitle>
                                         </div>
                                     </div>

@@ -15,6 +15,7 @@ import AdminNotification from "../models/adminNotification.js";
 import handleResponse from "../utils/helper.js";
 import bcrypt from "bcryptjs";
 import Delivery from "../models/delivery.js";
+import os from "os";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import {
   isValidFssaiNumber,
@@ -1550,24 +1551,40 @@ export const getAdminDashboardStats = async (req, res) => {
     const recentRemittances = await DeliveryCodRemittance.find()
       .populate("deliveryPartnerId", "fullName")
       .sort({ createdAt: -1 })
-      .limit(5);
+      .limit(100);
 
     const recentSettlements = recentRemittances.map((r) => ({
       id: `SET-${r._id.toString().slice(-4).toUpperCase()}`,
       vendor: r.deliveryPartnerId?.fullName || "Agent",
       amount: r.amount,
       status: r.status === "verified" ? "Paid" : "Pending",
-      date: r.createdAt.toLocaleTimeString("en-US", {
+      date: r.createdAt.toLocaleString("en-US", {
+        month: "short",
+        day: "2-digit",
         hour: "2-digit",
         minute: "2-digit",
       }),
     }));
+
+    // 5. System Info
+    const uptimeSeconds = os.uptime();
+    const days = Math.floor(uptimeSeconds / (24 * 3600));
+    const hours = Math.floor((uptimeSeconds % (24 * 3600)) / 3600);
+    const mins = Math.floor((uptimeSeconds % 3600) / 60);
+    
+    const system = {
+      uptime: `${days}d ${hours}h ${mins}m`,
+      load: `${(os.loadavg()[0] * 100).toFixed(0)}%`,
+      hostname: os.hostname(),
+      status: "Active"
+    };
 
     return handleResponse(res, 200, "Dashboard stats fetched", {
       kpis,
       orderFlow,
       revenueFlow,
       recentSettlements,
+      system
     });
   } catch (err) {
     console.error("Get admin dashboard stats error:", err);

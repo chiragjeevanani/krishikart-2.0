@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 
 export default function Breadcrumbs() {
     const location = useLocation()
-    const pathnames = location.pathname.split('/').filter((x) => x)
+    const pathnames = location.pathname.split('/').filter((x) => x && !/^[0-9a-fA-F]{24}$/.test(x))
 
     if (pathnames.length === 0) return null
 

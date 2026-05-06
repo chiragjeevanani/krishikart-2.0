@@ -118,7 +118,7 @@ export const verifyOTP = async (req, res) => {
       if (!user) {
         user = await User.create({
           mobile,
-          fullName: "Dev User",
+          fullName: "Guest User",
           isVerified: true,
         });
       }
@@ -137,7 +137,7 @@ export const verifyOTP = async (req, res) => {
         user: {
           id: user._id,
           mobile: user.mobile,
-          fullName: user.fullName || "Dev User",
+          fullName: user.fullName || "Guest User",
           role: "user",
           onboardingCompleted: user.onboardingCompleted || false,
           businessType: user.businessType || null,
@@ -155,7 +155,7 @@ export const verifyOTP = async (req, res) => {
       if (!user) {
         user = await User.create({
           mobile,
-          fullName: "Dev User",
+          fullName: "Guest User",
           isVerified: true,
         });
       }
@@ -173,7 +173,7 @@ export const verifyOTP = async (req, res) => {
         user: {
           id: user._id,
           mobile: user.mobile,
-          fullName: user.fullName || "Dev User",
+          fullName: user.fullName || "Guest User",
           role: "user",
           onboardingCompleted: user.onboardingCompleted || false,
           businessType: user.businessType || null,

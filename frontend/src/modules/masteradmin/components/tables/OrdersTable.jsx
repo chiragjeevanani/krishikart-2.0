@@ -87,7 +87,10 @@ export default function OrdersTable({ orders, onAction, onOrderClick, onProcure,
                             </td>
                             <td className="px-4 py-4">
                                 <div className="flex flex-col">
-                                    <span className="font-bold text-slate-800 text-[11px] leading-none mb-1">{order.userId?.fullName || 'Guest'}</span>
+                                    <span className="font-bold text-slate-800 text-[11px] leading-none mb-1">
+                                        {order.userId?.fullName || 
+                                         (order.franchiseId?.mobile === order.userId?.mobile ? order.franchiseId?.ownerName : 'Unnamed User')}
+                                    </span>
                                     <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wide">{order.userId?.mobile || 'No Mobile'}</span>
                                 </div>
                             </td>
@@ -121,7 +124,8 @@ export default function OrdersTable({ orders, onAction, onOrderClick, onProcure,
                                 <StatusBadge status={
                                     order.orderStatus === 'Cancelled'
                                         ? 'Cancelled'
-                                        : Array.isArray(order.assignmentAttempts) &&
+                                        : ['Placed', 'Assigned'].includes(order.orderStatus) &&
+                                          Array.isArray(order.assignmentAttempts) &&
                                           order.assignmentAttempts.some(a => a.reason === 'rejected')
                                             ? 'franchise_rejected'
                                             : order.orderStatus

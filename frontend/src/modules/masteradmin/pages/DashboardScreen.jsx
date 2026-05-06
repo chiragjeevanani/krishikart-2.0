@@ -53,14 +53,14 @@ export default function DashboardScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [showMetrics, setShowMetrics] = useState(true);
     const [settlementSearch, setSettlementSearch] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
     const [dashboardData, setDashboardData] = useState({
         kpis: [],
         orderFlow: [],
         revenueFlow: [],
         recentSettlements: []
     });
-
-
 
     const fetchDashboardStats = async () => {
         try {
@@ -101,6 +101,21 @@ export default function DashboardScreen() {
     }, []);
 
     const { kpis, orderFlow, revenueFlow, recentSettlements } = dashboardData;
+
+    const filteredSettlements = recentSettlements.filter(s =>
+        s.vendor.toLowerCase().includes(settlementSearch.toLowerCase()) ||
+        s.id.toLowerCase().includes(settlementSearch.toLowerCase())
+    );
+
+    const totalPages = Math.max(1, Math.ceil(filteredSettlements.length / itemsPerPage));
+    const paginatedSettlements = filteredSettlements.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [settlementSearch]);
 
     const settlementColumns = [
         {
@@ -232,7 +247,11 @@ export default function DashboardScreen() {
                                     key={idx}
                                     {...kpi}
                                     icon={idx === 0 ? IndianRupee : idx === 1 ? ShoppingCart : idx === 2 ? Users : idx === 4 ? Store : Clock}
-                                    sparklineData={[30, 35, 32, 38, 42, 45, 48].map(v => ({ value: v }))}
+                                    sparklineData={
+                                        idx === 0 ? (revenueFlow || []).map(d => ({ value: d.revenue })) :
+                                        idx === 1 ? (orderFlow || []).map(d => ({ value: d.orders })) :
+                                        [30, 35, 32, 38, 42, 45, 48].map(v => ({ value: v }))
+                                    }
                                 />
                             ))}
                         </motion.div>
@@ -268,7 +287,7 @@ export default function DashboardScreen() {
                         height={340}
                         data={revenueFlow}
                     >
-                        <ResponsiveContainer width="100%" height="100%" debounce={50}>50}>
+                        <ResponsiveContainer width="100%" height="100%" debounce={50}>
                             <AreaChart data={revenueFlow} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
@@ -306,18 +325,12 @@ export default function DashboardScreen() {
                 <div className="bg-white">
                     <FilterBar
                         onSearch={(v) => setSettlementSearch(typeof v === 'string' ? v.trim() : v)}
-                        onRefresh={() => {
-                            setIsLoading(true);
-                            setTimeout(() => setIsLoading(false), 800);
-                        }}
+                        onRefresh={fetchDashboardStats}
                     />
                     <DataGrid
                         title="Recent Settlements"
                         columns={settlementColumns}
-                        data={recentSettlements.filter(s =>
-                            s.vendor.toLowerCase().includes(settlementSearch.toLowerCase()) ||
-                            s.id.toLowerCase().includes(settlementSearch.toLowerCase())
-                        )}
+                        data={paginatedSettlements}
                         density="compact"
                     />
 
@@ -326,7 +339,9 @@ export default function DashboardScreen() {
                         <div className="flex items-center gap-4">
                             <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-50 border border-amber-100 rounded-sm">
                                 <AlertCircle size={10} className="text-amber-500" />
-                                <span className="text-[9px] font-bold text-amber-600 uppercase tracking-widest">4 Pending Items</span>
+                                <span className="text-[9px] font-bold text-amber-600 uppercase tracking-widest">
+                                    {recentSettlements.filter(s => s.status === 'Pending').length} Pending Items
+                                </span>
                             </div>
                             <div className="h-3 w-px bg-slate-200" />
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest underline decoration-slate-200 underline-offset-4 cursor-help">
@@ -334,9 +349,29 @@ export default function DashboardScreen() {
                             </span>
                         </div>
                         <div className="flex items-center gap-1">
-                            <button className="px-2 py-1 text-[10px] font-bold text-slate-400 hover:text-slate-900 transition-colors uppercase">Prev</button>
-                            <span className="text-[10px] font-bold px-2 tabular-nums">Page 01 // 12</span>
-                            <button className="px-2 py-1 text-[10px] font-bold text-slate-400 hover:text-slate-900 transition-colors uppercase">Next</button>
+                            <button
+                                type="button"
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage <= 1}
+                                className={cn(
+                                    "px-2 py-1 text-[10px] font-bold transition-colors uppercase rounded-sm",
+                                    currentPage <= 1 ? "text-slate-300 cursor-not-allowed" : "text-slate-600 hover:bg-slate-200 hover:text-slate-900 cursor-pointer"
+                                )}
+                            >
+                                Prev
+                            </button>
+                            <span className="text-[10px] font-bold px-2 tabular-nums">Page {String(currentPage).padStart(2, '0')} // {String(totalPages).padStart(2, '0')}</span>
+                            <button
+                                type="button"
+                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                disabled={currentPage >= totalPages}
+                                className={cn(
+                                    "px-2 py-1 text-[10px] font-bold transition-colors uppercase rounded-sm",
+                                    currentPage >= totalPages ? "text-slate-300 cursor-not-allowed" : "text-slate-600 hover:bg-slate-200 hover:text-slate-900 cursor-pointer"
+                                )}
+                            >
+                                Next
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -350,15 +385,15 @@ export default function DashboardScreen() {
                         </div>
                         <div className="flex items-center gap-2">
                             <Cpu size={11} className="text-blue-400" />
-                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Server Load // <span className="text-white">12%</span></span>
+                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Server Load // <span className="text-white">{dashboardData.system?.load || '12%'}</span></span>
                         </div>
                         <div className="flex items-center gap-2">
                             <Terminal size={11} className="text-purple-400" />
-                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Server // <span className="text-white">UK-42-B</span></span>
+                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Server // <span className="text-white">{dashboardData.system?.hostname || 'UK-42-B'}</span></span>
                         </div>
                     </div>
                     <div className="flex items-center gap-4">
-                        <span className="text-[9px] font-bold text-slate-500 tabular-nums">Uptime: 142d 12h 42m</span>
+                        <span className="text-[9px] font-bold text-slate-500 tabular-nums">Uptime: {dashboardData.system?.uptime || '142d 12h 42m'}</span>
                         <div className="h-3 w-px bg-slate-800" />
                         <button className="text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-white transition-colors">
                             View Details

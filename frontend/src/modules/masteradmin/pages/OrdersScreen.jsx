@@ -127,9 +127,18 @@ export default function OrdersScreen() {
             });
         });
 
+        socket.on('order_franchise_rejected', (data) => {
+            playNotificationSound();
+            toast.warning(`A franchise has rejected an order.`, {
+                description: `Order ID: #${data.orderId.slice(-6)}`
+            });
+            fetchAllOrders(true);
+        });
+
         return () => {
             socket.off('new_order_placed');
             socket.off('order_status_updated');
+            socket.off('order_franchise_rejected');
         };
     }, []);
 
@@ -257,32 +266,36 @@ export default function OrdersScreen() {
         return () => clearTimeout(timer);
     }, []);
 
-    // Orders that were rejected by at least one franchise (and not yet cancelled/resolved)
     const franchiseRejectedCount = allOrders.filter(order =>
-        order.orderStatus !== 'Cancelled' &&
+        ['Placed', 'Assigned'].includes(order.orderStatus) &&
         Array.isArray(order.assignmentAttempts) &&
         order.assignmentAttempts.some(a => a.reason === 'rejected')
     ).length;
 
     const filteredOrders = allOrders.filter(order => {
-        const customerName = (order.userId?.fullName || 'Unknown').toLowerCase();
+        const customerName = (order.userId?.fullName || '').toLowerCase();
         const customerMobile = (order.userId?.mobile || '').toLowerCase();
+        const franchiseName = (order.franchiseId?.franchiseName || '').toLowerCase();
+        const franchiseOwnerName = (order.franchiseId?.ownerName || '').toLowerCase();
 
         // Multi-keyword search logic
         const searchKeywords = searchTerm.toLowerCase().trim().split(/\s+/);
         const matchesSearch = searchKeywords.every(keyword =>
-            customerName.includes(keyword) || customerMobile.includes(keyword)
+            customerName.includes(keyword) || 
+            customerMobile.includes(keyword) ||
+            franchiseName.includes(keyword) ||
+            franchiseOwnerName.includes(keyword)
         );
 
         let matchesFilter;
         if (activeFilter === 'all') {
             matchesFilter = true;
         } else if (activeFilter === 'franchise_rejected') {
-            matchesFilter = order.orderStatus !== 'Cancelled' &&
+            matchesFilter = ['placed', 'assigned'].includes((order.orderStatus || '').toLowerCase()) &&
                 Array.isArray(order.assignmentAttempts) &&
                 order.assignmentAttempts.some(a => a.reason === 'rejected');
         } else {
-            matchesFilter = (order.orderStatus || '').toLowerCase() === activeFilter.toLowerCase();
+            matchesFilter = (order.orderStatus || '').toLowerCase().trim() === activeFilter.toLowerCase().trim();
         }
 
         return matchesSearch && matchesFilter;
@@ -345,12 +358,10 @@ export default function OrdersScreen() {
                     <div className="px-4 border-b border-slate-200 flex items-center gap-1 overflow-x-auto no-scrollbar">
                         {[
                             { id: 'all', label: 'All Orders', count: allOrders.length },
-                            { id: 'Placed', label: 'Placed' },
                             { id: 'Accepted', label: 'Accepted' },
                             { id: 'Packed', label: 'Packed' },
                             { id: 'Dispatched', label: 'Dispatched' },
                             { id: 'Delivered', label: 'Delivered' },
-                            { id: 'Cancelled', label: 'Cancelled' },
                             { id: 'franchise_rejected', label: 'Franchise Rejected', count: franchiseRejectedCount, highlight: true },
                         ].map(tab => (
                             <button

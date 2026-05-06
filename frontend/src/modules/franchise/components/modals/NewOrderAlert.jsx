@@ -22,26 +22,7 @@ const NewOrderAlert = () => {
 
     const [orderDetail, setOrderDetail] = useState(null);
     const [detailLoading, setDetailLoading] = useState(false);
-    const audioRef = useRef(null);
-
-    // Play sound when alert opens
-    useEffect(() => {
-        if (!isAlertOpen || !newOrderData) return;
-        try {
-            if (!audioRef.current) {
-                audioRef.current = new Audio(sellerAlertSound);
-                audioRef.current.volume = 0.8;
-            }
-            audioRef.current.currentTime = 0;
-            audioRef.current.play().catch(() => {});
-        } catch (_) {}
-        return () => {
-            if (audioRef.current) {
-                audioRef.current.pause();
-                audioRef.current.currentTime = 0;
-            }
-        };
-    }, [isAlertOpen, newOrderData]);
+    // Sound is now handled exclusively by FranchiseOrdersContext via useNotificationSound
 
     useEffect(() => {
         if (!isAlertOpen || !orderId) return;
@@ -85,7 +66,6 @@ const NewOrderAlert = () => {
 
     const onAccept = async () => {
         if (!orderId) return;
-        audioRef.current?.pause();
         const ok = await acceptOrder(orderId);
         if (!ok) return;
         setIsAlertOpen(false);
@@ -94,7 +74,6 @@ const NewOrderAlert = () => {
 
     const onReject = async () => {
         if (!orderId) return;
-        audioRef.current?.pause();
         if (autoAccepted) {
             const ok = await rejectFranchiseOrder(orderId);
             if (!ok) return;
@@ -114,7 +93,7 @@ const NewOrderAlert = () => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    onClick={() => { audioRef.current?.pause(); setIsAlertOpen(false); }}
+                    onClick={() => { setIsAlertOpen(false); }}
                     className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                 />
 
@@ -148,7 +127,7 @@ const NewOrderAlert = () => {
                             </div>
                         </div>
                         <button
-                            onClick={() => { audioRef.current?.pause(); setIsAlertOpen(false); }}
+                            onClick={() => { setIsAlertOpen(false); }}
                             className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors text-slate-400 hover:text-slate-700 mt-0.5"
                         >
                             <X size={18} />
@@ -247,7 +226,7 @@ const NewOrderAlert = () => {
                             <div className="flex flex-col gap-2.5">
                                 <button
                                     type="button"
-                                    onClick={() => { audioRef.current?.pause(); setIsAlertOpen(false); navigate(`/franchise/orders`); }}
+                                    onClick={() => { setIsAlertOpen(false); navigate(`/franchise/orders`); }}
                                     className="h-12 w-full rounded-xl bg-emerald-600 text-white font-black uppercase text-xs tracking-[0.15em] hover:bg-emerald-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                                 >
                                     View Order <ArrowRight size={15} />
@@ -284,14 +263,14 @@ const NewOrderAlert = () => {
                                 <div className="grid grid-cols-2 gap-2.5">
                                     <button
                                         type="button"
-                                        onClick={() => { audioRef.current?.pause(); setIsAlertOpen(false); }}
+                                        onClick={() => { setIsAlertOpen(false); }}
                                         className="h-11 rounded-xl border border-slate-200 text-slate-500 font-bold uppercase text-xs tracking-widest hover:bg-slate-50 transition-all"
                                     >
                                         Not Now
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => { audioRef.current?.pause(); setIsAlertOpen(false); navigate(`/franchise/orders`); }}
+                                        onClick={() => { setIsAlertOpen(false); navigate(`/franchise/orders`); }}
                                         className="h-11 rounded-xl border border-slate-200 text-slate-700 font-bold uppercase text-xs tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center gap-1.5"
                                     >
                                         View <ArrowRight size={13} />
