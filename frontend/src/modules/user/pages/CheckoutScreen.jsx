@@ -93,6 +93,7 @@ export default function CheckoutScreen() {
     const [availableCoupons, setAvailableCoupons] = useState([])
     const [isValidatingCoupon, setIsValidatingCoupon] = useState(false)
     const [showCouponList, setShowCouponList] = useState(false)
+    const [isManualAddress, setIsManualAddress] = useState(false)
 
     const [user, setUser] = useState(null)
     const [deliveryAddress, setDeliveryAddress] = useState('')
@@ -137,9 +138,17 @@ export default function CheckoutScreen() {
         }
     }
 
-    const buildFullAddress = (details) => (
-        `Flat: ${details.flat}, Floor: ${details.floor}, ${details.colony}, Landmark: ${details.landmark}, ${details.city}, ${details.state}${details.pincode ? `, ${details.pincode}` : ''}`
-    )
+    const buildFullAddress = (details) => {
+        const parts = [];
+        if (details.flat) parts.push(`Flat: ${details.flat}`);
+        if (details.floor) parts.push(`Floor: ${details.floor}`);
+        if (details.colony) parts.push(details.colony);
+        if (details.landmark) parts.push(`Landmark: ${details.landmark}`);
+        if (details.city) parts.push(details.city);
+        if (details.state) parts.push(details.state);
+        if (details.pincode) parts.push(details.pincode);
+        return parts.join(', ');
+    }
 
     const parseAddressToDetails = (address = '') => {
         if (!address || typeof address !== 'string') return null
@@ -197,17 +206,44 @@ export default function CheckoutScreen() {
         const normalizedTag = tag || 'other'
         const fullAddress = buildFullAddress(details)
         const label = ADDRESS_TAGS.find((item) => item.value === normalizedTag)?.label || 'Other'
-        const next = [
-            ...(savedAddresses.filter((entry) => entry.tag !== normalizedTag)),
-            {
-                id: normalizedTag,
-                tag: normalizedTag,
-                label,
-                details,
-                fullAddress,
-                updatedAt: new Date().toISOString()
+        
+        let next = [];
+        if (normalizedTag === 'home' || normalizedTag === 'work') {
+            // Home and Work are unique slots
+            next = [
+                ...(savedAddresses.filter((entry) => entry.tag !== normalizedTag)),
+                {
+                    id: normalizedTag,
+                    tag: normalizedTag,
+                    label,
+                    details,
+                    fullAddress,
+                    updatedAt: new Date().toISOString()
+                }
+            ]
+        } else {
+            // 'Other' can have multiple entries. Check if this exact address already exists.
+            const existingIdx = savedAddresses.findIndex(a => a.fullAddress === fullAddress);
+            if (existingIdx > -1) {
+                // Update existing matching address
+                next = [...savedAddresses];
+                next[existingIdx] = { ...next[existingIdx], details, updatedAt: new Date().toISOString() };
+            } else {
+                // Add as a new 'Other' entry
+                next = [
+                    ...savedAddresses,
+                    {
+                        id: `other_${Date.now()}`,
+                        tag: 'other',
+                        label: 'Other',
+                        details,
+                        fullAddress,
+                        updatedAt: new Date().toISOString()
+                    }
+                ]
             }
-        ]
+        }
+
         persistSavedAddresses(next)
         return fullAddress
     }
@@ -218,6 +254,7 @@ export default function CheckoutScreen() {
         setAddressDetails(saved.details)
         const fullAddress = saved.fullAddress || buildFullAddress(saved.details)
         setDeliveryAddress(fullAddress)
+        setIsManualAddress(true)
         toast.success(`${saved.label || 'Address'} selected`)
     }
 
@@ -244,20 +281,36 @@ export default function CheckoutScreen() {
         setDeliveryAddress(ctxDeliveryAddress);
 
         if (ctxDeliveryComponents) {
-            setAddressDetails(prev => ({
-                ...prev,
-                city: ctxDeliveryComponents.city || prev.city,
-                state: ctxDeliveryComponents.state || prev.state,
-                colony: ctxDeliveryComponents.area || prev.colony,
-                pincode: ctxDeliveryComponents.pincode || prev.pincode,
-            }));
+            setAddressDetails(prev => {
+                const newDetails = {
+                    ...prev,
+                    city: ctxDeliveryComponents.city || prev.city,
+                    state: ctxDeliveryComponents.state || prev.state,
+                    colony: ctxDeliveryComponents.area || prev.colony,
+                    pincode: ctxDeliveryComponents.pincode || prev.pincode,
+                };
+                
+                // Auto-open editor if location is pinned but house number is missing
+                // This streamlines the "Set Pin -> Fill Details" flow
+                if (ctxHasDeliveryPinned && !newDetails.flat && !isEditingAddress) {
+                    setTimeout(() => setIsEditingAddress(true), 500);
+                }
+                
+                return newDetails;
+            });
+            setIsManualAddress(false);
         } else {
             const parsed = parseAddressToDetails(ctxDeliveryAddress);
             if (parsed) {
-                setAddressDetails(parsed);
+                setAddressDetails(prev => ({
+                    ...prev,
+                    ...parsed,
+                    flat: prev.flat || parsed.flat // Preserve flat if already entered
+                }));
             }
+            setIsManualAddress(false);
         }
-    }, [ctxDeliveryAddress, ctxDeliveryComponents])
+    }, [ctxDeliveryAddress, ctxDeliveryComponents, ctxHasDeliveryPinned])
 
     const fetchProfile = async () => {
         try {
@@ -327,9 +380,9 @@ export default function CheckoutScreen() {
     const creditShortfall = parseFloat(Math.max(0, total - creditContribution).toFixed(2))
     const isWalletShort = selectedMethod === 'wallet' && walletShortfall > 0
     const isCreditShort = selectedMethod === 'credit' && creditShortfall > 0
-    const hasStructuredAddress = !!(addressDetails.flat && addressDetails.floor && addressDetails.colony && addressDetails.landmark && addressDetails.city && addressDetails.state)
+    const hasStructuredAddress = !!(addressDetails.flat && addressDetails.colony && addressDetails.city && addressDetails.state)
     const displayAddress = hasStructuredAddress
-        ? `Flat: ${addressDetails.flat}, Floor: ${addressDetails.floor}, ${addressDetails.colony}, ${addressDetails.landmark}, ${addressDetails.city}, ${addressDetails.state}`
+        ? buildFullAddress(addressDetails)
         : (deliveryAddress || '')
 
     const handleRazorpayPayment = async (orderData, payableAmount = total) => {
@@ -448,8 +501,8 @@ export default function CheckoutScreen() {
             return;
         }
 
-        if (!addressDetails.flat || !addressDetails.floor || !addressDetails.colony || !addressDetails.landmark || !addressDetails.city || !addressDetails.state) {
-            toast.error("Please fill all the address fields");
+        if (!addressDetails.flat || !addressDetails.colony || !addressDetails.city || !addressDetails.state) {
+            toast.error("Please fill all the mandatory address fields (Flat/House No., Colony, City, State)");
             setIsEditingAddress(true);
             return;
         }
@@ -482,9 +535,9 @@ export default function CheckoutScreen() {
             toast.error('Could not save address to profile')
         }
 
-        // Prefer the exact pinned delivery coordinates from the map.
-        // Fallback to geocoding the typed address if coordinates are unavailable.
-        let coords = ctxDeliveryLocation || null;
+        // Prefer the exact pinned delivery coordinates from the map unless a saved address was selected.
+        // Fallback to geocoding the typed address if coordinates are unavailable or manual address selected.
+        let coords = (!isManualAddress && ctxDeliveryLocation) ? ctxDeliveryLocation : null;
         if (!coords) {
             try {
                 coords = await geocodeAddressFrontend(fullAddress);
@@ -632,7 +685,7 @@ export default function CheckoutScreen() {
                                             Delivery Address
                                         </h2>
                                         <div className="hidden md:flex items-center gap-3 flex-wrap justify-end">
-                                            {ctxHasDeliveryPinned && (
+                                            {ctxHasDeliveryPinned && !isManualAddress && (
                                                 <div className="flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 px-3 py-1">
                                                     <CheckCircle2 size={12} />
                                                     <span className="text-[10px] font-bold uppercase tracking-widest">Location pinned</span>
@@ -641,7 +694,11 @@ export default function CheckoutScreen() {
                                             <button
                                                 type="button"
                                                 onClick={handlePinCurrentLocation}
-                                                className="flex items-center gap-1 text-[11px] font-bold uppercase text-slate-400 hover:text-primary transition-colors"
+                                                disabled={isPlacingOrder}
+                                                className={cn(
+                                                    "flex items-center gap-1 text-[11px] font-bold uppercase transition-colors",
+                                                    isPlacingOrder ? "text-slate-300 cursor-not-allowed" : "text-slate-400 hover:text-primary"
+                                                )}
                                             >
                                                 <MapPin size={12} />
                                                 <span>{ctxHasDeliveryPinned ? 'Re-pin my location' : 'Pin my location'}</span>
@@ -649,7 +706,11 @@ export default function CheckoutScreen() {
                                             <button
                                                 type="button"
                                                 onClick={() => navigate('/location-picker?type=delivery&returnTo=/checkout')}
-                                                className="flex items-center gap-1 text-[11px] font-bold uppercase text-slate-400 hover:text-primary transition-colors"
+                                                disabled={isPlacingOrder}
+                                                className={cn(
+                                                    "flex items-center gap-1 text-[11px] font-bold uppercase transition-colors",
+                                                    isPlacingOrder ? "text-slate-300 cursor-not-allowed" : "text-slate-400 hover:text-primary"
+                                                )}
                                             >
                                                 <MapPin size={12} />
                                                 <span>Pin on map</span>
@@ -657,7 +718,11 @@ export default function CheckoutScreen() {
                                             <button
                                                 type="button"
                                                 onClick={() => setIsEditingAddress(true)}
-                                                className="text-primary text-[11px] font-bold uppercase transition-colors hover:text-primary/80"
+                                                disabled={isPlacingOrder}
+                                                className={cn(
+                                                    "text-[11px] font-bold uppercase transition-colors",
+                                                    isPlacingOrder ? "text-slate-300 cursor-not-allowed" : "text-primary hover:text-primary/80"
+                                                )}
                                             >
                                                 Change
                                             </button>
@@ -665,7 +730,7 @@ export default function CheckoutScreen() {
                                     </div>
                                     {/* Mobile: actions on second row — avoids cramped single line */}
                                     <div className="flex flex-wrap items-center gap-2 mt-1 md:hidden">
-                                        {ctxHasDeliveryPinned && (
+                                        {ctxHasDeliveryPinned && !isManualAddress && (
                                             <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide">
                                                 <CheckCircle2 size={11} className="shrink-0" />
                                                 Pinned
@@ -674,7 +739,11 @@ export default function CheckoutScreen() {
                                         <button
                                             type="button"
                                             onClick={handlePinCurrentLocation}
-                                            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-700 shadow-sm active:scale-[0.98] transition-transform"
+                                            disabled={isPlacingOrder}
+                                            className={cn(
+                                                "inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-700 shadow-sm active:scale-[0.98] transition-transform",
+                                                isPlacingOrder && "opacity-50 cursor-not-allowed"
+                                            )}
                                         >
                                             <MapPin size={12} className="text-primary shrink-0" />
                                             {ctxHasDeliveryPinned ? 'Re-pin location' : 'Pin my location'}
@@ -682,7 +751,11 @@ export default function CheckoutScreen() {
                                         <button
                                             type="button"
                                             onClick={() => navigate('/location-picker?type=delivery&returnTo=/checkout')}
-                                            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-700 shadow-sm active:scale-[0.98] transition-transform"
+                                            disabled={isPlacingOrder}
+                                            className={cn(
+                                                "inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-700 shadow-sm active:scale-[0.98] transition-transform",
+                                                isPlacingOrder && "opacity-50 cursor-not-allowed"
+                                            )}
                                         >
                                             <MapPin size={12} className="text-blue-500 shrink-0" />
                                             Pick on map
@@ -702,8 +775,12 @@ export default function CheckoutScreen() {
                                         </div>
                                         <button
                                             type="button"
-                                            onClick={() => setIsEditingAddress(true)}
-                                            className="w-9 h-9 shrink-0 rounded-full bg-slate-50 flex items-center justify-center text-slate-500 hover:text-primary hover:bg-primary/5 transition-all border border-slate-100"
+                                            onClick={() => !isPlacingOrder && setIsEditingAddress(true)}
+                                            disabled={isPlacingOrder}
+                                            className={cn(
+                                                "w-9 h-9 shrink-0 rounded-full bg-slate-50 flex items-center justify-center text-slate-500 hover:text-primary hover:bg-primary/5 transition-all border border-slate-100",
+                                                isPlacingOrder && "opacity-50 cursor-not-allowed"
+                                            )}
                                             aria-label="Edit delivery address"
                                         >
                                             <Edit3 size={16} />
@@ -1095,7 +1172,9 @@ export default function CheckoutScreen() {
                                 className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[40px] z-101 p-8 pb-12 shadow-2xl md:max-w-xl md:mx-auto md:bottom-10 md:rounded-[40px]"
                             >
                                 <div className="flex justify-between items-center mb-6">
-                                    <h2 className="text-xl font-bold text-slate-900">Change Delivery Address</h2>
+                                    <h2 className="text-xl font-bold text-slate-900">
+                                        {ctxHasDeliveryPinned && !addressDetails.flat ? 'Complete Delivery Address' : 'Change Delivery Address'}
+                                    </h2>
                                     <button onClick={() => setIsEditingAddress(false)} className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400">
                                         <X size={20} />
                                     </button>
@@ -1108,7 +1187,27 @@ export default function CheckoutScreen() {
                                                 <button
                                                     key={tag.value}
                                                     type="button"
-                                                    onClick={() => setAddressTag(tag.value)}
+                                                    onClick={() => {
+                                                        setAddressTag(tag.value);
+                                                        if (tag.value === 'other') {
+                                                            // Clear form for Other as requested
+                                                            setAddressDetails({
+                                                                flat: '',
+                                                                floor: '',
+                                                                colony: ctxDeliveryComponents?.area || '',
+                                                                landmark: '',
+                                                                city: ctxDeliveryComponents?.city || 'Indore',
+                                                                state: ctxDeliveryComponents?.state || 'Madhya Pradesh',
+                                                                pincode: ctxDeliveryComponents?.pincode || '',
+                                                            });
+                                                        } else {
+                                                            // Load existing address for Home/Work
+                                                            const existing = savedAddresses.find(a => a.tag === tag.value);
+                                                            if (existing) {
+                                                                setAddressDetails(existing.details);
+                                                            }
+                                                        }
+                                                    }}
                                                     className={cn(
                                                         "px-3 py-2 rounded-xl border text-xs font-bold transition-all",
                                                         addressTag === tag.value
@@ -1133,7 +1232,7 @@ export default function CheckoutScreen() {
                                             type="text"
                                             value={addressDetails.floor}
                                             onChange={(e) => setAddressDetails(prev => ({ ...prev, floor: e.target.value }))}
-                                            placeholder="Floor *"
+                                            placeholder="Floor (Optional)"
                                             className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                                         />
                                         <input
@@ -1147,7 +1246,7 @@ export default function CheckoutScreen() {
                                             type="text"
                                             value={addressDetails.landmark}
                                             onChange={(e) => setAddressDetails(prev => ({ ...prev, landmark: e.target.value }))}
-                                            placeholder="Landmark *"
+                                            placeholder="Landmark (Optional)"
                                             className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                                         />
                                         <div className="flex gap-3">
@@ -1185,8 +1284,8 @@ export default function CheckoutScreen() {
                                     </div>
                                     <Button
                                         onClick={async () => {
-                                            if (!addressDetails.flat || !addressDetails.floor || !addressDetails.colony || !addressDetails.landmark || !addressDetails.city || !addressDetails.state) {
-                                                toast.error("Please fill all required fields");
+                                            if (!addressDetails.flat || !addressDetails.colony || !addressDetails.city || !addressDetails.state) {
+                                                toast.error("Please fill all mandatory fields (Flat, Colony, City, State)");
                                                 return;
                                             }
 

@@ -47,29 +47,34 @@ export function LocationProvider({ children }) {
             if (savedDelComp) setDeliveryAddressComponents(JSON.parse(savedDelComp));
             if (savedDelPinned === 'true') setHasDeliveryPinned(true);
 
-            // For franchise/browsing location: try live GPS first
+            // For franchise/browsing location: 
+            // 1. Try localStorage first (Sticky location)
+            const savedFrLoc = localStorage.getItem('kk_franchise_location');
+            const savedFrAddr = localStorage.getItem('kk_franchise_address');
+            const savedFrPinned = localStorage.getItem('kk_franchise_location_pinned');
+
+            if (savedFrLoc && savedFrAddr) {
+                setFranchiseLocation(JSON.parse(savedFrLoc));
+                setFranchiseAddress(savedFrAddr);
+                if (savedFrPinned === 'true') setHasFranchisePinned(true);
+                // If we have saved location, don't auto-fetch GPS on refresh
+                return;
+            }
+
+            // 2. No saved location? Try live GPS
             const permState = await getGeolocationPermissionState();
             if (permState !== 'denied') {
                 try {
                     setLoading(true);
                     const loc = await getCurrentLocation();
-                    // Always reverse-geocode fresh — overwrites any stale localStorage address
                     await setPinnedFranchiseLocation({ lat: loc.lat, lng: loc.lng });
-                    return; // GPS succeeded — don't load stale localStorage
+                    return; 
                 } catch {
-                    // GPS failed — fall through to localStorage
+                    // GPS failed — fall through
                 } finally {
                     setLoading(false);
                 }
             }
-
-            // GPS unavailable or denied — load last known franchise location from localStorage
-            const savedFrLoc = localStorage.getItem('kk_franchise_location');
-            const savedFrAddr = localStorage.getItem('kk_franchise_address');
-            const savedFrPinned = localStorage.getItem('kk_franchise_location_pinned');
-            if (savedFrLoc) setFranchiseLocation(JSON.parse(savedFrLoc));
-            if (savedFrAddr) setFranchiseAddress(savedFrAddr);
-            if (savedFrPinned === 'true') setHasFranchisePinned(true);
         };
 
         init();
@@ -84,8 +89,7 @@ export function LocationProvider({ children }) {
         setFranchiseLocation(normalized);
         localStorage.setItem('kk_franchise_location', JSON.stringify(normalized));
 
-        // Always reverse-geocode fresh from coordinates — never trust a cached address string
-        // This ensures GPS coordinates always produce the correct current address
+        // Always reverse-geocode fresh from coordinates
         const addr = await reverseGeocode(lat, lng);
         const finalAddr = addr || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 
@@ -94,7 +98,26 @@ export function LocationProvider({ children }) {
 
         setHasFranchisePinned(true);
         localStorage.setItem('kk_franchise_location_pinned', 'true');
-    }, []);
+
+        // Sync with delivery location if it's not already pinned or if it's the same
+        // This prevents the user from being asked for location again at checkout
+        if (!hasDeliveryPinned) {
+            setDeliveryLocation(normalized);
+            setDeliveryAddress(finalAddr);
+            setHasDeliveryPinned(true);
+            localStorage.setItem('kk_delivery_location', JSON.stringify(normalized));
+            localStorage.setItem('kk_delivery_address', finalAddr);
+            localStorage.setItem('kk_delivery_location_pinned', 'true');
+            
+            // Also try to get components for structured address
+            reverseGeocodeWithComponents(lat, lng).then(res => {
+                if (res) {
+                    setDeliveryAddressComponents(res.addressComponents);
+                    localStorage.setItem('kk_delivery_address_components', JSON.stringify(res.addressComponents));
+                }
+            });
+        }
+    }, [hasDeliveryPinned]);
 
     const setPinnedDeliveryLocation = useCallback(async (loc) => {
         if (!loc) return;
@@ -111,19 +134,30 @@ export function LocationProvider({ children }) {
             res = await reverseGeocodeWithComponents(lat, lng);
         }
 
+        let finalAddr = '';
         if (res) {
-            setDeliveryAddress(res.formattedAddress);
+            finalAddr = res.formattedAddress;
+            setDeliveryAddress(finalAddr);
             setDeliveryAddressComponents(res.addressComponents);
-            localStorage.setItem('kk_delivery_address', res.formattedAddress);
+            localStorage.setItem('kk_delivery_address', finalAddr);
             localStorage.setItem('kk_delivery_address_components', JSON.stringify(res.addressComponents));
         } else {
-            const fallbackAddr = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-            setDeliveryAddress(fallbackAddr);
+            finalAddr = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+            setDeliveryAddress(finalAddr);
             setDeliveryAddressComponents(null);
+            localStorage.setItem('kk_delivery_address', finalAddr);
         }
 
         setHasDeliveryPinned(true);
         localStorage.setItem('kk_delivery_location_pinned', 'true');
+
+        // Sync back to franchise/browsing location
+        setFranchiseLocation(normalized);
+        setFranchiseAddress(finalAddr);
+        setHasFranchisePinned(true);
+        localStorage.setItem('kk_franchise_location', JSON.stringify(normalized));
+        localStorage.setItem('kk_franchise_address', finalAddr);
+        localStorage.setItem('kk_franchise_location_pinned', 'true');
     }, []);
 
     /**

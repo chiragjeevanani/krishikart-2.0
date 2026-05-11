@@ -163,21 +163,6 @@ export const createOrder = async (req, res) => {
       );
     }
 
-    // Strict City Validation: shippingAddress must match the resolved city from geocoding
-    if (resolvedLocation.city) {
-        const parts = shippingAddress.split(',');
-        const inputCity = parts.length >= 2 ? parts[parts.length - 2].trim().toLowerCase() : "";
-        const resolvedCity = resolvedLocation.city.toLowerCase();
-
-        if (inputCity && !resolvedCity.includes(inputCity) && !inputCity.includes(resolvedCity)) {
-             return handleResponse(
-                res,
-                400,
-                `Location mismatch: Your address says '${inputCity}' but the map pin is in '${resolvedLocation.city}'. Please pin the correct location.`,
-            );
-        }
-    }
-
     const split = await computeSplitCheckoutPayload({
       cart,
       userId,

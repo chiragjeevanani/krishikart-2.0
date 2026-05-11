@@ -64,6 +64,17 @@ export function UserAuthProvider({ children }) {
         localStorage.removeItem('userData');
         localStorage.removeItem('kk_onboarding_completed');
         localStorage.removeItem('kk_business_type');
+        
+        // Clear location data on logout
+        localStorage.removeItem('kk_franchise_location');
+        localStorage.removeItem('kk_franchise_address');
+        localStorage.removeItem('kk_franchise_location_pinned');
+        localStorage.removeItem('kk_delivery_location');
+        localStorage.removeItem('kk_delivery_address');
+        localStorage.removeItem('kk_delivery_address_components');
+        localStorage.removeItem('kk_delivery_location_pinned');
+        localStorage.removeItem('kk_location_declined');
+
         window.location.href = '/login';
     };
 
