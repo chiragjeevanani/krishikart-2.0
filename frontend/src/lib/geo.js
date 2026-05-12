@@ -71,6 +71,100 @@ export const geocodeAddressFrontend = async (query) => {
 };
 
 /**
+ * Fetches address suggestions using Google Maps Autocomplete Service (SDK)
+ * Falls back to REST API if SDK is not loaded.
+ */
+export const fetchAddressSuggestions = async (input) => {
+    if (!input || input.length < 3) return [];
+    
+    // Try SDK first (best for CORS)
+    if (window.google && window.google.maps && window.google.maps.places) {
+        return new Promise((resolve) => {
+            const service = new window.google.maps.places.AutocompleteService();
+            service.getPlacePredictions({
+                input,
+                componentRestrictions: { country: 'in' }
+            }, (predictions, status) => {
+                if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
+                    resolve(predictions.map(p => ({
+                        description: p.description,
+                        placeId: p.place_id
+                    })));
+                } else {
+                    resolve([]);
+                }
+            });
+        });
+    }
+
+    // Fallback to REST API
+    try {
+        const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+        if (!apiKey) return [];
+        const response = await axios.get(
+            `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(input)}&key=${apiKey}&components=country:in`
+        );
+        if (response.data.status === 'OK') {
+            return response.data.predictions.map(p => ({
+                description: p.description,
+                placeId: p.place_id
+            }));
+        }
+        return [];
+    } catch (error) {
+        console.error('Autocomplete fallback error:', error.message);
+        return [];
+    }
+};
+
+/**
+ * Geocodes a Place ID to detailed address components
+ */
+export const geocodePlaceId = async (placeId) => {
+    // Try SDK first
+    if (window.google && window.google.maps && window.google.maps.Geocoder) {
+        return new Promise((resolve) => {
+            const geocoder = new window.google.maps.Geocoder();
+            geocoder.geocode({ placeId }, (results, status) => {
+                if (status === 'OK' && results[0]) {
+                    const result = results[0];
+                    resolve({
+                        lat: result.geometry.location.lat(),
+                        lng: result.geometry.location.lng(),
+                        formattedAddress: result.formatted_address,
+                        addressComponents: extractAddressComponents(result)
+                    });
+                } else {
+                    resolve(null);
+                }
+            });
+        });
+    }
+
+    // Fallback to REST
+    try {
+        const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+        if (!apiKey) return null;
+        const response = await axios.get(
+            `https://maps.googleapis.com/maps/api/geocode/json?place_id=${placeId}&key=${apiKey}`
+        );
+        if (response.data.status === 'OK' && response.data.results.length > 0) {
+            const result = response.data.results[0];
+            return {
+                lat: result.geometry.location.lat,
+                lng: result.geometry.location.lng,
+                formattedAddress: result.formatted_address,
+                addressComponents: extractAddressComponents(result)
+            };
+        }
+        return null;
+    } catch (error) {
+        console.error('Geocode Place ID fallback error:', error.message);
+        return null;
+    }
+};
+
+/**
  * Gets the current geolocation of the user.
  * Uses watchPosition to get a fresh GPS fix (not a cached position),
  * resolving once accuracy is ≤ 100m or after 10 seconds (best available).

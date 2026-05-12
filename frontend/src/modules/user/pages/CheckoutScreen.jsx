@@ -27,7 +27,7 @@ import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import api from '@/lib/axios'
 import { toast } from 'sonner'
-import { geocodeAddressFrontend } from '@/lib/geo'
+import { geocodeAddressFrontend, fetchAddressSuggestions, geocodePlaceId } from '@/lib/geo'
 import { useLocation } from '../contexts/LocationContext'
 
 const SAVED_ADDRESSES_KEY = 'kk_user_saved_addresses'
@@ -111,6 +111,9 @@ export default function CheckoutScreen() {
     const [deliveryShift, setDeliveryShift] = useState('');
     /** Re-render every minute so past slots become disabled without refresh */
     const [shiftTimeTick, setShiftTimeTick] = useState(0)
+    const [searchQuery, setSearchQuery] = useState('')
+    const [suggestions, setSuggestions] = useState([])
+    const [isSearching, setIsSearching] = useState(false)
 
     useEffect(() => {
         const id = setInterval(() => setShiftTimeTick((n) => n + 1), 60000)
@@ -256,6 +259,47 @@ export default function CheckoutScreen() {
         setDeliveryAddress(fullAddress)
         setIsManualAddress(true)
         toast.success(`${saved.label || 'Address'} selected`)
+    }
+
+    const handleSearchChange = async (val) => {
+        setSearchQuery(val);
+        if (val.length < 3) {
+            setSuggestions([]);
+            return;
+        }
+        setIsSearching(true);
+        const results = await fetchAddressSuggestions(val);
+        setSuggestions(results);
+        setIsSearching(false);
+    }
+
+    const handleSelectSuggestion = async (s) => {
+        setSearchQuery(s.description);
+        setSuggestions([]);
+        setIsPlacingOrder(true);
+        try {
+            const geocoded = await geocodePlaceId(s.placeId);
+            if (geocoded) {
+                const { addressComponents, lat, lng } = geocoded;
+                setAddressDetails(prev => ({
+                    ...prev,
+                    colony: addressComponents.area || prev.colony,
+                    city: addressComponents.city || prev.city,
+                    state: addressComponents.state || prev.state,
+                    pincode: addressComponents.pincode || prev.pincode
+                }));
+                // Update map pin context
+                if (ctxUpdateDeliveryLocation) {
+                    await locationCtx.setPinnedDeliveryLocation({ lat, lng, address: geocoded.formattedAddress, addressComponents });
+                }
+                toast.success('Address details filled!');
+            }
+        } catch (err) {
+            console.error('Select suggestion error:', err);
+            toast.error('Failed to fetch address details');
+        } finally {
+            setIsPlacingOrder(false);
+        }
     }
 
     useEffect(() => {
@@ -1221,6 +1265,61 @@ export default function CheckoutScreen() {
                                         </div>
                                     </div>
                                     <div className="space-y-3">
+                                        <div className="relative group">
+                                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">
+                                                <MapPin size={16} />
+                                            </div>
+                                            <input
+                                                type="text"
+                                                value={searchQuery}
+                                                onChange={(e) => handleSearchChange(e.target.value)}
+                                                placeholder="Search for your colony or area..."
+                                                className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 pl-10 text-sm font-bold placeholder:font-medium placeholder:text-slate-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
+                                            />
+                                            {searchQuery && (
+                                                <button 
+                                                    onClick={() => {
+                                                        setSearchQuery('');
+                                                        setSuggestions([]);
+                                                    }}
+                                                    className="absolute right-10 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors p-1"
+                                                >
+                                                    <X size={14} />
+                                                </button>
+                                            )}
+                                            
+                                            {isSearching && (
+                                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                                    <Loader2 size={16} className="animate-spin text-primary" />
+                                                </div>
+                                            )}
+                                            
+                                            <AnimatePresence>
+                                                {suggestions.length > 0 && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: -10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        exit={{ opacity: 0, y: -10 }}
+                                                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-100 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.1)] z-[999] overflow-hidden py-2"
+                                                    >
+                                                        {suggestions.map((s, i) => (
+                                                            <button
+                                                                key={i}
+                                                                onClick={() => handleSelectSuggestion(s)}
+                                                                className="w-full px-4 py-3 text-left hover:bg-slate-50 transition-colors flex items-start gap-3"
+                                                            >
+                                                                <MapPin size={14} className="mt-1 text-slate-300" />
+                                                                <span className="text-xs font-bold text-slate-700 leading-tight">{s.description}</span>
+                                                            </button>
+                                                        ))}
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
+
+                                        <div className="h-px bg-slate-100 my-2" />
+                                        
+                                        <div className="space-y-3">
                                         <input
                                             type="text"
                                             value={addressDetails.flat}
@@ -1282,6 +1381,7 @@ export default function CheckoutScreen() {
                                             className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                                         />
                                     </div>
+                                </div>
                                     <Button
                                         onClick={async () => {
                                             if (!addressDetails.flat || !addressDetails.colony || !addressDetails.city || !addressDetails.state) {
@@ -1294,8 +1394,7 @@ export default function CheckoutScreen() {
                                                 const manualCity = addressDetails.city.trim().toLowerCase();
                                                 const pinnedCity = ctxDeliveryComponents.city.trim().toLowerCase();
                                                 if (manualCity && !pinnedCity.includes(manualCity) && !manualCity.includes(pinnedCity)) {
-                                                    toast.error(`Address mismatch: Your manual city is '${addressDetails.city}', but the pinned location is in '${ctxDeliveryComponents.city}'. Please fix one of them.`);
-                                                    return;
+                                                    toast.warning(`Address mismatch: Your manual city is '${addressDetails.city}', but the pinned location is in '${ctxDeliveryComponents.city}'. We will use '${addressDetails.city}' for delivery.`);
                                                 }
                                             }
 

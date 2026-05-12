@@ -77,12 +77,27 @@ export async function fetchFranchiseCandidatesForLocation(
     serviceHexagons: orderHex,
   }).lean();
 
-  // FALLBACK: If no hubs found with city filter, try searching by location only
+  // FALLBACK 1: If no hubs found with city + location, try searching by city ONLY (handles "ordering for another city")
   if (nearestFranchises.length === 0 && city) {
-    console.log(`[Assignment] No hub found for city "${city}". Falling back to location-only search.`);
-    delete baseQuery.city;
+    console.log(`[Assignment] No hub found for city "${city}" at this location. Trying city-only search.`);
+    const cityOnlyQuery = { ...baseQuery };
+    // Keep city filter but remove hexagon requirement
+    nearestFranchises = await Franchise.find(cityOnlyQuery).lean();
+    
+    if (nearestFranchises.length > 0) {
+        console.log(`[Assignment] Found ${nearestFranchises.length} hubs in "${city}" via city-only search.`);
+        // We return these, sorted by distance from the (mismatched) pin, or just the first available
+        return sortFranchisesByDistance(nearestFranchises, lat, lng);
+    }
+  }
+
+  // FALLBACK 2: If still no hubs (maybe city is misspelled), try searching by location only
+  if (nearestFranchises.length === 0) {
+    console.log(`[Assignment] Still no hubs found. Falling back to location-only search.`);
+    const locationOnlyQuery = { ...baseQuery };
+    delete locationOnlyQuery.city;
     nearestFranchises = await Franchise.find({
-      ...baseQuery,
+      ...locationOnlyQuery,
       serviceHexagons: orderHex,
     }).lean();
   }
