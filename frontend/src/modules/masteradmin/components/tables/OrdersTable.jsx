@@ -104,6 +104,11 @@ export default function OrdersTable({ orders, onAction, onOrderClick, onProcure,
                                             Stock Shortage
                                         </span>
                                     )}
+                                    {order.isPartOfGroup && (
+                                        <span className="text-[8px] font-black text-blue-600 bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded-sm uppercase tracking-tighter">
+                                            Split Order
+                                        </span>
+                                    )}
                                     {Array.isArray(order.assignmentAttempts) && order.assignmentAttempts.some(a => a.reason === 'rejected') && (
                                         <span className="text-[8px] font-black text-orange-600 bg-orange-50 border border-orange-100 px-1.5 py-0.5 rounded-sm uppercase tracking-tighter">
                                             Franchise Rejected ×{order.assignmentAttempts.filter(a => a.reason === 'rejected').length}

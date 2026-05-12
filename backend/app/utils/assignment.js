@@ -77,6 +77,16 @@ export async function fetchFranchiseCandidatesForLocation(
     serviceHexagons: orderHex,
   }).lean();
 
+  // FALLBACK: If no hubs found with city filter, try searching by location only
+  if (nearestFranchises.length === 0 && city) {
+    console.log(`[Assignment] No hub found for city "${city}". Falling back to location-only search.`);
+    delete baseQuery.city;
+    nearestFranchises = await Franchise.find({
+      ...baseQuery,
+      serviceHexagons: orderHex,
+    }).lean();
+  }
+
   if (nearestFranchises.length > 0) {
     console.log(
       `[Assignment] Found ${nearestFranchises.length} franchises via EXACT H3 Hexagon matching.`,
@@ -243,15 +253,30 @@ export const assignOrderToFranchise = async (orderId) => {
       city = order.shippingLocation.city.trim();
     } else if (order.shippingAddress) {
       const parts = order.shippingAddress.split(",").map((p) => p.trim()).filter(Boolean);
-      // Determine if last part is a pincode (pure digits)
-      const lastPart = parts[parts.length - 1];
-      const hasPincode = /^\d{4,6}$/.test(lastPart);
-      // City is second-from-last (before state), or third-from-last if pincode is present
-      // Format without pincode: [..., City, State]      → city = parts[length - 2]
-      // Format with pincode:    [..., City, State, Pin] → city = parts[length - 3]
-      const cityIndex = hasPincode ? parts.length - 3 : parts.length - 2;
-      if (cityIndex >= 0) {
-        city = parts[cityIndex];
+      if (parts.length > 0) {
+        // Determine if last part is a pincode (pure digits)
+        const lastPart = parts[parts.length - 1];
+        const hasPincode = /^\d{4,6}$/.test(lastPart);
+        
+        // Smarter City Extraction:
+        // Case 1: [..., City, State, Pincode] -> City is parts[length-3]
+        // Case 2: [..., City, State] -> City is parts[length-2]
+        // Case 3: [..., City] -> City is parts[length-1] (common when user doesn't type state)
+        
+        if (hasPincode) {
+          city = parts[parts.length - 3] || parts[parts.length - 2];
+        } else {
+          // Check if last part looks like a state (e.g., MP, Madhya Pradesh)
+          const states = ["madhya pradesh", "mp", "maharashtra", "up", "uttar pradesh", "rajasthan", "gujarat", "delhi", "punjab", "haryana"];
+          const isLastPartState = states.includes(lastPart.toLowerCase());
+          
+          if (isLastPartState) {
+            city = parts[parts.length - 2];
+          } else {
+            // If it's not a state or pincode, it's likely the city itself
+            city = lastPart;
+          }
+        }
       }
     }
     console.log(`[Assignment] City for order ${orderId}: "${city}"`);

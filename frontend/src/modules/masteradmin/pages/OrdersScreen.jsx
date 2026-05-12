@@ -84,12 +84,35 @@ export default function OrdersScreen() {
         exportToCSV('Orders_Report', exportColumns, data);
     };
 
+    const normalizeOrders = (results) => {
+        if (!results || !Array.isArray(results)) return [];
+        let flattened = [];
+        results.forEach(item => {
+            const data = item._doc || item;
+            if (data.isSplitOrder && data.orders && Array.isArray(data.orders)) {
+                data.orders.forEach(subOrder => {
+                    const subData = subOrder._doc || subOrder;
+                    flattened.push({
+                        ...subData,
+                        isPartOfGroup: true,
+                        groupId: data.orderGroupId,
+                        groupTotal: data.grandTotal
+                    });
+                });
+            } else {
+                flattened.push(data);
+            }
+        });
+        return flattened;
+    };
+
     const fetchAllOrders = async (silent = false) => {
         if (!silent) setIsLoading(true);
         try {
             const response = await api.get('/orders/admin/all');
             if (response.data.success) {
-                setAllOrders(response.data.results || []);
+                const normalized = normalizeOrders(response.data.results || []);
+                setAllOrders(normalized);
             }
         } catch (error) {
             console.error('Fetch all orders error:', error);
