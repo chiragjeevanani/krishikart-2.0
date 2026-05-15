@@ -219,6 +219,11 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
               path: "/masteradmin/products/manage",
               icon: List,
             },
+            {
+              label: "Recommendations",
+              path: "/masteradmin/products/recommendations",
+              icon: Star,
+            },
           ],
         },
         {

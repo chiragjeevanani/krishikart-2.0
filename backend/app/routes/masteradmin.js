@@ -14,6 +14,14 @@ import {
   saveFCMToken,
 } from "../controllers/masteradmin.auth.js";
 import {
+    createRecommendation,
+    getAllRecommendations,
+    updateRecommendation,
+    deleteRecommendation,
+    toggleRecommendationStatus,
+    getCartRecommendations
+} from "../controllers/recommendation.controller.js";
+import {
   createVendorByAdmin,
   getAllVendors,
   updateVendorStatus,
@@ -407,6 +415,13 @@ router.get("/subadmins", protectMasterAdmin, listSubAdmins);
 router.post("/subadmins", protectMasterAdmin, createSubAdmin);
 router.put("/subadmins/:id", protectMasterAdmin, updateSubAdmin);
 router.delete("/subadmins/:id", protectMasterAdmin, deleteSubAdmin);
+
+/* 💡 Product Recommendations */
+router.get("/recommendations", protectMasterAdmin, requirePermission("products"), getAllRecommendations);
+router.post("/recommendations", protectMasterAdmin, requirePermission("products"), createRecommendation);
+router.put("/recommendations/:id", protectMasterAdmin, requirePermission("products"), updateRecommendation);
+router.delete("/recommendations/:id", protectMasterAdmin, requirePermission("products"), deleteRecommendation);
+router.patch("/recommendations/:id/toggle", protectMasterAdmin, requirePermission("products"), toggleRecommendationStatus);
 
 router.get("/returns", protectMasterAdmin, getAllReturnRequests);
 router.get("/dashboard/stats", protectMasterAdmin, getAdminDashboardStats);
