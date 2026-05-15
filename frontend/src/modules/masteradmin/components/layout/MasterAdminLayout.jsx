@@ -4,8 +4,6 @@ import Sidebar from '../navigation/Sidebar';
 import TopBar from '../navigation/TopBar';
 import { useState, Suspense } from 'react';
 import NewQuotationAlert from '../modals/NewQuotationAlert';
-import { CatalogProvider } from '../../contexts/CatalogContext';
-import { AdminProvider } from '../../contexts/AdminContext';
 
 
 export default function MasterAdminLayout() {
@@ -36,24 +34,20 @@ export default function MasterAdminLayout() {
     }
 
     return (
-        <CatalogProvider>
-            <AdminProvider>
-                <div className="flex h-screen overflow-hidden bg-[#f8fafd] text-slate-900 font-sans selection:bg-emerald-100">
-                    {/* Desktop Sidebar */}
-                    <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
+        <div className="flex h-screen overflow-hidden bg-[#f8fafd] text-slate-900 font-sans selection:bg-emerald-100">
+            {/* Desktop Sidebar */}
+            <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
 
-                    <div className={`flex-1 flex flex-col h-screen min-w-0 transition-all duration-300 ${!isLoginPage ? (isCollapsed ? 'lg:ml-20' : 'lg:ml-64') : ''}`}>
-                        <TopBar />
+            <div className={`flex-1 flex flex-col h-screen min-w-0 transition-all duration-300 ${!isLoginPage ? (isCollapsed ? 'lg:ml-20' : 'lg:ml-64') : ''}`}>
+                <TopBar />
 
-                        <main className="flex-1 overflow-y-scroll overflow-x-hidden relative custom-scrollbar">
-                            <Suspense fallback={<div className="h-full w-full flex items-center justify-center p-20"><div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
-                                <Outlet />
-                            </Suspense>
-                        </main>
-                    </div>
-                </div>
-                <NewQuotationAlert />
-            </AdminProvider>
-        </CatalogProvider>
+                <main className="flex-1 overflow-y-scroll overflow-x-hidden relative custom-scrollbar">
+                    <Suspense fallback={<div className="h-full w-full flex items-center justify-center p-20"><div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+                        <Outlet />
+                    </Suspense>
+                </main>
+            </div>
+            <NewQuotationAlert />
+        </div>
     );
 }

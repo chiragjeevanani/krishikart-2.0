@@ -16,6 +16,7 @@ export const CatalogProvider = ({ children }) => {
     const [categories, setCategories] = useState([]);
     const [subcategories, setSubcategories] = useState([]);
     const [products, setProducts] = useState([]);
+    const [recommendations, setRecommendations] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
 
     // Fetch initial data
@@ -309,6 +310,70 @@ export const CatalogProvider = ({ children }) => {
         }
     };
 
+    // 💡 Recommendation Engine Methods
+    const fetchRecommendations = async () => {
+        setIsLoading(true);
+        try {
+            const response = await api.get('/masteradmin/recommendations');
+            setRecommendations(response.data.results || []);
+        } catch (error) {
+            console.error('Fetch Recommendations Error:', error);
+            toast.error('Failed to load product pairings');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const createRecommendationMapping = async (data) => {
+        try {
+            const response = await api.post('/masteradmin/recommendations', data);
+            if (response.data.success) {
+                toast.success('Product pairing established successfully');
+                await fetchRecommendations();
+                return response.data.result;
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to create pairing');
+            throw error;
+        }
+    };
+
+    const updateRecommendationMapping = async (id, data) => {
+        try {
+            const response = await api.put(`/masteradmin/recommendations/${id}`, data);
+            if (response.data.success) {
+                setRecommendations(prev => prev.map(r => r._id === id ? response.data.result : r));
+                toast.success('Pairing updated');
+                return response.data.result;
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Update failed');
+            throw error;
+        }
+    };
+
+    const deleteRecommendationMapping = async (id) => {
+        try {
+            await api.delete(`/masteradmin/recommendations/${id}`);
+            setRecommendations(prev => prev.filter(r => r._id !== id));
+            toast.success('Pairing removed');
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Delete failed');
+        }
+    };
+
+    const toggleRecommendationStatus = async (id) => {
+        try {
+            const response = await api.patch(`/masteradmin/recommendations/${id}/toggle`);
+            if (response.data.success) {
+                setRecommendations(prev => prev.map(r => r._id === id ? response.data.result : r));
+                toast.success(response.data.message);
+            }
+        } catch (error) {
+            toast.error('Failed to toggle status');
+        }
+    };
+
     return (
         <CatalogContext.Provider value={{
             categories,
@@ -326,6 +391,12 @@ export const CatalogProvider = ({ children }) => {
             deleteProduct,
             importProducts,
             fetchProducts,
+            recommendations,
+            fetchRecommendations,
+            createRecommendationMapping,
+            updateRecommendationMapping,
+            deleteRecommendationMapping,
+            toggleRecommendationStatus,
             getSubcategoriesByCategory,
             refreshCatalog: fetchCatalog
         }}>

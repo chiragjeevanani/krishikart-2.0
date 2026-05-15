@@ -7,6 +7,7 @@ import {
   MasterAdminAuthProvider,
 } from "../contexts/MasterAdminAuthContext";
 import { AdminProvider } from "../contexts/AdminContext";
+import { CatalogProvider } from "../contexts/CatalogContext";
 
 // Public Screens
 import LoginScreen from "../pages/LoginScreen";
@@ -52,6 +53,7 @@ const VendorTurnover = lazy(() => import("../pages/VendorTurnoverScreen"));
 const AddProduct = lazy(() => import("../pages/AddProductScreen"));
 const EditProduct = lazy(() => import("../pages/EditProductScreen"));
 const ManageProducts = lazy(() => import("../pages/ManageProductScreen"));
+const Recommendations = lazy(() => import("../pages/RecommendationScreen"));
 const CategoryManagement = lazy(
   () => import("../pages/CategoryManagementScreen"),
 );
@@ -147,7 +149,9 @@ const PermissionRoute = ({ permissionKey }) => {
 const MasterAdminWrapper = () => (
   <MasterAdminAuthProvider>
     <AdminProvider>
-      <Outlet />
+      <CatalogProvider>
+        <Outlet />
+      </CatalogProvider>
     </AdminProvider>
   </MasterAdminAuthProvider>
 );
@@ -314,6 +318,7 @@ export const masterAdminRoutes = (
           <Route path="add" element={<AddProduct />} />
           <Route path="edit/:id" element={<EditProduct />} />
           <Route path="manage" element={<ManageProducts />} />
+          <Route path="recommendations" element={<Recommendations />} />
         </Route>
 
         <Route

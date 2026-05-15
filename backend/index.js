@@ -7,7 +7,7 @@ import cors from "cors"
 import { createServer } from "http";
 import { initSocket } from "./app/lib/socket.js";
 
-dotenv.config();
+dotenv.config({ override: true });
 const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOSTNAME || "0.0.0.0";
