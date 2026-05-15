@@ -85,12 +85,12 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
           path: "/masteradmin/orders",
           permissionKey: "orders",
         },
-        {
+        /* {
           icon: UserCheck,
           label: "Assign Vendors",
           path: "/masteradmin/assignment",
           permissionKey: "assignment",
-        },
+        }, */
         {
           icon: Truck,
           label: "Delivery Tracking",
@@ -257,6 +257,11 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
               label: "Delivery Partners",
               path: "/masteradmin/approvals?type=delivery",
               icon: Truck,
+            },
+            {
+              label: "Category Ownership",
+              path: "/masteradmin/category-approvals",
+              icon: Tags,
             },
           ],
         },

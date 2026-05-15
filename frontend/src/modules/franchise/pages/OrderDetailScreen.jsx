@@ -21,12 +21,14 @@ import {
     ShieldCheck,
     Settings2,
     ArrowRight,
-    Briefcase
+    Briefcase,
+    AlertCircle
 } from 'lucide-react';
 import api from '@/lib/axios';
 import { toast } from 'sonner';
 import { useFranchiseOrders } from '../contexts/FranchiseOrdersContext';
 import { cn } from '@/lib/utils';
+import { getSocket } from '@/lib/socket';
 import DocumentViewer from '../../vendor/components/documents/DocumentViewer';
 
 export default function OrderDetailScreen() {
@@ -83,6 +85,10 @@ export default function OrderDetailScreen() {
                     })),
                     bilty: o.bilty,
                     franchiseAutoAccepted: !!o.franchiseAutoAccepted,
+                    scheduledDate: o.scheduledDate,
+                    scheduledDateFormatted: o.scheduledDateFormatted,
+                    isPreOrder: !!o.isPreOrder,
+                    deliverySlot: o.deliveryShift || o.deliverySlot || "Standard",
                 });
             }
         } catch (error) {
@@ -184,6 +190,37 @@ export default function OrderDetailScreen() {
         }
     }, [deliveryPartners?.length, refreshPartners]);
 
+    // Socket listeners for real-time updates
+    useEffect(() => {
+        const socket = getSocket();
+        if (!socket) return;
+
+        const handlePartialApproval = (data) => {
+            if (data.orderId?.toString() === id?.toString()) {
+                console.log("[OrderDetail] Received partial fulfillment approval:", data);
+                fetchOrderDetail(); // Refresh current order state
+            }
+        };
+
+        const handleProcurementUpdate = (data) => {
+            // Check if this procurement update belongs to this order
+            // Procurement updates usually send orderId or relatedOrderId
+            const targetOrderId = data.orderId || data.relatedOrderId;
+            if (targetOrderId?.toString() === id?.toString()) {
+                console.log("[OrderDetail] Received procurement cycle update:", data);
+                fetchOrderDetail();
+            }
+        };
+
+        socket.on('partial_fulfillment_approved', handlePartialApproval);
+        socket.on('procurement_cycle_update', handleProcurementUpdate);
+
+        return () => {
+            socket.off('partial_fulfillment_approved', handlePartialApproval);
+            socket.off('procurement_cycle_update', handleProcurementUpdate);
+        };
+    }, [id]);
+
     if (isLoading) {
         return (
             <div className="p-4 space-y-4 animate-pulse bg-slate-50 min-h-screen">
@@ -263,13 +300,47 @@ export default function OrderDetailScreen() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="relative z-10 flex flex-col items-end gap-2">
-                                <span className="text-[11px] font-black text-emerald-400 uppercase tracking-widest text-right">Total Amount</span>
-                                <span className="text-4xl font-black tracking-tighter tabular-nums leading-none">₹{(Number(order.total) || 0).toLocaleString()}</span>
+                            <div className="relative z-10 flex flex-col items-end gap-3">
+                                <div className="flex flex-col items-end">
+                                    <span className="text-[11px] font-black text-emerald-400 uppercase tracking-widest text-right leading-none mb-1">Total Amount</span>
+                                    <span className="text-4xl font-black tracking-tighter tabular-nums leading-none">₹{(Number(order.total) || 0).toLocaleString()}</span>
+                                </div>
+                                <div className={cn(
+                                    "px-3 py-1 rounded-sm text-[10px] font-black uppercase tracking-widest border border-white/10",
+                                    order.paymentMethod?.toUpperCase() === 'COD' 
+                                        ? "bg-amber-500/20 text-amber-400 border-amber-500/30" 
+                                        : "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                                )}>
+                                    {order.paymentMethod?.toUpperCase() === 'COD' ? 'COD' : 'Online Payment'}
+                                    {order.paymentMethod?.toUpperCase() !== 'COD' && (
+                                        <span className="ml-2 opacity-60 text-[8px]">({order.paymentMethod})</span>
+                                    )}
+                                </div>
                             </div>
                             {/* Grid Pattern Background */}
                             <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#fff 0.5px, transparent 0.5px)', backgroundSize: '20px 20px' }} />
                         </div>
+
+                        {/* Pre-order / Scheduled Banner */}
+                        {(order.isPreOrder || order.scheduledDate) && (
+                            <div className="bg-emerald-600 p-4 rounded-sm flex items-center justify-between text-white shadow-lg shadow-emerald-100">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 bg-white/20 rounded-sm flex items-center justify-center text-white">
+                                        <Clock size={20} />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80 leading-none mb-1.5">Target Delivery Date</p>
+                                        <h3 className="text-sm font-black uppercase tracking-tight">
+                                            {order.scheduledDateFormatted || new Date(order.scheduledDate).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
+                                        </h3>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-[9px] font-black uppercase tracking-widest opacity-60 mb-1 leading-none">Assigned Shift</p>
+                                    <p className="text-[11px] font-black uppercase tracking-tighter">{order.deliverySlot}</p>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Location & Logistical Audit Documents */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -360,6 +431,11 @@ export default function OrderDetailScreen() {
                                                 {Number(item.quantity) || 0}×
                                             </div>
                                             <span className="text-[11px] font-black text-slate-900 uppercase tracking-tight">{item.name}</span>
+                                            {item.isShortage && (
+                                                <span className="text-[8px] font-black text-rose-600 bg-rose-50 border border-rose-100 px-1.5 py-0.5 rounded-sm uppercase tracking-tighter">
+                                                    Shortage
+                                                </span>
+                                            )}
                                         </div>
                                         <div className="flex items-center gap-8">
                                             <div className="hidden md:flex flex-col items-end opacity-0 group-hover:opacity-100 transition-all">
@@ -432,7 +508,18 @@ export default function OrderDetailScreen() {
 
                         {/* Context Actions */}
                         <div className="bg-white border border-slate-200 p-6 rounded-sm space-y-4">
-                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Manage Order</h3>
+                            <div className="flex items-center justify-between border-b border-slate-50 pb-4">
+                                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Manage Order</h3>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[9px] font-black text-slate-400 uppercase">Payment:</span>
+                                    <span className={cn(
+                                        "text-[9px] font-black uppercase tracking-widest",
+                                        order.paymentMethod?.toUpperCase() === 'COD' ? "text-amber-600" : "text-emerald-600"
+                                    )}>
+                                        {order.paymentMethod?.toUpperCase() === 'COD' ? 'Cash on Delivery' : 'Prepaid / Online'}
+                                    </span>
+                                </div>
+                            </div>
 
                             {/* Manual Accept Button */}
                             {(order.status === 'placed' || order.status === 'assigned' || order.status === 'new' || order.status === 'pending') && (
@@ -460,35 +547,54 @@ export default function OrderDetailScreen() {
                             )}
 
                             {order.status === 'accepted' && (
-                                    <div className="space-y-3 p-4 border border-emerald-100 bg-emerald-50 rounded-sm">
-                                        {order.allowPartialFulfillment && (
-                                            <div className="rounded-sm border border-blue-200 bg-blue-50 px-3 py-2 text-[9px] font-black uppercase tracking-widest text-blue-700">
-                                                Master Admin approved packing with current available stock.
-                                            </div>
-                                        )}
-                                        <label className="text-[10px] font-black uppercase text-emerald-800 tracking-widest flex items-center justify-between">
-                                            <span>Number of Packages</span>
-                                            <Package size={14} />
-                                        </label>
-                                        <div className="flex items-center gap-3">
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                value={numberOfPackages}
-                                                onChange={(e) => setNumberOfPackages(e.target.value)}
-                                                className="w-20 h-10 text-center text-sm font-black border border-emerald-200 rounded-sm focus:outline-none focus:border-emerald-500 bg-white"
-                                            />
+                                <>
+                                    {order.items.some(i => i.isShortage) && !order.allowPartialFulfillment ? (
+                                        <div className="space-y-3 p-4 border border-amber-100 bg-amber-50 rounded-sm">
+                                            <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2 mb-2">
+                                                <AlertCircle size={14} /> Stock Shortage Detected
+                                            </p>
+                                            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-tight text-center leading-relaxed">
+                                                Some items are still short in your inventory. You must request procurement or wait for Admin permission to dispatch available stock.
+                                            </p>
                                             <button
-                                                onClick={async () => {
-                                                    await updateOrderStatus(id, 'Packed', { numberOfPackages: Number(numberOfPackages) });
-                                                    fetchOrderDetail();
-                                                }}
-                                                className="flex-1 h-10 bg-emerald-600 text-white rounded-sm font-black uppercase text-[10px] tracking-[0.2em] shadow-lg hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
+                                                onClick={() => navigate('/franchise/procurement')}
+                                                className="w-full h-10 bg-amber-600 text-white rounded-sm font-black uppercase text-[10px] tracking-[0.2em] shadow-lg hover:bg-amber-700 transition-all flex items-center justify-center gap-2"
                                             >
-                                                {order.allowPartialFulfillment ? 'Pack Available Stock' : 'Proceed to Packing'} <ArrowRight size={14} />
+                                                Request Procurement
                                             </button>
                                         </div>
-                                    </div>
+                                    ) : (
+                                        <div className="space-y-3 p-4 border border-emerald-100 bg-emerald-50 rounded-sm">
+                                            {order.allowPartialFulfillment && order.items.some(i => i.isShortage) && (
+                                                <div className="rounded-sm border border-blue-200 bg-blue-50 px-3 py-2 text-[9px] font-black uppercase tracking-widest text-blue-700">
+                                                    Master Admin approved packing with current available stock.
+                                                </div>
+                                            )}
+                                            <label className="text-[10px] font-black uppercase text-emerald-800 tracking-widest flex items-center justify-between">
+                                                <span>Number of Packages</span>
+                                                <Package size={14} />
+                                            </label>
+                                            <div className="flex items-center gap-3">
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    value={numberOfPackages}
+                                                    onChange={(e) => setNumberOfPackages(e.target.value)}
+                                                    className="w-20 h-10 text-center text-sm font-black border border-emerald-200 rounded-sm focus:outline-none focus:border-emerald-500 bg-white"
+                                                />
+                                                <button
+                                                    onClick={async () => {
+                                                        await updateOrderStatus(id, 'Packed', { numberOfPackages: Number(numberOfPackages) });
+                                                        fetchOrderDetail();
+                                                    }}
+                                                    className="flex-1 h-10 bg-emerald-600 text-white rounded-sm font-black uppercase text-[10px] tracking-[0.2em] shadow-lg hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
+                                                >
+                                                    {order.allowPartialFulfillment ? 'Pack Available Stock' : 'Proceed to Packing'} <ArrowRight size={14} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
                             )}
 
                             {order.status === 'procuring' && (

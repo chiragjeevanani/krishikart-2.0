@@ -262,6 +262,23 @@ const OrderDetailModal = ({ isOpen, onClose, orderId, onProcure, onAllowPartial 
                             ) : order ? (
                                 <div ref={printableRef} className="space-y-6" id="printable-order-content">
 
+                                    {order.items?.some(i => i.isShortage) && !order.allowPartialFulfillment && (
+                                        <div className="p-4 bg-rose-50 border border-rose-100 rounded-sm flex items-start gap-4">
+                                            <div className="w-10 h-10 bg-rose-500 rounded-sm flex items-center justify-center text-white shrink-0 shadow-lg shadow-rose-200">
+                                                <AlertCircle size={24} />
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex items-center justify-between">
+                                                    <h3 className="text-[12px] font-black text-rose-900 uppercase tracking-widest">Inventory Conflict Detected</h3>
+                                                    <span className="text-[9px] font-black text-rose-500 uppercase tracking-[0.2em] animate-pulse">Action Required</span>
+                                                </div>
+                                                <p className="text-[10px] text-rose-600 font-bold mt-1 leading-relaxed uppercase tracking-tight">
+                                                    The assigned franchise reports insufficient stock (Items might have been rejected/rotten). You must either initiate a <b>Procurement Cycle</b> or <b>Authorize Partial Delivery</b>.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                         {/* Left Column - Order Items */}
                                         <div className="md:col-span-2 space-y-6">
@@ -309,7 +326,7 @@ const OrderDetailModal = ({ isOpen, onClose, orderId, onProcure, onAllowPartial 
                                                     ))}
                                                 </div>
                                                 <div className="bg-slate-900 p-6 flex flex-col gap-3">
-                                                    {order.items?.some(i => i.isShortage) && (
+                                                    {order.items?.some(i => i.isShortage) && (order.orderStatus || '').toLowerCase() !== 'procuring' && (
                                                         <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                             <button
                                                                 onClick={() => onAllowPartial?.(order)}
@@ -334,6 +351,13 @@ const OrderDetailModal = ({ isOpen, onClose, orderId, onProcure, onAllowPartial 
                                                                 <Package size={16} />
                                                                 Procure Shortage Items
                                                             </button>
+                                                        </div>
+                                                    )}
+
+                                                    {(order.orderStatus || '').toLowerCase() === 'procuring' && (
+                                                        <div className="mb-4 p-4 bg-slate-800 border border-slate-700 rounded-sm flex items-center justify-center gap-3">
+                                                            <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+                                                            <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Procurement in Progress...</span>
                                                         </div>
                                                     )}
                                                     <div className="flex items-center justify-between text-slate-400 text-[10px] font-black uppercase tracking-widest">

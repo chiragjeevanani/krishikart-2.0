@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     FileText,
     Upload,
@@ -12,20 +12,21 @@ import {
     Store,
     Landmark,
     Download,
+    Eye,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useFranchiseAuth } from '../contexts/FranchiseAuthContext';
 import api from '@/lib/axios';
 import {
-    countGst14Parts,
+    getGstParts,
     isValidFssai,
-    isValidGst14,
+    isValidGst,
     isValidPan,
     normalizeFssaiInput,
-    normalizeGst14Input,
+    normalizeGstInput,
     normalizePanInput,
-} from '../utils/gstin14';
+} from '../utils/gstin';
 
 const FILE_FIELDS = {
     aadhaar: { formKey: 'aadhaarImage', previewKey: 'aadhaar' },
@@ -34,6 +35,61 @@ const FILE_FIELDS = {
     shopEstablishment: { formKey: 'shopEstablishmentCertificate', previewKey: 'shopEstablishment' },
     gst: { formKey: 'gstCertificate', previewKey: 'gst' },
 };
+
+function DocPreviewModal({ isOpen, onClose, url, title }) {
+    if (!isOpen || !url) return null;
+    const isPdf = url.toLowerCase().includes('pdf') || url.startsWith('data:application/pdf');
+
+    return (
+        <AnimatePresence>
+            <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-8">
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={onClose}
+                    className="absolute inset-0 bg-slate-900/90 backdrop-blur-md"
+                />
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                    className="relative w-full max-w-5xl h-full max-h-[90vh] bg-white rounded-[32px] overflow-hidden flex flex-col shadow-2xl"
+                >
+                    <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-white">
+                                <FileText size={16} />
+                            </div>
+                            <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">{title || 'Document Preview'}</h3>
+                        </div>
+                        <button
+                            onClick={onClose}
+                            className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"
+                        >
+                            <X size={20} />
+                        </button>
+                    </div>
+                    <div className="flex-1 bg-slate-50 overflow-auto p-4 flex items-center justify-center">
+                        {isPdf ? (
+                            <iframe
+                                src={url}
+                                className="w-full h-full rounded-xl border border-slate-200"
+                                title="PDF Preview"
+                            />
+                        ) : (
+                            <img
+                                src={url}
+                                alt="Preview"
+                                className="max-w-full max-h-full object-contain rounded-xl shadow-lg"
+                            />
+                        )}
+                    </div>
+                </motion.div>
+            </div>
+        </AnimatePresence>
+    );
+}
 
 function DocUploadZone({
     preview,
@@ -45,11 +101,14 @@ function DocUploadZone({
     inputId,
     error,
     docName,
+    onPreview,
 }) {
     const [isDownloading, setIsDownloading] = useState(false);
+    const [hasError, setHasError] = useState(false);
 
     // A remote URL (already uploaded) vs a local blob/data URL
     const isRemoteUrl = preview && preview.startsWith('http');
+    const isPdf = preview && (preview.toLowerCase().includes('pdf') || preview.startsWith('data:application/pdf'));
 
     const handleDownload = async () => {
         if (!preview) return;
@@ -108,12 +167,32 @@ function DocUploadZone({
             >
                 {preview ? (
                     <>
-                        <img
-                            src={preview}
-                            alt=""
-                            className="absolute inset-0 w-full h-full object-cover"
-                        />
+                        {isPdf || hasError ? (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-50">
+                                <FileText size={48} className={cn("mb-2", isPdf ? "text-rose-500" : "text-slate-300")} />
+                                <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">
+                                    {isPdf ? "PDF Document" : "Document View"}
+                                </span>
+                            </div>
+                        ) : (
+                            <img
+                                src={preview}
+                                alt=""
+                                className="absolute inset-0 w-full h-full object-cover"
+                                onError={() => setHasError(true)}
+                            />
+                        )}
                         <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover/upload:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                            {/* Preview button */}
+                            <button
+                                type="button"
+                                onClick={() => onPreview(preview, title)}
+                                className="p-2 bg-white text-slate-900 rounded-full shadow-lg hover:scale-110 transition-transform"
+                                title="Preview document"
+                            >
+                                <Eye size={18} />
+                            </button>
+
                             {/* Download button — always shown for remote URLs */}
                             {isRemoteUrl && (
                                 <button
@@ -178,7 +257,7 @@ export default function DocumentationScreen() {
         aadhaarNumber: franchise?.kyc?.aadhaarNumber || '',
         panNumber: franchise?.kyc?.panNumber || '',
         fssaiNumber: String(franchise?.kyc?.fssaiNumber || '').replace(/\D/g, '').slice(0, 14),
-        gstNumber: normalizeGst14Input(franchise?.kyc?.gstNumber || ''),
+        gstNumber: normalizeGstInput(franchise?.kyc?.gstNumber || ''),
         aadhaarImage: null,
         panImage: null,
         fssaiCertificate: null,
@@ -194,19 +273,44 @@ export default function DocumentationScreen() {
         gst: franchise?.kyc?.gstCertificate || null,
     });
     const [errors, setErrors] = useState({});
+    const [activePreview, setActivePreview] = useState({ url: null, title: '' });
+
+    // Sync previews when franchise data loads/updates
+    useEffect(() => {
+        if (franchise?.kyc) {
+            setPreviews({
+                aadhaar: franchise.kyc.aadhaarImage || null,
+                pan: franchise.kyc.panImage || null,
+                fssai: franchise.kyc.fssaiCertificate || null,
+                shopEstablishment: franchise.kyc.shopEstablishmentCertificate || null,
+                gst: franchise.kyc.gstCertificate || null,
+            });
+            setFormData(prev => ({
+                ...prev,
+                aadhaarNumber: franchise.kyc.aadhaarNumber || '',
+                panNumber: franchise.kyc.panNumber || '',
+                fssaiNumber: String(franchise.kyc.fssaiNumber || '').replace(/\D/g, '').slice(0, 14),
+                gstNumber: normalizeGstInput(franchise.kyc.gstNumber || ''),
+            }));
+        }
+    }, [franchise]);
 
     const isVerified = franchise?.kyc?.status === 'verified';
     const isPending = franchise?.kyc?.status === 'pending';
     const franchiseAccountPending = franchise && !franchise.isVerified;
     const readOnly = isVerified || isPending;
-    const gstParts = countGst14Parts(formData.gstNumber);
+    const gstParts = getGstParts(formData.gstNumber);
+
+    const handlePreview = (url, title) => {
+        setActivePreview({ url, title });
+    };
 
     const validateForm = () => {
         const nextErrors = {};
         const aadhaarNumber = formData.aadhaarNumber.trim();
         const panNumber = normalizePanInput(formData.panNumber);
         const fssaiDigits = normalizeFssaiInput(formData.fssaiNumber);
-        const gstNumber = normalizeGst14Input(formData.gstNumber);
+        const gstNumber = normalizeGstInput(formData.gstNumber);
 
         if (!aadhaarNumber) {
             nextErrors.aadhaarNumber = 'Enter the Aadhaar number shown on the card.';
@@ -226,8 +330,8 @@ export default function DocumentationScreen() {
 
         if (!gstNumber) {
             nextErrors.gstNumber = 'Enter your 15-character GST number.';
-        } else if (!isValidGst14(gstNumber)) {
-            nextErrors.gstNumber = 'Enter a valid GST number like 27ABCDE1234F1Z5.';
+        } else if (!isValidGst(gstNumber)) {
+            nextErrors.gstNumber = 'Enter a valid GSTIN like 27ABCDE1234F1Z5.';
         }
 
         if (!formData.aadhaarImage && !previews.aadhaar) {
@@ -312,9 +416,9 @@ export default function DocumentationScreen() {
             toast.error('FSSAI number must be exactly 14 digits');
             return;
         }
-        if (!isValidGst14(formData.gstNumber)) {
+        if (!isValidGst(formData.gstNumber)) {
             toast.error(
-                'GST number must be 14 characters: 7 letters (A–Z) and 7 digits (0–9), in any order',
+                'GSTIN must be a 15-character alphanumeric string (e.g. 22AAAAA0000A1Z5)',
             );
             return;
         }
@@ -423,6 +527,7 @@ export default function DocumentationScreen() {
                             error={errors.aadhaarImage}
                             onPick={(e) => handleFileChange(e, 'aadhaar')}
                             onRemove={() => handleRemoveFile('aadhaar')}
+                            onPreview={handlePreview}
                         />
                     </div>
                 </motion.div>
@@ -474,6 +579,7 @@ export default function DocumentationScreen() {
                             error={errors.panImage}
                             onPick={(e) => handleFileChange(e, 'pan')}
                             onRemove={() => handleRemoveFile('pan')}
+                            onPreview={handlePreview}
                         />
                     </div>
                 </motion.div>
@@ -529,6 +635,7 @@ export default function DocumentationScreen() {
                             error={errors.fssaiCertificate}
                             onPick={(e) => handleFileChange(e, 'fssai')}
                             onRemove={() => handleRemoveFile('fssai')}
+                            onPreview={handlePreview}
                         />
                     </div>
                 </motion.div>
@@ -546,7 +653,7 @@ export default function DocumentationScreen() {
                     <div className="p-6 space-y-6">
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">
-                                GST Number
+                                GSTIN (15-digit Alphanumeric)
                             </label>
                             <input
                                 type="text"
@@ -557,7 +664,7 @@ export default function DocumentationScreen() {
                                 title="Valid GSTIN format: 2 digits + PAN + entity code + Z + checksum"
                                 value={formData.gstNumber}
                                 readOnly={readOnly}
-                                onChange={(e) => handleFieldChange('gstNumber', normalizeGst14Input(e.target.value))}
+                                onChange={(e) => handleFieldChange('gstNumber', normalizeGstInput(e.target.value))}
                                 className={cn(
                                     'w-full bg-slate-50 border rounded-lg px-4 py-3 text-sm font-bold tracking-wide focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all disabled:opacity-50 font-mono',
                                     errors.gstNumber ? 'border-rose-400 bg-rose-50/40' : 'border-slate-200',
@@ -570,8 +677,8 @@ export default function DocumentationScreen() {
                                     <p className="text-[10px] text-slate-400 font-medium mt-1">
                                         Format: state code + PAN + entity code + Z + checksum
                                     </p>
-                                    <p className="text-[10px] text-slate-400 font-medium">
-                                        Letters {gstParts.letters} · Digits {gstParts.digits}
+                                    <p className="text-[10px] text-slate-400 font-medium uppercase tracking-widest font-bold">
+                                        Progress: {formData.gstNumber.length}/15 chars
                                     </p>
                                 </>
                             )}
@@ -586,6 +693,7 @@ export default function DocumentationScreen() {
                             error={errors.gstCertificate}
                             onPick={(e) => handleFileChange(e, 'gst')}
                             onRemove={() => handleRemoveFile('gst')}
+                            onPreview={handlePreview}
                         />
                     </div>
                 </motion.div>
@@ -614,6 +722,7 @@ export default function DocumentationScreen() {
                                 error={errors.shopEstablishmentCertificate}
                                 onPick={(e) => handleFileChange(e, 'shopEstablishment')}
                                 onRemove={() => handleRemoveFile('shopEstablishment')}
+                                onPreview={handlePreview}
                             />
                         </div>
                     </div>
@@ -677,6 +786,14 @@ export default function DocumentationScreen() {
                     </div>
                 </div>
             </form>
+
+            {/* Document Preview Modal */}
+            <DocPreviewModal
+                isOpen={!!activePreview.url}
+                onClose={() => setActivePreview({ url: null, title: '' })}
+                url={activePreview.url}
+                title={activePreview.title}
+            />
         </div>
     );
 }

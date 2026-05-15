@@ -101,7 +101,27 @@ export const verifyPayment = async (req, res) => {
         console.log("Signature verified successfully");
 
         // 2. Original Order Logic (Create the order in DB after payment)
-        const { shippingAddress, shippingLocation, paymentMethod, deliveryShift } = orderData;
+        const { shippingAddress, shippingLocation, paymentMethod, deliveryShift, scheduledDate } = orderData;
+
+        // Pre-order validation
+        let preOrderDate = null;
+        let isPreOrder = false;
+        if (scheduledDate) {
+            preOrderDate = new Date(scheduledDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const maxDate = new Date(today);
+            maxDate.setDate(maxDate.getDate() + 7);
+            
+            if (preOrderDate < today) {
+                return handleResponse(res, 400, "Scheduled date cannot be in the past");
+            }
+            if (preOrderDate > maxDate) {
+                return handleResponse(res, 400, "Orders can only be scheduled up to 7 days in advance");
+            }
+            isPreOrder = true;
+        }
 
         // Get User Cart
         console.log("Fetching user cart for userId:", userId);
@@ -262,6 +282,8 @@ export const verifyPayment = async (req, res) => {
                 fulfillmentCategoryId,
                 razorpayOrderId: razorpay_order_id,
                 razorpayPaymentId: razorpay_payment_id,
+                scheduledDate: preOrderDate,
+                isPreOrder,
             });
 
             await newOrder.save();

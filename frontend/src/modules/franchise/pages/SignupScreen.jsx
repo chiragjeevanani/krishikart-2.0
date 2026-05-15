@@ -26,9 +26,9 @@ import {
   GSTIN_REGEX,
   normalizeFssaiInput,
   isValidFssai,
-  normalizeGst14Input,
-  isValidGst14,
-} from "../utils/gstin14";
+  normalizeGstInput,
+  isValidGst,
+} from "../utils/gstin";
 import LocationPickerModal from "../components/LocationPickerModal";
 import LocationSummary from "../components/LocationSummary";
 
@@ -152,8 +152,8 @@ export default function SignupScreen() {
         alert("Please enter a valid 14-digit FSSAI number");
         return;
       }
-      if (formData.gstNumber && !isValidGst14(formData.gstNumber)) {
-        alert("Please enter a valid GST number (e.g. 22AAAAA0000A1Z5)");
+      if (formData.gstNumber && !isValidGst(formData.gstNumber)) {
+        alert("Please enter a valid 15-digit GSTIN (e.g. 22AAAAA0000A1Z5)");
         return;
       }
       setIsLoading(true);
@@ -171,7 +171,7 @@ export default function SignupScreen() {
           location: formData.location,
           formattedAddress: formData.formattedAddress,
           fssaiNumber: normalizeFssaiInput(formData.fssaiNumber),
-          gstNumber: normalizeGst14Input(formData.gstNumber),
+          gstNumber: normalizeGstInput(formData.gstNumber),
         });
         setMode("otp");
         setTimer(120);
@@ -484,17 +484,17 @@ export default function SignupScreen() {
                           maxLength={15}
                           value={formData.gstNumber}
                           onChange={(e) =>
-                            handleChange("gstNumber", normalizeGst14Input(e.target.value))
+                            handleChange("gstNumber", normalizeGstInput(e.target.value))
                           }
                           placeholder="GSTIN (15 chars)"
                           className={`w-full h-12 px-4 bg-slate-50 border rounded-sm outline-none text-xs font-black text-slate-900 placeholder:text-slate-300 focus:bg-white transition-all font-sans tracking-widest ${
-                            formData.gstNumber && !isValidGst14(formData.gstNumber)
+                            formData.gstNumber && !isValidGst(formData.gstNumber)
                               ? "border-red-400 focus:border-red-500"
                               : "border-slate-200 focus:border-slate-900"
                           }`}
                         />
                       </div>
-                      {formData.gstNumber && !isValidGst14(formData.gstNumber) && (
+                      {formData.gstNumber && !isValidGst(formData.gstNumber) && (
                         <p className="text-[9px] text-red-500 font-bold px-1">Invalid GSTIN format</p>
                       )}
                     </div>
@@ -567,7 +567,7 @@ export default function SignupScreen() {
                       formData.password.length < 6 ||
                       formData.servedCategories.length === 0 ||
                       (formData.fssaiNumber && !isValidFssai(formData.fssaiNumber)) ||
-                      (formData.gstNumber && !isValidGst14(formData.gstNumber))
+                      (formData.gstNumber && !isValidGst(formData.gstNumber))
                     }
                     className="w-full h-14 bg-slate-900 text-white rounded-sm font-black uppercase text-[11px] tracking-[0.3em] shadow-xl hover:bg-slate-800 active:scale-[0.98] transition-all disabled:bg-slate-200 disabled:text-slate-400 flex items-center justify-center gap-3 mt-4">
                     Register Now <ArrowRight size={16} />

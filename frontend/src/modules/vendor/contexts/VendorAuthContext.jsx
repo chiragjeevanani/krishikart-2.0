@@ -3,6 +3,8 @@ import api from '@/lib/axios';
 import { getSocket, joinVendorRoom } from '@/lib/socket';
 import { useFCM } from '@/hooks/useFCM';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
+import { toast } from 'sonner';
+
 
 const VendorAuthContext = createContext();
 
@@ -22,6 +24,8 @@ export function VendorAuthProvider({ children }) {
     // Alert State
     const [isAlertOpen, setIsAlertOpen] = useState(false);
     const [newAssignmentData, setNewAssignmentData] = useState(null);
+    const [isStatusAlertOpen, setIsStatusAlertOpen] = useState(false);
+    const [statusAlertData, setStatusAlertData] = useState(null);
 
     // Register FCM Token
     useFCM(!!vendor, 'vendor');
@@ -69,10 +73,31 @@ export function VendorAuthProvider({ children }) {
                 setNewAssignmentData(data);
                 setIsAlertOpen(true);
                 playNotificationSound();
+                toast.success('New Order Assigned!', {
+                    description: `You have received a new procurement request #${data.requestId?.toString().slice(-6).toUpperCase()}`,
+                    action: {
+                        label: 'View Order',
+                        onClick: () => window.location.href = `/vendor/orders/${data.requestId}`
+                    },
+                    duration: 10000
+                });
+            };
+
+            const handleProcurementUpdate = (data) => {
+                console.log("Procurement Update Received for Vendor:", data);
+                setStatusAlertData(data);
+                setIsStatusAlertOpen(true);
+                playNotificationSound();
+                toast.info(data.message || "Procurement status updated");
             };
 
             socket.on('new_assignment', handleNewAssignment);
-            return () => socket.off('new_assignment', handleNewAssignment);
+            socket.on('procurement_update', handleProcurementUpdate);
+            
+            return () => {
+                socket.off('new_assignment', handleNewAssignment);
+                socket.off('procurement_update', handleProcurementUpdate);
+            };
         }
     }, [vendor]);
 
@@ -99,6 +124,9 @@ export function VendorAuthProvider({ children }) {
             isAlertOpen,
             setIsAlertOpen,
             newAssignmentData,
+            isStatusAlertOpen,
+            setIsStatusAlertOpen,
+            statusAlertData,
             playNotificationSound
         }}>
             {loading ? (

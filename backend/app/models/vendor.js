@@ -18,6 +18,7 @@ const vendorSchema = new mongoose.Schema(
     mobile: {
       type: String,
       required: true,
+      unique: true,
       match: [/^[6-9]\d{9}$/, "Invalid mobile number"],
     },
 
@@ -62,6 +63,21 @@ const vendorSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Product'
     }],
+
+    servedCategories: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Category",
+        default: [],
+      },
+    ],
+    requestedCategories: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Category",
+        default: [],
+      },
+    ],
 
     password: {
       type: String,

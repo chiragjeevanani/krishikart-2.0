@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Sprout, Mail, Lock, Loader2, ArrowRight, User, Phone, MapPin, FileText, CreditCard, Building2 } from 'lucide-react';
@@ -7,6 +7,8 @@ import api from '../../../lib/axios';
 export default function SignupScreen() {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
+    const [categories, setCategories] = useState([]);
+    const [selectedCategories, setSelectedCategories] = useState([]);
     const [formData, setFormData] = useState({
         fullName: '',
         email: '',
@@ -23,6 +25,28 @@ export default function SignupScreen() {
         panFile: null,
         shopProofFile: null,
     });
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await api.get('/catalog/categories');
+                if (response.data?.success) {
+                    setCategories(response.data.results || []);
+                }
+            } catch (error) {
+                console.error("Error fetching categories:", error);
+            }
+        };
+        fetchCategories();
+    }, []);
+
+    const toggleCategory = (catId) => {
+        setSelectedCategories(prev => 
+            prev.includes(catId) 
+                ? prev.filter(id => id !== catId)
+                : [...prev, catId]
+        );
+    };
 
     const fileInputRefs = {
         aadhar: useRef(null),
@@ -85,6 +109,7 @@ export default function SignupScreen() {
             ifscCode: formData.bankIfscCode,
             bankName: formData.bankName,
         }));
+        data.append('servedCategories', JSON.stringify(selectedCategories));
         if (formData.aadharFile) data.append('aadharFile', formData.aadharFile);
         if (formData.panFile) data.append('panFile', formData.panFile);
         if (formData.shopProofFile) data.append('shopProofFile', formData.shopProofFile);
@@ -231,6 +256,28 @@ export default function SignupScreen() {
                                 </div>
                             </div>
 
+                        </div>
+                    </div>
+
+                    {/* ── Served Categories ── */}
+                    <div className="space-y-3 md:col-span-2">
+                        <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-2">What categories do you serve?</h3>
+                        <div className="flex flex-wrap gap-2 pt-1">
+                            {categories.map((cat) => (
+                                <button
+                                    key={cat._id}
+                                    type="button"
+                                    onClick={() => toggleCategory(cat._id)}
+                                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border-2 ${
+                                        selectedCategories.includes(cat._id)
+                                            ? "bg-primary border-primary text-white shadow-lg shadow-primary/20"
+                                            : "bg-slate-50 border-slate-100 text-slate-400 hover:border-slate-200"
+                                    }`}
+                                >
+                                    {cat.name}
+                                </button>
+                            ))}
+                            {categories.length === 0 && <p className="text-[10px] font-medium text-slate-400">Loading categories...</p>}
                         </div>
                     </div>
 

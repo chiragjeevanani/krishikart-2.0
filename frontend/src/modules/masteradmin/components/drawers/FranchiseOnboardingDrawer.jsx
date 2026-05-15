@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Loader2, Save, Upload, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { countGst14Parts, isValidGst14, normalizeGst14Input } from '@/modules/franchise/utils/gstin14';
+import { getGstParts, isValidGst, normalizeGstInput } from '@/modules/franchise/utils/gstin';
 
 const initialForm = {
     franchiseName: '',
@@ -25,7 +25,7 @@ const initialForm = {
 export default function FranchiseOnboardingDrawer({ isOpen, onClose, onSave }) {
     const [form, setForm] = useState(initialForm);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const gstParts = countGst14Parts(form.gstNumber);
+    const gstParts = getGstParts(form.gstNumber);
 
     const canSubmit = useMemo(() => {
         return Boolean(form.franchiseName && form.ownerName && form.mobile && form.city && form.state);
@@ -63,9 +63,9 @@ export default function FranchiseOnboardingDrawer({ isOpen, onClose, onSave }) {
             payload.append('fssaiNumber', fssaiDigits);
         }
         if (form.gstNumber) {
-            if (!isValidGst14(form.gstNumber)) {
+            if (!isValidGst(form.gstNumber)) {
                 alert(
-                    'GST number must be 14 characters: exactly 7 letters (A–Z) and 7 digits (0–9), in any order.',
+                    'GSTIN must be a 15-character alphanumeric string (e.g. 22AAAAA0000A1Z5).',
                 );
                 return;
             }
@@ -184,15 +184,15 @@ export default function FranchiseOnboardingDrawer({ isOpen, onClose, onSave }) {
                                     />
                                     <div>
                                         <Input
-                                            label="GST (7 letters + 7 digits, any order)"
+                                            label="GSTIN (15-digit Alphanumeric)"
                                             type="text"
-                                            maxLength={14}
-                                            placeholder="A1B2C3D4E5F6G7"
+                                            maxLength={15}
+                                            placeholder="22AAAAA0000A1Z5"
                                             value={form.gstNumber}
-                                            onChange={(v) => setValue('gstNumber', normalizeGst14Input(v))}
+                                            onChange={(v) => setValue('gstNumber', normalizeGstInput(v))}
                                         />
-                                        <p className="text-[10px] text-slate-500 mt-1">
-                                            Letters {gstParts.letters}/7 · Digits {gstParts.digits}/7
+                                        <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-bold">
+                                            Progress: {form.gstNumber.length}/15 chars
                                         </p>
                                     </div>
                                     <FileField label="FSSAI certificate" onChange={(f) => setValue('fssaiCertificate', f)} file={form.fssaiCertificate} />

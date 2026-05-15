@@ -11,6 +11,7 @@ import handleResponse from "../utils/helper.js";
 import { emitToVendor, emitToAdmin, emitToFranchise } from "../lib/socket.js";
 import { sendNotificationToUser } from "../utils/pushNotificationHelper.js";
 import { createAdminNotification } from "../utils/adminNotification.js";
+import { createUserNotification } from "../utils/userNotification.js";
 
 // Get vendor assignments (Vendor)
 export const getVendorAssignments = async (req, res) => {
@@ -19,7 +20,7 @@ export const getVendorAssignments = async (req, res) => {
         console.log(`Fetching assignments for Vendor: ${vendorId}`);
 
         let assignments = await ProcurementRequest.find({ assignedVendorId: vendorId })
-            .populate("franchiseId", "shopName ownerName mobile cityArea address")
+            .populate("franchiseId", "franchiseName ownerName mobile city area address")
             .sort({ createdAt: -1 })
             .lean(); // Use lean to modify the object
 
@@ -58,7 +59,7 @@ export const getVendorProcurementById = async (req, res) => {
         const vendorId = req.vendor._id.toString();
 
         const request = await ProcurementRequest.findById(requestId)
-            .populate("franchiseId", "shopName ownerName mobile cityArea address")
+            .populate("franchiseId", "franchiseName ownerName mobile city area address")
             .lean();
 
         if (!request) {
@@ -197,6 +198,9 @@ export const vendorUpdateStatus = async (req, res) => {
                 const update = itemUpdates.find(u => u.productId?.toString() === item.productId?.toString());
                 if (update) {
                     const dispatchedQty = update.dispatchedQuantity || 0;
+                    const shortageToCover = Number(item.shortageQty || 0);
+                    const isCovered = dispatchedQty >= shortageToCover;
+
                     const requestedQty = item.quantity;
 
                     if (dispatchedQty > 0) {
@@ -307,7 +311,7 @@ export const vendorUpdateStatus = async (req, res) => {
         });
 
         if (request.franchiseId) {
-            emitToFranchise(request.franchiseId, 'procurement_cycle_update', {
+            emitToFranchise(request.franchiseId.toString(), 'procurement_cycle_update', {
                 requestId: request._id,
                 status: status,
                 message: `Vendor updated procurement #${request._id.toString().slice(-6)} status: ${status.replace('_', ' ')}`
@@ -379,6 +383,7 @@ export const createProcurementRequest = async (req, res) => {
 
         const procurementRequest = new ProcurementRequest({
             franchiseId,
+            orderId: req.body.orderId || null,
             items: items.map(item => ({
                 productId: item.id || item.productId,
                 name: item.name,
@@ -391,6 +396,32 @@ export const createProcurementRequest = async (req, res) => {
         });
 
         await procurementRequest.save();
+
+        // Update Order status if linked
+        if (req.body.orderId) {
+            const order = await Order.findById(req.body.orderId);
+            if (order) {
+                order.orderStatus = 'Procuring';
+                
+                // Persist shortage flags in order items
+                order.items.forEach(oItem => {
+                    const prodId = (oItem.productId?._id || oItem.productId)?.toString();
+                    const reqItem = items.find(ri => (ri.id || ri.productId)?.toString() === prodId);
+                    if (reqItem) {
+                        oItem.isShortage = true;
+                        oItem.shortageQty = Number(reqItem.qty || reqItem.quantity) || 0;
+                    }
+                });
+
+                order.statusHistory.push({
+                    status: 'Procuring',
+                    updatedAt: new Date(),
+                    updatedBy: 'franchise',
+                    message: 'Franchise requested procurement for out-of-stock items.'
+                });
+                await order.save();
+            }
+        }
 
         return handleResponse(res, 201, "Procurement request submitted successfully", procurementRequest);
     } catch (error) {
@@ -479,15 +510,24 @@ export const adminUpdateProcurementRequest = async (req, res) => {
             console.log(`Request ${requestId} saved. Assigned Vendor: ${request.assignedVendorId}`);
         }
 
-        // Notify Vendor only — franchise does not need to know about vendor assignment
+        // Notify Vendor
         if (requestToAssign.assignedVendorId) {
-            emitToVendor(requestToAssign.assignedVendorId, "new_assignment", {
+            const isNew = !request.assignedVendorId;
+            const eventName = isNew ? "new_assignment" : "procurement_update";
+            
+            emitToVendor(requestToAssign.assignedVendorId, eventName, {
                 requestId: requestToAssign._id,
-                message: "You have a new procurement assignment!"
+                status: status || requestToAssign.status,
+                message: isNew 
+                    ? "You have a new procurement assignment!" 
+                    : `Procurement request #${requestToAssign._id.toString().slice(-6).toUpperCase()} status updated to ${status}.`
             });
+
             sendNotificationToUser(requestToAssign.assignedVendorId.toString(), {
-                title: "New Procurement Assignment",
-                body: "You have received a new procurement request from the Master Admin.",
+                title: isNew ? "New Procurement Assignment" : "Procurement Update",
+                body: isNew 
+                    ? "You have received a new procurement request from the Master Admin."
+                    : `Master Admin updated procurement #${requestToAssign._id.toString().slice(-6).toUpperCase()} to ${status}.`,
                 data: {
                     type: "assignment",
                     requestId: requestToAssign._id.toString(),
@@ -527,7 +567,7 @@ export const getAllProcurementRequests = async (req, res) => {
         if (status) query.status = status;
 
         let requests = await ProcurementRequest.find(query)
-            .populate("franchiseId", "shopName ownerName mobile cityArea")
+            .populate("franchiseId", "franchiseName ownerName mobile city area")
             .sort({ createdAt: -1 })
             .lean();
 
@@ -566,9 +606,9 @@ export const getVendorActiveDispatch = async (req, res) => {
         // Fetch orders where status is approved, preparing, or ready for pickup (active cycle)
         const assignments = await ProcurementRequest.find({
             assignedVendorId: vendorId,
-            status: { $in: ['approved', 'preparing', 'ready_for_pickup'] }
+            status: { $in: ['approved', 'preparing'] }
         })
-            .populate("franchiseId", "shopName ownerName mobile cityArea address")
+            .populate("franchiseId", "franchiseName ownerName mobile city area address")
             .sort({ createdAt: -1 })
             .lean();
 
@@ -639,7 +679,7 @@ export const getVendorReports = async (req, res) => {
             status: { $in: ['ready_for_pickup', 'completed'] },
             "invoice.invoiceNumber": { $exists: true }
         })
-            .populate("franchiseId", "shopName ownerName mobile cityArea")
+            .populate("franchiseId", "franchiseName ownerName mobile city area")
             .sort({ updatedAt: -1 })
             .lean();
 
@@ -669,9 +709,11 @@ export const franchiseConfirmReceipt = async (req, res) => {
             return handleResponse(res, 403, "Not authorized to update this request");
         }
 
-        const { items: auditData } = req.body; // Expecting [{ productId: string, receivedQuantity: number, damagedQuantity: number }]
+        const { items: auditData } = req.body; // Expecting [{ productId: string, receivedQuantity: number, damagedQuantity: number, rejected: boolean }]
 
         request.status = 'completed';
+        const rejectedItems = [];
+        const damagedItems = [];
 
         // Update Request with Audit Data
         if (auditData && Array.isArray(auditData)) {
@@ -683,28 +725,142 @@ export const franchiseConfirmReceipt = async (req, res) => {
                 if (itemInRequest) {
                     itemInRequest.receivedQuantity = Number(auditItem.receivedQuantity) || 0;
                     itemInRequest.damagedQuantity = Number(auditItem.damagedQuantity) || 0;
+
+                    // Track completely rejected items
+                    if (auditItem.rejected === true) {
+                        itemInRequest.rejected = true;
+                        rejectedItems.push(itemInRequest);
+                    } else if (Number(auditItem.damagedQuantity) > 0) {
+                        damagedItems.push(itemInRequest);
+                    }
                 }
             }
         }
 
         await request.save();
 
-        // Socket Notification to Vendor
+        // Notify Admin about rejected items
+        if (rejectedItems.length > 0) {
+            const rejectSummary = rejectedItems.map(i => `${i.name}: ${i.dispatchedQuantity} ${i.unit}`).join(', ');
+
+            // Link rejection back to the Order if applicable
+            if (request.orderId) {
+                try {
+                    const order = await Order.findById(request.orderId);
+                    if (order) {
+                        // Reset partial fulfillment approval since new rejections (rotten/damaged) occurred
+                        // This forces the admin to "Allow Available" again if they want to skip the new shortages
+                        order.allowPartialFulfillment = false;
+                        order.partialFulfillmentApprovedAt = null;
+
+                        // Add to history
+                        order.statusHistory.push({
+                            status: order.orderStatus,
+                            updatedAt: new Date(),
+                            updatedBy: 'system',
+                            reason: `Items rejected by franchise during receiving (${rejectSummary}). Re-approval for partial delivery required.`
+                        });
+
+                        await order.save();
+
+                        // Notify Franchise that the order is locked again
+                        if (order.franchiseId) {
+                            emitToFranchise(order.franchiseId.toString(), 'order_locked_due_to_rejection', {
+                                orderId: order._id,
+                                message: `Order #${order._id.toString().slice(-6)} is locked due to rejected items. Admin must approve partial delivery or re-procure.`
+                            });
+                        }
+                    }
+                } catch (orderErr) {
+                    console.error("[REJECTION_ORDER_UPDATE_ERROR]", orderErr);
+                }
+            }
+
+            // Socket notification to admin
+            emitToAdmin('procurement_items_rejected', {
+                requestId: request._id,
+                message: `Franchise rejected items from procurement #${request._id.toString().slice(-6)}: ${rejectSummary}. Admin needs to re-procure.`,
+                rejectedItems: rejectedItems.map(i => ({ productId: i.productId, name: i.name, quantity: i.dispatchedQuantity, unit: i.unit }))
+            });
+
+            // Create admin notification
+            await createAdminNotification({
+                type: 'procurement_items_rejected',
+                title: 'Items Rejected (Rotten/Damaged)',
+                message: `Franchise rejected items from procurement #${request._id.toString().slice(-6)}: ${rejectSummary}. Order #${request.orderId?.toString().slice(-6)} is now short on stock.`,
+                link: `/masteradmin/orders`,
+                meta: {
+                    requestId: request._id.toString(),
+                    orderId: request.orderId?.toString?.() || null,
+                    rejectedItems: rejectedItems.map(i => ({ productId: i.productId, name: i.name, quantity: i.dispatchedQuantity, unit: i.unit }))
+                }
+            });
+        }
+
+        // Notify Vendor about rejected items (Persistent & Socket)
+        if (request.assignedVendorId && rejectedItems.length > 0) {
+            const rejectSummary = rejectedItems.map(i => `${i.name}: ${i.dispatchedQuantity} ${i.unit}`).join(', ');
+            
+            // Socket
+            emitToVendor(request.assignedVendorId, 'procurement_items_rejected', {
+                requestId: request._id,
+                message: `Franchise rejected the following items: ${rejectSummary}. Please check dispatch quality.`
+            });
+
+            // Persistent Notification
+            await createUserNotification({
+                userId: request.assignedVendorId.toString(),
+                type: 'procurement_rejected',
+                title: 'Supply Rejected by Franchise',
+                message: `Franchise rejected some items from your supply #${request._id.toString().slice(-6).toUpperCase()}: ${rejectSummary}. These items will be deducted from your settlement.`,
+                meta: {
+                    requestId: request._id.toString(),
+                    rejectedItems: rejectedItems.map(i => ({ name: i.name, qty: i.dispatchedQuantity }))
+                }
+            });
+        }
+
+        // Socket Notification to Vendor about regular receipt
         if (request.assignedVendorId) {
             emitToVendor(request.assignedVendorId, 'items_received_by_franchise', {
                 requestId: request._id,
                 status: 'completed',
-                message: `Franchise confirmed receipt for request #${request._id.toString().slice(-6)}`
+                message: `Franchise confirmed receipt for request #${request._id.toString().slice(-6)}${rejectedItems.length > 0 ? ` (${rejectedItems.length} items rejected)` : ''}`
+            });
+        }
+
+        // Notify Vendor of Receipt (Persistent & Socket)
+        if (request.assignedVendorId) {
+            const receivedSummary = request.items.map(i => `${i.name}: ${Number(i.receivedQuantity) || 0} ${i.unit}`).join(', ');
+            const message = `Franchise confirmed receipt of procurement #${request._id.toString().slice(-6).toUpperCase()}. Received: ${receivedSummary}.${rejectedItems.length > 0 ? ` (${rejectedItems.length} items rejected)` : ''}`;
+
+            emitToVendor(request.assignedVendorId, 'procurement_update', {
+                requestId: request._id,
+                status: 'completed',
+                message
+            });
+
+            await createUserNotification({
+                userId: request.assignedVendorId.toString(),
+                type: 'procurement_completed',
+                title: 'Supply Received by Franchise',
+                message,
+                meta: {
+                    requestId: request._id.toString(),
+                    receivedItems: request.items.map(i => ({ name: i.name, received: i.receivedQuantity, rejected: i.rejected }))
+                }
             });
         }
 
         // Update Franchise Inventory
         try {
-            let inventory = await Inventory.findOne({ franchiseId });
-
+            let inventory = await Inventory.findOne({ franchiseId: request.franchiseId });
             if (!inventory) {
-                // Initialize inventory if it doesn't exist
-                inventory = new Inventory({ franchiseId, items: [] });
+                console.log(`[Inventory] Initializing missing inventory for franchise: ${request.franchiseId}`);
+                inventory = await Inventory.create({
+                    franchiseId: request.franchiseId,
+                    items: []
+                });
             }
 
             // Sync items from request to inventory
@@ -712,11 +868,16 @@ export const franchiseConfirmReceipt = async (req, res) => {
                 const prodId = reqItem.productId;
                 if (!mongoose.Types.ObjectId.isValid(prodId)) continue;
 
+                // Skip completely rejected items - they should NOT enter inventory
+                if (reqItem.rejected === true) {
+                    console.log(`[Inventory] Skipping rejected item: ${reqItem.name}`);
+                    continue;
+                }
+
                 // Only add GOOD stock = received minus damaged
                 // Damaged items should never enter inventory
-                const received = reqItem.receivedQuantity !== undefined
-                    ? Number(reqItem.receivedQuantity)
-                    : Number(reqItem.quantity);
+                // Strictly use receivedQuantity. If rejected or not set, it should be 0.
+                const received = Number(reqItem.receivedQuantity) || 0;
                 const damaged = Number(reqItem.damagedQuantity) || 0;
                 const quantityToAdd = Math.max(0, received - damaged);
 
@@ -738,7 +899,7 @@ export const franchiseConfirmReceipt = async (req, res) => {
             }
 
             await inventory.save();
-            console.log(`Inventory updated for franchise: ${franchiseId} based on audit results`);
+            console.log(`Inventory updated for franchise: ${franchiseId} based on audit results. Rejected items were excluded from inventory.`);
         } catch (invErr) {
             console.error("Critical: Stock sync failed during receipt confirmation:", invErr);
         }
@@ -750,21 +911,61 @@ export const franchiseConfirmReceipt = async (req, res) => {
                 const order = await Order.findById(orderId);
 
                 if (order) {
-                    // 1. Reset/Reduce shortage flags based on RECEIVED quantities
+                    // 1. Check for damages and notify Admin/Vendor
+                    const damagedItems = request.items.filter(i => (i.damagedQuantity || 0) > 0);
+                    if (damagedItems.length > 0) {
+                        const damageSummary = damagedItems.map(i => `${i.name}: ${i.damagedQuantity} ${i.unit}`).join(', ');
+                        
+                        // Notify Admin
+                        await createAdminNotification({
+                            type: 'procurement_damage_reported',
+                            title: 'Damaged Goods Reported',
+                            message: `Franchise ${order.franchiseId?.franchiseName || 'Node'} reported damage for Procurement #${request._id.toString().slice(-6)}: ${damageSummary}.`,
+                            link: `/masteradmin/purchase/${request._id}`,
+                            meta: { requestId: request._id, orderId: order._id, damagedItems }
+                        });
+                        emitToAdmin('procurement_damage_reported', { requestId: request._id, damageSummary });
+
+                        // Notify Vendor
+                        if (request.assignedVendorId) {
+                            emitToVendor(request.assignedVendorId, 'procurement_damage_reported', {
+                                requestId: request._id,
+                                message: `Franchise reported ${damageSummary} as damaged. Please check your dispatch quality.`
+                            });
+                        }
+                    }
+
+                    // 2. Reset/Reduce shortage flags based on GOOD quantities received
                     let allShortagesResolved = true;
 
-                    order.items = order.items.map(oItem => {
-                        // Find matching item in procurement request
-                        const reqItem = request.items.find(ri =>
-                            ri.productId?.toString() === (oItem.productId?._id?.toString() || oItem.productId?.toString())
-                        );
+                    order.items.forEach(oItem => {
+                        // Find matching item in procurement request by productId
+                        const oProdId = (oItem.productId?._id || oItem.productId)?.toString();
+                        
+                        const reqItem = request.items.find(ri => {
+                            const riProdId = (ri.productId?._id || ri.productId)?.toString();
+                            return riProdId === oProdId;
+                        });
 
                         if (reqItem && oItem.isShortage) {
-                            const received = reqItem.receivedQuantity || 0;
-                            // Reduce shortage by what was actually received
-                            oItem.shortageQty = Math.max(0, (oItem.shortageQty || 0) - received);
-                            if (oItem.shortageQty === 0) {
+                            const received = Number(reqItem.receivedQuantity) || 0;
+                            const damaged = Number(reqItem.damagedQuantity) || 0;
+                            const rejected = reqItem.rejected === true;
+
+                            // Good quantity is what actually reached the shelf
+                            const goodQuantity = rejected ? 0 : Math.max(0, received - damaged);
+
+                            // Fallback: If shortageQty is 0 but isShortage is true, the whole quantity was missing
+                            const currentShortage = (oItem.shortageQty > 0) ? oItem.shortageQty : oItem.quantity;
+                            
+                            console.log(`[OrderSync] Item: ${oItem.name}, Current Shortage: ${currentShortage}, Received Good: ${goodQuantity}`);
+
+                            // Reduce shortage by the good quantity received
+                            oItem.shortageQty = Math.max(0, currentShortage - goodQuantity);
+                            
+                            if (oItem.shortageQty <= 0) {
                                 oItem.isShortage = false;
+                                oItem.shortageQty = 0;
                             }
                         }
 
@@ -772,11 +973,9 @@ export const franchiseConfirmReceipt = async (req, res) => {
                         if (oItem.isShortage && oItem.shortageQty > 0) {
                             allShortagesResolved = false;
                         }
-
-                        return oItem;
                     });
 
-                    // 2. Only transition to 'Packed' if ALL shortages for the WHOLE order are gone
+                    // 3. Only transition to 'Packed' if ALL shortages for the WHOLE order are gone
                     if (allShortagesResolved) {
                         order.orderStatus = 'Packed';
                         order.statusHistory.push({
@@ -786,27 +985,35 @@ export const franchiseConfirmReceipt = async (req, res) => {
                             message: 'All procurement items received. Order automatically packed and ready for dispatch.'
                         });
 
-                        // 3. Deduct stock from inventory for THE WHOLE ORDER only when packing
-                        const inventory = await Inventory.findOne({ franchiseId });
-                        if (inventory) {
-                            for (const item of order.items) {
-                                const invItem = inventory.items.find(i =>
-                                    i.productId.toString() === (item.productId?._id?.toString() || item.productId?.toString())
-                                );
-                                if (invItem) {
-                                    invItem.currentStock = Math.max(0, invItem.currentStock - item.quantity);
-                                    invItem.lastUpdated = new Date();
+                        // 4. Deduct stock from inventory for THE WHOLE ORDER only when packing
+                        // IMPORTANT: Only deduct if the order wasn't already marked as Packed
+                        const wasAlreadyPacked = order.statusHistory.some(h => h.status === 'Packed' && h.updatedBy !== 'system');
+                        
+                        if (!wasAlreadyPacked) {
+                            const inventory = await Inventory.findOne({ franchiseId });
+                            if (inventory) {
+                                for (const item of order.items) {
+                                    const invItem = inventory.items.find(i =>
+                                        i.productId.toString() === (item.productId?._id?.toString() || item.productId?.toString())
+                                    );
+                                    if (invItem) {
+                                        invItem.currentStock = Math.max(0, invItem.currentStock - item.quantity);
+                                        invItem.lastUpdated = new Date();
+                                    }
                                 }
+                                await inventory.save();
                             }
-                            await inventory.save();
                         }
                     } else {
-                        // Still in procuring state, just add a note
+                        // Still shortages remaining (rejected items or short dispatch)
+                        // Move back to 'Accepted' so Admin can see the 'Procure' button again
+                        order.orderStatus = 'Accepted'; 
+                        const stillMissing = order.items.filter(i => i.isShortage).map(i => `${i.name}: ${i.shortageQty}`).join(', ');
                         order.statusHistory.push({
-                            status: 'Procuring',
+                            status: 'Accepted',
                             updatedAt: new Date(),
                             updatedBy: 'system',
-                            message: `Partial procurement of ${request.items.length} SKUs received. Remaining shortages still being tracked.`
+                            message: `Procurement cycle finished but shortages persist: ${stillMissing}. Awaiting re-procurement or partial delivery approval.`
                         });
                     }
 
@@ -851,13 +1058,22 @@ export const createProcurementFromOrder = async (req, res) => {
                 if (!productId) return null;
 
                 const inventoryItem = inventoryItems.find(invItem =>
-                    invItem.productId?.toString() === productId.toString()
+                    (invItem.productId?._id || invItem.productId)?.toString() === productId.toString()
                 );
                 const availableStock = Number(inventoryItem?.currentStock || 0);
                 const orderedQty = Number(item.quantity || 0);
                 const persistedShortage = Number(item.shortageQty || 0);
+                
+                // If we have a persisted shortage, it means the system already calculated the shortfall.
+                // We should respect it, but also check if the inventory has changed since then.
+                // If persistedShortage is 40 but franchise now has 20 in stock, the true shortage is 20.
                 const computedShortage = Math.max(0, orderedQty - availableStock);
-                const shortageQty = Math.max(computedShortage, persistedShortage);
+                
+                // The actual shortage is the minimum of what we think is missing and what was recorded.
+                // This prevents the "showing 40 when 20 accepted" bug.
+                const shortageQty = (persistedShortage > 0) 
+                    ? Math.min(persistedShortage, computedShortage)
+                    : computedShortage;
 
                 return {
                     ...item.toObject?.() || item,
@@ -939,7 +1155,8 @@ export const createProcurementFromOrder = async (req, res) => {
             }, 'vendor');
         }
 
-        // Notify Franchise
+        /* 
+        // Notify Franchise (Commented out as per user request: only vendor should get assignment notification)
         if (order.franchiseId) {
             emitToFranchise(order.franchiseId.toString(), 'procurement_cycle_update', {
                 requestId: procurementRequest._id,
@@ -947,8 +1164,19 @@ export const createProcurementFromOrder = async (req, res) => {
                 message: `Procurement request created for your order shortages. Vendor has been assigned.`
             });
         }
+        */
 
-        // Update order to indicate procurement has started
+        // Update order items to persist shortage flags so receipt sync works correctly
+        order.items.forEach(item => {
+            const productId = item.productId?._id || item.productId;
+            const mappedItem = mappedItems.find(mi => mi.productId.toString() === productId.toString());
+            if (mappedItem) {
+                item.isShortage = true;
+                item.shortageQty = mappedItem.quantity;
+            }
+        });
+
+        // Update order status and history
         order.orderStatus = 'Procuring';
         order.statusHistory.push({
             status: 'Procuring',
@@ -980,7 +1208,7 @@ export const getVendorReceivablesReport = async (req, res) => {
             assignedVendorId: vendorIdStr,
             status: { $in: POST_DELIVERY_STATUSES },
         })
-            .populate("franchiseId", "shopName ownerName cityArea")
+            .populate("franchiseId", "franchiseName ownerName city area")
             .sort({ updatedAt: -1 })
             .lean();
 
@@ -1100,6 +1328,35 @@ export const getVendorDashboardStats = async (req, res) => {
             ? (yieldDelta / previousTurnoverBase) * 100
             : 0;
 
+        // 8. Recent Requests
+        const requestsWithPopulatedFranchise = await ProcurementRequest.find({
+            assignedVendorId: vendorId
+        })
+            .populate("franchiseId", "franchiseName city area")
+            .sort({ createdAt: -1 })
+            .limit(10) // fetch more to find a valid one
+            .lean();
+
+        // Filter for requests where franchiseId actually exists after population
+        const validRequests = requestsWithPopulatedFranchise.filter(r => r.franchiseId);
+
+        const recentRequests = validRequests.slice(0, 5).map(r => ({
+            id: r._id,
+            ref: String(r._id).slice(-6).toUpperCase(),
+            status: r.status,
+            amount: r.totalQuotedAmount || r.totalEstimatedAmount || 0,
+            createdAt: r.createdAt,
+            franchiseName: r.franchiseId?.franchiseName || "Franchise"
+        }));
+
+        const topFranchise = validRequests.length > 0
+            ? {
+                name: validRequests[0].franchiseId.franchiseName || "Unknown Node",
+                city: validRequests[0].franchiseId.city || "Unknown",
+                requestId: validRequests[0]._id
+            }
+            : null;
+
         return handleResponse(res, 200, "Vendor dashboard stats fetched", {
             activeOps,
             pendingSettlement,
@@ -1107,6 +1364,12 @@ export const getVendorDashboardStats = async (req, res) => {
             payoutCycleDays: avgPrepDays > 0 ? Number(avgPrepDays.toFixed(1)) : 7.0,
             verificationStatus: vendor?.status === "active" ? "Alpha Verified" : "Pending Verification",
             syncMinutes,
+            inventory: {
+                stockQuantity,
+                availableProduce
+            },
+            recentRequests,
+            topFranchise,
             trends: {
                 pendingSettlement: Number(settlementTrend.toFixed(1)),
                 yieldDelta: Number(turnoverTrend.toFixed(1)),

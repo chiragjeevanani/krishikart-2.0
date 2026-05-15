@@ -26,6 +26,10 @@ import {
   getFranchiseServiceMap,
   getPendingKYCFranchises,
   reviewFranchiseKYC,
+  getPendingCategoryRequests,
+  reviewCategoryRequest,
+  getPendingVendorCategoryRequests,
+  reviewVendorCategoryRequest,
   getAllCustomers,
   getCustomerDetails,
   updateCustomerCredit,
@@ -129,6 +133,18 @@ router.put(
   requirePermission("products"),
   assignProductsToVendor,
 );
+router.get(
+  "/vendors/category-requests/pending",
+  protectMasterAdmin,
+  requirePermission("approvals"),
+  getPendingVendorCategoryRequests,
+);
+router.put(
+  "/vendors/:vendorId/category-review",
+  protectMasterAdmin,
+  requirePermission("approvals"),
+  reviewVendorCategoryRequest,
+);
 
 /* 🏪 Franchise Management */
 router.get(
@@ -184,6 +200,18 @@ router.put(
   protectMasterAdmin,
   requirePermission("approvals"),
   reviewFranchiseKYC,
+);
+router.get(
+  "/franchises/category-requests/pending",
+  protectMasterAdmin,
+  requirePermission("approvals"),
+  getPendingCategoryRequests,
+);
+router.put(
+  "/franchises/:franchiseId/category-review",
+  protectMasterAdmin,
+  requirePermission("approvals"),
+  reviewCategoryRequest,
 );
 
 /* 🚚 Delivery Partner Management */

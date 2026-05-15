@@ -11,12 +11,14 @@ import {
     Loader2,
     Layers,
     Check,
-    ScrollText
+    ScrollText,
+    Clock
 } from 'lucide-react';
 import api from '@/lib/axios';
 import { useFranchiseAuth } from '../contexts/FranchiseAuthContext';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 const NOTIFICATIONS_STORAGE_KEY = 'franchise_notifications_enabled';
 
@@ -152,19 +154,21 @@ export default function ProfileScreen() {
                     </div>
 
                     {/* Show categories in the identity card too if they exist */}
-                    {franchise?.servedCategories?.length > 0 && (
+                    {(franchise?.servedCategories?.length > 0 || franchise?.requestedCategories?.length > 0) && (
                         <div className="mt-4 flex flex-wrap gap-2 justify-center md:justify-start">
-                            {franchise.servedCategories.map(cat => (
+                            {franchise.servedCategories?.map(cat => (
                                 <span key={cat._id} className="px-2 py-0.5 bg-slate-800 text-slate-300 text-[8px] font-bold uppercase tracking-wider rounded-sm border border-slate-700">
                                     {cat.name}
                                 </span>
                             ))}
+                            {franchise.requestedCategories?.map(cat => (
+                                <span key={cat._id} className="px-2 py-0.5 bg-amber-500/10 text-amber-500 text-[8px] font-bold uppercase tracking-wider rounded-sm border border-amber-500/30 flex items-center gap-1">
+                                    {cat.name}
+                                    <Clock size={8} />
+                                </span>
+                            ))}
                         </div>
                     )}
-
-                    <div className="mt-6 border-t border-slate-800 pt-6 text-center md:text-left">
-                        <h1 className="text-xl font-black text-white tracking-tight leading-none uppercase">{franchise?.franchiseName}</h1>
-                    </div>
                 </div>
 
                 {/* Grid Pattern Background */}
@@ -260,22 +264,26 @@ const EditProfileModal = ({ isOpen, onClose, franchiseData, onUpdate }) => {
         ownerName: franchiseData?.ownerName || '',
         email: franchiseData?.email || '',
         mobile: franchiseData?.mobile || '',
-        servedCategories: franchiseData?.servedCategories?.map(c => c._id || c) || []
+        servedCategories: [
+            ...(franchiseData?.servedCategories?.map(c => c._id || c) || []),
+            ...(franchiseData?.requestedCategories?.map(c => c._id || c) || [])
+        ]
     });
     const [allCategories, setAllCategories] = useState([]);
     const [isSaving, setIsSaving] = useState(false);
     const [isLoadingCats, setIsLoadingCats] = useState(true);
 
     useEffect(() => {
-        // Reset form values whenever a different franchise is loaded (or modal re-opens).
-        // Prevents stale category selections leaking across sessions/accounts in a single SPA runtime.
         if (isOpen) {
             setFormData({
                 franchiseName: franchiseData?.franchiseName || '',
                 ownerName: franchiseData?.ownerName || '',
                 email: franchiseData?.email || '',
                 mobile: franchiseData?.mobile || '',
-                servedCategories: franchiseData?.servedCategories?.map(c => c._id || c) || []
+                servedCategories: [
+                    ...(franchiseData?.servedCategories?.map(c => c._id || c) || []),
+                    ...(franchiseData?.requestedCategories?.map(c => c._id || c) || [])
+                ]
             });
         }
     }, [isOpen, franchiseData?._id]);
@@ -298,8 +306,12 @@ const EditProfileModal = ({ isOpen, onClose, franchiseData, onUpdate }) => {
         setFormData(prev => {
             const current = prev.servedCategories;
             if (current.includes(catId)) {
+                const cat = allCategories.find(c => c._id === catId);
+                toast.info(`${cat?.name || 'Category'} removed from selection`);
                 return { ...prev, servedCategories: current.filter(id => id !== catId) };
             } else {
+                const cat = allCategories.find(c => c._id === catId);
+                toast.success(`${cat?.name || 'Category'} added to selection`);
                 return { ...prev, servedCategories: [...current, catId] };
             }
         });
@@ -309,10 +321,11 @@ const EditProfileModal = ({ isOpen, onClose, franchiseData, onUpdate }) => {
         setIsSaving(true);
         try {
             await onUpdate(formData);
-            alert("Profile updated successfully!");
+            toast.success("Profile updated successfully!");
             onClose();
         } catch (error) {
             console.error('Update failed', error);
+            toast.error(error.response?.data?.message || "Failed to update profile");
         } finally {
             setIsSaving(false);
         }
@@ -329,7 +342,7 @@ const EditProfileModal = ({ isOpen, onClose, franchiseData, onUpdate }) => {
                 className="bg-white w-full max-w-xl rounded-[32px] shadow-2xl max-h-[90vh] flex flex-col overflow-hidden"
             >
                 <div className="flex items-center justify-between p-8 pb-4 bg-white shrink-0">
-                    <h2 className="text-xl font-black text-slate-900 tracking-tight">Edit Profile</h2>
+                    <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase">Edit Profile</h2>
                     <button onClick={onClose} className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center hover:bg-slate-200 transition-colors">
                         <X size={20} />
                     </button>
@@ -383,13 +396,15 @@ const EditProfileModal = ({ isOpen, onClose, franchiseData, onUpdate }) => {
                     {/* Category Selection */}
                     <div className="space-y-4">
                         <div className="flex items-center justify-between px-1">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Served Categories</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ownership & Requests</label>
                             {isLoadingCats && <Loader2 size={12} className="animate-spin text-slate-300" />}
                         </div>
                         
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                             {allCategories.map((cat) => {
-                                const isSelected = formData.servedCategories.includes(cat._id);
+                                const isApproved = formData.servedCategories.includes(cat._id);
+                                const isPending = franchiseData?.requestedCategories?.some(rc => (rc._id || rc) === cat._id);
+                                const isSelected = isApproved || isPending;
                                 return (
                                     <button
                                         key={cat._id}
@@ -416,15 +431,23 @@ const EditProfileModal = ({ isOpen, onClose, franchiseData, onUpdate }) => {
                                                 {cat.name}
                                             </p>
                                         </div>
-                                        {isSelected && (
+                                        {isApproved && (
                                             <div className="absolute top-2 right-2">
                                                 <Check size={10} className="text-white" strokeWidth={4} />
+                                            </div>
+                                        )}
+                                        {isPending && (
+                                            <div className="absolute top-2 right-2">
+                                                <Clock size={10} className="text-amber-400" strokeWidth={4} />
                                             </div>
                                         )}
                                     </button>
                                 );
                             })}
                         </div>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-1">
+                            * New category selections require administrative approval before activation.
+                        </p>
                     </div>
                 </div>
 
@@ -441,5 +464,3 @@ const EditProfileModal = ({ isOpen, onClose, franchiseData, onUpdate }) => {
         </div>
     );
 };
-
-

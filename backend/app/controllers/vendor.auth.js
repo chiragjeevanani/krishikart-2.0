@@ -8,6 +8,8 @@ import { uploadToCloudinary } from "../utils/cloudinary.js";
 import { sendSMS } from "../utils/smsService.js";
 import admin from "../services/firebaseAdmin.js";
 import crypto from "crypto";
+import Category from "../models/category.js";
+import { createAdminNotification } from "../utils/adminNotification.js";
 
 /* 🔐 TOKEN */
 const generateToken = (id) =>
@@ -20,7 +22,7 @@ const generateToken = (id) =>
 
 export const registerVendor = async (req, res) => {
     try {
-        const { fullName, email, mobile, farmLocation, password, fssaiLicense } = req.body;
+        const { fullName, email, mobile, farmLocation, password, fssaiLicense, servedCategories } = req.body;
 
         if (!fullName || !email || !mobile || !farmLocation || !password) {
             return handleResponse(res, 400, "Full name, email, mobile, location and password are required");
@@ -51,6 +53,18 @@ export const registerVendor = async (req, res) => {
                 ifscCode: req.body['bankDetails[ifscCode]'] || req.body.ifscCode,
                 bankName: req.body['bankDetails[bankName]'] || req.body.bankName
             };
+        }
+
+        // Parse served categories
+        let categoryList = [];
+        if (servedCategories) {
+            try {
+                categoryList = typeof servedCategories === 'string'
+                    ? JSON.parse(servedCategories)
+                    : (Array.isArray(servedCategories) ? servedCategories : []);
+            } catch (e) {
+                console.error("Error parsing servedCategories:", e);
+            }
         }
 
         const existsByEmail = await Vendor.findOne({ email });
@@ -94,6 +108,7 @@ export const registerVendor = async (req, res) => {
             aadharCard: aadharCardUrl,
             panCard: panCardUrl,
             shopEstablishmentProof: shopProofUrl,
+            servedCategories: categoryList
         });
 
         return handleResponse(res, 201, "Vendor registered successfully", {
@@ -223,7 +238,8 @@ export const verifyVendorOTP = async (req, res) => {
 
 /* ================= GET ME ================= */
 export const getVendorMe = async (req, res) => {
-    return handleResponse(res, 200, "Vendor profile", req.vendor);
+    const vendor = await Vendor.findById(req.vendor._id).populate("servedCategories requestedCategories", "name image");
+    return handleResponse(res, 200, "Vendor profile", vendor);
 };
 
 /* ================= UPDATE VENDOR ================= */
@@ -244,6 +260,64 @@ export const updateVendorProfile = async (req, res) => {
             vendor.farmLocation = locationTrimmed;
         }
         if (fssaiLicense) vendor.fssaiLicense = fssaiLicense;
+
+        if (req.body.servedCategories) {
+            try {
+                const normalized = typeof req.body.servedCategories === 'string'
+                    ? JSON.parse(req.body.servedCategories)
+                    : (Array.isArray(req.body.servedCategories) ? req.body.servedCategories : []);
+
+                // Logic similar to Franchise:
+                // 1. Categories already in vendor.servedCategories that are ALSO in normalized stay in servedCategories.
+                // 2. Categories in vendor.servedCategories that are NOT in normalized are removed.
+                // 3. Categories in normalized that are NOT in vendor.servedCategories are added to requestedCategories.
+                
+                const currentServed = (vendor.servedCategories || []).map(c => c.toString());
+                const stayServed = normalized.filter(id => currentServed.includes(id));
+                const currentRequested = (vendor.requestedCategories || []).map(c => c.toString());
+                const desiredRequested = normalized.filter(id => !currentServed.includes(id));
+                
+                const addedRequests = desiredRequested.filter(id => !currentRequested.includes(id));
+                const removedServed = currentServed.filter(id => !stayServed.includes(id));
+                const removedRequested = currentRequested.filter(id => !desiredRequested.includes(id));
+                
+                if (addedRequests.length > 0 || removedServed.length > 0 || removedRequested.length > 0) {
+                    try {
+                        let msg = `Vendor "${vendor.fullName}" updated their category profile.`;
+                        if (addedRequests.length > 0) msg += ` Requested ${addedRequests.length} new.`;
+                        if (removedServed.length > 0) msg += ` Discontinued ${removedServed.length} active.`;
+                        if (removedRequested.length > 0) msg += ` Cancelled ${removedRequested.length} pending requests.`;
+
+                        // Send database notification
+                        await createAdminNotification({
+                            title: "Vendor Category Profile Update",
+                            message: msg,
+                            type: "approvals",
+                            link: "/approvals/categories",
+                            meta: { vendorId: vendor._id, type: 'vendor_category_request' }
+                        });
+
+                        // Also emit dedicated socket event for immediate notification
+                        const { emitToAdmin } = await import('../lib/socket.js');
+                        emitToAdmin("new_vendor_category_request", {
+                            vendorId: vendor._id,
+                            vendorName: vendor.fullName,
+                            requestedCategories: addedRequests, // Array of category IDs
+                            requestedCount: addedRequests.length,
+                            message: msg,
+                            link: "/approvals/categories"
+                        });
+                    } catch (err) {
+                        console.error("Admin notification failed:", err);
+                    }
+                }
+                
+                vendor.servedCategories = stayServed;
+                vendor.requestedCategories = desiredRequested;
+            } catch (e) {
+                console.error("Error parsing servedCategories:", e);
+            }
+        }
 
         if (req.body.bankDetails) {
             let bankDetails = {};

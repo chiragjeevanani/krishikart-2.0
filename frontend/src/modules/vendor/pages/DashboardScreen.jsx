@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import {
     Truck,
@@ -8,16 +9,21 @@ import {
     Wallet,
     ChevronRight,
     ArrowUpRight,
-    Settings
+    Settings,
+    Home,
+    Package,
+    Activity
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import MetricCard from '../components/cards/MetricCard';
 import DataGrid from '../components/tables/DataGrid';
 import api from '@/lib/axios';
+import { useVendorAuth } from '../contexts/VendorAuthContext';
 
 export default function DashboardScreen() {
     const navigate = useNavigate();
+    const { vendor, isAuthenticated, newAssignmentData, statusAlertData } = useVendorAuth();
     const [isLoading, setIsLoading] = useState(true);
     const [activeDispatches, setActiveDispatches] = useState([]);
     const [dashboardStats, setDashboardStats] = useState({
@@ -46,28 +52,35 @@ export default function DashboardScreen() {
 
 
 
-    useEffect(() => {
-        const fetchDashboardData = async () => {
-            try {
-                const [dispatchRes, statsRes] = await Promise.all([
-                    api.get('/procurement/vendor/active-dispatch'),
-                    api.get('/procurement/vendor/dashboard-stats')
-                ]);
+    const fetchDashboardData = async () => {
+        try {
+            const [dispatchRes, statsRes] = await Promise.all([
+                api.get('/procurement/vendor/active-dispatch'),
+                api.get('/procurement/vendor/dashboard-stats')
+            ]);
 
-                if (dispatchRes.data.success) {
-                    setActiveDispatches(dispatchRes.data.results);
-                }
-                if (statsRes.data.success) {
-                    setDashboardStats(statsRes.data.result || statsRes.data.results || {});
-                }
-            } catch (error) {
-                console.error("Failed to fetch dashboard data", error);
-            } finally {
-                setIsLoading(false);
+            if (dispatchRes.data.success) {
+                setActiveDispatches(dispatchRes.data.results || []);
             }
-        };
-        fetchDashboardData();
-    }, []);
+            if (statsRes.data.success) {
+                console.log("Dashboard Stats Received:", statsRes.data.result);
+                setDashboardStats(statsRes.data.result || statsRes.data.results || {});
+            }
+        } catch (error) {
+            console.error("Failed to fetch dashboard data", error);
+            toast.error("Dashboard Sync Failed", {
+                description: "The logistics matrix could not be synchronized."
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            fetchDashboardData();
+        }
+    }, [isAuthenticated, newAssignmentData, statusAlertData]);
 
     const {
         activeOps = 0,
@@ -78,7 +91,12 @@ export default function DashboardScreen() {
         syncMinutes = 0,
         trends = {},
         performance = {},
+        recentRequests = [],
+        inventory = { stockQuantity: 0, availableProduce: 0 },
+        topFranchise = null
     } = dashboardStats || {};
+
+    const safePayoutDays = isNaN(Number(payoutCycleDays)) ? 0 : Number(payoutCycleDays);
 
     const dispatchColumns = [
         {
@@ -89,7 +107,7 @@ export default function DashboardScreen() {
         {
             header: 'Franchise Node',
             key: 'franchiseId',
-            render: (val) => <span className="text-slate-900 font-bold">{val?.shopName || val?.ownerName || 'Node'}</span>
+            render: (val) => <span className="text-slate-900 font-bold">{val?.franchiseName || val?.ownerName || 'Node'}</span>
         },
         {
             header: 'Payload',
@@ -129,7 +147,9 @@ export default function DashboardScreen() {
                 <div className="min-w-0">
                     <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-tight">Procurement Pulse</h1>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        <p className="text-[9px] sm:text-[10px] font-black text-slate-300 uppercase tracking-[0.15em] sm:tracking-[0.2em]">Operational Status: Active</p>
+                        <p className="text-[9px] sm:text-[10px] font-black text-slate-300 uppercase tracking-[0.15em] sm:tracking-[0.2em]">
+                            Operational Status: <span className={cn(vendor?.status === 'active' ? "text-emerald-500" : "text-amber-500")}>{vendor?.status || 'Active'}</span>
+                        </p>
 
                     </div>
                 </div>
@@ -145,28 +165,28 @@ export default function DashboardScreen() {
                 </div>
             </header>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                 <MetricCard
-                    label="Escrow Settlement"
-                    value={`₹${pendingSettlement.toLocaleString()}`}
-                    icon={Wallet}
+                    label="Primary Node"
+                    value={topFranchise?.name || 'No Active Node'}
+                    sub={topFranchise?.city || 'Network Idle'}
+                    icon={Home}
                     color="blue"
-                    trend={{ value: Math.abs(trends.pendingSettlement || 0), positive: (trends.pendingSettlement || 0) >= 0 }}
                     index={0}
                 />
                 <MetricCard
-                    label="Payout Cycle"
-                    value={`${payoutCycleDays.toFixed(1)} Days`}
-                    icon={Clock}
+                    label="Active Ops"
+                    value={activeOps}
+                    icon={Activity}
                     color="amber"
                     index={1}
                 />
                 <MetricCard
-                    label="Yield Delta"
-                    value={`₹${(performance.yieldDelta || 0).toLocaleString()}`}
-                    icon={TrendingUp}
-                    color="red"
-                    trend={{ value: Math.abs(trends.yieldDelta || 0), positive: (trends.yieldDelta || 0) >= 0 }}
+                    label="Escrow Settlement"
+                    value={`₹${pendingSettlement.toLocaleString()}`}
+                    icon={Wallet}
+                    color="emerald"
+                    trend={{ value: Math.abs(trends.pendingSettlement || 0), positive: (trends.pendingSettlement || 0) >= 0 }}
                     index={2}
                 />
                 <MetricCard
@@ -176,6 +196,35 @@ export default function DashboardScreen() {
                     color="emerald"
                     trend={{ value: Math.abs(trends.totalTurnover || 0), positive: (trends.totalTurnover || 0) >= 0 }}
                     index={3}
+                />
+                <MetricCard
+                    label="Payout Cycle"
+                    value={`${safePayoutDays.toFixed(1)} Days`}
+                    icon={Clock}
+                    color="slate"
+                    index={4}
+                />
+                <MetricCard
+                    label="Yield Delta"
+                    value={`₹${(performance.yieldDelta || 0).toLocaleString()}`}
+                    icon={TrendingUp}
+                    color="red"
+                    trend={{ value: Math.abs(trends.yieldDelta || 0), positive: (trends.yieldDelta || 0) >= 0 }}
+                    index={5}
+                />
+                <MetricCard
+                    label="Stock Level"
+                    value={inventory.stockQuantity}
+                    icon={Package}
+                    color="blue"
+                    index={6}
+                />
+                <MetricCard
+                    label="Fulfillment"
+                    value={`${performance.fulfillmentRate}%`}
+                    icon={Activity}
+                    color="amber"
+                    index={7}
                 />
             </div>
 
@@ -189,8 +238,8 @@ export default function DashboardScreen() {
                     <div className="relative z-10">
                         <div className="flex justify-between items-start gap-3 mb-6 sm:mb-10">
                             <div className="min-w-0">
-                                <h3 className="text-lg sm:text-xl font-black tracking-tight mb-1 sm:mb-2">Network Efficiency</h3>
-                                <p className="text-slate-400 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em]">Enterprise Standard Alignment</p>
+                                <h3 className="text-lg sm:text-xl font-black tracking-tight mb-1 sm:mb-2">Operational Health</h3>
+                                <p className="text-slate-400 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em]">Real-time Inventory & Performance</p>
                             </div>
                             <div className="flex items-center gap-1.5 sm:gap-2 bg-white/10 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl backdrop-blur-md border border-white/5 shrink-0">
                                 <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_#10b981]" />
@@ -198,32 +247,28 @@ export default function DashboardScreen() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-3 sm:gap-8">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-8">
+                            <div className="min-w-0">
+                                <p className="text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-wider sm:tracking-widest mb-1 sm:mb-2">Stock Level</p>
+                                <p className="text-xl sm:text-2xl font-black tabular-nums leading-none">{inventory.stockQuantity} Units</p>
+                                <p className="text-[8px] text-slate-400 mt-2 uppercase tracking-widest font-black">Gross Payload</p>
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-wider sm:tracking-widest mb-1 sm:mb-2">SKU Coverage</p>
+                                <p className="text-xl sm:text-2xl font-black tabular-nums leading-none">{inventory.availableProduce} Active</p>
+                                <p className="text-[8px] text-emerald-400 mt-2 uppercase tracking-widest font-black">Market Ready</p>
+                            </div>
                             <div className="min-w-0">
                                 <p className="text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-wider sm:tracking-widest mb-1 sm:mb-2">Fulfillment</p>
-                                <p className="text-xl sm:text-2xl md:text-3xl font-black tabular-nums leading-none">{performance.fulfillmentRate}%</p>
-                                <div className="mt-4 w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                                    <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${performance.fulfillmentRate}%` }}
-                                        className="h-full bg-primary"
-                                    />
+                                <p className="text-xl sm:text-2xl font-black tabular-nums leading-none">{performance.fulfillmentRate}%</p>
+                                <div className="mt-2 w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                                    <div className="h-full bg-primary" style={{ width: `${performance.fulfillmentRate}%` }} />
                                 </div>
                             </div>
                             <div className="min-w-0">
-                                <p className="text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-wider sm:tracking-widest mb-1 sm:mb-2">Cycle Rate</p>
-                                <p className="text-xl sm:text-2xl md:text-3xl font-black tabular-nums leading-none break-words">{performance.avgPrepTime}</p>
-                                <div className="mt-4 w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-blue-500"
-                                        style={{ width: `${Math.min(100, Math.max(0, payoutCycleDays >= 0 ? ((7 - Math.min(payoutCycleDays, 7)) / 7) * 100 : 0))}%` }}
-                                    />
-                                </div>
-                            </div>
-                            <div className="min-w-0">
-                                <p className="text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-wider sm:tracking-widest mb-1 sm:mb-2">Archive Vol</p>
-                                <p className="text-xl sm:text-2xl md:text-3xl font-black tabular-nums leading-none">{performance.archiveVol}</p>
-                                <p className="text-[8px] sm:text-[9px] text-emerald-400 font-black mt-1.5 sm:mt-2 uppercase tracking-wide">Ready for Settlement</p>
+                                <p className="text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-wider sm:tracking-widest mb-1 sm:mb-2">Sync Rate</p>
+                                <p className="text-xl sm:text-2xl font-black tabular-nums leading-none">{syncMinutes}m</p>
+                                <p className="text-[8px] text-blue-400 mt-2 uppercase tracking-widest font-black">Matrix Latency</p>
                             </div>
                         </div>
                     </div>
@@ -239,41 +284,67 @@ export default function DashboardScreen() {
                         <div className="w-10 h-10 sm:w-12 sm:h-12 bg-slate-50 rounded-xl sm:rounded-2xl flex items-center justify-center text-slate-900 mb-4 sm:mb-6 border border-slate-100 shadow-sm">
                             <Truck className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2} />
                         </div>
-                        <h4 className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-tight uppercase">Dispatch <br /> Workflow</h4>
-                        <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4 sm:mt-6">Matrix Sync in {syncMinutes}m</p>
+                        <h4 className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-tight uppercase">Dispatch <br /> Control</h4>
+                        <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4 sm:mt-6">Next Cycle Window Open</p>
                     </div>
 
                     <button
                         onClick={() => navigate('/vendor/dispatch')}
                         className="mt-6 sm:mt-8 group w-full bg-slate-900 text-white rounded-xl sm:rounded-2xl py-3.5 sm:py-4 flex items-center justify-center gap-2 sm:gap-3 transition-all hover:bg-slate-800"
                     >
-                        <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em]">Enter Fleet Matrix</span>
+                        <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em]">Enter Logistics Node</span>
                         <ArrowUpRight size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                     </button>
                 </motion.div>
             </div>
 
-            <div className="grid grid-cols-1 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-white rounded-2xl sm:rounded-[40px] p-5 sm:p-8 border border-slate-100 shadow-sm">
                     <div className="flex items-center justify-between gap-3 mb-6 sm:mb-8">
                         <div className="min-w-0">
-                            <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">Operations Ledger</h3>
-                            <p className="text-[9px] sm:text-[10px] font-black text-slate-300 uppercase tracking-[0.15em] sm:tracking-[0.2em] mt-1">Real-time Batch Tracking</p>
+                            <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight uppercase">Active Logistics</h3>
+                            <p className="text-[9px] sm:text-[10px] font-black text-slate-300 uppercase tracking-[0.15em] sm:tracking-[0.2em] mt-1">Handoff Pending</p>
                         </div>
-                        <button
-                            onClick={() => navigate('/vendor/dispatch-history')}
-                            className="text-[9px] sm:text-[10px] font-black text-slate-900 uppercase tracking-[0.15em] sm:tracking-[0.2em] flex items-center gap-1.5 sm:gap-2 hover:translate-x-1 transition-transform shrink-0"
-                        >
-                            History Access <ChevronRight size={14} />
-                        </button>
                     </div>
-
                     <DataGrid
                         columns={dispatchColumns}
                         data={activeDispatches}
                         onRowClick={(row) => navigate(`/vendor/dispatch?order=${row._id}`)}
                         className="border-none shadow-none"
                     />
+                </div>
+
+                <div className="bg-white rounded-2xl sm:rounded-[40px] p-5 sm:p-8 border border-slate-100 shadow-sm">
+                    <div className="flex items-center justify-between gap-3 mb-6 sm:mb-8">
+                        <div className="min-w-0">
+                            <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight uppercase">Recent Proposals</h3>
+                            <p className="text-[9px] sm:text-[10px] font-black text-slate-300 uppercase tracking-[0.15em] sm:tracking-[0.2em] mt-1">Audit Trail</p>
+                        </div>
+                    </div>
+                    <div className="space-y-4">
+                        {recentRequests.map((req, idx) => (
+                            <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-50 hover:border-slate-200 transition-all cursor-pointer" onClick={() => navigate(`/vendor/orders/${req.id}`)}>
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-900 border border-slate-100 font-black text-[10px]">
+                                        {req.ref}
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-black text-slate-900 uppercase tracking-tight">{req.status.replace('_', ' ')}</p>
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{new Date(req.createdAt).toLocaleDateString()}</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-sm font-black text-slate-900 tabular-nums">₹{req.amount.toLocaleString()}</p>
+                                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Gross Value</p>
+                                </div>
+                            </div>
+                        ))}
+                        {recentRequests.length === 0 && (
+                            <div className="py-10 text-center">
+                                <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">No Recent Activity</p>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

@@ -213,7 +213,6 @@ export default function OrdersScreen() {
                     return isNaN(d.getTime()) ? new Date() : d;
                 };
 
-                // Prioritize row.date/time if they are already formatted strings
                 const displayDate = row.date || safeDate(row.timeline?.[0]?.time || Date.now()).toLocaleDateString();
                 const displayTime = row.time || safeDate(row.timeline?.[0]?.time || Date.now()).toLocaleTimeString();
 
@@ -221,6 +220,12 @@ export default function OrdersScreen() {
                     <div className="flex flex-col">
                         <span className="font-bold text-slate-900 text-sm tracking-tight">{displayDate}</span>
                         <span className="text-xs text-slate-400 font-bold uppercase tracking-[0.05em] mt-0.5">{displayTime}</span>
+                        {row.scheduledDateFormatted || row.scheduledDate ? (
+                             <span className="text-[8px] font-black text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-sm mt-1 w-fit border border-indigo-100 shadow-sm flex items-center gap-1">
+                                <Clock size={8} />
+                                Target: {row.scheduledDateFormatted || new Date(row.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                             </span>
+                        ) : null}
                     </div>
                 );
             }
@@ -228,7 +233,19 @@ export default function OrdersScreen() {
         {
             header: 'Delivery Slot',
             key: 'deliverySlot',
-            render: (val) => <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{val}</span>
+            render: (val, row) => (
+                <div className="flex flex-col">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{val}</span>
+                    {row.scheduledDateFormatted || row.scheduledDate ? (
+                        <div className="flex items-center gap-1 mt-0.5">
+                            <div className="w-1 h-1 rounded-full bg-indigo-500 animate-pulse" />
+                            <span className="text-[9px] font-black text-indigo-600 uppercase tracking-tight">
+                                Scheduled: {row.scheduledDateFormatted || new Date(row.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                            </span>
+                        </div>
+                    ) : null}
+                </div>
+            )
         },
         {
             header: 'Amount',

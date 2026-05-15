@@ -101,15 +101,29 @@ export function FranchiseOrdersProvider({ children }) {
             setProcurementAlertData(data);
             setIsProcurementAlertOpen(true);
             playNotificationSound();
+
+            toast.info(data.title || "Procurement Update", {
+                description: data.message || `Status updated to ${data.status?.replace('_', ' ')}`
+            });
             // Optional: refresh any relevant procurement list
+        };
+
+        const handlePartialFulfillmentApproved = (data) => {
+            console.log("Partial Fulfillment Approved:", data);
+            toast.success(data.message || "Admin has allowed delivery with available stock!", {
+                duration: 8000
+            });
+            fetchOrders(); // Refresh to get updated order status
         };
 
         socket.on('new_order', handleNewOrder);
         socket.on('procurement_cycle_update', handleProcurementUpdate);
+        socket.on('partial_fulfillment_approved', handlePartialFulfillmentApproved);
 
         return () => {
             socket.off('new_order', handleNewOrder);
             socket.off('procurement_cycle_update', handleProcurementUpdate);
+            socket.off('partial_fulfillment_approved', handlePartialFulfillmentApproved);
         };
     }, [franchise?._id]);
 
@@ -135,7 +149,7 @@ export function FranchiseOrdersProvider({ children }) {
             })),
             address: o.userId?.address || o.user?.address || o.shippingAddress || 'Address not provided',
             deliveryTime: "30-45 mins",
-            deliverySlot: o.deliverySlot || "Standard",
+            deliverySlot: o.deliveryShift || o.deliverySlot || "Standard",
             paymentMode: o.paymentMethod || "Prepaid",
             timeline: [
                 { status: 'Order Placed', time: o.time || 'N/A', completed: true },
@@ -147,6 +161,9 @@ export function FranchiseOrdersProvider({ children }) {
             ].sort((a, b) => new Date(a.time) - new Date(b.time)),
             date: o.date,
             time: o.time,
+            scheduledDate: o.scheduledDate,
+            scheduledDateFormatted: o.scheduledDateFormatted,
+            isPreOrder: !!o.isPreOrder,
             franchiseId: o.franchiseId || o.franchise || null,
             franchiseAutoAccepted: !!o.franchiseAutoAccepted,
             allowPartialFulfillment: !!o.allowPartialFulfillment,
@@ -231,6 +248,7 @@ export function FranchiseOrdersProvider({ children }) {
         outForDelivery: orders.filter(o => ['dispatched'].includes(o.status)).length,
         dispatch: orders.filter(o => ['packed', 'dispatched'].includes(o.status)).length,
         completedCount: orders.filter(o => ['delivered', 'received', 'completed'].includes(o.status)).length,
+        scheduledOrders: orders.filter(o => o.isPreOrder && !['delivered', 'received', 'completed', 'cancelled'].includes(o.status)).length,
         revenue: orders.filter(o => ['delivered', 'received', 'completed'].includes(o.status)).reduce((acc, curr) => acc + (curr.total || 0), 0)
     }), [orders]);
 

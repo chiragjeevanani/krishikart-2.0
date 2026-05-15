@@ -313,6 +313,14 @@ const orderSchema = new mongoose.Schema({
     discountAmount: {
         type: Number,
         default: 0
+    },
+    scheduledDate: {
+        type: Date,
+        default: null
+    },
+    isPreOrder: {
+        type: Boolean,
+        default: false
     }
 }, {
     timestamps: true

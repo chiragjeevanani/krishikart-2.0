@@ -21,7 +21,8 @@ import {
     BarChart3,
     Terminal,
     Cpu,
-    Store
+    Store,
+    Truck
 } from 'lucide-react';
 import {
     LineChart,
@@ -240,13 +241,19 @@ export default function DashboardScreen() {
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: "auto", opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
-                            className="grid grid-cols-1 md:grid-cols-5 border-t border-slate-200 overflow-hidden"
+                            className="grid grid-cols-1 md:grid-cols-6 border-t border-slate-200 overflow-hidden"
                         >
                             {kpis.map((kpi, idx) => (
                                 <MetricRow
                                     key={idx}
                                     {...kpi}
-                                    icon={idx === 0 ? IndianRupee : idx === 1 ? ShoppingCart : idx === 2 ? Users : idx === 4 ? Store : Clock}
+                                    icon={
+                                        idx === 0 ? IndianRupee : 
+                                        idx === 1 ? ShoppingCart : 
+                                        idx === 2 ? Users : 
+                                        idx === 3 ? Truck : 
+                                        idx === 4 ? Calendar : Store
+                                    }
                                     sparklineData={
                                         idx === 0 ? (revenueFlow || []).map(d => ({ value: d.revenue })) :
                                         idx === 1 ? (orderFlow || []).map(d => ({ value: d.orders })) :

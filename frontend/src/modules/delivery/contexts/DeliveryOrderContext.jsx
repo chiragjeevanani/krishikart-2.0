@@ -96,6 +96,7 @@ export function DeliveryOrderProvider({ children }) {
                 setNewTaskData(data);
                 setIsAlertOpen(true);
                 playNotificationSound();
+                toast.success("New delivery task assigned!");
                 fetchDispatchedOrders();
                 fetchReturnPickups();
             };

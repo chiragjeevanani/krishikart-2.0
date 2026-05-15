@@ -57,16 +57,46 @@ function getShiftStartDate(shiftLabel, baseDate = new Date()) {
 }
 
 /** True if this slot can be selected. Before 6 PM: only future windows. From 6 PM onward: all slots (e.g. next-day). */
-function isDeliveryShiftSelectable(shiftLabel, now = new Date()) {
-    const hour = now.getHours()
+function isDeliveryShiftSelectable(shiftLabel, targetDate, now = new Date()) {
+    if (!targetDate) return true;
+    
+    // Normalize dates to midnight for comparison
+    const tDate = new Date(targetDate);
+    const nDate = new Date(now);
+    tDate.setHours(0, 0, 0, 0);
+    nDate.setHours(0, 0, 0, 0);
+
+    // If target date is in the future, all shifts are selectable
+    if (tDate.getTime() > nDate.getTime()) {
+        return true;
+    }
+
+    // If target date is in the past (should not happen with getNext7Days), no shifts are selectable
+    if (tDate.getTime() < nDate.getTime()) {
+        return false;
+    }
+
+    // It's today
+    const hour = now.getHours();
     // From 6 PM (18:00) onwards — all slots enabled for ordering (typically next-day delivery)
     if (hour >= 18) {
-        return true
+        return true;
     }
-    const start = getShiftStartDate(shiftLabel, now)
-    if (!start) return false
-    return now.getTime() < start.getTime()
+    
+    const start = getShiftStartDate(shiftLabel, now);
+    if (!start) return false;
+    return now.getTime() < start.getTime();
 }
+
+const getNext7Days = () => {
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() + i);
+        days.push(d);
+    }
+    return days;
+};
 
 export default function CheckoutScreen() {
     const navigate = useNavigate()
@@ -86,6 +116,10 @@ export default function CheckoutScreen() {
     const [selectedMethod, setSelectedMethod] = useState('upi')
     const [isPlacingOrder, setIsPlacingOrder] = useState(false)
     const [isEditingAddress, setIsEditingAddress] = useState(false)
+
+    // Pre-order States
+    const [availableDates] = useState(getNext7Days())
+    const [selectedDate, setSelectedDate] = useState(availableDates[0])
 
     // Coupon States
     const [couponCode, setCouponCode] = useState('')
@@ -122,10 +156,10 @@ export default function CheckoutScreen() {
 
     useEffect(() => {
         if (!deliveryShift) return
-        if (!isDeliveryShiftSelectable(deliveryShift)) {
+        if (!isDeliveryShiftSelectable(deliveryShift, selectedDate)) {
             setDeliveryShift('')
         }
-    }, [deliveryShift, shiftTimeTick])
+    }, [deliveryShift, shiftTimeTick, selectedDate])
 
     const handlePinCurrentLocation = async () => {
         if (!ctxUpdateDeliveryLocation) {
@@ -595,6 +629,8 @@ export default function CheckoutScreen() {
             shippingLocation: coords,
             paymentMethod: methodMap[selectedMethod],
             deliveryShift: deliveryShift,
+            scheduledDate: selectedDate.toISOString(),
+            isPreOrder: selectedDate.toDateString() !== new Date().toDateString(),
             couponCode: appliedCoupon?.code || '',
             discountAmount: discountAmount
         }
@@ -855,8 +891,50 @@ export default function CheckoutScreen() {
                             </section>
 
 
+                            {/* Delivery Date Selection */}
+                            <section className="mt-8">
+                                <div className="mb-3">
+                                    <h2 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest md:text-sm md:normal-case md:tracking-normal md:text-slate-900 md:text-base md:font-bold">
+                                        Select Delivery Date
+                                    </h2>
+                                    <p className="text-[10px] md:text-xs text-slate-400 font-medium">
+                                        Choose when you want your fresh harvest delivered.
+                                    </p>
+                                </div>
+                                <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                                    {availableDates.map((date, idx) => {
+                                        const isSelected = selectedDate.toDateString() === date.toDateString();
+                                        const isToday = new Date().toDateString() === date.toDateString();
+                                        return (
+                                            <button
+                                                key={idx}
+                                                type="button"
+                                                onClick={() => setSelectedDate(date)}
+                                                className={cn(
+                                                    "shrink-0 w-16 h-20 md:w-20 md:h-24 rounded-2xl md:rounded-xl border flex flex-col items-center justify-center gap-1 transition-all",
+                                                    isSelected 
+                                                        ? "bg-primary border-primary text-white shadow-lg shadow-emerald-100" 
+                                                        : "bg-white border-slate-100 text-slate-600 hover:border-slate-200"
+                                                )}
+                                            >
+                                                <span className={cn("text-[9px] md:text-[10px] font-black uppercase tracking-tighter", isSelected ? "text-emerald-100" : "text-slate-400")}>
+                                                    {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                                                </span>
+                                                <span className="text-lg md:text-xl font-black tabular-nums leading-none">
+                                                    {date.getDate()}
+                                                </span>
+                                                <span className={cn("text-[8px] md:text-[9px] font-black uppercase", isSelected ? "text-emerald-100" : "text-slate-400")}>
+                                                    {isToday ? 'Today' : date.toLocaleDateString('en-US', { month: 'short' })}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </section>
+
+
                             {/* Shift Timing */}
-                            <section className="mt-6 md:mt-0 pt-2 md:pt-0 border-t border-slate-200/60 md:border-0">
+                            <section className="mt-6 md:mt-10 pt-2 md:pt-0 border-t border-slate-200/60 md:border-0">
                                 <div className="mb-2 md:mb-3 space-y-1">
                                     <h2 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest md:text-sm md:normal-case md:tracking-normal md:text-slate-900 md:text-base md:font-bold">
                                         Delivery Shift Timing
@@ -868,7 +946,7 @@ export default function CheckoutScreen() {
                                 </div>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
                                     {DELIVERY_SHIFT_SLOTS.map(({ label: shift }) => {
-                                        const selectable = isDeliveryShiftSelectable(shift)
+                                        const selectable = isDeliveryShiftSelectable(shift, selectedDate)
                                         const selected = deliveryShift === shift
                                         return (
                                             <button
@@ -900,7 +978,7 @@ export default function CheckoutScreen() {
                                         )
                                     })}
                                 </div>
-                                {DELIVERY_SHIFT_SLOTS.every(({ label }) => !isDeliveryShiftSelectable(label)) && (
+                                {DELIVERY_SHIFT_SLOTS.every(({ label }) => !isDeliveryShiftSelectable(label, selectedDate)) && (
                                     <p className="mt-3 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
                                         No delivery slots are left for today. Please try again tomorrow.
                                     </p>
@@ -1233,8 +1311,13 @@ export default function CheckoutScreen() {
                                                     type="button"
                                                     onClick={() => {
                                                         setAddressTag(tag.value);
-                                                        if (tag.value === 'other') {
-                                                            // Clear form for Other as requested
+                                                        
+                                                        // Load existing address for Home/Work/Other
+                                                        const existing = savedAddresses.find(a => a.tag === tag.value);
+                                                        if (existing) {
+                                                            setAddressDetails(existing.details);
+                                                        } else {
+                                                            // If no existing address for this tag, reset to pinned location defaults
                                                             setAddressDetails({
                                                                 flat: '',
                                                                 floor: '',
@@ -1244,12 +1327,6 @@ export default function CheckoutScreen() {
                                                                 state: ctxDeliveryComponents?.state || 'Madhya Pradesh',
                                                                 pincode: ctxDeliveryComponents?.pincode || '',
                                                             });
-                                                        } else {
-                                                            // Load existing address for Home/Work
-                                                            const existing = savedAddresses.find(a => a.tag === tag.value);
-                                                            if (existing) {
-                                                                setAddressDetails(existing.details);
-                                                            }
                                                         }
                                                     }}
                                                     className={cn(

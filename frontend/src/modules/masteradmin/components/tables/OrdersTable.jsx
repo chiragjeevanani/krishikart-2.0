@@ -119,7 +119,13 @@ export default function OrdersTable({ orders, onAction, onOrderClick, onProcure,
                             <td className="px-4 py-4">
                                 <div className="flex flex-col">
                                     <span className="text-[10px] font-bold text-slate-700">{order.date || new Date(order.createdAt).toLocaleDateString()}</span>
-                                    <span className="text-[9px] text-slate-400 font-medium tabular-nums">{order.time || new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                    <span className="text-[9px] text-slate-400 font-medium tabular-nums mb-1">{order.time || new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                    {(order.scheduledDateFormatted || order.scheduledDate) && (
+                                        <span className="text-[9px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-sm uppercase tracking-tight flex items-center gap-1 w-fit border border-indigo-100 shadow-sm">
+                                            <Clock size={8} strokeWidth={3} />
+                                            Target: {order.scheduledDateFormatted || new Date(order.scheduledDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                                        </span>
+                                    )}
                                 </div>
                             </td>
                             <td className="px-4 py-4">
@@ -141,7 +147,7 @@ export default function OrdersTable({ orders, onAction, onOrderClick, onProcure,
                             </td>
                             <td className="px-4 py-4 text-right">
                                 <div className="flex items-center justify-end gap-2">
-                                    {order.items?.some(i => i.isShortage) && (
+                                    {order.items?.some(i => i.isShortage) && (order.orderStatus || '').toLowerCase() !== 'procuring' && (
                                         <>
                                             <button
                                                 onClick={(e) => {

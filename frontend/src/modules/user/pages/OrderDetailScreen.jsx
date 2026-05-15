@@ -191,20 +191,43 @@ export default function OrderDetailScreen() {
                             </motion.div>
                         )}
 
-                        <div className="bg-white rounded-[20px] p-4 border border-slate-100 shadow-sm grid grid-cols-2 gap-4 divide-x divide-slate-50">
-                            <div className="flex flex-col gap-1.5">
-                                <div className="flex items-center gap-1.5 text-orange-500">
-                                    <MapPin size={10} strokeWidth={3} />
-                                    <span className="text-[8px] font-black uppercase tracking-widest leading-none">Deliver To</span>
+                        <div className="bg-white rounded-[20px] p-4 border border-slate-100 shadow-sm space-y-4">
+                            <div className="grid grid-cols-2 gap-4 divide-x divide-slate-50">
+                                <div className="flex flex-col gap-1.5">
+                                    <div className="flex items-center gap-1.5 text-orange-500">
+                                        <MapPin size={10} strokeWidth={3} />
+                                        <span className="text-[8px] font-black uppercase tracking-widest leading-none">Deliver To</span>
+                                    </div>
+                                    <p className="text-[10px] font-bold text-slate-700 truncate leading-none">{order.shippingAddress?.split(',')[0] || 'Saved Location'}</p>
                                 </div>
-                                <p className="text-[10px] font-bold text-slate-700 truncate leading-none">{order.shippingAddress?.split(',')[0]}</p>
+                                <div className="flex flex-col gap-1.5 pl-4">
+                                    <div className="flex items-center gap-1.5 text-blue-500">
+                                        <CreditCard size={10} strokeWidth={3} />
+                                        <span className="text-[8px] font-black uppercase tracking-widest leading-none">Payment</span>
+                                    </div>
+                                    <span className="text-[10px] font-black text-slate-700 uppercase leading-none truncate">{order.paymentMethod}</span>
+                                </div>
                             </div>
-                            <div className="flex flex-col gap-1.5 pl-4">
-                                <div className="flex items-center gap-1.5 text-blue-500">
-                                    <CreditCard size={10} strokeWidth={3} />
-                                    <span className="text-[8px] font-black uppercase tracking-widest leading-none">Payment</span>
+                            <div className="pt-3 border-t border-slate-50 grid grid-cols-2 gap-4 divide-x divide-slate-50">
+                                <div className="flex flex-col gap-1.5">
+                                    <div className="flex items-center gap-1.5 text-emerald-500">
+                                        <Clock size={10} strokeWidth={3} />
+                                        <span className="text-[8px] font-black uppercase tracking-widest leading-none">Delivery Slot</span>
+                                    </div>
+                                    <p className="text-[10px] font-black text-slate-700 leading-none">{order.deliveryShift}</p>
                                 </div>
-                                <span className="text-[10px] font-black text-slate-700 uppercase leading-none truncate">{order.paymentMethod}</span>
+                                <div className="flex flex-col gap-1.5 pl-4">
+                                    <div className="flex items-center gap-1.5 text-purple-500">
+                                        <Activity size={10} strokeWidth={3} />
+                                        <span className="text-[8px] font-black uppercase tracking-widest leading-none">Target Date</span>
+                                    </div>
+                                    <p className="text-[10px] font-black text-slate-700 leading-none">
+                                        {order.scheduledDate 
+                                            ? new Date(order.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', weekday: 'short' })
+                                            : new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', weekday: 'short' })
+                                        }
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>

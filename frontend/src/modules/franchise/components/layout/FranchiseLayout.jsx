@@ -40,7 +40,7 @@ export default function FranchiseLayout() {
             {!hideNav && <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />}
 
             <main className="flex-1 flex flex-col min-w-0 h-full relative transition-all duration-300">
-                <div className="flex-1 overflow-y-auto overflow-x-hidden scrolling-touch overscroll-contain touch-pan-y">
+                <div className="flex-1 overflow-y-scroll overflow-x-hidden scrolling-touch overscroll-contain touch-pan-y custom-scrollbar">
                     <AnimatePresence mode="wait" initial={false}>
                         <motion.div
                             key={location.pathname}

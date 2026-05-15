@@ -241,6 +241,15 @@ export default function LoginScreen() {
                                             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                         </button>
                                     </div>
+                                    <div className="flex justify-end px-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => navigate('/franchise/forgot-password')}
+                                            className="text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors"
+                                        >
+                                            Forgot Password?
+                                        </button>
+                                    </div>
                                 </div>
                                 <button
                                     disabled={!email || !password || isLoading}

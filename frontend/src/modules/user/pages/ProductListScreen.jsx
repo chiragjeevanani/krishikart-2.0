@@ -324,15 +324,15 @@ export default function ProductListScreen() {
                                             <ArrowLeft size={22} />
                                         </button>
                                         <div className="flex flex-col">
-                                            <h1 className="text-[17px] font-bold text-slate-900 leading-tight">
-                                                {queryFromUrl ? `Results for "${queryFromUrl}"` : currentCategoryData.name}
-                                            </h1>
-                                            <Sheet>
-                                                <SheetTrigger asChild>
-                                                    <button className="flex items-center gap-1 text-[13px] font-bold text-emerald-600 leading-tight">
-                                                        Change category <ChevronDown size={14} strokeWidth={3} />
-                                                    </button>
-                                                </SheetTrigger>
+                                            <h1 className="text-[18px] font-black text-slate-900 leading-tight tracking-tight">
+                                                 {queryFromUrl ? `Results for "${queryFromUrl}"` : currentCategoryData.name}
+                                             </h1>
+                                             <Sheet>
+                                                 <SheetTrigger asChild>
+                                                     <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-[11px] font-black text-emerald-600 uppercase tracking-wider mt-0.5 active:scale-95 transition-all">
+                                                         Category <ChevronDown size={12} strokeWidth={3} />
+                                                     </button>
+                                                 </SheetTrigger>
                                                 <SheetContent side="bottom" className="rounded-t-[32px] max-h-[80vh] overflow-y-auto">
                                                     <SheetHeader className="mb-6">
                                                         <SheetTitle className="text-xl font-black">All Categories</SheetTitle>
@@ -393,8 +393,8 @@ export default function ProductListScreen() {
                 {/* Main Content Area - Split View on Mobile */}
                 <div className="flex flex-1 overflow-hidden">
                     {/* Mobile Sidebar - LEFT COL (fixed, independent of products scroll) */}
-                    <aside className="w-[85px] border-r border-slate-50 md:hidden bg-white shrink-0 fixed left-0 top-[80px] h-[calc(100vh-96px)] overflow-y-auto no-scrollbar z-20">
-                        <div ref={sidebarListRef} className="flex flex-col py-2 pb-24 relative">
+                    <aside className="w-[85px] border-r border-slate-100/50 md:hidden bg-white shrink-0 fixed left-0 top-[80px] h-[calc(100vh-96px)] overflow-y-auto no-scrollbar z-20">
+                        <div ref={sidebarListRef} className="flex flex-col py-3 pb-24 relative">
                             {sidebarCategories.map((cat) => {
                                 const isActive = selectedCategory === cat.id
                                 return (
@@ -403,27 +403,30 @@ export default function ProductListScreen() {
                                         ref={isActive ? activeSidebarRef : null}
                                         onClick={() => {
                                             const idx = sidebarCategories.findIndex((c) => c.id === cat.id)
-                                            if (idx >= 0) setActiveBarTop(idx * SIDEBAR_ITEM_HEIGHT + 19)
-                                            // Only update local state to avoid route-change animation
+                                            if (idx >= 0) setActiveBarTop(idx * SIDEBAR_ITEM_HEIGHT + 24)
                                             setSelectedCategory(cat.id)
                                         }}
                                         className={cn(
-                                            "relative flex flex-col items-center gap-1 py-3 px-1 transition-all",
-                                            isActive ? "bg-white" : "hover:bg-slate-50/50"
+                                            "relative flex flex-col items-center gap-1.5 py-4 px-1 transition-all duration-300",
+                                            isActive ? "bg-white" : "hover:bg-slate-50/30"
                                         )}
                                     >
                                         <div className={cn(
-                                            "w-[50px] h-[50px] rounded-full overflow-hidden flex items-center justify-center shrink-0 border border-slate-50 transition-all shadow-sm",
-                                            isActive ? "ring-2 ring-emerald-500 ring-offset-2 scale-105" : "bg-slate-50",
-                                            cat.color
+                                            "w-[54px] h-[54px] rounded-full flex items-center justify-center shrink-0 transition-all duration-500 shadow-sm overflow-hidden",
+                                            isActive 
+                                                ? "ring-2 ring-emerald-500 ring-offset-2 scale-110 shadow-lg shadow-emerald-100 bg-emerald-50 text-emerald-600" 
+                                                : "bg-slate-50 text-slate-400 border border-slate-100/50"
                                         )}>
                                             {cat.icon && typeof cat.icon === 'function' ? (
-                                                <cat.icon size={22} strokeWidth={2.5} />
+                                                <cat.icon size={24} strokeWidth={2.5} />
                                             ) : (
                                                 <img
                                                     src={cat.image}
                                                     alt={cat.name}
-                                                    className="w-full h-full object-cover"
+                                                    className={cn(
+                                                        "w-full h-full object-cover transition-transform duration-700",
+                                                        isActive ? "scale-110" : "scale-100"
+                                                    )}
                                                     onError={(e) => {
                                                         e.target.src = 'https://images.unsplash.com/photo-1603297638322-c9fdb12905c9?w=400&q=80'
                                                     }}
@@ -431,17 +434,17 @@ export default function ProductListScreen() {
                                             )}
                                         </div>
                                         <span className={cn(
-                                            "text-[9px] font-bold text-center leading-tight transition-colors px-1",
-                                            isActive ? "text-slate-900" : "text-slate-500"
+                                            "text-[10px] font-black text-center leading-tight transition-colors duration-300 px-1 max-w-[70px] truncate uppercase tracking-tighter",
+                                            isActive ? "text-emerald-700" : "text-slate-400"
                                         )}>
                                             {cat.name}
                                         </span>
                                     </button>
                                 )
                             })}
-                            {/* Single sliding bar – CSS transition only, no layout animation jitter */}
+                            {/* Single sliding bar – CSS transition only */}
                             <div
-                                className="absolute right-0 w-1 h-12 bg-emerald-600 rounded-l-md pointer-events-none z-10 transition-[top] duration-200 ease-out"
+                                className="absolute right-0 w-1 h-14 bg-emerald-500 rounded-l-full pointer-events-none z-10 transition-[top] duration-300 ease-out shadow-[0_0_10px_rgba(16,185,129,0.3)]"
                                 style={{ top: activeBarTop }}
                                 aria-hidden
                             />
@@ -452,57 +455,64 @@ export default function ProductListScreen() {
                     <main className="flex-1 bg-white ml-[85px] md:ml-0">
                         {/* Horizontal Filters & Subcategories Row */}
                         <div className="flex flex-col gap-3 px-4 py-4 border-b border-slate-50/50 sticky top-0 bg-white/95 backdrop-blur-sm z-30 md:hidden">
-                            <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar py-1 pr-2">
-                                <div
-                                    onClick={() => setActiveFilters(prev => ({ ...prev, rating: !prev.rating }))}
-                                    className={cn(
-                                        "flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm transition-all shrink-0",
-                                        activeFilters.rating ? "bg-orange-50 border-orange-200 text-orange-600 font-bold" : "bg-white border-slate-100 text-slate-700"
-                                    )}
-                                >
-                                    <Star size={14} className={cn("text-orange-400", activeFilters.rating && "fill-orange-400")} />
-                                    <span className="text-[12px]">Top Deals</span>
-                                </div>
-                                <div
-                                    onClick={() => setVegMode(!vegMode)}
-                                    className={cn(
-                                        "flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm transition-all shrink-0",
-                                        vegMode ? "bg-green-50 border-green-200 text-green-600 font-bold" : "bg-white border-slate-100 text-slate-700"
-                                    )}
-                                >
-                                    <div className={cn("w-3 h-3 border flex items-center justify-center rounded-[2px]", vegMode ? "border-green-600" : "border-slate-300")}>
-                                        <div className={cn("w-1.5 h-1.5 rounded-full", vegMode ? "bg-green-600" : "bg-transparent")} />
-                                    </div>
-                                    <span className="text-[12px]">Veg Only</span>
-                                </div>
-                                <div
-                                    onClick={() => setActiveFilters(prev => ({ ...prev, inStock: !prev.inStock }))}
-                                    className={cn(
-                                        "flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm transition-all shrink-0",
-                                        activeFilters.inStock ? "bg-emerald-50 border-emerald-200 text-emerald-600 font-bold" : "bg-white border-slate-100 text-slate-700"
-                                    )}
-                                >
-                                    <div className={cn("w-3 h-3 rounded-full", activeFilters.inStock ? "bg-emerald-500" : "bg-slate-200")} />
-                                    <span className="text-[12px]">In Stock</span>
-                                </div>
-                                <div
-                                    onClick={() => setActiveFilters(prev => ({
-                                        ...prev,
-                                        sort: prev.sort === 'price-low' ? 'price-high' : prev.sort === 'price-high' ? 'none' : 'price-low'
-                                    }))}
-                                    className={cn(
-                                        "flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm transition-all shrink-0",
-                                        activeFilters.sort !== 'none' ? "bg-blue-50 border-blue-200 text-blue-600 font-bold" : "bg-white border-slate-100 text-slate-700"
-                                    )}
-                                >
-                                    <SlidersHorizontal size={14} />
-                                    <span className="text-[12px]">
-                                        {activeFilters.sort === 'price-low' ? 'Price: Low' : activeFilters.sort === 'price-high' ? 'Price: High' : 'Sort'}
-                                    </span>
-                                </div>
-                                {/* Spacer so last chip can scroll fully into view */}
-                                <div className="shrink-0 w-10" />
-                            </div>
+                             <div className="flex items-center gap-3 overflow-x-auto no-scrollbar py-1 pr-2">
+                                 <div
+                                     onClick={() => setActiveFilters(prev => ({ ...prev, rating: !prev.rating }))}
+                                     className={cn(
+                                         "flex items-center gap-1.5 px-4 py-2 rounded-2xl border transition-all shrink-0 font-black text-[11px] uppercase tracking-wider",
+                                         activeFilters.rating 
+                                             ? "bg-orange-500 border-orange-600 text-white shadow-lg shadow-orange-100" 
+                                             : "bg-white border-slate-100 text-slate-500 shadow-sm"
+                                     )}
+                                 >
+                                     <Star size={14} className={cn(activeFilters.rating ? "fill-white" : "text-orange-400")} />
+                                     <span>Top Deals</span>
+                                 </div>
+                                 <div
+                                     onClick={() => setVegMode(!vegMode)}
+                                     className={cn(
+                                         "flex items-center gap-1.5 px-4 py-2 rounded-2xl border transition-all shrink-0 font-black text-[11px] uppercase tracking-wider",
+                                         vegMode 
+                                             ? "bg-emerald-600 border-emerald-700 text-white shadow-lg shadow-emerald-100" 
+                                             : "bg-white border-slate-100 text-slate-500 shadow-sm"
+                                     )}
+                                 >
+                                     <div className={cn("w-3.5 h-3.5 border-2 flex items-center justify-center rounded-[3px]", vegMode ? "border-white" : "border-emerald-600")}>
+                                         <div className={cn("w-1.5 h-1.5 rounded-full", vegMode ? "bg-white" : "bg-emerald-600")} />
+                                     </div>
+                                     <span>Veg Only</span>
+                                 </div>
+                                 <div
+                                     onClick={() => setActiveFilters(prev => ({ ...prev, inStock: !prev.inStock }))}
+                                     className={cn(
+                                         "flex items-center gap-1.5 px-4 py-2 rounded-2xl border transition-all shrink-0 font-black text-[11px] uppercase tracking-wider",
+                                         activeFilters.inStock 
+                                             ? "bg-slate-900 border-slate-950 text-white shadow-lg shadow-slate-100" 
+                                             : "bg-white border-slate-100 text-slate-500 shadow-sm"
+                                     )}
+                                 >
+                                     <div className={cn("w-2 h-2 rounded-full animate-pulse", activeFilters.inStock ? "bg-emerald-400" : "bg-slate-300")} />
+                                     <span>In Stock</span>
+                                 </div>
+                                 <div
+                                     onClick={() => setActiveFilters(prev => ({
+                                         ...prev,
+                                         sort: prev.sort === 'price-low' ? 'price-high' : prev.sort === 'price-high' ? 'none' : 'price-low'
+                                     }))}
+                                     className={cn(
+                                         "flex items-center gap-1.5 px-4 py-2 rounded-2xl border transition-all shrink-0 font-black text-[11px] uppercase tracking-wider",
+                                         activeFilters.sort !== 'none' 
+                                             ? "bg-blue-600 border-blue-700 text-white shadow-lg shadow-blue-100" 
+                                             : "bg-white border-slate-100 text-slate-500 shadow-sm"
+                                     )}
+                                 >
+                                     <SlidersHorizontal size={14} strokeWidth={3} />
+                                     <span>
+                                         {activeFilters.sort === 'price-low' ? 'Low' : activeFilters.sort === 'price-high' ? 'High' : 'Sort'}
+                                     </span>
+                                 </div>
+                                 <div className="shrink-0 w-10" />
+                             </div>
 
                             {/* Subcategories */}
                             {subcategories.length > 0 && (
@@ -533,9 +543,9 @@ export default function ProductListScreen() {
                         </div>
 
                         {/* Product Grid - Mobile */}
-                        <div className="p-4 flex flex-col gap-6 items-stretch md:hidden min-h-[400px]">
+                        <div className="p-3 grid grid-cols-2 gap-3 md:hidden min-h-[400px]">
                             {isLoading ? (
-                                <div className="flex items-center justify-center py-20">
+                                <div className="col-span-2 flex items-center justify-center py-20">
                                     <Loader2 className="w-8 h-8 animate-spin text-primary opacity-40" />
                                 </div>
                             ) : (
@@ -546,7 +556,7 @@ export default function ProductListScreen() {
                                                 initial={{ opacity: 0 }}
                                                 animate={{ opacity: 1 }}
                                                 exit={{ opacity: 0 }}
-                                                className="flex items-center justify-center py-4 text-slate-400 text-xs font-bold uppercase tracking-widest gap-2"
+                                                className="col-span-2 flex items-center justify-center py-4 text-slate-400 text-xs font-bold uppercase tracking-widest gap-2"
                                             >
                                                 <Loader2 className="w-4 h-4 animate-spin" />
                                                 Searching...
@@ -559,7 +569,7 @@ export default function ProductListScreen() {
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 exit={{ opacity: 0, scale: 0.95 }}
-                                                className="w-full max-w-[270px] mr-auto"
+                                                className="w-full"
                                             >
                                                 <ProductCard product={product} />
                                             </motion.div>
@@ -567,7 +577,7 @@ export default function ProductListScreen() {
                                     </AnimatePresence>
 
                                     {filteredProducts.length === 0 && (
-                                        <div className="py-20 text-center">
+                                        <div className="col-span-2 py-20 text-center">
                                             {(!isLoading && products.length === 0 && getBrowseLocationParams(locationCtx).hasPinned) ? (
                                                 <ServiceUnavailable 
                                                    address={locationCtx.address} 

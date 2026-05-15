@@ -53,6 +53,10 @@ const SettingItem = ({ icon: Icon, label, value, color, onClick }) => (
 );
 
 const EditProfileModal = ({ isOpen, onClose, vendorData, onUpdate }) => {
+    const [categories, setCategories] = useState([]);
+    const [selectedCategories, setSelectedCategories] = useState(
+        (vendorData?.servedCategories || []).map(c => typeof c === 'object' ? c._id : c)
+    );
     const [formData, setFormData] = useState({
         fullName: vendorData?.fullName || '',
         mobile: vendorData?.mobile || '',
@@ -66,6 +70,20 @@ const EditProfileModal = ({ isOpen, onClose, vendorData, onUpdate }) => {
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await api.get('/catalog/categories');
+                if (response.data?.success) {
+                    setCategories(response.data.results || []);
+                }
+            } catch (error) {
+                console.error("Error fetching categories:", error);
+            }
+        };
+        fetchCategories();
+    }, []);
+
+    useEffect(() => {
         if (isOpen) {
             document.body.style.overflow = 'hidden';
             document.documentElement.style.overflow = 'hidden';
@@ -75,6 +93,14 @@ const EditProfileModal = ({ isOpen, onClose, vendorData, onUpdate }) => {
             document.documentElement.style.overflow = '';
         };
     }, [isOpen]);
+
+    const toggleCategory = (catId) => {
+        setSelectedCategories(prev => 
+            prev.includes(catId) 
+                ? prev.filter(id => id !== catId)
+                : [...prev, catId]
+        );
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -153,6 +179,7 @@ const EditProfileModal = ({ isOpen, onClose, vendorData, onUpdate }) => {
                 bankName: formData.bankName
             };
             updateData.append('bankDetails', JSON.stringify(bankDetails));
+            updateData.append('servedCategories', JSON.stringify(selectedCategories));
 
             await onUpdate(updateData);
             onClose();
@@ -231,6 +258,26 @@ const EditProfileModal = ({ isOpen, onClose, vendorData, onUpdate }) => {
                                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">IFSC</label>
                                 <input name="bankIfscCode" value={formData.bankIfscCode} onChange={handleChange} maxLength={11} placeholder="HDFC0001234" pattern="[A-Z]{4}0[A-Z0-9]{6}" title="4 letters, 0, 6 alphanumeric (e.g. HDFC0001234)" className="w-full bg-slate-50 rounded-xl p-3 text-xs font-bold outline-none focus:ring-2 focus:ring-primary/20 uppercase" />
                             </div>
+                        </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-100">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Served Categories</label>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                            {categories.map((cat) => (
+                                <button
+                                    key={cat._id}
+                                    type="button"
+                                    onClick={() => toggleCategory(cat._id)}
+                                    className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all border-2 ${
+                                        selectedCategories.includes(cat._id)
+                                            ? "bg-primary border-primary text-white"
+                                            : "bg-slate-50 border-slate-100 text-slate-400"
+                                    }`}
+                                >
+                                    {cat.name}
+                                </button>
+                            ))}
                         </div>
                     </div>
 

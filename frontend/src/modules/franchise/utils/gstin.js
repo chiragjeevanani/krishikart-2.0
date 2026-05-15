@@ -23,18 +23,18 @@ export function isValidFssai(value) {
     return FSSAI_REGEX.test(normalizeFssaiInput(value));
 }
 
-export function normalizeGst14Input(raw) {
+export function normalizeGstInput(raw) {
     return String(raw ?? '')
         .toUpperCase()
         .replace(/[^A-Z0-9]/g, '')
         .slice(0, 15);
 }
 
-export function isValidGst14(value) {
-    return GSTIN_REGEX.test(normalizeGst14Input(value));
+export function isValidGst(value) {
+    return GSTIN_REGEX.test(normalizeGstInput(value));
 }
 
-export function countGst14Parts(value) {
+export function getGstParts(value) {
     const s = String(value ?? '').toUpperCase();
     const digits = (s.match(/\d/g) || []).length;
     const letters = (s.match(/[A-Z]/g) || []).length;

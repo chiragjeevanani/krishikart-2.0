@@ -35,6 +35,7 @@ const ReceivingScreen = () => {
     const [selectedPO, setSelectedPO] = useState(null);
     const [receivingData, setReceivingData] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [rejectedItems, setRejectedItems] = useState(new Set());
 
     // Document Viewer state
     const [isDocOpen, setIsDocOpen] = useState(false);
@@ -45,16 +46,23 @@ const ReceivingScreen = () => {
 
     useEffect(() => {
         fetchOrders();
-
+        
         const socket = getSocket();
-        const handleUpdate = () => {
+        
+        socket.on('order_locked_due_to_rejection', (data) => {
+            console.log("Order locked due to rejection:", data);
+            toast.error(data.message || "Order locked due to rejected items");
             fetchOrders();
-        };
+            if (refreshOrders) refreshOrders();
+        });
 
-        socket.on('procurement_cycle_update', handleUpdate);
+        socket.on('procurement_cycle_update', () => {
+            fetchOrders();
+        });
 
         return () => {
-            socket.off('procurement_cycle_update', handleUpdate);
+            socket.off('order_locked_due_to_rejection');
+            socket.off('procurement_cycle_update');
         };
     }, []);
 
@@ -99,6 +107,19 @@ const ReceivingScreen = () => {
             };
         });
         setReceivingData(initialData);
+        setRejectedItems(new Set());
+    };
+
+    const toggleRejectItem = (itemId) => {
+        setRejectedItems(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(itemId)) {
+                newSet.delete(itemId);
+            } else {
+                newSet.add(itemId);
+            }
+            return newSet;
+        });
     };
 
     const updateItem = (id, field, value) => {
@@ -112,11 +133,15 @@ const ReceivingScreen = () => {
         if (!selectedPO) return;
         setIsSubmitting(true);
 
-        const auditItems = Object.entries(receivingData).map(([id, data]) => ({
-            productId: id,
-            receivedQuantity: data.received,
-            damagedQuantity: data.damage
-        }));
+        const auditItems = Object.entries(receivingData).map(([id, data]) => {
+            const isRejected = rejectedItems.has(id);
+            return {
+                productId: id,
+                receivedQuantity: isRejected ? 0 : data.received,
+                damagedQuantity: isRejected ? (data.damage || 0) : data.damage,
+                rejected: isRejected
+            };
+        });
 
         try {
             const response = await api.put(`/procurement/franchise/${selectedPO._id}/receive`, {
@@ -133,6 +158,7 @@ const ReceivingScreen = () => {
                 // Refresh list and close panel
                 fetchOrders();
                 setSelectedPO(null);
+                setRejectedItems(new Set());
             }
         } catch (error) {
             console.error("Reception failed", error);
@@ -358,31 +384,51 @@ const ReceivingScreen = () => {
                                                         </div>
 
                                                         <div className="flex items-center gap-4 sm:gap-8 grow justify-between sm:justify-end">
-                                                            {/* Received Control */}
+                                                            {/* Reject Button */}
                                                             <div className="flex flex-col gap-1.5">
-                                                                <label className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Received</label>
-                                                                <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg p-1 w-32">
+                                                                <label className={`text-[8px] font-black uppercase tracking-[0.2em] px-1 text-center ${rejectedItems.has(itemId) ? 'text-rose-500' : 'text-slate-400'}`}>
+                                                                    {rejectedItems.has(itemId) ? 'Rejected' : 'Reject Item'}
+                                                                </label>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => toggleRejectItem(itemId)}
+                                                                    className={`px-3 py-1.5 rounded-lg font-black text-[10px] uppercase tracking-wider transition-all ${
+                                                                        rejectedItems.has(itemId)
+                                                                            ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30'
+                                                                            : 'bg-slate-100 text-slate-400 hover:bg-rose-50 hover:text-rose-500 border border-slate-200'
+                                                                    }`}
+                                                                >
+                                                                    {rejectedItems.has(itemId) ? 'Rejected' : 'Reject'}
+                                                                </button>
+                                                            </div>
+
+                                                            {/* Received Control - Disabled if rejected */}
+                                                            <div className="flex flex-col gap-1.5">
+                                                                <label className={`text-[8px] font-black uppercase tracking-[0.2em] px-1 ${rejectedItems.has(itemId) ? 'text-slate-300' : 'text-slate-400'}`}>Received</label>
+                                                                <div className={`flex items-center border rounded-lg p-1 w-32 ${rejectedItems.has(itemId) ? 'bg-slate-50 border-slate-100' : 'bg-slate-50 border-slate-200'}`}>
                                                                     <input
                                                                         type="number"
                                                                         value={data.received}
+                                                                        disabled={rejectedItems.has(itemId)}
                                                                         onChange={(e) => updateItem(itemId, 'received', parseInt(e.target.value) || 0)}
-                                                                        className="bg-transparent w-full text-center font-black text-sm outline-none tabular-nums py-1"
+                                                                        className={`bg-transparent w-full text-center font-black text-sm outline-none tabular-nums py-1 ${rejectedItems.has(itemId) ? 'text-slate-300' : ''}`}
                                                                     />
                                                                 </div>
                                                             </div>
 
-                                                            {/* Damage Control */}
+                                                            {/* Damage Control - Disabled if rejected */}
                                                             <div className="flex flex-col gap-1.5">
-                                                                <label className="text-[8px] font-black text-rose-400 uppercase tracking-[0.2em] px-1 text-right">Damaged/Spoilt</label>
-                                                                <div className="flex items-center bg-rose-50 border border-rose-100 rounded-lg p-1 w-24">
+                                                                <label className={`text-[8px] font-black uppercase tracking-[0.2em] px-1 text-right ${rejectedItems.has(itemId) ? 'text-slate-300' : 'text-rose-400'}`}>Damaged/Spoilt</label>
+                                                                <div className={`flex items-center border rounded-lg p-1 w-24 ${rejectedItems.has(itemId) ? 'bg-slate-50 border-slate-100' : 'bg-rose-50 border-rose-100'}`}>
                                                                     <input
                                                                         type="number"
                                                                         value={data.damage}
+                                                                        disabled={rejectedItems.has(itemId)}
                                                                         placeholder="0"
                                                                         onChange={(e) => updateItem(itemId, 'damage', parseInt(e.target.value) || 0)}
-                                                                        className="bg-transparent w-full text-center font-black text-sm text-rose-600 outline-none tabular-nums placeholder:text-rose-300"
+                                                                        className={`bg-transparent w-full text-center font-black text-sm outline-none tabular-nums placeholder:text-rose-300 ${rejectedItems.has(itemId) ? 'text-slate-300' : 'text-rose-600'}`}
                                                                     />
-                                                                    <AlertTriangle size={14} className="text-rose-300 mr-2 shrink-0" />
+                                                                    <AlertTriangle size={14} className={`mr-2 shrink-0 ${rejectedItems.has(itemId) ? 'text-slate-200' : 'text-rose-300'}`} />
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -422,6 +468,14 @@ const ReceivingScreen = () => {
                                                             {Object.values(receivingData).reduce((acc, d) => acc + (d.damage || 0), 0)} Units
                                                         </span>
                                                     </div>
+                                                    {rejectedItems.size > 0 && (
+                                                        <div className="flex justify-between items-center bg-rose-50 p-2 rounded-lg border border-rose-100">
+                                                            <span className="text-[10px] font-bold text-rose-600 uppercase">Rejected Items</span>
+                                                            <span className="text-xs font-black text-rose-600 tabular-nums">
+                                                                {rejectedItems.size} SKU(s)
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
 

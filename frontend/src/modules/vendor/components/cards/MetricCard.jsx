@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
-const MetricCard = ({ label, value, icon: Icon, color = 'slate', index = 0, trend }) => {
+const MetricCard = ({ label, value, icon: Icon, color = 'slate', index = 0, trend, sub }) => {
     const colorMap = {
         emerald: "bg-emerald-50 text-emerald-600 shadow-emerald-100",
         blue: "bg-blue-50 text-blue-600 shadow-blue-100",
@@ -35,8 +35,11 @@ const MetricCard = ({ label, value, icon: Icon, color = 'slate', index = 0, tren
             </div>
             <div className="min-w-0">
                 <p className="text-[9px] sm:text-[10px] font-black text-slate-300 uppercase tracking-[0.08em] sm:tracking-[0.1em] leading-snug mb-1 line-clamp-2">{label}</p>
-                <div className="flex items-baseline gap-1 min-w-0">
-                    <h3 className="text-lg sm:text-2xl md:text-3xl font-black text-slate-900 tracking-tight sm:tracking-tighter tabular-nums break-words">{value}</h3>
+                <div className="flex flex-col min-w-0">
+                    <h3 className="text-lg sm:text-2xl md:text-3xl font-black text-slate-900 tracking-tight sm:tracking-tighter tabular-nums break-words leading-none">{value}</h3>
+                    {sub && (
+                        <p className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1 truncate">{sub}</p>
+                    )}
                 </div>
             </div>
         </motion.div>

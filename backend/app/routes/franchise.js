@@ -8,6 +8,8 @@ import {
   changeFranchisePassword,
   uploadFranchiseDocuments,
   loginFranchiseWithPassword,
+  forgotFranchisePassword,
+  resetFranchisePassword,
 } from "../controllers/franchise.auth.js";
 import {
   submitKYC,
@@ -38,6 +40,8 @@ router.post("/register", registerFranchise);
 router.post("/send-otp", sendFranchiseOTP);
 router.post("/verify-otp", verifyFranchiseOTP);
 router.post("/login", loginFranchiseWithPassword);
+router.post("/forgot-password", forgotFranchisePassword);
+router.post("/reset-password", resetFranchisePassword);
 router.get("/me", protectFranchise, getFranchiseMe);
 router.put(
   "/update",
@@ -119,6 +123,47 @@ router.post(
   protectFranchise,
   requireFranchiseAccountVerified,
   resetInventoryStock,
+);
+
+// Franchise Notifications
+router.get(
+  "/notifications",
+  protectFranchise,
+  async (req, res) => {
+    try {
+      const FranchiseNotification = (await import('../models/franchiseNotification.js')).default;
+      const notifications = await FranchiseNotification.find({ franchiseId: req.franchise._id })
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .lean();
+      return res.status(200).json({ success: true, results: notifications });
+    } catch (error) {
+      console.error("Get franchise notifications error:", error);
+      return res.status(500).json({ success: false, message: "Server error" });
+    }
+  }
+);
+
+router.put(
+  "/notifications/:id/read",
+  protectFranchise,
+  async (req, res) => {
+    try {
+      const FranchiseNotification = (await import('../models/franchiseNotification.js')).default;
+      const notification = await FranchiseNotification.findOneAndUpdate(
+        { _id: req.params.id, franchiseId: req.franchise._id },
+        { isRead: true },
+        { new: true }
+      );
+      if (!notification) {
+        return res.status(404).json({ success: false, message: "Notification not found" });
+      }
+      return res.status(200).json({ success: true, message: "Marked as read", notification });
+    } catch (error) {
+      console.error("Mark notification read error:", error);
+      return res.status(500).json({ success: false, message: "Server error" });
+    }
+  }
 );
 
 export default router;

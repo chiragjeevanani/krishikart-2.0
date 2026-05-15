@@ -120,6 +120,13 @@ const franchiseSchema = new mongoose.Schema(
         default: [],
       },
     ],
+    requestedCategories: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Category",
+        default: [],
+      },
+    ],
     serviceHexagons: {
       type: [String],
       default: [],

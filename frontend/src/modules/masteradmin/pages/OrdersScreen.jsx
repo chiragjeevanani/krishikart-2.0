@@ -88,10 +88,10 @@ export default function OrdersScreen() {
         if (!results || !Array.isArray(results)) return [];
         let flattened = [];
         results.forEach(item => {
-            const data = item._doc || item;
+            const data = item;
             if (data.isSplitOrder && data.orders && Array.isArray(data.orders)) {
                 data.orders.forEach(subOrder => {
-                    const subData = subOrder._doc || subOrder;
+                    const subData = subOrder;
                     flattened.push({
                         ...subData,
                         isPartOfGroup: true,
@@ -123,11 +123,23 @@ export default function OrdersScreen() {
     };
 
     useEffect(() => {
-        fetchAllOrders();
-
-        // Socket Integration
+        // Initialize socket before fetching orders
         const socket = getSocket();
+
+        // Re-join admin room on reconnection to ensure we receive events
+        const handleReconnect = () => {
+            console.log('[Socket] Reconnected, joining admin room');
+            joinAdminDeliveryTracking();
+            fetchAllOrders(true); // Refresh orders after reconnect
+        };
+
+        socket.on('connect', handleReconnect);
+
+        // Join the admin delivery tracking room
         joinAdminDeliveryTracking();
+
+        // Initial fetch
+        fetchAllOrders();
 
         socket.on('new_order_placed', (data) => {
             playNotificationSound();
@@ -158,10 +170,20 @@ export default function OrdersScreen() {
             fetchAllOrders(true);
         });
 
+        socket.on('admin_notification', (data) => {
+            playNotificationSound();
+            toast.info(data.title || "Notification Received", {
+                description: data.message
+            });
+            fetchAllOrders(true);
+        });
+
         return () => {
             socket.off('new_order_placed');
             socket.off('order_status_updated');
             socket.off('order_franchise_rejected');
+            socket.off('admin_notification');
+            socket.off('connect', handleReconnect);
         };
     }, []);
 
@@ -195,13 +217,33 @@ export default function OrdersScreen() {
                 const allActiveVendors = response.data.results || response.data.result || [];
                 setVendors(allActiveVendors);
 
-                // Filter vendors who have at least one of the shortage products
-                const compatible = allActiveVendors.filter(vendor =>
-                    vendor.products?.some(p => {
-                        const vendorProdId = p._id || p;
-                        return shortageProductIds.includes(vendorProdId.toString());
-                    })
-                );
+                // 1. Identify all unique product IDs and Category IDs from the shortages
+                const shortageProducts = order.items
+                    .filter(item => item.isShortage)
+                    .map(item => item.productId)
+                    .filter(Boolean);
+
+                const shortageProductIds = shortageProducts.map(p => (p._id || p).toString());
+                const shortageCategoryIds = shortageProducts
+                    .map(p => p.category?.toString())
+                    .filter(Boolean);
+
+                // 2. Filter vendors who either have the product OR serve the category
+                const compatible = allActiveVendors.filter(vendor => {
+                    // Check explicit products
+                    const hasProduct = vendor.products?.some(p => {
+                        const vendorProdId = (p._id || p).toString();
+                        return shortageProductIds.includes(vendorProdId);
+                    });
+
+                    if (hasProduct) return true;
+
+                    // Check served categories
+                    const vendorCategories = (vendor.servedCategories || []).map(c => (c._id || c).toString());
+                    const matchesCategory = shortageCategoryIds.some(catId => vendorCategories.includes(catId));
+
+                    return matchesCategory;
+                });
 
                 setCompatibleVendors(compatible.length > 0 ? compatible : allActiveVendors);
             }

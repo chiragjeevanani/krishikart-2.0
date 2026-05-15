@@ -45,7 +45,7 @@ export default function MasterAdminLayout() {
                     <div className={`flex-1 flex flex-col h-screen min-w-0 transition-all duration-300 ${!isLoginPage ? (isCollapsed ? 'lg:ml-20' : 'lg:ml-64') : ''}`}>
                         <TopBar />
 
-                        <main className="flex-1 overflow-y-auto overflow-x-hidden relative">
+                        <main className="flex-1 overflow-y-scroll overflow-x-hidden relative custom-scrollbar">
                             <Suspense fallback={<div className="h-full w-full flex items-center justify-center p-20"><div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
                                 <Outlet />
                             </Suspense>

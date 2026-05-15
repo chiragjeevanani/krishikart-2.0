@@ -144,6 +144,12 @@ export default function OrdersScreen() {
                                                     <Clock size={10} className="text-slate-300" />
                                                     Ordered {new Date(createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                                                 </div>
+                                                {order.scheduledDate && (
+                                                    <div className="text-[9px] font-black text-emerald-600 uppercase mt-1.5 flex items-center gap-1.5 leading-none">
+                                                        <Zap size={10} className="fill-emerald-600 text-emerald-600" />
+                                                        Delivering {new Date(order.scheduledDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', weekday: 'short' })}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                         <Badge variant="outline" className={cn("rounded-lg border-[0.5px] font-black text-[8px] py-1 px-2.5 flex items-center gap-1.5 shrink-0 bg-opacity-40 mt-0.5", getStatusColor(displayStatus))}>

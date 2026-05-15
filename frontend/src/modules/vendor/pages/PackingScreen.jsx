@@ -66,9 +66,8 @@ export default function PackingScreen() {
             return formatOrder(orders[0]);
         }
 
-        // 3. Fallback to mock only if no active orders exist at all
-        const mock = mockOrders.find(o => o.id === orderId);
-        return mock || mockOrders[0];
+        // 3. No fallback to mock data to avoid confusion
+        return null;
     }, [orderId, orders]);
 
     function formatOrder(foundOrder) {

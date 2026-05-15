@@ -65,8 +65,8 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC' }) {
                                         Kisaankart <span className="text-primary font-light">Supply Chain</span>
                                     </div>
                                     <div className="text-[10px] font-bold text-slate-400 leading-relaxed uppercase tracking-widest max-w-xs">
-                                        Headquarters: B-204, Corporate Hub<br />
-                                        Sector 62, Noida, UP - 201301<br />
+                                        Headquarters: 24, Agri-Business Center<br />
+                                        Dewas Road, Ujjain, MP - 456010<br />
                                         Certified Logistics & Distribution Node
                                     </div>
                                 </div>

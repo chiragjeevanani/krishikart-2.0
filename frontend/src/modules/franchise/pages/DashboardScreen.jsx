@@ -22,7 +22,8 @@ import {
     History,
     ShieldCheck,
     Monitor,
-    CheckCircle2
+    CheckCircle2,
+    Calendar
 } from 'lucide-react';
 import { useFranchiseOrders } from '../contexts/FranchiseOrdersContext';
 import { useInventory } from '../contexts/InventoryContext';
@@ -33,6 +34,7 @@ import { useNavigate } from 'react-router-dom';
 import { useFranchiseAuth } from '../contexts/FranchiseAuthContext';
 import { toast } from 'sonner';
 import api from '@/lib/axios';
+import { getSocket } from '@/lib/socket';
 
 // Enterprise Components
 import MetricRow from '../components/cards/MetricRow';
@@ -98,6 +100,21 @@ export default function DashboardScreen() {
         }
     }, [franchise]);
 
+    const [isSocketConnected, setIsSocketConnected] = useState(false);
+
+    useEffect(() => {
+        const socket = getSocket();
+        setIsSocketConnected(socket.connected);
+        const handleConnect = () => setIsSocketConnected(true);
+        const handleDisconnect = () => setIsSocketConnected(false);
+        socket.on('connect', handleConnect);
+        socket.on('disconnect', handleDisconnect);
+        return () => {
+            socket.off('connect', handleConnect);
+            socket.off('disconnect', handleDisconnect);
+        };
+    }, []);
+
     const inventoryStats = getStockStats();
     const recentOrders = orders.slice(0, 10);
 
@@ -140,7 +157,16 @@ export default function DashboardScreen() {
         {
             header: 'Delivery Slot',
             key: 'deliverySlot',
-            render: (val) => <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{val}</span>
+            render: (val, row) => (
+                <div className="flex flex-col">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{val}</span>
+                    {row.scheduledDate && (
+                        <span className="text-[9px] font-black text-primary bg-primary/5 px-1 rounded-sm mt-0.5 w-fit border border-primary/10">
+                            Target: {new Date(row.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                        </span>
+                    )}
+                </div>
+            )
         },
         {
             header: 'Action',
@@ -185,7 +211,7 @@ export default function DashboardScreen() {
                             <ChevronRight size={10} />
                             <span className="text-slate-900 uppercase tracking-widest">Dashboard</span>
                         </div>
-                        <h1 className="text-sm font-bold text-slate-900">Manage Orders</h1>
+                        <h1 className="text-sm font-bold text-slate-900">{franchise?.shopName || 'Franchise Terminal'}</h1>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -243,6 +269,12 @@ export default function DashboardScreen() {
                     icon={ShoppingBag}
                 />
                 <MetricRow
+                    label="Scheduled"
+                    value={stats.scheduledOrders}
+                    icon={Calendar}
+                    sub="Future Date"
+                />
+                <MetricRow
                     label="Active Dispatch"
                     value={stats.outForDelivery}
                     icon={Truck}
@@ -284,9 +316,14 @@ export default function DashboardScreen() {
                                 <div className="flex items-center gap-4">
                                     <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Recent Orders</h2>
                                     <div className="h-4 w-px bg-slate-200" />
-                                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 border border-emerald-100 rounded-sm">
-                                        <ShieldCheck size={10} className="text-emerald-500" />
-                                        <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest">System Online</span>
+                                    <div className={cn(
+                                        "flex items-center gap-1.5 px-2 py-0.5 rounded-sm transition-colors",
+                                        isSocketConnected ? "bg-emerald-50 border border-emerald-100" : "bg-amber-50 border border-amber-100"
+                                    )}>
+                                        <div className={cn("w-1.5 h-1.5 rounded-full", isSocketConnected ? "bg-emerald-500 animate-pulse" : "bg-amber-500")} />
+                                        <span className={cn("text-[9px] font-bold uppercase tracking-widest", isSocketConnected ? "text-emerald-600" : "text-amber-600")}>
+                                            {isSocketConnected ? "System Online" : "Syncing Matrix"}
+                                        </span>
                                     </div>
                                 </div>
                             }

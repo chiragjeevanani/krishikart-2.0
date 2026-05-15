@@ -131,7 +131,7 @@ const applyFranchiseStockShortageFlags = async (orders) => {
 export const createOrder = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { shippingAddress, shippingLocation, paymentMethod, deliveryShift } =
+    const { shippingAddress, shippingLocation, paymentMethod, deliveryShift, scheduledDate } =
       req.body;
 
     if (!shippingAddress || !paymentMethod || !deliveryShift) {
@@ -140,6 +140,26 @@ export const createOrder = async (req, res) => {
         400,
         "Shipping address, payment method, and delivery shift are required",
       );
+    }
+
+    // Pre-order validation
+    let preOrderDate = null;
+    let isPreOrder = false;
+    if (scheduledDate) {
+      preOrderDate = new Date(scheduledDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const maxDate = new Date(today);
+      maxDate.setDate(maxDate.getDate() + 7);
+      
+      if (preOrderDate < today) {
+        return handleResponse(res, 400, "Scheduled date cannot be in the past");
+      }
+      if (preOrderDate > maxDate) {
+        return handleResponse(res, 400, "Orders can only be scheduled up to 7 days in advance");
+      }
+      isPreOrder = true;
     }
 
     const cart = await Cart.findOne({ userId }).populate("items.productId");
@@ -274,6 +294,8 @@ export const createOrder = async (req, res) => {
         deliveryShift,
         orderGroupId,
         fulfillmentCategoryId,
+        scheduledDate: preOrderDate,
+        isPreOrder,
       });
 
       await order.save();
@@ -963,6 +985,39 @@ export const updateReturnPickupStatus = async (req, res) => {
           await user.save();
         }
       }
+
+      // 2. Replenish inventory for returned items
+      try {
+        const inventory = await Inventory.findOne({
+          franchiseId: order.franchiseId,
+        });
+        if (inventory) {
+          for (const item of request.items || []) {
+            const pid = item.productId?.toString?.();
+            if (!pid) continue;
+
+            const existingItem = inventory.items.find(
+              (i) => i.productId.toString() === pid,
+            );
+            if (existingItem) {
+              existingItem.currentStock += Number(item.quantity || 0);
+              existingItem.lastUpdated = new Date();
+            } else {
+              inventory.items.push({
+                productId: pid,
+                currentStock: Number(item.quantity || 0),
+                lastUpdated: new Date(),
+              });
+            }
+          }
+          await inventory.save();
+          console.log(
+            `[Inventory] Replenished stock for return pickup in order ${order._id}`,
+          );
+        }
+      } catch (invErr) {
+        console.error("Failed to replenish inventory for return:", invErr);
+      }
     }
 
     await order.save();
@@ -1040,6 +1095,34 @@ export const updateOrderStatus = async (req, res) => {
           : "Master Admin revoked partial delivery approval.",
       });
       await order.save();
+
+      // Notify franchise when admin allows partial fulfillment
+      if (allowPartialFulfillment && order.franchiseId) {
+        const franchiseId = order.franchiseId.toString();
+
+        // Socket notification to franchise
+        emitToFranchise(franchiseId, 'partial_fulfillment_approved', {
+          orderId: order._id,
+          message: `Admin has allowed delivery with available stock for Order #${order._id.toString().slice(-6)}. You can now proceed with packing and delivery.`,
+          allowPartialFulfillment: true
+        });
+
+        // Create in-app notification for franchise
+        try {
+          const FranchiseNotification = (await import('../models/franchiseNotification.js')).default;
+          await FranchiseNotification.create({
+            franchiseId: order.franchiseId,
+            type: 'partial_fulfillment_approved',
+            title: 'Delivery Approved with Available Stock',
+            message: `Admin has approved delivery with available stock for Order #${order._id.toString().slice(-6)}. You can now proceed with packing.`,
+            relatedOrderId: order._id,
+            isRead: false
+          });
+        } catch (notifErr) {
+          console.error('Failed to create franchise notification:', notifErr);
+        }
+      }
+
       return handleResponse(
         res,
         200,
@@ -1181,7 +1264,7 @@ export const updateOrderStatus = async (req, res) => {
         return handleResponse(
           res,
           400,
-          "Franchise inventory not found. Please setup inventory first.",
+          "Stock shortage. Ask admin to procure it.",
         );
       }
 
@@ -1200,7 +1283,7 @@ export const updateOrderStatus = async (req, res) => {
         return handleResponse(
           res,
           400,
-          `Insufficient stock for: ${insufficientItems.join(", ")}. Please procure more stock.`,
+          `Stock shortage for ${insufficientItems.join(", ")}. Ask admin to procure it.`,
         );
       }
     }
@@ -1348,7 +1431,7 @@ export const updateOrderStatus = async (req, res) => {
     await order.save();
 
     // Deduct stock if status changed to Packed
-    if (status === "Packed" && isFranchise) {
+    if (status === "Packed" && isFranchise && order.orderStatus !== "Packed") {
       try {
         const franchiseId = req.franchise._id;
         const inventory = await Inventory.findOne({ franchiseId });
@@ -1559,7 +1642,7 @@ export const getAllOrders = async (req, res) => {
     const formattedOrders = enrichedOrders.map((order) => {
       const dateObj = new Date(order.createdAt);
       return {
-        ...order,
+        ...(order.toObject ? order.toObject() : order),
         date: dateObj.toLocaleDateString("en-IN", {
           day: "2-digit",
           month: "2-digit",
@@ -1572,6 +1655,14 @@ export const getAllOrders = async (req, res) => {
           hour12: true,
           timeZone: "Asia/Kolkata",
         }),
+        scheduledDateFormatted: order.scheduledDate 
+          ? new Date(order.scheduledDate).toLocaleDateString("en-IN", {
+              day: "2-digit",
+              month: "short",
+              weekday: "short",
+              timeZone: "Asia/Kolkata"
+            })
+          : null
       };
     });
 
@@ -1771,6 +1862,14 @@ export const getFranchiseOrders = async (req, res) => {
               timeZone: "Asia/Kolkata",
             })
           : "N/A",
+        scheduledDateFormatted: order.scheduledDate 
+          ? new Date(order.scheduledDate).toLocaleDateString("en-IN", {
+              day: "2-digit",
+              month: "short",
+              weekday: "short",
+              timeZone: "Asia/Kolkata"
+            })
+          : null
       };
     });
 
@@ -1950,121 +2049,114 @@ export const rejectFranchiseOrder = async (req, res) => {
       reason: "rejected",
     });
 
-    order.franchiseId = null;
-    order.franchiseAutoAccepted = false;
-    order.orderStatus = "Placed";
+    // Permanent rejection logic (no reassignment as per request)
+    order.orderStatus = "Cancelled";
     order.statusHistory.push({
-      status: "Placed",
+      status: "Cancelled",
       updatedAt: new Date(),
       updatedBy: reason ? `franchise_reject:${reason.slice(0, 80)}` : "franchise_reject",
     });
 
     await order.save();
 
-    let reassigned = false;
-    try {
-      reassigned = await assignOrderToFranchise(order._id);
-    } catch (e) {
-      console.error("[rejectFranchiseOrder] Reassignment failed:", e);
-    }
-
-    // If no other franchise found → cancel order and refund user
-    if (!reassigned) {
-      const freshOrder = await Order.findById(order._id);
-      if (freshOrder && freshOrder.franchiseId === null) {
-        freshOrder.orderStatus = "Cancelled";
-        freshOrder.statusHistory.push({
-          status: "Cancelled",
-          updatedAt: new Date(),
-          updatedBy: "system:no_franchise_available",
-        });
-        await freshOrder.save();
-
-        try {
-          const user = await User.findById(freshOrder.userId);
-          if (user) {
-            // UPI / Card — refund to wallet
-            if (["UPI", "Card"].includes(freshOrder.paymentMethod) && freshOrder.paymentStatus === "Completed") {
-              user.walletBalance = Number((user.walletBalance + freshOrder.totalAmount).toFixed(2));
-              user.walletTransactions = user.walletTransactions || [];
-              user.walletTransactions.unshift({
-                txnId: `REF-${Date.now()}`,
-                type: "Refund",
-                amount: freshOrder.totalAmount,
-                status: "Success",
-                note: `Refund for order ${freshOrder._id} — no franchise available (${freshOrder.paymentMethod})`,
-                referenceOrderId: freshOrder._id,
-                createdAt: new Date(),
-              });
-              freshOrder.paymentStatus = "Refunded";
-              await freshOrder.save();
-              console.log(`[Refund] ₹${freshOrder.totalAmount} refunded to wallet for user ${freshOrder.userId}`);
-            }
-            // Wallet payment — refund to wallet
-            if (freshOrder.paymentMethod === "Wallet") {
-              user.walletBalance = Number((user.walletBalance + freshOrder.totalAmount).toFixed(2));
-              user.walletTransactions = user.walletTransactions || [];
-              user.walletTransactions.unshift({
-                txnId: `REF-${Date.now()}`,
-                type: "Refund",
-                amount: freshOrder.totalAmount,
-                status: "Success",
-                note: `Refund for order ${freshOrder._id} — no franchise available`,
-                referenceOrderId: freshOrder._id,
-                createdAt: new Date(),
-              });
-              freshOrder.paymentStatus = "Refunded";
-              await freshOrder.save();
-            }
-            // Credit — restore credit limit
-            if (freshOrder.paymentMethod === "Credit" || freshOrder.paymentMethod === "Credit + Online") {
-              const refundedCredit = freshOrder.paymentMethod === "Credit + Online"
-                ? Number(freshOrder.creditAmountUsed || 0)
-                : freshOrder.totalAmount;
-              user.usedCredit = Math.max(0, user.usedCredit - refundedCredit);
-              user.walletTransactions = user.walletTransactions || [];
-              user.walletTransactions.unshift({
-                txnId: `CRR-${Date.now()}`,
-                type: "Credit Refunded",
-                amount: refundedCredit,
-                status: "Success",
-                note: `Credit refunded for order ${freshOrder._id} — no franchise available`,
-                referenceOrderId: freshOrder._id,
-                createdAt: new Date(),
-              });
-            }
-            await user.save();
+    // Perform refund logic immediately
+    const freshOrder = await Order.findById(order._id);
+    if (freshOrder) {
+      try {
+        const user = await User.findById(freshOrder.userId);
+        if (user) {
+          // UPI / Card — refund to wallet
+          if (["UPI", "Card", "Razorpay"].includes(freshOrder.paymentMethod) && freshOrder.paymentStatus === "Completed") {
+            user.walletBalance = Number((user.walletBalance + freshOrder.totalAmount).toFixed(2));
+            user.walletTransactions = user.walletTransactions || [];
+            user.walletTransactions.unshift({
+              txnId: `REF-${Date.now()}`,
+              type: "Refund",
+              amount: freshOrder.totalAmount,
+              status: "Success",
+              note: `Refund for order ${freshOrder._id} — rejected by franchise (${freshOrder.paymentMethod})`,
+              referenceOrderId: freshOrder._id,
+              createdAt: new Date(),
+            });
+            freshOrder.paymentStatus = "Refunded";
+            await freshOrder.save();
+            console.log(`[Refund] ₹${freshOrder.totalAmount} refunded to wallet for user ${freshOrder.userId}`);
           }
-        } catch (refundErr) {
-          console.error("[rejectFranchiseOrder] Refund error:", refundErr);
+          // Wallet payment — refund to wallet
+          if (freshOrder.paymentMethod === "Wallet") {
+            user.walletBalance = Number((user.walletBalance + freshOrder.totalAmount).toFixed(2));
+            user.walletTransactions = user.walletTransactions || [];
+            user.walletTransactions.unshift({
+              txnId: `REF-${Date.now()}`,
+              type: "Refund",
+              amount: freshOrder.totalAmount,
+              status: "Success",
+              note: `Refund for order ${freshOrder._id} — rejected by franchise`,
+              referenceOrderId: freshOrder._id,
+              createdAt: new Date(),
+            });
+            freshOrder.paymentStatus = "Refunded";
+            await freshOrder.save();
+          }
+          // Credit — restore credit limit
+          if (freshOrder.paymentMethod === "Credit" || freshOrder.paymentMethod === "Credit + Online") {
+            const refundedCredit = freshOrder.paymentMethod === "Credit + Online"
+              ? Number(freshOrder.creditAmountUsed || 0)
+              : freshOrder.totalAmount;
+            user.usedCredit = Math.max(0, user.usedCredit - refundedCredit);
+            user.walletTransactions = user.walletTransactions || [];
+            user.walletTransactions.unshift({
+              txnId: `CRR-${Date.now()}`,
+              type: "Credit Refunded",
+              amount: refundedCredit,
+              status: "Success",
+              note: `Credit refunded for order ${freshOrder._id} — rejected by franchise`,
+              referenceOrderId: freshOrder._id,
+              createdAt: new Date(),
+            });
+          }
+          await user.save();
         }
 
         await createUserNotification({
           userId: freshOrder.userId,
           type: "order_update",
           title: "Order Cancelled",
-          message: `Sorry, no store is available to fulfil order #${freshOrder._id.toString().slice(-6)}. Your payment has been refunded.`,
+          message: `Sorry, the assigned store cannot fulfil your order #${freshOrder._id.toString().slice(-6)}. Your order has been cancelled and refunded to your wallet.`,
           link: `/order-detail/${freshOrder._id}`,
           meta: { orderId: freshOrder._id.toString(), status: "Cancelled" },
         });
+      } catch (refundErr) {
+        console.error("[rejectFranchiseOrder] Refund error:", refundErr);
       }
     }
 
-    const updated = await Order.findById(order._id);
+    const updated = await Order.findById(order._id)
+      .populate("userId", "fullName mobile")
+      .populate("franchiseId", "franchiseName ownerName");
+
+    const franchiseName = updated?.franchiseId?.franchiseName || updated?.franchiseId?.ownerName || "Unknown Franchise";
+    const userName = updated?.userId?.fullName || "Guest User";
+    const userMobile = updated?.userId?.mobile || "N/A";
 
     emitToAdmin("order_franchise_rejected", {
       orderId: order._id,
       rejectedByFranchiseId: franchiseId,
+      franchiseName,
+      userName,
       reason: reason || null,
     });
+
     await createAdminNotification({
       type: "order_franchise_rejected",
-      title: "Franchise Rejected Order",
-      message: `Order #${order._id.toString().slice(-6)} was rejected by a franchise${reason ? `: ${reason}` : "."}`,
+      title: "Order Cancelled by Franchise",
+      message: `Order #${order._id.toString().slice(-6)} from ${userName} (${userMobile}) was cancelled by ${franchiseName}${reason ? `: ${reason}` : "."}`,
       link: "/masteradmin/orders",
       meta: {
         orderId: order._id.toString(),
         rejectedByFranchiseId: franchiseId.toString(),
+        franchiseName,
+        userName,
         reason: reason || "",
       },
     });
@@ -2072,48 +2164,39 @@ export const rejectFranchiseOrder = async (req, res) => {
     // Real-time update for the user module
     emitToOrderRoom(order._id, "order_rejected_by_store", {
       orderId: order._id,
-      status: updated?.orderStatus || "Placed",
-      message: "The assigned store rejected your order. We are finding a better store for your delivery!"
+      status: "Cancelled",
+      message: "The assigned store rejected your order. Your order has been cancelled and refunded to your wallet."
     });
     
     emitToOrderRoom(order._id, "order_status_changed", {
       orderId: order._id,
-      status: updated?.orderStatus || "Placed",
-      message: "Finding a better store for your delivery..." 
+      status: "Cancelled",
+      message: "Order cancelled by store." 
     });
 
     await createUserNotification({
       userId: order.userId,
       type: "order_update",
-      title: "Order Update",
-      message: updated?.franchiseId
-        ? "We've shifted your order to a different nearby store for faster fulfillment."
-        : "One of our storefronts is currently unavailable; we are working on assigning your order.",
+      title: "Order Cancelled",
+      message: "The assigned store is currently unavailable; your order has been cancelled and refunded.",
       link: `/order-detail/${order._id}`,
       meta: {
           orderId: order._id.toString(),
-          status: updated?.orderStatus || "Placed",
+          status: "Cancelled",
       },
     });
 
     await sendNotificationToUser(order.userId, {
-      title: "Order Update",
-      body: updated?.franchiseId
-        ? "We've shifted your order to a different nearby store for faster fulfillment."
-        : "Store is currently unavailable; we are working on assigning your order.",
+      title: "Order Cancelled",
+      body: "The assigned store is currently unavailable; your order has been cancelled and refunded.",
       data: {
           type: "order_update",
           orderId: order._id.toString(),
-          status: updated?.orderStatus || "Placed"
+          status: "Cancelled"
       }
     }, "user");
 
-    return handleResponse(res, 200,
-      updated?.franchiseId
-        ? "Order rejected and reassigned to another franchise"
-        : "Order rejected; no other franchise available — admin may need to assign manually",
-      updated,
-    );
+    return handleResponse(res, 200, "Order rejected and cancelled successfully", updated);
   } catch (error) {
     console.error("Reject franchise order error:", error);
     return handleResponse(res, 500, "Server error");
@@ -2144,6 +2227,16 @@ export const assignDeliveryPartner = async (req, res) => {
 
     if (!deliveryPartnerId) {
       return handleResponse(res, 400, "Delivery partner ID is required");
+    }
+
+    // Check for stock shortages before allowing dispatch
+    const hasShortage = order.items.some(i => i.isShortage);
+    if (hasShortage && !order.allowPartialFulfillment) {
+      return handleResponse(
+        res,
+        400,
+        "Cannot dispatch order with stock shortages. Please request procurement or wait for Admin permission to 'Allow Available' stock delivery."
+      );
     }
 
     order.deliveryPartnerId = deliveryPartnerId;

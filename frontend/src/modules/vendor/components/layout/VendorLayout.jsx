@@ -4,10 +4,18 @@ import BottomNav from '../navigation/BottomNav';
 import Sidebar from '../navigation/Sidebar';
 import { Suspense } from 'react';
 import NewAssignmentAlert from '../modals/NewAssignmentAlert';
+import VendorStatusAlert from '../modals/VendorStatusAlert';
 import { useVendorAuth } from '../../contexts/VendorAuthContext';
 
 export default function VendorLayout() {
-    const { isAlertOpen, setIsAlertOpen, newAssignmentData } = useVendorAuth();
+    const { 
+        isAlertOpen, 
+        setIsAlertOpen, 
+        newAssignmentData,
+        isStatusAlertOpen,
+        setIsStatusAlertOpen,
+        statusAlertData
+    } = useVendorAuth();
     const location = useLocation();
     const isAuthPage = location.pathname === '/vendor/login' ||
         location.pathname === '/vendor/signup' ||
@@ -76,6 +84,12 @@ export default function VendorLayout() {
                 isOpen={isAlertOpen}
                 onClose={() => setIsAlertOpen(false)}
                 data={newAssignmentData}
+            />
+
+            <VendorStatusAlert 
+                isOpen={isStatusAlertOpen}
+                onClose={() => setIsStatusAlertOpen(false)}
+                data={statusAlertData}
             />
         </div>
     );

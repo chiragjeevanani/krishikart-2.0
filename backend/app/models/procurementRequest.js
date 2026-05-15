@@ -36,6 +36,10 @@ const procurementRequestSchema = new mongoose.Schema({
             damagedQuantity: {
                 type: Number,
                 default: 0
+            },
+            rejected: {
+                type: Boolean,
+                default: false
             }
         },
     ],

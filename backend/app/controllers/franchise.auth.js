@@ -13,6 +13,7 @@ import { sendSMS } from "../utils/smsService.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { latLngToCell, gridDisk } from "h3-js";
+import { createAdminNotification } from "../utils/adminNotification.js";
 
 import { geocodeAddress } from "../utils/geo.js";
 import {
@@ -105,10 +106,17 @@ export const registerFranchise = async (req, res) => {
       }
     }
 
-    let franchise = await Franchise.findOne({ mobile });
+    const existsByMobile = await Franchise.findOne({ mobile });
+    if (existsByMobile && existsByMobile.isVerified) {
+      return handleResponse(res, 409, "Franchise already registered with this mobile number");
+    }
 
-    if (franchise && franchise.isVerified)
-      return handleResponse(res, 409, "Franchise already registered");
+    const existsByEmail = await Franchise.findOne({ email: email.toLowerCase().trim() });
+    if (existsByEmail) {
+      return handleResponse(res, 409, "Franchise already registered with this email");
+    }
+
+    let franchise = existsByMobile;
 
     if (!franchise) {
       let coords = [0, 0];
@@ -348,7 +356,7 @@ export const verifyFranchiseOTP = async (req, res) => {
 
       const token = generateToken(franchise._id);
       const hydrated = await Franchise.findById(franchise._id).populate(
-        "servedCategories",
+        "servedCategories requestedCategories",
       );
       const franchiseObj = hydrated?.toObject?.() || franchise.toObject();
 
@@ -385,7 +393,7 @@ export const verifyFranchiseOTP = async (req, res) => {
 
       const token = generateToken(franchise._id);
       const hydrated = await Franchise.findById(franchise._id).populate(
-        "servedCategories",
+        "servedCategories requestedCategories",
       );
       const franchiseObj = hydrated?.toObject?.() || franchise.toObject();
 
@@ -426,7 +434,7 @@ export const verifyFranchiseOTP = async (req, res) => {
 
     const token = generateToken(franchise._id);
     const hydrated = await Franchise.findById(franchise._id).populate(
-      "servedCategories",
+      "servedCategories requestedCategories",
     );
     const franchiseObj = hydrated?.toObject?.() || franchise.toObject();
     delete franchiseObj.otp;
@@ -480,7 +488,7 @@ export const loginFranchiseWithPassword = async (req, res) => {
     }
 
     const token = generateToken(franchise._id);
-    const hydrated = await Franchise.findById(franchise._id).populate("servedCategories");
+    const hydrated = await Franchise.findById(franchise._id).populate("servedCategories requestedCategories");
     const franchiseObj = hydrated?.toObject?.() || franchise.toObject();
     delete franchiseObj.password;
 
@@ -493,7 +501,7 @@ export const loginFranchiseWithPassword = async (req, res) => {
 
 /* ================= GET ME ================= */
 export const getFranchiseMe = async (req, res) => {
-  const franchise = await Franchise.findById(req.franchise._id).populate("servedCategories");
+  const franchise = await Franchise.findById(req.franchise._id).populate("servedCategories requestedCategories");
   return handleResponse(res, 200, "Franchise profile", franchise);
 };
 
@@ -535,13 +543,47 @@ export const updateFranchiseProfile = async (req, res) => {
       }
 
       if (normalized.length > 0) {
-        const existing = await Category.countDocuments({ _id: { $in: normalized } });
-        if (existing !== normalized.length) {
+        const existingCount = await Category.countDocuments({ _id: { $in: normalized } });
+        if (existingCount !== normalized.length) {
           return handleResponse(res, 400, "servedCategories contains unknown categories");
         }
       }
 
-      franchise.servedCategories = normalized;
+      // Logic: 
+      // 1. Categories already in franchise.servedCategories that are ALSO in normalized stay in servedCategories.
+      // 2. Categories in franchise.servedCategories that are NOT in normalized are removed.
+      // 3. Categories in normalized that are NOT in franchise.servedCategories are added to requestedCategories.
+      
+      const currentServed = (franchise.servedCategories || []).map(c => c.toString());
+      const stayServed = normalized.filter(id => currentServed.includes(id));
+      const currentRequested = (franchise.requestedCategories || []).map(c => c.toString());
+      const desiredRequested = normalized.filter(id => !currentServed.includes(id));
+      
+      const addedRequests = desiredRequested.filter(id => !currentRequested.includes(id));
+      const removedServed = currentServed.filter(id => !stayServed.includes(id));
+      const removedRequested = currentRequested.filter(id => !desiredRequested.includes(id));
+      
+      if (addedRequests.length > 0 || removedServed.length > 0 || removedRequested.length > 0) {
+          try {
+              let msg = `Franchise "${franchise.franchiseName}" updated their category profile.`;
+              if (addedRequests.length > 0) msg += ` Requested ${addedRequests.length} new.`;
+              if (removedServed.length > 0) msg += ` Discontinued ${removedServed.length} active.`;
+              if (removedRequested.length > 0) msg += ` Cancelled ${removedRequested.length} pending requests.`;
+
+              await createAdminNotification({
+                  title: "Category Profile Update",
+                  message: msg,
+                  type: "approvals",
+                  link: "/approvals/categories",
+                  meta: { franchiseId: franchise._id, type: 'category_request' }
+              });
+          } catch (err) {
+              console.error("Admin notification failed:", err);
+          }
+      }
+      
+      franchise.servedCategories = stayServed;
+      franchise.requestedCategories = desiredRequested;
     }
 
     let addressChanged = false;
@@ -649,7 +691,7 @@ export const updateFranchiseProfile = async (req, res) => {
     console.log("Franchise updated successfully");
 
     const hydrated = await Franchise.findById(franchiseId).populate(
-      "servedCategories",
+      "servedCategories requestedCategories",
     );
     return handleResponse(res, 200, "Profile updated successfully", hydrated);
   } catch (err) {
@@ -732,3 +774,95 @@ export const uploadFranchiseDocuments = async (req, res) => {
     return handleResponse(res, 500, "Server error during document upload");
   }
 };
+
+/* ================= FORGOT PASSWORD ================= */
+export const forgotFranchisePassword = async (req, res) => {
+  try {
+    const { mobile } = req.body;
+    if (!mobile) return handleResponse(res, 400, "Mobile number required");
+
+    const franchise = await Franchise.findOne({ mobile });
+    if (!franchise) return handleResponse(res, 404, "Franchise not found");
+
+    const otp = generateOTP();
+    const hashedOtp = await hashOTP(otp);
+
+    await OTP.findOneAndUpdate(
+      { mobile, role: "franchise" },
+      {
+        otp: hashedOtp,
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+        verified: false,
+      },
+      { upsert: true }
+    );
+
+    if (isGlobalDefaultOtpEnabled()) {
+      const defaultOtp = process.env.DEFAULT_OTP || "123456";
+      return handleResponse(
+        res,
+        200,
+        `Default OTP mode: SMS not sent. Use ${defaultOtp} to reset password.`,
+      );
+    }
+
+    await sendSMS(mobile, otp);
+    return handleResponse(res, 200, "OTP sent to your mobile number");
+  } catch (err) {
+    console.error(err);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+/* ================= RESET PASSWORD ================= */
+export const resetFranchisePassword = async (req, res) => {
+  try {
+    const { mobile, otp, newPassword } = req.body;
+    if (!mobile || !otp || !newPassword) {
+      return handleResponse(res, 400, "All fields are required");
+    }
+
+    /* ✅ DEFAULT OTP Support (Global or Dev Mode as per .env) */
+    const isGlobalDefault = matchesGlobalDefaultOtp(otp);
+    const isDevMode = mobile === process.env.FRANCHISE_DEFAULT_PHONE?.trim() && 
+                     String(otp) === process.env.FRANCHISE_DEFAULT_OTP?.trim();
+
+    if (isGlobalDefault || isDevMode) {
+        const franchise = await Franchise.findOne({ mobile });
+        if (!franchise) return handleResponse(res, 404, "Franchise not found");
+
+        const salt = await bcrypt.genSalt(10);
+        franchise.password = await bcrypt.hash(newPassword, salt);
+        await franchise.save();
+
+        await OTP.deleteOne({ mobile, role: "franchise" });
+        return handleResponse(res, 200, `Password reset successful (${isDevMode ? 'Dev Mode' : 'Default OTP'})`);
+    }
+
+    const otpRecord = await OTP.findOne({ mobile, role: "franchise" });
+    if (!otpRecord) return handleResponse(res, 404, "OTP not found or expired");
+
+    if (otpRecord.expiresAt < new Date()) {
+      await OTP.deleteOne({ mobile, role: "franchise" });
+      return handleResponse(res, 400, "OTP expired");
+    }
+
+    const isMatch = await verifyHashedOTP(otp, otpRecord.otp);
+    if (!isMatch) return handleResponse(res, 400, "Invalid OTP");
+
+    const franchise = await Franchise.findOne({ mobile });
+    if (!franchise) return handleResponse(res, 404, "Franchise not found");
+
+    const salt = await bcrypt.genSalt(10);
+    franchise.password = await bcrypt.hash(newPassword, salt);
+    await franchise.save();
+
+    await OTP.deleteOne({ mobile, role: "franchise" });
+
+    return handleResponse(res, 200, "Password reset successful");
+  } catch (err) {
+    console.error(err);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+

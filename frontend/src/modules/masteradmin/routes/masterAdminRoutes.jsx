@@ -6,6 +6,7 @@ import {
   useMasterAdminAuth,
   MasterAdminAuthProvider,
 } from "../contexts/MasterAdminAuthContext";
+import { AdminProvider } from "../contexts/AdminContext";
 
 // Public Screens
 import LoginScreen from "../pages/LoginScreen";
@@ -43,6 +44,9 @@ const FranchiseStockMonitoring = lazy(
 const PurchaseManager = lazy(() => import("../pages/PurchaseManagerScreen")); // Not used in new routes, but keeping for now
 const OnboardingApproval = lazy(
   () => import("../pages/OnboardingApprovalScreen"),
+);
+const CategoryApproval = lazy(
+  () => import("../pages/CategoryApprovalScreen"),
 );
 const VendorTurnover = lazy(() => import("../pages/VendorTurnoverScreen"));
 const AddProduct = lazy(() => import("../pages/AddProductScreen"));
@@ -142,7 +146,9 @@ const PermissionRoute = ({ permissionKey }) => {
 
 const MasterAdminWrapper = () => (
   <MasterAdminAuthProvider>
-    <Outlet />
+    <AdminProvider>
+      <Outlet />
+    </AdminProvider>
   </MasterAdminAuthProvider>
 );
 
@@ -261,6 +267,11 @@ export const masterAdminRoutes = (
           path="approvals"
           element={<PermissionRoute permissionKey="approvals" />}>
           <Route index element={<OnboardingApproval />} />
+        </Route>
+        <Route
+          path="category-approvals"
+          element={<PermissionRoute permissionKey="approvals" />}>
+          <Route index element={<CategoryApproval />} />
         </Route>
         <Route
           path="quotations"

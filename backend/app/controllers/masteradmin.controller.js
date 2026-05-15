@@ -462,6 +462,30 @@ export const reviewFranchiseKYC = async (req, res) => {
     }
 
     await franchise.save();
+
+    // Notify franchise about the decision
+    try {
+      const title = status === "verified" ? "Franchise Verified!" : "KYC Update Required";
+      const body = status === "verified" 
+        ? "Congratulations! Your franchise has been verified and is now active."
+        : `Your KYC submission was not approved. Reason: ${rejectionReason || 'Please check your documents.'}`;
+      
+      await sendNotificationToUser(
+        id,
+        {
+          title,
+          body,
+          data: {
+            type: "kyc_review",
+            status
+          }
+        },
+        "franchise"
+      );
+    } catch (notificationError) {
+      console.error("Failed to send KYC review notification:", notificationError);
+    }
+
     return handleResponse(
       res,
       200,
@@ -498,12 +522,18 @@ export const createFranchiseByAdmin = async (req, res) => {
       return handleResponse(res, 400, "Invalid mobile number");
     }
 
-    const existing = await Franchise.findOne({ mobile: String(mobile) });
-    if (existing) {
+    const exists = await Franchise.findOne({
+      $or: [
+        { mobile: String(mobile) },
+        ...(email ? [{ email: String(email).toLowerCase().trim() }] : [])
+      ],
+    });
+
+    if (exists) {
       return handleResponse(
         res,
         409,
-        "Franchise with this mobile already exists",
+        "Franchise with this mobile or email already exists",
       );
     }
 
@@ -642,6 +672,190 @@ export const createFranchiseByAdmin = async (req, res) => {
     );
   } catch (err) {
     console.error("Create franchise by admin error:", err);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+/* ================= FRANCHISE CATEGORY APPROVALS ================= */
+
+export const getPendingCategoryRequests = async (req, res) => {
+  try {
+    const franchises = await Franchise.find({
+      "requestedCategories.0": { $exists: true },
+    })
+      .select("franchiseName ownerName city mobile requestedCategories servedCategories")
+      .populate("requestedCategories", "name image")
+      .populate("servedCategories", "name");
+
+    return handleResponse(
+      res,
+      200,
+      "Pending category requests fetched",
+      franchises,
+    );
+  } catch (err) {
+    console.error("Get pending category requests error:", err);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+export const reviewCategoryRequest = async (req, res) => {
+  try {
+    const { franchiseId } = req.params;
+    const { categoryId, status } = req.body; // status: 'approved' or 'rejected'
+
+    if (!["approved", "rejected"].includes(status)) {
+      return handleResponse(res, 400, "Invalid status choice");
+    }
+
+    const franchise = await Franchise.findById(franchiseId);
+    if (!franchise) return handleResponse(res, 404, "Franchise not found");
+
+    // Remove from requestedCategories
+    franchise.requestedCategories = (franchise.requestedCategories || []).filter(
+      (id) => id.toString() !== categoryId,
+    );
+
+    if (status === "approved") {
+      // Add to servedCategories if not already there
+      const alreadyServed = (franchise.servedCategories || []).map((id) =>
+        id.toString(),
+      );
+      if (!alreadyServed.includes(categoryId)) {
+        franchise.servedCategories.push(categoryId);
+      }
+    }
+
+    await franchise.save();
+
+    // Notify franchise about the decision
+    try {
+      const cat = await Category.findById(categoryId);
+      const title = status === "approved" ? "Category Approved" : "Category Request Rejected";
+      const body = status === "approved" 
+        ? `Your request to serve "${cat?.name || 'new category'}" has been approved.`
+        : `Your request to serve "${cat?.name || 'new category'}" was not approved at this time.`;
+      
+      await sendNotificationToUser(
+        franchiseId,
+        {
+          title,
+          body,
+          data: {
+            type: "category_request_review",
+            status,
+            categoryId
+          }
+        },
+        "franchise"
+      );
+    } catch (notificationError) {
+      console.error("Failed to send category review notification:", notificationError);
+    }
+
+    const hydrated = await Franchise.findById(franchiseId)
+      .populate("servedCategories", "name")
+      .populate("requestedCategories", "name image");
+
+    return handleResponse(
+      res,
+      200,
+      `Category request ${status} successfully`,
+      hydrated,
+    );
+  } catch (err) {
+    console.error("Review category request error:", err);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+export const getPendingVendorCategoryRequests = async (req, res) => {
+  try {
+    const vendors = await Vendor.find({
+      "requestedCategories.0": { $exists: true },
+    })
+      .select("fullName farmLocation mobile requestedCategories servedCategories")
+      .populate("requestedCategories", "name image")
+      .populate("servedCategories", "name");
+
+    return handleResponse(
+      res,
+      200,
+      "Pending vendor category requests fetched",
+      vendors,
+    );
+  } catch (err) {
+    console.error("Get pending vendor category requests error:", err);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+export const reviewVendorCategoryRequest = async (req, res) => {
+  try {
+    const { vendorId } = req.params;
+    const { categoryId, status } = req.body; // status: 'approved' or 'rejected'
+
+    if (!["approved", "rejected"].includes(status)) {
+      return handleResponse(res, 400, "Invalid status choice");
+    }
+
+    const vendor = await Vendor.findById(vendorId);
+    if (!vendor) return handleResponse(res, 404, "Vendor not found");
+
+    // Remove from requestedCategories
+    vendor.requestedCategories = (vendor.requestedCategories || []).filter(
+      (id) => id.toString() !== categoryId,
+    );
+
+    if (status === "approved") {
+      // Add to servedCategories if not already there
+      const alreadyServed = (vendor.servedCategories || []).map((id) =>
+        id.toString(),
+      );
+      if (!alreadyServed.includes(categoryId)) {
+        vendor.servedCategories.push(categoryId);
+      }
+    }
+
+    await vendor.save();
+
+    // Notify vendor about the decision
+    try {
+      const cat = await Category.findById(categoryId);
+      const title = status === "approved" ? "Category Approved" : "Category Request Rejected";
+      const body = status === "approved" 
+        ? `Your request to serve "${cat?.name || 'new category'}" has been approved.`
+        : `Your request to serve "${cat?.name || 'new category'}" was not approved at this time.`;
+      
+      await sendNotificationToUser(
+        vendorId,
+        {
+          title,
+          body,
+          data: {
+            type: "vendor_category_request_review",
+            status,
+            categoryId
+          }
+        },
+        "vendor"
+      );
+    } catch (notificationError) {
+      console.error("Failed to send vendor category review notification:", notificationError);
+    }
+
+    const hydrated = await Vendor.findById(vendorId)
+      .populate("servedCategories", "name")
+      .populate("requestedCategories", "name image");
+
+    return handleResponse(
+      res,
+      200,
+      `Vendor category request ${status} successfully`,
+      hydrated,
+    );
+  } catch (err) {
+    console.error("Review vendor category request error:", err);
     return handleResponse(res, 500, "Server error");
   }
 };
@@ -1422,6 +1636,7 @@ export const getAdminDashboardStats = async (req, res) => {
       activeVendors,
       activeFranchises,
       deliveriesInProgress,
+      scheduledOrdersCount,
       revenueToday,
       revenueYesterday,
     ] = await Promise.all([
@@ -1431,6 +1646,10 @@ export const getAdminDashboardStats = async (req, res) => {
       Franchise.countDocuments({ status: "active" }),
       Order.countDocuments({
         orderStatus: { $in: ["Placed", "Procuring", "Packed", "Dispatched"] },
+      }),
+      Order.countDocuments({
+        isPreOrder: true,
+        orderStatus: { $nin: ["Delivered", "Cancelled"] },
       }),
       Order.aggregate([
         {
@@ -1483,6 +1702,12 @@ export const getAdminDashboardStats = async (req, res) => {
       {
         label: "Deliveries In-Progress",
         value: deliveriesInProgress.toLocaleString(),
+        change: 0,
+        trend: "neutral",
+      },
+      {
+        label: "Scheduled Orders",
+        value: (scheduledOrdersCount || 0).toLocaleString(),
         change: 0,
         trend: "neutral",
       },

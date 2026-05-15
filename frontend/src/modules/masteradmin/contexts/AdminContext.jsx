@@ -11,6 +11,8 @@ export const AdminProvider = ({ children }) => {
     const [vendors, setVendors] = useState([]);
     const [franchises, setFranchises] = useState([]);
     const [deliveryPartners, setDeliveryPartners] = useState([]);
+    const [categoryRequests, setCategoryRequests] = useState([]);
+    const [vendorCategoryRequests, setVendorCategoryRequests] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isQuotationAlertOpen, setIsQuotationAlertOpen] = useState(false);
     const [newQuotationData, setNewQuotationData] = useState(null);
@@ -130,6 +132,91 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
+    const fetchPendingCategoryRequests = async () => {
+        setIsLoading(true);
+        try {
+            const response = await api.get('/masteradmin/franchises/category-requests/pending');
+            if (response.data.success) {
+                setCategoryRequests(response.data.results || []);
+            }
+        } catch (error) {
+            console.error('Fetch category requests error:', error);
+            toast.error('Failed to fetch category requests');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const reviewCategoryRequest = async (franchiseId, categoryId, status) => {
+        try {
+            const response = await api.put(`/masteradmin/franchises/${franchiseId}/category-review`, { 
+                categoryId, 
+                status 
+            });
+            if (response.data.success) {
+                toast.success(`Category ${status}`);
+                // Update local state: remove the category from that franchise's requested list
+                setCategoryRequests(prev => prev.map(f => {
+                    if (String(f._id || f.id) === String(franchiseId)) {
+                        return {
+                            ...f,
+                            requestedCategories: f.requestedCategories.filter(c => String(c._id || c.id) !== String(categoryId))
+                        };
+                    }
+                    return f;
+                }).filter(f => f.requestedCategories.length > 0)); // Remove franchise if no more pending cats
+                return true;
+            }
+            toast.error(response.data?.message || 'Review failed');
+            return false;
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Review failed');
+            return false;
+        }
+    };
+
+    const fetchPendingVendorCategoryRequests = async () => {
+        setIsLoading(true);
+        try {
+            const response = await api.get('/masteradmin/vendors/category-requests/pending');
+            if (response.data.success) {
+                setVendorCategoryRequests(response.data.results || []);
+            }
+        } catch (error) {
+            console.error('Fetch vendor category requests error:', error);
+            toast.error('Failed to fetch vendor category requests');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const reviewVendorCategoryRequest = async (vendorId, categoryId, status) => {
+        try {
+            const response = await api.put(`/masteradmin/vendors/${vendorId}/category-review`, { 
+                categoryId, 
+                status 
+            });
+            if (response.data.success) {
+                toast.success(`Vendor Category ${status}`);
+                setVendorCategoryRequests(prev => prev.map(v => {
+                    if (String(v._id || v.id) === String(vendorId)) {
+                        return {
+                            ...v,
+                            requestedCategories: v.requestedCategories.filter(c => String(c._id || c.id) !== String(categoryId))
+                        };
+                    }
+                    return v;
+                }).filter(v => v.requestedCategories.length > 0));
+                return true;
+            }
+            toast.error(response.data?.message || 'Review failed');
+            return false;
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Review failed');
+            return false;
+        }
+    };
+
     const fetchProducts = async () => {
         try {
             const response = await api.get('/products');
@@ -234,7 +321,7 @@ export const AdminProvider = ({ children }) => {
 
     useEffect(() => {
         const socket = getSocket();
-        
+
         const handleNewQuotation = (data) => {
             console.log("New Quotation Received:", data);
             setNewQuotationData(data);
@@ -242,10 +329,22 @@ export const AdminProvider = ({ children }) => {
             playNotificationSound();
         };
 
+        const handleNewVendorCategoryRequest = async (data) => {
+            console.log("New Vendor Category Request:", data);
+            playNotificationSound();
+            toast.info(`New category request from ${data.vendorName}`, {
+                description: `${data.requestedCount || data.requestedCategories?.length || 0} categories pending approval`
+            });
+            // Refresh vendor category requests from server to get full category details
+            await fetchPendingVendorCategoryRequests();
+        };
+
         socket.on('procurement_quote_received', handleNewQuotation);
+        socket.on('new_vendor_category_request', handleNewVendorCategoryRequest);
 
         return () => {
             socket.off('procurement_quote_received', handleNewQuotation);
+            socket.off('new_vendor_category_request', handleNewVendorCategoryRequest);
         };
     }, []);
 
@@ -268,6 +367,12 @@ export const AdminProvider = ({ children }) => {
             fetchDeliveryPartners,
             updateDeliveryPartnerStatus,
             reviewDeliveryDocs,
+            categoryRequests,
+            fetchPendingCategoryRequests,
+            reviewCategoryRequest,
+            vendorCategoryRequests,
+            fetchPendingVendorCategoryRequests,
+            reviewVendorCategoryRequest,
             isQuotationAlertOpen,
             setIsQuotationAlertOpen,
             newQuotationData

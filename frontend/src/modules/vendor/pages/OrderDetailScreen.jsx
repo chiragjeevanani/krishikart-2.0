@@ -23,6 +23,7 @@ import {
     ExternalLink
 } from 'lucide-react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { getSocket } from '@/lib/socket';
 import mockOrders from '../data/mockVendorOrders.json';
 import { cn } from '@/lib/utils';
 import { useOrders } from '@/modules/user/contexts/OrderContext';
@@ -91,7 +92,10 @@ export default function OrderDetailScreen() {
                 setQuotedItems(foundOrder.items.map(item => ({
                     ...item,
                     quotedPrice: item.quotedPrice || 0,
-                    image: item.image
+                    image: item.image,
+                    rejected: item.rejected || false,
+                    receivedQuantity: item.receivedQuantity || 0,
+                    damagedQuantity: item.damagedQuantity || 0
                 })));
             }
             setIsLoading(false);
@@ -99,6 +103,44 @@ export default function OrderDetailScreen() {
             fetchOrder();
         }
     }, [id, location.state]);
+
+    // Socket listener for rejections
+    useEffect(() => {
+        const socket = getSocket();
+        if (!socket) return;
+
+        const handleRejection = (data) => {
+            if (data.requestId?.toString() === id?.toString()) {
+                console.log("[VendorOrderDetail] Items rejected:", data);
+                // Refresh order details to show rejections
+                const fetchOrder = async () => {
+                    try {
+                        const response = await api.get(`/procurement/vendor/${id}`);
+                        if (response.data.success) {
+                            const foundOrder = response.data.results;
+                            setOrder(foundOrder);
+                            if (foundOrder.items) {
+                                setQuotedItems(foundOrder.items.map(item => ({
+                                    ...item,
+                                    quotedPrice: item.quotedPrice || 0,
+                                    image: item.image,
+                                    rejected: item.rejected || false,
+                                    receivedQuantity: item.receivedQuantity || 0,
+                                    damagedQuantity: item.damagedQuantity || 0
+                                })));
+                            }
+                        }
+                    } catch (err) {
+                        console.error("Failed to refresh after rejection", err);
+                    }
+                };
+                fetchOrder();
+            }
+        };
+
+        socket.on('procurement_items_rejected', handleRejection);
+        return () => socket.off('procurement_items_rejected', handleRejection);
+    }, [id]);
 
     const handleAction = async (newStatus, callback) => {
         setIsActionLoading(true);
@@ -316,10 +358,27 @@ export default function OrderDetailScreen() {
                                         </div>
                                         <div>
                                             <p className="font-black text-slate-900 text-sm tracking-tight">{item.name}</p>
-                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{item.qty || item.quantity} {item.unit} Requested</p>
+                                            <div className="flex flex-col gap-0.5 mt-0.5">
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{item.qty || item.quantity} {item.unit} Requested</p>
+                                                {(item.dispatchedQuantity > 0 || item.receivedQuantity > 0) && (
+                                                    <div className="flex items-center gap-2">
+                                                        {item.dispatchedQuantity > 0 && (
+                                                            <p className="text-[8px] font-black text-blue-500 uppercase tracking-widest">Sent: {item.dispatchedQuantity}</p>
+                                                        )}
+                                                        {item.receivedQuantity !== undefined && (
+                                                            <p className={cn(
+                                                                "text-[8px] font-black uppercase tracking-widest",
+                                                                item.receivedQuantity === item.dispatchedQuantity ? "text-emerald-500" : "text-rose-500"
+                                                            )}>
+                                                                Received: {item.receivedQuantity}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                    {status === 'requested' || status === 'assigned' ? (
+                                    {status === 'requested' || status === 'assigned' || status === 'quoted' ? (
                                         <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-1.5 focus-within:border-primary transition-all shadow-sm">
                                             <span className="text-[11px] font-black text-slate-400">₹</span>
                                             <input
@@ -331,13 +390,23 @@ export default function OrderDetailScreen() {
                                             />
                                         </div>
                                     ) : (
-                                        <div className="text-right">
+                                        <div className="text-right flex flex-col items-end gap-1">
                                             <div className="flex flex-col items-end">
                                                 <p className="text-[11px] font-black text-slate-900 tabular-nums">₹{item.quotedPrice || (item.price || 0)}</p>
                                                 {item.originalQuotedPrice && item.originalQuotedPrice !== item.quotedPrice && (
                                                     <p className="text-[8px] font-black text-rose-500 uppercase tracking-tighter line-through opacity-60">Was ₹{item.originalQuotedPrice}</p>
                                                 )}
                                             </div>
+                                            {item.rejected && (
+                                                <span className="px-2 py-0.5 bg-rose-500 text-white text-[8px] font-black uppercase rounded-sm animate-pulse">
+                                                    Rejected
+                                                </span>
+                                            )}
+                                            {item.damagedQuantity > 0 && (
+                                                <span className="px-2 py-0.5 bg-amber-500 text-white text-[8px] font-black uppercase rounded-sm">
+                                                    Damaged: {item.damagedQuantity}
+                                                </span>
+                                            )}
                                             <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest">Rate</p>
                                         </div>
                                     )}
@@ -392,7 +461,7 @@ export default function OrderDetailScreen() {
             {/* Sticky Action Footer */}
             <div className="fixed bottom-0 left-0 right-0 p-6 bg-white/90 backdrop-blur-2xl border-t border-slate-100 lg:left-64 flex gap-4 z-[100] shadow-[0_-20px_50px_-20px_rgba(0,0,0,0.1)]">
                 <AnimatePresence mode="wait">
-                    {status === 'requested' && (
+                    {(status === 'requested' || status === 'quoted') && (
                         <motion.div
                             key="action-requested"
                             initial={{ opacity: 0, y: 20 }}
@@ -407,7 +476,7 @@ export default function OrderDetailScreen() {
                             >
                                 {isActionLoading ? <Loader2 className="animate-spin" size={20} /> : (
                                     <>
-                                        Transmit Supply Proposal
+                                        {status === 'quoted' ? 'Update Supply Proposal' : 'Transmit Supply Proposal'}
                                         <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
                                     </>
                                 )}
@@ -415,17 +484,7 @@ export default function OrderDetailScreen() {
                         </motion.div>
                     )}
 
-                    {status === 'quoted' && (
-                        <motion.div
-                            key="action-quoted"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="flex-1 bg-amber-50 text-amber-600 py-5 rounded-[24px] font-black text-sm flex items-center justify-center gap-3 border border-amber-100"
-                        >
-                            <Clock className="animate-pulse" size={18} />
-                            Awaiting Node Authorization
-                        </motion.div>
-                    )}
+                    {/* status === 'quoted' indicator removed because we now show the update button instead */}
 
                     {status === 'approved' && (
                         <motion.div

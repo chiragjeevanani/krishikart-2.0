@@ -266,7 +266,7 @@ export default function TeamManagementScreen() {
             </div>
 
             {/* Table */}
-            <div className="bg-white border border-slate-200 rounded-sm overflow-hidden shadow-sm">
+            <div className="bg-white border border-slate-200 rounded-sm overflow-x-auto shadow-sm custom-scrollbar">
                 <table className="w-full text-left">
                     <thead>
                         <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-black text-slate-400 uppercase tracking-widest">
@@ -375,7 +375,7 @@ export default function TeamManagementScreen() {
                             </div>
 
                             {/* Drawer Content */}
-                            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar">
+                            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
                                 {/* Basic Info */}
                                 <section className="space-y-4">
                                     <div className="flex items-center gap-2 mb-4">

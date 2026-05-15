@@ -88,6 +88,18 @@ export default function ProductDetailScreen() {
     locationCtx?.hasFranchisePinned,
   ])
 
+  // Update document title and sync breadcrumbs
+  useEffect(() => {
+    if (product?.name) {
+      document.title = `${product.name} | KrishiKart`;
+      localStorage.setItem('kk_last_viewed_product_name', product.name);
+      window.dispatchEvent(new Event('kk_product_name_updated'));
+    }
+    return () => {
+      document.title = "KrishiKart - Fresh Products Delivered";
+    };
+  }, [product?.name]);
+
   // Unit price: area-specific when API returned effectiveStorefrontPrice; bulk tiers override when applicable
   const currentPrice = useMemo(() => {
     if (!product) return 0
@@ -165,10 +177,16 @@ export default function ProductDetailScreen() {
           <div className="fixed top-0 left-0 right-0 z-50 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 flex justify-between pointer-events-none max-w-md mx-auto md:hidden bg-white/95 backdrop-blur-xl border-b border-slate-100/80 shadow-[0_1px_10px_rgba(0,0,0,0.04)]">
             <button
             onClick={() => navigate(-1)}
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white/90 shadow-sm border border-slate-100 text-slate-900 active:scale-90 transition-transform pointer-events-auto"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white/90 shadow-sm border border-slate-100 text-slate-900 active:scale-90 transition-transform pointer-events-auto shrink-0"
           >
             <ArrowLeft size={20} />
           </button>
+          
+          <div className="flex-1 px-4 truncate flex items-center justify-center">
+            <span className="text-[14px] font-black text-slate-900 truncate uppercase tracking-tight">
+                {product?.name}
+            </span>
+          </div>
           <div className="flex gap-2 pointer-events-auto">
             <button onClick={handleShare} className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white/90 shadow-sm border border-slate-100 text-slate-900 active:scale-90 transition-transform">
               <Share2 size={18} />

@@ -64,6 +64,7 @@ const FranchisePaymentSettings = lazy(() => import('./modules/franchise/pages/Pa
 const FranchiseReports = lazy(() => import('./modules/franchise/pages/ReportsScreen'));
 const FranchiseTerms = lazy(() => import('./modules/franchise/pages/TermsScreen'));
 const FranchiseHelpSupport = lazy(() => import('./modules/franchise/pages/HelpSupportScreen'));
+const FranchiseForgotPassword = lazy(() => import('./modules/franchise/pages/ForgotPasswordScreen'));
 
 // Master Admin Module Imports
 import { MasterAdminAuthProvider } from './modules/masteradmin/contexts/MasterAdminAuthContext';
@@ -178,6 +179,7 @@ function App() {
             <Route index element={<Navigate to="login" replace />} />
             <Route path="login" element={<FranchiseLogin />} />
             <Route path="signup" element={<FranchiseSignup />} />
+            <Route path="forgot-password" element={<FranchiseForgotPassword />} />
             <Route path="terms" element={<FranchiseTerms />} />
             <Route element={<FranchiseAuthGuard />}>
               <Route element={<FranchiseVerificationGuard />}>
