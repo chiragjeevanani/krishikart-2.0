@@ -25,6 +25,11 @@ const DeliveryCard = ({ request, onAccept, onReject }) => {
                             {request.priority} Priority
                         </span>
                         <span className="text-xs font-medium text-muted-foreground">{request.distance} away</span>
+                        {request.isPreOrder && (
+                            <span className="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full border border-indigo-100 uppercase tracking-tight">
+                                Scheduled
+                            </span>
+                        )}
                     </div>
                 </div>
 
@@ -62,7 +67,14 @@ const DeliveryCard = ({ request, onAccept, onReject }) => {
                         <Package className="w-3 h-3" />
                         <span>{request.numberOfPackages} Packages</span>
                     </div>
-
+                    {request.isPreOrder && (
+                        <div className="flex items-center gap-1.5 ml-auto">
+                            <Clock className="w-3 h-3 text-indigo-500" />
+                            <span className="text-[10px] font-black text-indigo-600 uppercase">
+                                {request.scheduledDateFormatted || 'Scheduled'} • {request.deliveryShift || 'Anytime'}
+                            </span>
+                        </div>
+                    )}
                 </div>
             </div>
 

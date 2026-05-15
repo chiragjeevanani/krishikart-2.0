@@ -6,11 +6,15 @@ import setupRoutes from "./app/routes/index.js";
 import cors from "cors"
 import { createServer } from "http";
 import { initSocket } from "./app/lib/socket.js";
+import { startScheduler } from "./app/utils/scheduler.js";
 
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOSTNAME || "0.0.0.0";
+
+// Start background scheduler for reminders
+startScheduler();
 
 app.use(cors());
 app.use(express.json());

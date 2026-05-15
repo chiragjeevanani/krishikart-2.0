@@ -1,7 +1,9 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Loader2, Save, Upload, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { getGstParts, isValidGst, normalizeGstInput } from '@/modules/franchise/utils/gstin';
+import api from '@/lib/axios';
+import { cn } from '@/lib/utils';
 
 const initialForm = {
     franchiseName: '',
@@ -15,6 +17,7 @@ const initialForm = {
     panNumber: '',
     fssaiNumber: '',
     gstNumber: '',
+    servedCategories: [],
     aadhaarImage: null,
     panImage: null,
     fssaiCertificate: null,
@@ -22,10 +25,62 @@ const initialForm = {
     gstCertificate: null,
 };
 
-export default function FranchiseOnboardingDrawer({ isOpen, onClose, onSave }) {
+export default function FranchiseOnboardingDrawer({ isOpen, onClose, onSave, initialData }) {
+    const isEdit = !!initialData;
     const [form, setForm] = useState(initialForm);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const gstParts = getGstParts(form.gstNumber);
+    const [categories, setCategories] = useState([]);
+    const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+
+    // Fetch categories
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                setIsLoadingCategories(true);
+                const response = await api.get('/catalog/categories');
+                if (response.data.success) {
+                    setCategories(response.data.results || []);
+                }
+            } catch (err) {
+                console.error("Error fetching categories:", err);
+            } finally {
+                setIsLoadingCategories(false);
+            }
+        };
+        if (isOpen) fetchCategories();
+    }, [isOpen]);
+
+    // Populate form on edit
+    useEffect(() => {
+        if (initialData) {
+            setForm({
+                franchiseName: initialData.franchiseName || '',
+                ownerName: initialData.ownerName || '',
+                mobile: initialData.mobile || '',
+                email: initialData.email || '',
+                area: initialData.area || '',
+                city: initialData.city || '',
+                state: initialData.state || '',
+                aadhaarNumber: initialData.kyc?.aadhaarNumber || '',
+                panNumber: initialData.kyc?.panNumber || '',
+                fssaiNumber: initialData.kyc?.fssaiNumber || '',
+                gstNumber: initialData.kyc?.gstNumber || '',
+                servedCategories: (initialData.servedCategories || []).map(c => c._id || c),
+                aadhaarImage: null,
+                panImage: null,
+                fssaiCertificate: null,
+                shopEstablishmentCertificate: null,
+                gstCertificate: null,
+            });
+        }
+    }, [initialData]);
+
+    // Reset form when drawer closes
+    useEffect(() => {
+        if (!isOpen && !initialData) {
+            setForm(initialForm);
+        }
+    }, [isOpen, initialData]);
 
     const canSubmit = useMemo(() => {
         return Boolean(form.franchiseName && form.ownerName && form.mobile && form.city && form.state);
@@ -33,58 +88,66 @@ export default function FranchiseOnboardingDrawer({ isOpen, onClose, onSave }) {
 
     const setValue = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
+    const handleToggleCategory = (catId) => {
+        setForm(prev => {
+            const current = prev.servedCategories || [];
+            if (current.includes(catId)) {
+                return { ...prev, servedCategories: current.filter(id => id !== catId) };
+            }
+            return { ...prev, servedCategories: [...current, catId] };
+        });
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!canSubmit || isSubmitting) return;
 
-        const payload = new FormData();
-        payload.append('franchiseName', form.franchiseName);
-        payload.append('ownerName', form.ownerName);
-        payload.append('mobile', form.mobile);
-        payload.append('city', form.city);
-        payload.append('state', form.state);
-        if (form.email) payload.append('email', form.email);
-        if (form.area) payload.append('area', form.area);
+        const payload = isEdit ? {} : new FormData();
+
+        const append = (key, val) => {
+            if (isEdit) payload[key] = val;
+            else payload.append(key, val);
+        };
+
+        append('franchiseName', form.franchiseName);
+        append('ownerName', form.ownerName);
+        append('mobile', form.mobile);
+        append('city', form.city);
+        append('state', form.state);
+        if (form.email) append('email', form.email);
+        if (form.area) append('area', form.area);
+
         const aadhaarDigits = String(form.aadhaarNumber || '').replace(/\D/g, '');
-        if (aadhaarDigits) {
-            if (aadhaarDigits.length !== 12) {
-                alert('Aadhaar number must be exactly 12 digits.');
-                return;
-            }
-            payload.append('aadhaarNumber', aadhaarDigits);
-        }
-        if (form.panNumber) payload.append('panNumber', form.panNumber);
+        if (aadhaarDigits) append('aadhaarNumber', aadhaarDigits);
+        if (form.panNumber) append('panNumber', form.panNumber);
+        
         const fssaiDigits = String(form.fssaiNumber || '').replace(/\D/g, '');
-        if (fssaiDigits) {
-            if (fssaiDigits.length !== 14) {
-                alert('FSSAI number must be exactly 14 digits (digits only).');
-                return;
-            }
-            payload.append('fssaiNumber', fssaiDigits);
+        if (fssaiDigits) append('fssaiNumber', fssaiDigits);
+        
+        if (form.gstNumber) append('gstNumber', form.gstNumber);
+
+        // Include categories
+        if (isEdit) {
+            payload.servedCategories = form.servedCategories;
+        } else {
+            payload.append('servedCategories', JSON.stringify(form.servedCategories));
         }
-        if (form.gstNumber) {
-            if (!isValidGst(form.gstNumber)) {
-                alert(
-                    'GSTIN must be a 15-character alphanumeric string (e.g. 22AAAAA0000A1Z5).',
-                );
-                return;
-            }
-            payload.append('gstNumber', form.gstNumber);
+        
+        let finalPayload = payload;
+        if (!isEdit) {
+            if (form.aadhaarImage) payload.append('aadhaarImage', form.aadhaarImage);
+            if (form.panImage) payload.append('panImage', form.panImage);
+            if (form.fssaiCertificate) payload.append('fssaiCertificate', form.fssaiCertificate);
+            if (form.shopEstablishmentCertificate) payload.append('shopEstablishmentCertificate', form.shopEstablishmentCertificate);
+            if (form.gstCertificate) payload.append('gstCertificate', form.gstCertificate);
+            finalPayload = payload;
         }
-        if (form.aadhaarImage) payload.append('aadhaarImage', form.aadhaarImage);
-        if (form.panImage) payload.append('panImage', form.panImage);
-        if (form.fssaiCertificate) payload.append('fssaiCertificate', form.fssaiCertificate);
-        if (form.shopEstablishmentCertificate) {
-            payload.append('shopEstablishmentCertificate', form.shopEstablishmentCertificate);
-        }
-        if (form.gstCertificate) payload.append('gstCertificate', form.gstCertificate);
 
         setIsSubmitting(true);
-        const created = await onSave(payload);
+        const success = await onSave(finalPayload, initialData?._id);
         setIsSubmitting(false);
 
-        if (created) {
-            setForm(initialForm);
+        if (success) {
             onClose();
         }
     };
@@ -111,10 +174,9 @@ export default function FranchiseOnboardingDrawer({ isOpen, onClose, onSave }) {
                 >
                     <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between shrink-0">
                         <div>
-                            <h3 className="text-lg font-black text-slate-900">Onboard Franchise</h3>
+                            <h3 className="text-lg font-black text-slate-900">{isEdit ? 'Update Node Registry' : 'Onboard Franchise'}</h3>
                             <p className="text-xs text-slate-500 mt-0.5">
-                                Node details plus the same KYC fields as the franchise Documentation page (Aadhaar, PAN,
-                                FSSAI, shop establishment, GST).
+                                {isEdit ? `Modifying technical parameters for ${initialData.franchiseName}` : 'Node details plus the same KYC fields as the franchise Documentation page.'}
                             </p>
                         </div>
                         <button type="button" onClick={onClose} className="p-2 rounded hover:bg-slate-100 text-slate-500">
@@ -139,65 +201,97 @@ export default function FranchiseOnboardingDrawer({ isOpen, onClose, onSave }) {
                                 </div>
                             </div>
 
+                            {/* Category Selection Section */}
+                            <div className="border border-slate-200 rounded-lg p-4 space-y-4 bg-slate-50/40">
+                                <div>
+                                    <p className="text-xs font-black text-slate-900 uppercase tracking-widest">Operational Domains</p>
+                                    <p className="text-[10px] text-slate-500 mt-1 font-bold">Select product categories serviced by this node.</p>
+                                </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                    {categories.map(cat => (
+                                        <button
+                                            key={cat._id}
+                                            type="button"
+                                            onClick={() => handleToggleCategory(cat._id)}
+                                            className={cn(
+                                                "px-3 py-2 rounded-sm border text-[10px] font-bold uppercase tracking-wider transition-all text-left flex items-center justify-between",
+                                                form.servedCategories.includes(cat._id)
+                                                    ? "bg-slate-900 border-slate-900 text-white"
+                                                    : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
+                                            )}
+                                        >
+                                            <span className="truncate mr-2">{cat.name}</span>
+                                            {form.servedCategories.includes(cat._id) && (
+                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                                {isLoadingCategories && (
+                                    <div className="py-4 text-center border border-dashed border-slate-200 rounded flex items-center justify-center gap-2">
+                                        <Loader2 size={14} className="animate-spin text-slate-400" />
+                                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Fetching Categories...</span>
+                                    </div>
+                                )}
+                                {!isLoadingCategories && categories.length === 0 && (
+                                    <div className="py-4 text-center border border-dashed border-slate-200 rounded text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                                        No categories found in system
+                                    </div>
+                                )}
+                            </div>
+
                             <div className="border border-slate-200 rounded-lg p-4 space-y-5 bg-slate-50/40">
                                 <div>
                                     <p className="text-xs font-black text-slate-900">Identity (Aadhaar &amp; PAN)</p>
-                                    <p className="text-[11px] text-slate-500 mt-1">Numbers and document uploads (optional if you will collect later).</p>
+                                    <p className="text-[11px] text-slate-500 mt-1">Numbers and document uploads.</p>
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <Input
-                                            label="Aadhaar Number (12 digits)"
+                                            label="Aadhaar Number"
                                             type="tel"
                                             inputMode="numeric"
                                             maxLength={12}
-                                            placeholder="123456789012"
                                             value={form.aadhaarNumber}
                                             onChange={(v) => setValue('aadhaarNumber', v.replace(/\D/g, '').slice(0, 12))}
                                         />
-                                        <p className="text-[10px] text-slate-500 mt-1">
-                                            {form.aadhaarNumber.length}/12 digits
-                                        </p>
                                     </div>
                                     <Input label="PAN Number" value={form.panNumber} onChange={(v) => setValue('panNumber', v.toUpperCase())} />
-                                    <FileField label="Aadhaar image / PDF" onChange={(f) => setValue('aadhaarImage', f)} file={form.aadhaarImage} />
-                                    <FileField label="PAN image / PDF" onChange={(f) => setValue('panImage', f)} file={form.panImage} />
+                                    {!isEdit && (
+                                        <>
+                                            <FileField label="Aadhaar image / PDF" onChange={(f) => setValue('aadhaarImage', f)} file={form.aadhaarImage} />
+                                            <FileField label="PAN image / PDF" onChange={(f) => setValue('panImage', f)} file={form.panImage} />
+                                        </>
+                                    )}
                                 </div>
                             </div>
 
                             <div className="border border-slate-200 rounded-lg p-4 space-y-5 bg-slate-50/40">
                                 <div>
                                     <p className="text-xs font-black text-slate-900">Business &amp; compliance</p>
-                                    <p className="text-[11px] text-slate-500 mt-1">
-                                        FSSAI licence, shop establishment certificate, and GST number + GST certificate — same as franchise self-service documentation.
-                                    </p>
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <Input
-                                        label="FSSAI number (14 digits)"
+                                        label="FSSAI number"
                                         type="tel"
                                         inputMode="numeric"
                                         maxLength={14}
-                                        placeholder="12345678901234"
                                         value={form.fssaiNumber}
                                         onChange={(v) => setValue('fssaiNumber', v.replace(/\D/g, '').slice(0, 14))}
                                     />
-                                    <div>
-                                        <Input
-                                            label="GSTIN (15-digit Alphanumeric)"
-                                            type="text"
-                                            maxLength={15}
-                                            placeholder="22AAAAA0000A1Z5"
-                                            value={form.gstNumber}
-                                            onChange={(v) => setValue('gstNumber', normalizeGstInput(v))}
-                                        />
-                                        <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-bold">
-                                            Progress: {form.gstNumber.length}/15 chars
-                                        </p>
-                                    </div>
-                                    <FileField label="FSSAI certificate" onChange={(f) => setValue('fssaiCertificate', f)} file={form.fssaiCertificate} />
-                                    <FileField label="Shop establishment certificate" onChange={(f) => setValue('shopEstablishmentCertificate', f)} file={form.shopEstablishmentCertificate} />
-                                    <FileField label="GST certificate" onChange={(f) => setValue('gstCertificate', f)} file={form.gstCertificate} />
+                                    <Input
+                                        label="GSTIN"
+                                        maxLength={15}
+                                        value={form.gstNumber}
+                                        onChange={(v) => setValue('gstNumber', normalizeGstInput(v))}
+                                    />
+                                    {!isEdit && (
+                                        <>
+                                            <FileField label="FSSAI certificate" onChange={(f) => setValue('fssaiCertificate', f)} file={form.fssaiCertificate} />
+                                            <FileField label="Shop establishment" onChange={(f) => setValue('shopEstablishmentCertificate', f)} file={form.shopEstablishmentCertificate} />
+                                            <FileField label="GST certificate" onChange={(f) => setValue('gstCertificate', f)} file={form.gstCertificate} />
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -212,7 +306,7 @@ export default function FranchiseOnboardingDrawer({ isOpen, onClose, onSave }) {
                                 className="px-4 py-2 text-xs font-bold rounded bg-slate-900 text-white disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center gap-2"
                             >
                                 {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                                Create Franchise
+                                {isEdit ? 'Update Franchise' : 'Create Franchise'}
                             </button>
                         </div>
                     </form>

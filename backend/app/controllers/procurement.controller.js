@@ -538,17 +538,26 @@ export const adminUpdateProcurementRequest = async (req, res) => {
 
         // Update Order if exists
         if (requestToAssign.orderId) {
-            await Order.findByIdAndUpdate(requestToAssign.orderId, {
-                orderStatus: 'Procuring',
+            const isRejected = status === 'rejected';
+            const newOrderStatus = isRejected ? 'Accepted' : 'Procuring';
+            
+            const updatedOrder = await Order.findByIdAndUpdate(requestToAssign.orderId, {
+                orderStatus: newOrderStatus,
                 $push: {
                     statusHistory: {
-                        status: 'Procuring',
+                        status: newOrderStatus,
                         updatedAt: new Date(),
                         updatedBy: 'admin',
-                        message: status === 'assigned' ? 'Vendor assigned for out-of-stock items.' : `Procurement order ${status}.`
+                        message: isRejected 
+                            ? 'Procurement quotation rejected by Admin. Re-procurement required.'
+                            : (status === 'assigned' ? 'Vendor assigned for out-of-stock items.' : `Procurement order ${status}.`)
                     }
                 }
-            });
+            }, { new: true });
+
+            if (updatedOrder) {
+                emitToAdmin('order_status_updated', updatedOrder);
+            }
         }
 
         return handleResponse(res, 200, "Procurement request updated successfully", requestToAssign);
@@ -1390,5 +1399,81 @@ export const getVendorDashboardStats = async (req, res) => {
     } catch (error) {
         console.error("Get vendor dashboard stats error:", error);
         return handleResponse(res, 500, "Server error");
+    }
+};
+
+/**
+ * Get Rejected Stock Report (Admin and Vendor)
+ * Tracks items that were rotten, damaged, or rejected by franchise during receiving
+ */
+export const getRejectedStockReport = async (req, res) => {
+    try {
+        const { vendorId: queryVendorId } = req.query;
+        let query = {
+            $or: [
+                { "items.rejected": true },
+                { "items.damagedQuantity": { $gt: 0 } }
+            ],
+            status: 'completed'
+        };
+
+        // If called by vendor, restrict to their own rejections
+        if (req.vendor) {
+            query.assignedVendorId = req.vendor._id.toString();
+        } else if (queryVendorId) {
+            // Admin can filter by vendor
+            query.assignedVendorId = queryVendorId;
+        }
+
+        const requests = await ProcurementRequest.find(query)
+            .populate("franchiseId", "franchiseName ownerName mobile city area")
+            .sort({ updatedAt: -1 })
+            .lean();
+
+        // Flatten the rejections
+        const rejections = [];
+        
+        // Optimize: Fetch all unique vendors in one go if it's admin view
+        let vendorMap = {};
+        if (!req.vendor) {
+            const vendorIds = [...new Set(requests.map(r => r.assignedVendorId).filter(Boolean))];
+            const vendors = await Vendor.find({ _id: { $in: vendorIds } }).select('fullName storeName');
+            vendors.forEach(v => {
+                vendorMap[v._id.toString()] = v.storeName || v.fullName || "Vendor";
+            });
+        }
+
+        for (const reqObj of requests) {
+            const vendorName = req.vendor 
+                ? (req.vendor.storeName || req.vendor.fullName) 
+                : (vendorMap[reqObj.assignedVendorId] || "Unknown Vendor");
+
+            reqObj.items.forEach(item => {
+                if (item.rejected === true || (item.damagedQuantity || 0) > 0) {
+                    rejections.push({
+                        requestId: reqObj._id,
+                        requestRef: String(reqObj._id).slice(-6).toUpperCase(),
+                        franchise: reqObj.franchiseId?.franchiseName || "Franchise",
+                        franchiseLocation: `${reqObj.franchiseId?.area || ''}, ${reqObj.franchiseId?.city || ''}`,
+                        vendor: vendorName,
+                        vendorId: reqObj.assignedVendorId,
+                        productId: item.productId,
+                        productName: item.name,
+                        dispatchedQty: item.dispatchedQuantity || 0,
+                        receivedQty: item.receivedQuantity || 0,
+                        rejectedQty: item.rejected ? (item.dispatchedQuantity || 0) : 0,
+                        damagedQty: item.damagedQuantity || 0,
+                        unit: item.unit,
+                        date: reqObj.updatedAt,
+                        type: item.rejected ? 'Rotten/Rejected' : 'Damaged/Partial'
+                    });
+                }
+            });
+        }
+
+        return handleResponse(res, 200, "Rejected stock report fetched", rejections);
+    } catch (error) {
+        console.error("Get rejected stock report error:", error);
+        return handleResponse(res, 500, "Server error: " + error.message);
     }
 };

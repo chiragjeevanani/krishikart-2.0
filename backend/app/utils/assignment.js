@@ -72,9 +72,26 @@ export async function fetchFranchiseCandidatesForLocation(
     ];
   }
 
+  // Use $or to support both legacy global coverage and new category-specific coverage
+  const getHexagonQuery = (hex) => {
+    const orConditions = [{ serviceHexagons: hex }];
+    
+    if (categoryObjectIds.length > 0) {
+      orConditions.push({
+        categoryCoverage: {
+          $elemMatch: {
+            category: { $in: categoryObjectIds },
+            hexagons: hex
+          }
+        }
+      });
+    }
+    return { $or: orConditions };
+  };
+
   let nearestFranchises = await Franchise.find({
     ...baseQuery,
-    serviceHexagons: orderHex,
+    ...getHexagonQuery(orderHex)
   }).lean();
 
   // FALLBACK 1: If no hubs found with city + location, try searching by city ONLY (handles "ordering for another city")
@@ -98,7 +115,7 @@ export async function fetchFranchiseCandidatesForLocation(
     delete locationOnlyQuery.city;
     nearestFranchises = await Franchise.find({
       ...locationOnlyQuery,
-      serviceHexagons: orderHex,
+      ...getHexagonQuery(orderHex)
     }).lean();
   }
 

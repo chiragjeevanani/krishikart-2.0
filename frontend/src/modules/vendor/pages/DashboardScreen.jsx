@@ -166,20 +166,13 @@ export default function DashboardScreen() {
             </header>
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-                <MetricCard
-                    label="Primary Node"
-                    value={topFranchise?.name || 'No Active Node'}
-                    sub={topFranchise?.city || 'Network Idle'}
-                    icon={Home}
-                    color="blue"
-                    index={0}
-                />
+
                 <MetricCard
                     label="Active Ops"
                     value={activeOps}
                     icon={Activity}
                     color="amber"
-                    index={1}
+                    index={0}
                 />
                 <MetricCard
                     label="Escrow Settlement"
@@ -187,44 +180,23 @@ export default function DashboardScreen() {
                     icon={Wallet}
                     color="emerald"
                     trend={{ value: Math.abs(trends.pendingSettlement || 0), positive: (trends.pendingSettlement || 0) >= 0 }}
-                    index={2}
+                    index={1}
                 />
-                <MetricCard
-                    label="Metric Turnover"
-                    value={`₹${totalTurnover.toLocaleString()}`}
-                    icon={IndianRupee}
-                    color="emerald"
-                    trend={{ value: Math.abs(trends.totalTurnover || 0), positive: (trends.totalTurnover || 0) >= 0 }}
-                    index={3}
-                />
+
                 <MetricCard
                     label="Payout Cycle"
                     value={`${safePayoutDays.toFixed(1)} Days`}
                     icon={Clock}
                     color="slate"
-                    index={4}
+                    index={2}
                 />
-                <MetricCard
-                    label="Yield Delta"
-                    value={`₹${(performance.yieldDelta || 0).toLocaleString()}`}
-                    icon={TrendingUp}
-                    color="red"
-                    trend={{ value: Math.abs(trends.yieldDelta || 0), positive: (trends.yieldDelta || 0) >= 0 }}
-                    index={5}
-                />
-                <MetricCard
-                    label="Stock Level"
-                    value={inventory.stockQuantity}
-                    icon={Package}
-                    color="blue"
-                    index={6}
-                />
+
                 <MetricCard
                     label="Fulfillment"
                     value={`${performance.fulfillmentRate}%`}
                     icon={Activity}
                     color="amber"
-                    index={7}
+                    index={3}
                 />
             </div>
 

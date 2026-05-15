@@ -237,9 +237,9 @@ export const createVendorByAdmin = async (req, res) => {
 
     const profilePicture = req.files?.profilePicture?.[0]
       ? await uploadToCloudinary(
-          req.files.profilePicture[0].buffer,
-          "vendors/profiles",
-        )
+        req.files.profilePicture[0].buffer,
+        "vendors/profiles",
+      )
       : "";
 
     const aadharCard = await uploadToCloudinary(
@@ -292,10 +292,12 @@ export const createVendorByAdmin = async (req, res) => {
 export const getAllFranchises = async (req, res) => {
   try {
     const { status } = req.query;
-    const query = status ? { status } : {};
+    const query = { isActive: { $ne: false } };
+    if (status) query.status = status;
 
     const franchises = await Franchise.find(query)
       .select("-password -resetPasswordToken -resetPasswordExpires")
+      .populate("servedCategories", "name")
       .sort({ updatedAt: -1 });
 
     return handleResponse(
@@ -341,10 +343,73 @@ export const updateFranchiseStatus = async (req, res) => {
   }
 };
 
+export const updateFranchiseDetails = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { franchiseName, ownerName, mobile, email, city, area, state, servedCategories } = req.body;
+
+    const franchise = await Franchise.findById(id);
+    if (!franchise) {
+      return handleResponse(res, 404, "Franchise not found");
+    }
+
+    // Check if mobile or email is already used by another franchise
+    if (mobile || email) {
+      const exists = await Franchise.findOne({
+        $or: [
+          mobile ? { mobile } : null,
+          email ? { email } : null
+        ].filter(Boolean),
+        _id: { $ne: id }
+      });
+      if (exists) {
+        return handleResponse(res, 409, "Franchise with this mobile or email already exists");
+      }
+    }
+
+    if (franchiseName) franchise.franchiseName = franchiseName;
+    if (ownerName) franchise.ownerName = ownerName;
+    if (mobile) franchise.mobile = mobile;
+    if (email) franchise.email = email;
+    if (city) franchise.city = city;
+    if (area) franchise.area = area;
+    if (state) franchise.state = state;
+    if (servedCategories) franchise.servedCategories = servedCategories;
+
+    await franchise.save();
+
+    return handleResponse(res, 200, "Franchise details updated successfully", franchise);
+  } catch (err) {
+    console.error("Update franchise details error:", err);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+export const deleteFranchise = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // We'll do a soft delete by setting isActive to false
+    const franchise = await Franchise.findByIdAndUpdate(id, { 
+      isActive: false,
+      status: 'blocked' // Also block it just in case
+    }, { new: true });
+
+    if (!franchise) {
+      return handleResponse(res, 404, "Franchise not found");
+    }
+
+    return handleResponse(res, 200, "Franchise decommissioned and removed from active list");
+  } catch (err) {
+    console.error("Delete franchise error:", err);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
 export const updateFranchiseServiceArea = async (req, res) => {
   try {
     const { id } = req.params;
-    const { serviceHexagons, location } = req.body;
+    const { serviceHexagons, location, categoryId } = req.body;
 
     if (serviceHexagons && !Array.isArray(serviceHexagons)) {
       return handleResponse(
@@ -354,10 +419,62 @@ export const updateFranchiseServiceArea = async (req, res) => {
       );
     }
 
-    const updateData = {};
-    if (serviceHexagons) updateData.serviceHexagons = serviceHexagons;
+    const franchise = await Franchise.findById(id);
+    if (!franchise) {
+      return handleResponse(res, 404, "Franchise not found");
+    }
+
+    if (categoryId) {
+      // Validate that these hexagons are not already occupied by another franchise for the same category
+      if (serviceHexagons && serviceHexagons.length > 0) {
+        const overlapping = await Franchise.findOne({
+          _id: { $ne: id },
+          isActive: true,
+          status: "active",
+          categoryCoverage: {
+            $elemMatch: {
+              category: categoryId,
+              hexagons: { $in: serviceHexagons },
+            },
+          },
+        });
+
+        if (overlapping) {
+          return handleResponse(
+            res,
+            400,
+            `Some territories are already assigned to ${overlapping.franchiseName} for this category`,
+          );
+        }
+      }
+
+      // Update category-specific coverage
+      if (!franchise.categoryCoverage) franchise.categoryCoverage = [];
+      
+      const coverageIndex = franchise.categoryCoverage.findIndex(
+        (c) => c.category && c.category.toString() === categoryId
+      );
+
+      if (coverageIndex > -1) {
+        franchise.categoryCoverage[coverageIndex].hexagons = serviceHexagons || [];
+      } else {
+        franchise.categoryCoverage.push({
+          category: categoryId,
+          hexagons: serviceHexagons || [],
+        });
+      }
+
+      // Ensure it's also in servedCategories
+      if (!franchise.servedCategories.includes(categoryId)) {
+        franchise.servedCategories.push(categoryId);
+      }
+    } else if (serviceHexagons) {
+      // Legacy support for global coverage
+      franchise.serviceHexagons = serviceHexagons;
+    }
+
     if (location && Array.isArray(location.coordinates)) {
-      updateData.location = {
+      franchise.location = {
         type: "Point",
         coordinates: [
           Number(location.coordinates[0]),
@@ -366,13 +483,7 @@ export const updateFranchiseServiceArea = async (req, res) => {
       };
     }
 
-    const franchise = await Franchise.findByIdAndUpdate(id, updateData, {
-      new: true,
-    }).select("-password");
-
-    if (!franchise) {
-      return handleResponse(res, 404, "Franchise not found");
-    }
+    await franchise.save();
 
     return handleResponse(
       res,
@@ -382,6 +493,72 @@ export const updateFranchiseServiceArea = async (req, res) => {
     );
   } catch (err) {
     console.error("Update service area error:", err);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+export const updateFranchiseCategories = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { categoryIds } = req.body;
+
+    const franchise = await Franchise.findById(id);
+    if (!franchise) {
+      return handleResponse(res, 404, "Franchise not found");
+    }
+
+    // Update served categories
+    franchise.servedCategories = categoryIds;
+
+    // Optional: We could also update categoryCoverage here if we want to auto-initiate empty coverage 
+    // for newly added categories, but keeping it simple for now as per user request.
+
+    await franchise.save();
+
+    return handleResponse(
+      res,
+      200,
+      "Served categories updated successfully",
+      franchise,
+    );
+  } catch (err) {
+    console.error("Update franchise categories error:", err);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+export const getOccupiedHexagonsByCategory = async (req, res) => {
+  try {
+    const { categoryId } = req.params;
+    const { excludeFranchiseId } = req.query;
+
+    const query = {
+      isActive: true,
+      status: "active",
+      "categoryCoverage.category": categoryId,
+    };
+
+    if (excludeFranchiseId) {
+      query._id = { $ne: excludeFranchiseId };
+    }
+
+    const franchises = await Franchise.find(query).select("categoryCoverage");
+
+    const occupiedHexagons = [];
+    franchises.forEach((f) => {
+      const coverage = f.categoryCoverage.find(
+        (c) => c && c.category && c.category.toString() === categoryId
+      );
+      if (coverage && coverage.hexagons) {
+        occupiedHexagons.push(...coverage.hexagons);
+      }
+    });
+
+    return handleResponse(res, 200, "Occupied hexagons fetched", {
+      occupiedHexagons: [...new Set(occupiedHexagons)],
+    });
+  } catch (err) {
+    console.error("Fetch occupied hexagons error:", err);
     return handleResponse(res, 500, "Server error");
   }
 };
@@ -410,7 +587,9 @@ export const getFranchiseServiceMap = async (req, res) => {
 export const getFranchiseDetails = async (req, res) => {
   try {
     const { id } = req.params;
-    const franchise = await Franchise.findById(id).select("-password");
+    const franchise = await Franchise.findById(id)
+      .select("-password")
+      .populate("servedCategories", "name");
 
     if (!franchise) {
       return handleResponse(res, 404, "Franchise not found");
@@ -466,10 +645,10 @@ export const reviewFranchiseKYC = async (req, res) => {
     // Notify franchise about the decision
     try {
       const title = status === "verified" ? "Franchise Verified!" : "KYC Update Required";
-      const body = status === "verified" 
+      const body = status === "verified"
         ? "Congratulations! Your franchise has been verified and is now active."
         : `Your KYC submission was not approved. Reason: ${rejectionReason || 'Please check your documents.'}`;
-      
+
       await sendNotificationToUser(
         id,
         {
@@ -508,6 +687,7 @@ export const createFranchiseByAdmin = async (req, res) => {
       state,
       email,
       location,
+      servedCategories,
     } = req.body;
 
     if (!franchiseName || !ownerName || !mobile || !city || !state) {
@@ -574,6 +754,7 @@ export const createFranchiseByAdmin = async (req, res) => {
         status: "verified",
         verifiedAt: new Date(),
       },
+      servedCategories: servedCategories ? (typeof servedCategories === 'string' ? JSON.parse(servedCategories) : servedCategories) : [],
     };
 
     if (req.files?.aadhaarImage?.[0]) {
@@ -732,10 +913,10 @@ export const reviewCategoryRequest = async (req, res) => {
     try {
       const cat = await Category.findById(categoryId);
       const title = status === "approved" ? "Category Approved" : "Category Request Rejected";
-      const body = status === "approved" 
+      const body = status === "approved"
         ? `Your request to serve "${cat?.name || 'new category'}" has been approved.`
         : `Your request to serve "${cat?.name || 'new category'}" was not approved at this time.`;
-      
+
       await sendNotificationToUser(
         franchiseId,
         {
@@ -823,10 +1004,10 @@ export const reviewVendorCategoryRequest = async (req, res) => {
     try {
       const cat = await Category.findById(categoryId);
       const title = status === "approved" ? "Category Approved" : "Category Request Rejected";
-      const body = status === "approved" 
+      const body = status === "approved"
         ? `Your request to serve "${cat?.name || 'new category'}" has been approved.`
         : `Your request to serve "${cat?.name || 'new category'}" was not approved at this time.`;
-      
+
       await sendNotificationToUser(
         vendorId,
         {
@@ -1796,7 +1977,7 @@ export const getAdminDashboardStats = async (req, res) => {
     const days = Math.floor(uptimeSeconds / (24 * 3600));
     const hours = Math.floor((uptimeSeconds % (24 * 3600)) / 3600);
     const mins = Math.floor((uptimeSeconds % 3600) / 60);
-    
+
     const system = {
       uptime: `${days}d ${hours}h ${mins}m`,
       load: `${(os.loadavg()[0] * 100).toFixed(0)}%`,

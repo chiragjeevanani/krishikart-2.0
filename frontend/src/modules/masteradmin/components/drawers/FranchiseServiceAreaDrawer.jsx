@@ -29,6 +29,7 @@ import {
 } from "@react-google-maps/api";
 import { latLngToCell, gridDisk, cellToBoundary, polygonToCells } from "h3-js";
 import { useAdmin } from "../../contexts/AdminContext";
+import api from "@/lib/axios";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { geocodeAddressFrontend } from "@/lib/geo";
@@ -51,37 +52,21 @@ export default function FranchiseServiceAreaDrawer({
   const [selectedHexagons, setSelectedHexagons] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [gridHexagons, setGridHexagons] = useState([]);
-  const [drawMode, setDrawMode] = useState("none"); // Default to 'none' (Pan)
-  const [isDragging, setIsDragging] = useState(false);
-  const [isAltPressed, setIsAltPressed] = useState(false); // Track Alt key for panning
-  const [searchBox, setSearchBox] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [occupiedHexagons, setOccupiedHexagons] = useState([]);
+  const [step, setStep] = useState(0); // 0: Category Selection, 1: Coverage Map
   const [mapCenter, setMapCenter] = useState(DEFAULT_CENTER);
   const [markerPosition, setMarkerPosition] = useState(DEFAULT_CENTER);
+  const [searchBox, setSearchBox] = useState(null);
 
-  // Track Alt key for panning
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === "Alt") setIsAltPressed(true);
-    };
-    const handleKeyUp = (e) => {
-      if (e.key === "Alt") setIsAltPressed(false);
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-    };
-  }, []);
 
   const mapRef = useRef(null);
 
-  // Combine grid hexagons and selected hexagons for rendering
+  // Combine grid hexagons, selected hexagons and occupied hexagons for rendering
   const allRenderedHexagons = useMemo(() => {
-    return Array.from(new Set([...gridHexagons, ...selectedHexagons]));
-  }, [gridHexagons, selectedHexagons]);
+    return Array.from(new Set([...gridHexagons, ...selectedHexagons, ...occupiedHexagons]));
+  }, [gridHexagons, selectedHexagons, occupiedHexagons]);
 
   // Function to generate grid around current map center
   const refreshGrid = useCallback(() => {
@@ -139,6 +124,56 @@ export default function FranchiseServiceAreaDrawer({
     }
   }, []);
 
+  // Reset state when drawer opens
+  useEffect(() => {
+    if (isOpen) {
+      setStep(0);
+      setSelectedCategory(null);
+      setOccupiedHexagons([]);
+    }
+  }, [isOpen]);
+
+  // Fetch categories on mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await api.get("/catalog/categories");
+        if (response.data.success) {
+          setCategories(response.data.results || []);
+        }
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  const { fetchOccupiedHexagonsByCategory } = useAdmin();
+
+  // Fetch occupied hexagons when category is selected
+  useEffect(() => {
+    if (selectedCategory && isOpen) {
+      const fetchOccupied = async () => {
+        const occupied = await fetchOccupiedHexagonsByCategory(selectedCategory._id, franchise?._id);
+        setOccupiedHexagons(occupied || []);
+      };
+      fetchOccupied();
+
+      // Also set existing coverage for this category
+      if (franchise?.categoryCoverage) {
+        const existing = franchise.categoryCoverage.find(
+          (c) => {
+             const catId = c.category?._id || c.category;
+             return String(catId) === String(selectedCategory._id);
+          }
+        );
+        setSelectedHexagons(existing?.hexagons || []);
+      } else {
+        setSelectedHexagons([]);
+      }
+    }
+  }, [selectedCategory, isOpen, franchise, fetchOccupiedHexagonsByCategory]);
+
   const { isLoaded, loadError } = useJsApiLoader({
     id: GOOGLE_MAPS_LOADER_ID,
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
@@ -179,6 +214,13 @@ export default function FranchiseServiceAreaDrawer({
   }, [franchise, isOpen]);
 
   const toggleHexagon = useCallback((hexId, forceMode) => {
+    if (occupiedHexagons.includes(hexId)) {
+      if (!forceMode) {
+        toast.error("This territory is already assigned to another franchise for this category");
+      }
+      return;
+    }
+
     setSelectedHexagons((prev) => {
       const exists = prev.includes(hexId);
       const mode = forceMode || (exists ? "remove" : "add");
@@ -187,20 +229,21 @@ export default function FranchiseServiceAreaDrawer({
       if (mode === "remove" && exists) return prev.filter((h) => h !== hexId);
       return prev;
     });
-  }, []);
+  }, [occupiedHexagons]);
 
   const handleSave = async () => {
-    if (!franchise?._id) return;
+    if (!franchise?._id || !selectedCategory) return;
 
     setIsSubmitting(true);
     try {
       const success = await updateFranchiseServiceArea(
         franchise._id,
         selectedHexagons,
-        markerPosition // Now also saving the marker position as franchise location
+        markerPosition,
+        selectedCategory._id
       );
       if (success) {
-        toast.success("Service area and location updated successfully");
+        toast.success(`Coverage for ${selectedCategory.name} updated successfully`);
         onClose();
       }
     } catch (error) {
@@ -219,35 +262,6 @@ export default function FranchiseServiceAreaDrawer({
     },
     [refreshGrid],
   );
-
-  const handleMouseMove = (e) => {
-    if (!isDragging || drawMode === "none" || isAltPressed) return;
-
-    const lat = e.latLng.lat();
-    const lng = e.latLng.lng();
-    const hexId = latLngToCell(lat, lng, 8);
-
-    if (gridHexagons.includes(hexId)) {
-      toggleHexagon(hexId, drawMode);
-    }
-  };
-
-  const handleMouseDown = (e) => {
-    if (drawMode === "none" || isAltPressed) return;
-    setIsDragging(true);
-
-    const lat = e.latLng.lat();
-    const lng = e.latLng.lng();
-    const hexId = latLngToCell(lat, lng, 8);
-
-    if (gridHexagons.includes(hexId)) {
-      toggleHexagon(hexId, drawMode);
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
 
   const onAutocompleteLoad = (sb) => {
     setSearchBox(sb);
@@ -323,7 +337,6 @@ export default function FranchiseServiceAreaDrawer({
           exit={{ opacity: 0 }}
           onClick={onClose}
           className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
-          style={{ pointerEvents: isDragging ? "none" : "auto" }}
         />
 
         <motion.div
@@ -331,7 +344,8 @@ export default function FranchiseServiceAreaDrawer({
           animate={{ x: 0 }}
           exit={{ x: "100%" }}
           transition={{ type: "spring", damping: 25, stiffness: 200 }}
-          className="relative w-full max-w-5xl bg-white h-full shadow-2xl flex flex-col border-l border-slate-200">
+          className="relative w-full max-w-5xl bg-white h-full shadow-2xl flex flex-col border-l border-slate-200"
+        >
           {/* Header */}
           <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-white z-10">
             <div className="flex items-center gap-3">
@@ -340,289 +354,340 @@ export default function FranchiseServiceAreaDrawer({
               </div>
               <div>
                 <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight leading-none">
-                  Territory Coverage
+                  {step === 0 ? "Select Category" : "Territory Coverage"}
                 </h3>
                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1.5">
-                  {franchise.franchiseName} · Regional Grid Selection
+                  {franchise.franchiseName}{" "}
+                  {selectedCategory
+                    ? `· ${selectedCategory.name}`
+                    : "· Infrastructure Selection"}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => {
-                  if (mapRef.current) {
-                    mapRef.current.panTo(markerPosition);
-                    mapRef.current.setZoom(13);
-                  }
-                }}
-                className="p-2.5 rounded-sm border border-slate-200 hover:bg-slate-50 text-slate-600 transition-all hover:border-slate-400"
-                title="Recenter on Base">
-                <Target size={20} />
-              </button>
+              {step === 1 && (
+                <button
+                  onClick={() => {
+                    if (mapRef.current) {
+                      mapRef.current.panTo(markerPosition);
+                      mapRef.current.setZoom(13);
+                    }
+                  }}
+                  className="p-2.5 rounded-sm border border-slate-200 hover:bg-slate-50 text-slate-600 transition-all hover:border-slate-400"
+                  title="Recenter on Base"
+                >
+                  <Target size={20} />
+                </button>
+              )}
               <button
                 onClick={onClose}
-                className="p-2.5 rounded-sm border border-slate-200 hover:bg-slate-50 text-slate-500 transition-all">
+                className="p-2.5 rounded-sm border border-slate-200 hover:bg-slate-50 text-slate-500 transition-all"
+              >
                 <X size={20} />
               </button>
             </div>
           </div>
 
-          {/* Search Field with Autocomplete */}
-          <div className="px-6 py-3 bg-white border-b border-slate-100 relative z-20">
-            <div className="relative group">
-              <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors"
-                size={16}
-              />
-              <Autocomplete
-                onLoad={onAutocompleteLoad}
-                onPlaceChanged={onPlaceChanged}
-                options={{
-                  componentRestrictions: { country: "in" },
-                  types: ["geocode", "establishment"],
-                }}>
-                <input
-                  type="text"
-                  placeholder="Search region, locality or landmark to expand grid..."
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-sm text-[11px] font-bold uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:bg-white focus:border-slate-900 transition-all"
-                />
-              </Autocomplete>
-            </div>
-          </div>
+          {step === 0 ? (
+            <div className="flex-1 overflow-y-auto p-8 bg-slate-50">
+              <div className="max-w-2xl mx-auto space-y-8">
+                <div className="text-center space-y-2">
+                  <h4 className="text-xl font-black text-slate-900 uppercase tracking-tight">
+                    Deployment Sector
+                  </h4>
+                  <p className="text-[11px] text-slate-500 font-bold uppercase tracking-widest">
+                    Select the product category to manage geographic distribution
+                  </p>
+                </div>
 
-          {/* Toolbar */}
-          <div className="px-6 py-3 bg-slate-50 border-b border-slate-200 flex items-center gap-4 justify-between">
-            <div className="flex items-center gap-2 bg-white p-1 rounded-sm border border-slate-200 shadow-sm">
-              <button
-                onClick={() => setDrawMode("add")}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all",
-                  drawMode === "add"
-                    ? "bg-slate-900 text-white shadow-lg shadow-slate-200"
-                    : "text-slate-500 hover:bg-slate-50",
-                )}>
-                <MousePointer2 size={14} />
-                Painter
-              </button>
-              <button
-                onClick={() => setDrawMode("remove")}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all",
-                  drawMode === "remove"
-                    ? "bg-rose-600 text-white shadow-lg shadow-rose-100"
-                    : "text-slate-500 hover:bg-slate-50",
-                )}>
-                <Eraser size={14} />
-                Eraser
-              </button>
-              <button
-                onClick={() => setDrawMode("none")}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all",
-                  drawMode === "none"
-                    ? "bg-slate-900 text-white shadow-lg shadow-slate-200"
-                    : "text-slate-500 hover:bg-slate-50",
-                )}>
-                <Hand size={14} />
-                Hand Tool
-              </button>
-              <button
-                onClick={() => setDrawMode("none")}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all",
-                  drawMode === "none"
-                    ? "bg-slate-200 text-slate-900"
-                    : "text-slate-500 hover:bg-slate-50",
-                )}>
-                <MapIcon size={14} />
-                Pan Only
-              </button>
-            </div>
+                <div className="grid grid-cols-2 gap-4">
+                  {categories.map((cat) => (
+                    <button
+                      key={cat._id}
+                      onClick={() => setSelectedCategory(cat)}
+                      className={cn(
+                        "p-6 rounded-sm border-2 text-left transition-all relative overflow-hidden group",
+                        selectedCategory?._id === cat._id
+                          ? "border-slate-900 bg-white shadow-xl shadow-slate-200"
+                          : "border-slate-200 bg-white hover:border-slate-400"
+                      )}
+                    >
+                      <div className="flex items-center gap-4 relative z-10">
+                        <div
+                          className={cn(
+                            "w-12 h-12 rounded-sm flex items-center justify-center border",
+                            selectedCategory?._id === cat._id
+                              ? "bg-slate-900 text-white border-slate-900"
+                              : "bg-slate-50 text-slate-400 border-slate-100"
+                          )}
+                        >
+                          {cat.image ? (
+                            <img
+                              src={cat.image}
+                              alt={cat.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <Layers size={20} />
+                          )}
+                        </div>
+                        <div>
+                          <h5 className="font-black text-[11px] text-slate-900 uppercase tracking-widest">
+                            {cat.name}
+                          </h5>
+                          <p className="text-[9px] text-slate-400 font-bold uppercase mt-1">
+                            Operational Protocol Alpha
+                          </p>
+                        </div>
+                      </div>
+                      {selectedCategory?._id === cat._id && (
+                        <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-500 shadow-lg shadow-emerald-200" />
+                      )}
+                    </button>
+                  ))}
+                </div>
 
-            <div className="flex items-center gap-3">
-              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-4">
-                <span className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-slate-900 border border-white shadow-sm" />
-                  {selectedHexagons.length} Active
-                </span>
-                <button
-                  onClick={() => setSelectedHexagons([])}
-                  className="text-[10px] font-black text-rose-500 uppercase tracking-widest hover:bg-rose-50 px-3 py-1.5 rounded-sm transition-all border border-transparent hover:border-rose-100">
-                  Clear Grid
-                </button>
+                <div className="pt-8 flex justify-center">
+                  <button
+                    disabled={!selectedCategory}
+                    onClick={() => setStep(1)}
+                    className="px-10 py-4 bg-slate-900 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-sm shadow-2xl shadow-slate-200 hover:bg-slate-800 disabled:bg-slate-200 disabled:shadow-none transition-all flex items-center gap-4"
+                  >
+                    Initialize Matrix Map
+                    <Activity size={16} className="animate-pulse" />
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-
-          {/* Map Container */}
-          <div className="flex-1 w-full bg-slate-200 relative overflow-hidden group">
-            <GoogleMap
-              mapContainerStyle={mapContainerStyle}
-              center={mapCenter}
-              zoom={13}
-              onLoad={onMapLoad}
-              onIdle={refreshGrid}
-              onMouseMove={handleMouseMove}
-              onMouseDown={handleMouseDown}
-              onMouseUp={handleMouseUp}
-              options={{
-                disableDefaultUI: false,
-                zoomControl: true,
-                mapTypeControl: true,
-                streetViewControl: false,
-                scaleControl: true,
-                rotateControl: false,
-                fullscreenControl: false,
-                draggable: drawMode === "none" || isAltPressed,
-                disableDoubleClickZoom: drawMode !== "none" && !isAltPressed,
-                mapTypeId: "roadmap",
-                draggableCursor:
-                  drawMode === "none" || isAltPressed ? "grab" : "crosshair",
-                styles: [
-                  {
-                    featureType: "poi",
-                    stylers: [{ visibility: "off" }],
-                  },
-                  {
-                    featureType: "transit",
-                    stylers: [{ visibility: "simplified" }],
-                  },
-                ],
-              }}>
-              {/* Center Marker */}
-              <Marker
-                position={markerPosition}
-                draggable={true}
-                onDragEnd={onMarkerDragEnd}
-                icon={{
-                  url: "https://maps.google.com/mapfiles/ms/icons/red-pushpin.png",
-                  scaledSize: new window.google.maps.Size(32, 32),
-                }}
-                title="Franchise Hub"
-              />
-
-              {/* Hexagon Grid */}
-              {allRenderedHexagons.map((hexId) => {
-                const isSelected = selectedHexagons.includes(hexId);
-                const boundary = cellToBoundary(hexId);
-                const path = boundary.map((coord) => ({
-                  lat: coord[0],
-                  lng: coord[1],
-                }));
-
-                return (
-                  <Polygon
-                    key={hexId}
-                    paths={path}
-                    onClick={() => {
-                      if (drawMode === "none") toggleHexagon(hexId);
-                    }}
-                    options={{
-                      fillColor: isSelected ? "#0f172a" : "#ffffff",
-                      fillOpacity: isSelected ? 0.6 : 0.05,
-                      strokeColor: isSelected ? "#0f172a" : "#94a3b8",
-                      strokeOpacity: 0.8,
-                      strokeWeight: isSelected ? 2 : 0.5,
-                      clickable: drawMode === "none",
-                      zIndex: isSelected ? 10 : 1,
-                    }}
+          ) : (
+            <>
+              {/* Search Field with Autocomplete */}
+              <div className="px-6 py-3 bg-white border-b border-slate-100 relative z-20">
+                <div className="relative group">
+                  <Search
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors"
+                    size={16}
                   />
-                );
-              })}
-            </GoogleMap>
+                  <Autocomplete
+                    onLoad={onAutocompleteLoad}
+                    onPlaceChanged={onPlaceChanged}
+                    options={{
+                      componentRestrictions: { country: "in" },
+                      types: ["geocode", "establishment"],
+                    }}
+                  >
+                    <input
+                      type="text"
+                      placeholder="Search region, locality or landmark to expand grid..."
+                      className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-sm text-[11px] font-bold uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:bg-white focus:border-slate-900 transition-all"
+                    />
+                  </Autocomplete>
+                </div>
+              </div>
+              <div className="px-6 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-4">
+                    <span className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-slate-900 border border-white shadow-sm" />
+                      {selectedHexagons.length} Active
+                    </span>
+                    <button
+                      onClick={() => setSelectedHexagons([])}
+                      className="text-[10px] font-black text-rose-500 uppercase tracking-widest hover:bg-rose-50 px-3 py-1.5 rounded-sm transition-all border border-transparent hover:border-rose-100"
+                    >
+                      Clear All
+                    </button>
+                  </div>
+                </div>
 
-            {/* Floating Interaction Tip */}
-            <div className="absolute top-6 left-6 z-10 pointer-events-none">
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-slate-900/90 backdrop-blur-md text-white px-4 py-2.5 rounded-sm border border-white/10 shadow-2xl flex items-center gap-3">
-                <div className="p-1.5 bg-white/20 rounded-full animate-pulse">
-                  <Info size={14} />
-                </div>
-                <span className="text-[10px] font-black uppercase tracking-widest leading-none">
-                  {isAltPressed
-                    ? "Panning Mode Active"
-                    : drawMode === "add"
-                      ? "Click & Drag to Paint (Hold Alt to Pan)"
-                      : drawMode === "remove"
-                        ? "Click & Drag to Erase (Hold Alt to Pan)"
-                        : "Drag Map to Inspect Periphery"}
-                </span>
-              </motion.div>
-            </div>
-
-            {/* Stats Legend */}
-            <div className="absolute bottom-10 left-6 z-10 bg-white/95 backdrop-blur-md border border-slate-200 p-5 rounded-sm shadow-2xl min-w-[260px]">
-              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center justify-between border-b border-slate-100 pb-2.5">
-                Coverage Analytics
-                <Activity size={12} className="text-emerald-500" />
-              </h4>
-              <div className="space-y-3.5">
-                <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-slate-500 font-bold uppercase tracking-tighter">
-                    Active Matrix Cells
-                  </span>
-                  <span className="px-2.5 py-1 bg-slate-900 text-white font-black rounded-sm tabular-nums">
-                    {selectedHexagons.length}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-slate-500 font-bold uppercase tracking-tighter">
-                    Effective Reach
-                  </span>
-                  <span className="font-black text-slate-900 tabular-nums">
-                    {Math.sqrt(
-                      (selectedHexagons.length * 0.73) / Math.PI,
-                    ).toFixed(2)}{" "}
-                    KM
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-slate-500 font-bold uppercase tracking-tighter">
-                    Square Area
-                  </span>
-                  <span className="font-black text-slate-900 tabular-nums uppercase">
-                    {((selectedHexagons?.length || 0) * 0.73).toFixed(2)} SQ KM
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-sm">
+                  <Info size={12} className="text-blue-500" />
+                  <span className="text-[9px] font-bold text-blue-600 uppercase tracking-wider">
+                    Click territories to toggle coverage
                   </span>
                 </div>
               </div>
-            </div>
-          </div>
+
+
+              {/* Map Container */}
+              <div className="flex-1 w-full bg-slate-200 relative overflow-hidden group">
+                <GoogleMap
+                  mapContainerStyle={mapContainerStyle}
+                  center={mapCenter}
+                  zoom={13}
+                  onLoad={onMapLoad}
+                  onIdle={refreshGrid}
+                  options={{
+                    disableDefaultUI: false,
+                    zoomControl: true,
+                    mapTypeControl: true,
+                    streetViewControl: false,
+                    scaleControl: true,
+                    rotateControl: false,
+                    fullscreenControl: false,
+                    draggable: true,
+                    mapTypeId: "roadmap",
+                    styles: [
+                      {
+                        featureType: "poi",
+                        stylers: [{ visibility: "off" }],
+                      },
+                      {
+                        featureType: "transit",
+                        stylers: [{ visibility: "simplified" }],
+                      },
+                    ],
+                  }}
+                >
+                  {/* Center Marker */}
+                  <Marker
+                    position={markerPosition}
+                    draggable={false}
+                    icon={{
+                      url: "https://maps.google.com/mapfiles/ms/icons/red-pushpin.png",
+                      scaledSize: new window.google.maps.Size(32, 32),
+                    }}
+                    title="Franchise Hub"
+                  />
+
+                  {/* Hexagon Grid */}
+                  {allRenderedHexagons.map((hexId) => {
+                    const isSelected = selectedHexagons.includes(hexId);
+                    const isOccupied = occupiedHexagons.includes(hexId);
+                    const boundary = cellToBoundary(hexId);
+                    const path = boundary.map((coord) => ({
+                      lat: coord[0],
+                      lng: coord[1],
+                    }));
+
+                    return (
+                      <Polygon
+                        key={hexId}
+                        paths={path}
+                        onClick={() => {
+                          toggleHexagon(hexId);
+                        }}
+                        options={{
+                          fillColor: isOccupied
+                            ? "#ef4444"
+                            : isSelected
+                            ? "#0f172a"
+                            : "#ffffff",
+                          fillOpacity: isOccupied ? 0.7 : isSelected ? 0.6 : 0.05,
+                          strokeColor: isOccupied
+                            ? "#ef4444"
+                            : isSelected
+                            ? "#0f172a"
+                            : "#94a3b8",
+                          strokeOpacity: 0.8,
+                          strokeWeight: isSelected || isOccupied ? 2 : 0.5,
+                          clickable: !isOccupied,
+                          zIndex: isSelected || isOccupied ? 10 : 1,
+                        }}
+                      />
+                    );
+                  })}
+                </GoogleMap>
+
+                {/* Floating Interaction Tip */}
+                <div className="absolute top-6 left-6 z-10 pointer-events-none">
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-slate-900/90 backdrop-blur-md text-white px-4 py-2.5 rounded-sm border border-white/10 shadow-2xl flex items-center gap-3"
+                  >
+                    <div className="p-1.5 bg-white/20 rounded-full animate-pulse">
+                      <Info size={14} />
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-widest leading-none">
+                      Click territories to assign coverage
+                    </span>
+                  </motion.div>
+                </div>
+
+                {/* Stats Legend */}
+                <div className="absolute bottom-10 left-6 z-10 bg-white/95 backdrop-blur-md border border-slate-200 p-5 rounded-sm shadow-2xl min-w-[260px]">
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center justify-between border-b border-slate-100 pb-2.5">
+                    Coverage Analytics
+                    <Activity size={12} className="text-emerald-500" />
+                  </h4>
+                  <div className="space-y-3.5">
+                    <div className="flex justify-between items-center text-[11px]">
+                      <span className="text-slate-500 font-bold uppercase tracking-tighter">
+                        Active Matrix Cells
+                      </span>
+                      <span className="px-2.5 py-1 bg-slate-900 text-white font-black rounded-sm tabular-nums">
+                        {selectedHexagons.length}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-[11px]">
+                      <span className="text-slate-500 font-bold uppercase tracking-tighter">
+                        Effective Reach
+                      </span>
+                      <span className="font-black text-slate-900 tabular-nums">
+                        {Math.sqrt(
+                          (selectedHexagons.length * 0.73) / Math.PI
+                        ).toFixed(2)}{" "}
+                        KM
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-[11px]">
+                      <span className="text-slate-500 font-bold uppercase tracking-tighter">
+                        Square Area
+                      </span>
+                      <span className="font-black text-slate-900 tabular-nums uppercase">
+                        {((selectedHexagons?.length || 0) * 0.73).toFixed(2)} SQ KM
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Footer */}
           <div className="px-6 py-5 border-t border-slate-200 flex items-center justify-between bg-white z-10">
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
+                <div className="w-3.5 h-3.5 bg-rose-500 rounded-sm border border-rose-600 shadow-sm" />
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  Occupied
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
                 <div className="w-3.5 h-3.5 bg-slate-900/60 rounded-sm border border-slate-900 shadow-sm" />
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  Selected Region
+                  Selected
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3.5 h-3.5 bg-slate-100 rounded-sm border border-slate-300 shadow-sm" />
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  Available Grid
+                  Available
                 </span>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <button
-                onClick={onClose}
-                className="px-6 py-2.5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] hover:bg-slate-50 rounded-sm transition-all">
-                Cancel
+                onClick={() => (step === 0 ? onClose() : setStep(0))}
+                className="px-6 py-2.5 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] hover:bg-slate-50 rounded-sm transition-all"
+              >
+                {step === 0 ? "Cancel" : "Back"}
               </button>
-              <button
-                onClick={handleSave}
-                disabled={isSubmitting}
-                className="px-8 py-2.5 bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-sm shadow-xl shadow-slate-200 hover:bg-slate-800 active:scale-[0.98] transition-all disabled:bg-slate-200 flex items-center gap-3">
-                {isSubmitting ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <Save size={16} />
-                )}
-                Commit Changes
-              </button>
+              {step === 1 && (
+                <button
+                  onClick={handleSave}
+                  disabled={isSubmitting || !selectedCategory}
+                  className="px-8 py-2.5 bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-sm shadow-xl shadow-slate-200 hover:bg-slate-800 active:scale-[0.98] transition-all disabled:bg-slate-200 flex items-center gap-3"
+                >
+                  {isSubmitting ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Save size={16} />
+                  )}
+                  Commit Changes
+                </button>
+              )}
             </div>
           </div>
         </motion.div>

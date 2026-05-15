@@ -120,7 +120,7 @@ const SignupScreen = () => {
             });
             localStorage.setItem('deliveryToken', response.data.token);
             localStorage.setItem('deliveryData', JSON.stringify(response.data));
-            navigate(ROUTES.DASHBOARD);
+            setStep('success');
         } catch (error) {
             console.error(error);
             toast.error(error.response?.data?.message || 'Verification failed');
@@ -349,6 +349,35 @@ const SignupScreen = () => {
                                     Login Here
                                 </button>
                             </div>
+                        </motion.div>
+                    ) : step === 'success' ? (
+                        <motion.div
+                            key="success-step"
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="text-center space-y-6 py-8"
+                        >
+                            <div className="w-20 h-20 bg-emerald-500 rounded-[32px] flex items-center justify-center mx-auto shadow-2xl shadow-emerald-200">
+                                <ShieldCheck className="w-10 h-10 text-white" />
+                            </div>
+                            <div className="space-y-2">
+                                <h2 className="text-2xl font-black text-slate-900">Registration Complete!</h2>
+                                <p className="text-sm font-bold text-slate-500 leading-relaxed px-4">
+                                    Your documents have been submitted. <span className="text-primary">Admin will verify and approve</span> your account within 24-48 hours.
+                                </p>
+                            </div>
+                            <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl">
+                                <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest leading-relaxed">
+                                    Note: You will be able to accept delivery tasks only after admin approval.
+                                </p>
+                            </div>
+                            <motion.button
+                                whileTap={{ scale: 0.96 }}
+                                onClick={() => navigate(ROUTES.DASHBOARD)}
+                                className="w-full py-4 bg-slate-900 text-white rounded-3xl font-black text-sm shadow-xl shadow-slate-200 active:scale-95 transition-all"
+                            >
+                                Go to Dashboard
+                            </motion.button>
                         </motion.div>
                     ) : (
                         <motion.div

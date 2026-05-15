@@ -131,6 +131,19 @@ const franchiseSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    categoryCoverage: [
+      {
+        category: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Category",
+          required: true,
+        },
+        hexagons: {
+          type: [String],
+          default: [],
+        },
+      },
+    ],
     isActive: {
       type: Boolean,
       default: true,

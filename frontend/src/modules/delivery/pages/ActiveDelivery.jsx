@@ -85,13 +85,30 @@ const ActiveDelivery = () => {
                     <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shrink-0">
                         <Clock className="text-white w-5 h-5" />
                     </div>
-                    <div>
-                        <p className="text-sm font-bold text-primary">On Your Way</p>
+                    <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                            <p className="text-sm font-bold text-primary">On Your Way</p>
+                            {order.isPreOrder && (
+                                <span className="text-[9px] font-black bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full border border-indigo-100 uppercase tracking-tight">
+                                    Scheduled
+                                </span>
+                            )}
+                        </div>
                         <p className="text-xs text-muted-foreground">
                             {isCodOrder
                                 ? `Collect COD Rs ${Number(order?.totalAmount || 0).toFixed(2)} and then mark delivered.`
                                 : 'Deliver to customer and tap the button below when done.'}
                         </p>
+                        {(order.scheduledDate || order.scheduledDateFormatted) && (
+                            <div className="mt-1 flex items-center gap-1.5">
+                                <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50/50 px-1 rounded">
+                                    Target: {order.scheduledDateFormatted || new Date(order.scheduledDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                                </span>
+                                <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50/50 px-1 rounded">
+                                    Slot: {order.deliveryShift || 'Standard'}
+                                </span>
+                            </div>
+                        )}
                     </div>
                 </motion.div>
 

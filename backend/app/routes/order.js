@@ -28,7 +28,7 @@ import {
     protectFranchise,
     requireFranchiseAccountVerified,
 } from "../middlewares/franchise.auth.js";
-import { protectDelivery } from "../middlewares/delivery.auth.js";
+import { protectDelivery, requireApproval } from "../middlewares/delivery.auth.js";
 
 const router = express.Router();
 
@@ -102,12 +102,12 @@ router.put(
 );
 
 // Delivery Routes
-router.get("/delivery/dispatched", protectDelivery, getDispatchedOrders);
-router.get("/delivery/history", protectDelivery, getDeliveryOrderHistory);
-router.put("/delivery/:id/reject", protectDelivery, rejectDeliveryTask);
-router.put("/delivery/:id/status", protectDelivery, updateOrderStatus);
-router.get("/delivery/return-pickups", protectDelivery, getDeliveryReturnPickups);
-router.put("/delivery/return-pickups/:id/:requestIndex/status", protectDelivery, updateReturnPickupStatus);
+router.get("/delivery/dispatched", protectDelivery, requireApproval, getDispatchedOrders);
+router.get("/delivery/history", protectDelivery, requireApproval, getDeliveryOrderHistory);
+router.put("/delivery/:id/reject", protectDelivery, requireApproval, rejectDeliveryTask);
+router.put("/delivery/:id/status", protectDelivery, requireApproval, updateOrderStatus);
+router.get("/delivery/return-pickups", protectDelivery, requireApproval, getDeliveryReturnPickups);
+router.put("/delivery/return-pickups/:id/:requestIndex/status", protectDelivery, requireApproval, updateReturnPickupStatus);
 
 router.get("/:id", protect, getOrderById);
 

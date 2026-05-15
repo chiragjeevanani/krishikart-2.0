@@ -11,7 +11,7 @@ import {
 } from "../controllers/delivery.auth.js";
 
 
-import { protectDelivery } from "../middlewares/delivery.auth.js";
+import { protectDelivery, requireApproval } from "../middlewares/delivery.auth.js";
 import {
   protectFranchise,
   requireFranchiseAccountVerified,
@@ -58,12 +58,12 @@ router.get(
   requireFranchiseAccountVerified,
   getAllDeliveryPartners,
 );
-router.get("/cod/summary", protectDelivery, getMyCodSummary);
-router.get("/cod/remittances", protectDelivery, getMyCodRemittances);
-router.post("/cod/remittance", protectDelivery, submitCodRemittance);
-router.post("/cod/razorpay-order", protectDelivery, createCodRazorpayOrder);
-router.post("/cod/verify-upi", protectDelivery, verifyCodUpiPayment);
-router.put("/availability", protectDelivery, updateAvailability);
+router.get("/cod/summary", protectDelivery, requireApproval, getMyCodSummary);
+router.get("/cod/remittances", protectDelivery, requireApproval, getMyCodRemittances);
+router.post("/cod/remittance", protectDelivery, requireApproval, submitCodRemittance);
+router.post("/cod/razorpay-order", protectDelivery, requireApproval, createCodRazorpayOrder);
+router.post("/cod/verify-upi", protectDelivery, requireApproval, verifyCodUpiPayment);
+router.put("/availability", protectDelivery, requireApproval, updateAvailability);
 router.post("/fcm-token", protectDelivery, saveFCMToken);
 router.post("/test-notification", protectDelivery, testPushByToken);
 

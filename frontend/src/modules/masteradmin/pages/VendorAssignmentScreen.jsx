@@ -40,6 +40,7 @@ export default function VendorAssignmentScreen() {
                     id: req._id,
                     ownerName: req.franchiseId?.ownerName || 'Unknown Owner',
                     mobile: req.franchiseId?.mobile || '',
+                    city: req.franchiseId?.city || '',
                     items: req.items || [],
                     total: req.totalEstimatedAmount || 0,
                     createdAt: new Date(req.createdAt).toLocaleDateString('en-IN', {
@@ -77,7 +78,22 @@ export default function VendorAssignmentScreen() {
 
             const response = await api.get(`/masteradmin/vendors?productId=${productId}&productName=${encodeURIComponent(productName)}`);
             if (response.data.success) {
-                const mappedVendors = response.data.results.map(v => ({
+                const franchiseCity = order.city?.toLowerCase() || '';
+                const allVendors = response.data.results || [];
+
+                // Filter vendors who match the franchise city
+                const filteredVendors = allVendors.filter(v => {
+                    const vendorLocation = (v.farmLocation || v.city || '').toLowerCase();
+                    if (franchiseCity && !vendorLocation.includes(franchiseCity)) {
+                        return false;
+                    }
+                    return true;
+                });
+
+                // If no local vendors found, fallback to all vendors matching the product
+                const finalVendors = filteredVendors.length > 0 ? filteredVendors : allVendors;
+
+                const mappedVendors = finalVendors.map(v => ({
                     id: v._id,
                     name: v.fullName,
                     rating: 4.8, // Fallback rating
@@ -85,8 +101,6 @@ export default function VendorAssignmentScreen() {
                     capacity: 85, // Fallback capacity
                     products: v.products
                 }));
-                // Filter locally just in case backend filter was too loose (optional but safer)
-                // Actually backend filter is strict on ID/Name match now.
                 setVendors(mappedVendors);
             }
         } catch (error) {

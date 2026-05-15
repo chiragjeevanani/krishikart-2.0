@@ -7,6 +7,7 @@ import {
     UserCircle,
     HelpCircle,
     FileText,
+    Archive
 } from 'lucide-react';
 
 /**
@@ -21,6 +22,7 @@ export const vendorNavItems = [
     { id: 'quotations', path: '/vendor/quotations', icon: ClipboardList, label: 'Proposals & Audits', shortLabel: 'Quotes' },
     { id: 'history', path: '/vendor/dispatch-history', icon: History, label: 'Dispatch History', shortLabel: 'History' },
     { id: 'reports', path: '/vendor/reports', icon: FileText, label: 'Reports', shortLabel: 'Reports' },
+    { id: 'rejections', path: '/vendor/rejected-stock', icon: Archive, label: 'Rejected Stock', shortLabel: 'Rejected' },
     {
         id: 'profile',
         path: '/vendor/profile',
@@ -52,6 +54,9 @@ export function isVendorNavActive(pathname, itemPath) {
     }
     if (itemPath === '/vendor/reports') {
         return pathname === '/vendor/reports';
+    }
+    if (itemPath === '/vendor/rejected-stock') {
+        return pathname === '/vendor/rejected-stock';
     }
     return pathname === itemPath;
 }

@@ -22,8 +22,12 @@ import {
   getAllFranchises,
   getFranchiseDetails,
   updateFranchiseStatus,
+  updateFranchiseDetails,
+  deleteFranchise,
   updateFranchiseServiceArea,
   getFranchiseServiceMap,
+  updateFranchiseCategories,
+  getOccupiedHexagonsByCategory,
   getPendingKYCFranchises,
   reviewFranchiseKYC,
   getPendingCategoryRequests,
@@ -184,6 +188,18 @@ router.put(
   updateFranchiseStatus,
 );
 router.put(
+  "/franchises/:id",
+  protectMasterAdmin,
+  requirePermission("franchises"),
+  updateFranchiseDetails,
+);
+router.delete(
+  "/franchises/:id",
+  protectMasterAdmin,
+  requirePermission("franchises"),
+  deleteFranchise,
+);
+router.put(
   "/franchises/:id/service-area",
   protectMasterAdmin,
   requirePermission("franchises"),
@@ -194,6 +210,18 @@ router.get(
   protectMasterAdmin,
   requirePermission("franchises"),
   getFranchiseServiceMap,
+);
+router.put(
+  "/franchises/:id/categories",
+  protectMasterAdmin,
+  requirePermission("franchises"),
+  updateFranchiseCategories,
+);
+router.get(
+  "/franchises/occupied-hexagons/:categoryId",
+  protectMasterAdmin,
+  requirePermission("franchises"),
+  getOccupiedHexagonsByCategory,
 );
 router.put(
   "/franchises/:id/kyc-review",

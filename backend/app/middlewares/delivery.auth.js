@@ -16,13 +16,15 @@ export const protectDelivery = async (req, res, next) => {
       return handleResponse(res, 401, "Unauthorized");
 
     req.delivery = delivery;
-
-    if (!delivery.isApproved) {
-      return handleResponse(res, 403, "Access Denied. Your account is pending admin approval.");
-    }
-
     next();
   } catch (err) {
     return handleResponse(res, 401, "Invalid token");
   }
+};
+
+export const requireApproval = (req, res, next) => {
+  if (!req.delivery?.isApproved) {
+    return handleResponse(res, 403, "Access Denied. Your account is pending admin approval.");
+  }
+  next();
 };

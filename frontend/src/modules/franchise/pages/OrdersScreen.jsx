@@ -17,7 +17,8 @@ import {
     IndianRupee,
     RefreshCw,
     Info,
-    Package
+    Package,
+    Clock
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useFranchiseOrders } from '../contexts/FranchiseOrdersContext';

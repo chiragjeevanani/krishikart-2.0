@@ -228,8 +228,19 @@ export default function OrdersScreen() {
                     .map(p => p.category?.toString())
                     .filter(Boolean);
 
-                // 2. Filter vendors who either have the product OR serve the category
+                const franchiseCity = order.franchiseId?.city?.toLowerCase() || '';
+
+                // 2. Filter vendors who:
+                // - Match the city (if franchise city is known)
+                // - AND (have the product OR serve the category)
                 const compatible = allActiveVendors.filter(vendor => {
+                    // City Filter: Vendor farmLocation or city should contain the franchise city
+                    const vendorLocation = (vendor.farmLocation || vendor.city || '').toLowerCase();
+                    if (franchiseCity && !vendorLocation.includes(franchiseCity)) {
+                        return false;
+                    }
+
+                    // Product/Category Filter
                     // Check explicit products
                     const hasProduct = vendor.products?.some(p => {
                         const vendorProdId = (p._id || p).toString();

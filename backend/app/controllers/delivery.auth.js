@@ -224,6 +224,8 @@ export const verifyDeliveryOTP = async (req, res) => {
         id: delivery._id,
         mobile: delivery.mobile,
         role: "delivery",
+        isApproved: delivery.isApproved,
+        approvalStatus: delivery.approvalStatus
       });
     }
 
@@ -260,6 +262,8 @@ export const verifyDeliveryOTP = async (req, res) => {
         id: delivery._id,
         mobile: delivery.mobile,
         role: "delivery",
+        isApproved: delivery.isApproved,
+        approvalStatus: delivery.approvalStatus
       });
     }
 
@@ -301,6 +305,8 @@ export const verifyDeliveryOTP = async (req, res) => {
       id: delivery._id,
       mobile: delivery.mobile,
       role: "delivery",
+      isApproved: delivery.isApproved,
+      approvalStatus: delivery.approvalStatus
     });
   } catch (err) {
     console.error(err);

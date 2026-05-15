@@ -19,7 +19,10 @@ import {
     ShieldCheck,
     Cpu,
     Network,
-    Plus
+    Plus,
+    Edit3,
+    Trash2,
+    Layers
 } from 'lucide-react';
 import api from '@/lib/axios';
 import { cn } from '@/lib/utils';
@@ -31,9 +34,10 @@ import FilterBar from '../components/tables/FilterBar';
 import { toast } from 'sonner';
 import FranchiseOnboardingDrawer from '../components/drawers/FranchiseOnboardingDrawer';
 import FranchiseServiceAreaDrawer from '../components/drawers/FranchiseServiceAreaDrawer';
+import FranchiseCategoryDrawer from '../components/drawers/FranchiseCategoryDrawer';
 
 export default function FranchiseManagementScreen() {
-    const { createFranchiseByAdmin } = useAdmin();
+    const { createFranchiseByAdmin, updateFranchise, deleteFranchise } = useAdmin();
     const [isLoading, setIsLoading] = useState(true);
     const [expandedRow, setExpandedRow] = useState(null);
     const [statusFilter, setStatusFilter] = useState('All');
@@ -41,6 +45,7 @@ export default function FranchiseManagementScreen() {
     const [franchises, setFranchises] = useState([]);
     const [isOnboardOpen, setIsOnboardOpen] = useState(false);
     const [isCoverageOpen, setIsCoverageOpen] = useState(false);
+    const [isCategoryOpen, setIsCategoryOpen] = useState(false);
     const [selectedFranchise, setSelectedFranchise] = useState(null);
 
     const fetchFranchises = async () => {
@@ -60,6 +65,13 @@ export default function FranchiseManagementScreen() {
     useEffect(() => {
         fetchFranchises();
     }, []);
+
+    const handleDeleteFranchise = async (id) => {
+        if (!window.confirm("Are you sure you want to decommission this node? It will be removed from the active network.")) return;
+        
+        const success = await deleteFranchise(id);
+        if (success) fetchFranchises();
+    };
 
     const handleStatusChange = async (id, newStatus) => {
         const action = newStatus === 'blocked' ? 'decommission' : 'reactivate';
@@ -122,7 +134,10 @@ export default function FranchiseManagementScreen() {
                         <h1 className="text-sm font-bold text-slate-900">Regional Distribution Network</h1>
                     </div>
                     <button
-                        onClick={() => setIsOnboardOpen(true)}
+                        onClick={() => {
+                            setSelectedFranchise(null);
+                            setIsOnboardOpen(true);
+                        }}
                         className="px-3 py-2 bg-slate-900 text-white rounded-sm hover:bg-slate-800 transition-colors flex items-center gap-2"
                     >
                         <Plus size={14} />
@@ -213,7 +228,21 @@ export default function FranchiseManagementScreen() {
                                                 </div>
                                                 <div>
                                                     <p className="font-bold text-slate-900 text-[11px] tracking-tight leading-none mb-1">{franchise.franchiseName}</p>
-                                                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{franchise.city}</p>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{franchise.city}</p>
+                                                        {franchise.servedCategories?.length > 0 && (
+                                                            <div className="flex gap-1">
+                                                                {franchise.servedCategories.slice(0, 2).map((cat, i) => (
+                                                                    <span key={cat._id || i} className="text-[8px] text-emerald-600 bg-emerald-50 px-1 rounded-sm font-black uppercase border border-emerald-100/50">
+                                                                        {cat.name}
+                                                                    </span>
+                                                                ))}
+                                                                {franchise.servedCategories.length > 2 && (
+                                                                    <span className="text-[8px] text-slate-400 font-bold">+{franchise.servedCategories.length - 2}</span>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>
@@ -287,34 +316,74 @@ export default function FranchiseManagementScreen() {
                                                             <div className="p-4 space-y-4">
                                                                 <div className="flex items-center gap-2 text-slate-900">
                                                                     <Activity size={13} />
-                                                                    <h5 className="text-[10px] font-black uppercase tracking-widest">Resource Matrix</h5>
+                                                                    <h5 className="text-[10px] font-black uppercase tracking-widest">Operational Domains</h5>
                                                                 </div>
-                                                                <div className="space-y-3">
-                                                                    <div className="flex justify-between items-center bg-white p-2 border border-slate-100 rounded-sm">
-                                                                        <span className="text-[9px] font-bold text-slate-500 uppercase">Storage</span>
-                                                                        <span className="text-[10px] font-black text-slate-900">84%</span>
-                                                                    </div>
-                                                                    <div className="flex justify-between items-center bg-white p-2 border border-slate-100 rounded-sm">
-                                                                        <span className="text-[9px] font-bold text-slate-500 uppercase">Supply Nodes</span>
-                                                                        <span className="text-[10px] font-black text-slate-900">12</span>
+                                                                <div className="space-y-2">
+                                                                    {franchise.servedCategories?.length > 0 ? (
+                                                                        <div className="flex flex-wrap gap-1.5">
+                                                                            {franchise.servedCategories.map((cat, i) => (
+                                                                                <div key={cat._id || i} className="flex items-center gap-1.5 bg-white px-2 py-1 border border-slate-100 rounded-sm">
+                                                                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                                                    <span className="text-[9px] font-black text-slate-900 uppercase tracking-wider">{cat.name}</span>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="bg-amber-50 border border-amber-100 p-2 rounded-sm">
+                                                                            <p className="text-[9px] text-amber-600 font-bold uppercase tracking-widest text-center">No categories assigned</p>
+                                                                        </div>
+                                                                    )}
+                                                                    <div className="pt-2 flex justify-between items-center border-t border-slate-100 mt-2">
+                                                                        <span className="text-[9px] font-bold text-slate-400 uppercase">Active Slots</span>
+                                                                        <span className="text-[10px] font-black text-slate-900">{franchise.servedCategories?.length || 0} Domains</span>
                                                                     </div>
                                                                 </div>
                                                             </div>
 
                                                             <div className="p-4 space-y-4">
                                                                 <div className="flex items-center gap-2 text-slate-900">
-                                                                    <Calendar size={13} />
-                                                                    <h5 className="text-[10px] font-black uppercase tracking-widest">24h Signal</h5>
+                                                                    <FileText size={13} />
+                                                                    <h5 className="text-[10px] font-black uppercase tracking-widest">Compliance Documents</h5>
                                                                 </div>
-                                                                <div className="space-y-3">
-                                                                    <div className="flex justify-between items-center text-[10px] font-bold text-slate-500">
-                                                                        <span>New Bookings</span>
-                                                                        <span className="text-slate-900">+42</span>
-                                                                    </div>
-                                                                    <div className="flex justify-between items-center text-[10px] font-bold text-slate-500">
-                                                                        <span>SLA Fulfillment</span>
-                                                                        <span className="text-emerald-600 font-black">98.2%</span>
-                                                                    </div>
+                                                                <div className="grid grid-cols-2 gap-2">
+                                                                    {[
+                                                                        { label: 'Aadhaar', key: 'aadhaarImage' },
+                                                                        { label: 'PAN', key: 'panImage' },
+                                                                        { label: 'FSSAI', key: 'fssaiCertificate' },
+                                                                        { label: 'Shop/Trade', key: 'shopEstablishmentCertificate' },
+                                                                        { label: 'GST', key: 'gstCertificate' }
+                                                                    ].map((doc) => {
+                                                                        const url = franchise.kyc?.[doc.key];
+                                                                        return (
+                                                                            <div key={doc.key} className={cn(
+                                                                                "flex flex-col gap-1 p-2 border rounded-sm transition-all",
+                                                                                url ? "bg-white border-slate-200 hover:border-slate-400" : "bg-slate-50 border-slate-100 opacity-50"
+                                                                            )}>
+                                                                                <span className="text-[8px] font-black uppercase text-slate-400">{doc.label}</span>
+                                                                                {url ? (
+                                                                                    <div className="flex items-center justify-between gap-2">
+                                                                                        <a 
+                                                                                            href={url} 
+                                                                                            target="_blank" 
+                                                                                            rel="noopener noreferrer"
+                                                                                            className="text-[9px] font-bold text-slate-900 truncate hover:underline"
+                                                                                        >
+                                                                                            View File
+                                                                                        </a>
+                                                                                        <a 
+                                                                                            href={url} 
+                                                                                            download 
+                                                                                            className="p-1 hover:bg-slate-100 rounded-sm text-slate-400 hover:text-slate-900 transition-colors"
+                                                                                        >
+                                                                                            <ExternalLink size={10} />
+                                                                                        </a>
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <span className="text-[9px] font-bold text-slate-400 italic">Not Uploaded</span>
+                                                                                )}
+                                                                            </div>
+                                                                        );
+                                                                    })}
                                                                 </div>
                                                             </div>
 
@@ -330,6 +399,16 @@ export default function FranchiseManagementScreen() {
                                                                     Manage Coverage
                                                                 </button>
                                                                 <button
+                                                                    onClick={() => {
+                                                                        setSelectedFranchise(franchise);
+                                                                        setIsCategoryOpen(true);
+                                                                    }}
+                                                                    className="bg-white border border-slate-900 text-slate-900 text-[9px] font-black uppercase tracking-widest py-2 rounded-sm hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+                                                                >
+                                                                    <Layers size={12} />
+                                                                    Manage Categories
+                                                                </button>
+                                                                <button
                                                                     onClick={() => handleStatusChange(franchise._id, franchise.status === 'blocked' ? 'active' : 'blocked')}
                                                                     className={cn(
                                                                         "bg-white border text-[9px] font-black uppercase tracking-widest py-2 rounded-sm transition-all flex items-center justify-center gap-2 group",
@@ -339,6 +418,25 @@ export default function FranchiseManagementScreen() {
                                                                     <Power size={12} />
                                                                     {franchise.status === 'blocked' ? 'Reactivate Node' : 'Decommission Node'}
                                                                 </button>
+                                                                <div className="grid grid-cols-2 gap-2">
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setSelectedFranchise(franchise);
+                                                                            setIsOnboardOpen(true);
+                                                                        }}
+                                                                        className="bg-white border border-slate-200 text-slate-900 text-[9px] font-black uppercase tracking-widest py-2 rounded-sm hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+                                                                    >
+                                                                        <Edit3 size={12} />
+                                                                        Edit Node
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleDeleteFranchise(franchise._id)}
+                                                                        className="bg-rose-50 border border-rose-100 text-rose-600 text-[9px] font-black uppercase tracking-widest py-2 rounded-sm hover:bg-rose-100 transition-all flex items-center justify-center gap-2"
+                                                                    >
+                                                                        <Trash2 size={12} />
+                                                                        Delete Node
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </motion.div>
@@ -365,11 +463,17 @@ export default function FranchiseManagementScreen() {
 
             <FranchiseOnboardingDrawer
                 isOpen={isOnboardOpen}
-                onClose={() => setIsOnboardOpen(false)}
-                onSave={async (payload) => {
-                    const created = await createFranchiseByAdmin(payload);
-                    if (created) fetchFranchises();
-                    return created;
+                onClose={() => {
+                    setIsOnboardOpen(false);
+                    setSelectedFranchise(null);
+                }}
+                initialData={selectedFranchise}
+                onSave={async (payload, id) => {
+                    const success = id 
+                        ? await updateFranchise(id, payload)
+                        : await createFranchiseByAdmin(payload);
+                    if (success) fetchFranchises();
+                    return success;
                 }}
             />
 
@@ -377,6 +481,14 @@ export default function FranchiseManagementScreen() {
                 isOpen={isCoverageOpen}
                 onClose={() => {
                     setIsCoverageOpen(false);
+                    fetchFranchises();
+                }}
+                franchise={selectedFranchise}
+            />
+            <FranchiseCategoryDrawer
+                isOpen={isCategoryOpen}
+                onClose={() => {
+                    setIsCategoryOpen(false);
                     fetchFranchises();
                 }}
                 franchise={selectedFranchise}

@@ -8,7 +8,8 @@ import {
     CheckCircle2,
     X,
     Store,
-    ShoppingBag
+    ShoppingBag,
+    Clock
 } from 'lucide-react';
 import MetricCard from '../components/cards/MetricCard';
 import { useDeliveryAuth } from '../contexts/DeliveryAuthContext';
@@ -155,10 +156,28 @@ const Dashboard = () => {
             </div>
 
             <div className="px-6 space-y-6 pt-6">
+                {!delivery?.isApproved && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="p-5 bg-amber-50 border border-amber-200 rounded-3xl space-y-3"
+                    >
+                        <div className="flex items-center gap-3 text-amber-800">
+                            <div className="w-8 h-8 bg-amber-100 rounded-xl flex items-center justify-center">
+                                <Clock size={16} className="text-amber-600" />
+                            </div>
+                            <h3 className="text-xs font-black uppercase tracking-widest">Account Pending Approval</h3>
+                        </div>
+                        <p className="text-[10px] font-bold text-amber-700 uppercase leading-relaxed tracking-wider">
+                            Admin is currently verifying your documents. You will be able to accept delivery tasks and go online once your account is authorized.
+                        </p>
+                    </motion.div>
+                )}
+
                 {/* Availability Toggle UI Block */}
                 <motion.div
-                    onClick={toggleOnline}
-                    className={`cursor-pointer px-5 py-4 rounded-3xl flex items-center justify-between border-2 transition-all ${isUpdating ? 'opacity-70 pointer-events-none' : ''} ${isOnline ? 'bg-primary/5 border-primary/20 shadow-lg shadow-primary/5' : 'bg-white border-border shadow-sm grayscale opacity-70'}`}
+                    onClick={() => delivery?.isApproved ? toggleOnline() : toast.error('Account pending admin approval')}
+                    className={`cursor-pointer px-5 py-4 rounded-3xl flex items-center justify-between border-2 transition-all ${isUpdating || !delivery?.isApproved ? 'opacity-70 pointer-events-none' : ''} ${isOnline ? 'bg-primary/5 border-primary/20 shadow-lg shadow-primary/5' : 'bg-white border-border shadow-sm grayscale opacity-70'}`}
                 >
                     <div className="flex items-center gap-4">
                         <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-colors ${isOnline ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>

@@ -37,6 +37,7 @@ import {
   Ticket,
   HelpCircle,
   Navigation,
+  AlertCircle
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -177,6 +178,12 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
           icon: FileText,
           label: "Vendor Invoices",
           path: "/masteradmin/vendor-reports",
+          permissionKey: "vendor-reports",
+        },
+        {
+          icon: AlertCircle,
+          label: "Rejection Audit",
+          path: "/masteradmin/rejections",
           permissionKey: "vendor-reports",
         },
         {

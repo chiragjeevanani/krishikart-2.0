@@ -13,7 +13,8 @@ import {
     getVendorDashboardStats,
     getVendorReceivablesReport,
     franchiseConfirmReceipt,
-    createProcurementFromOrder
+    createProcurementFromOrder,
+    getRejectedStockReport
 } from "../controllers/procurement.controller.js";
 import {
     protectFranchise,
@@ -49,6 +50,7 @@ router.get("/vendor/my-assignments", protectVendor, getVendorAssignments);
 router.get("/vendor/active-dispatch", protectVendor, getVendorActiveDispatch);
 router.get("/vendor/dashboard-stats", protectVendor, getVendorDashboardStats);
 router.get("/vendor/receivables-report", protectVendor, getVendorReceivablesReport);
+router.get("/vendor/rejected-stock", protectVendor, getRejectedStockReport);
 router.get("/vendor/:requestId", protectVendor, getVendorProcurementById);
 router.post("/vendor/:requestId/quote", protectVendor, vendorSubmitQuotation);
 router.put("/vendor/:requestId/status", protectVendor, vendorUpdateStatus);
@@ -56,6 +58,7 @@ router.put("/vendor/:requestId/status", protectVendor, vendorUpdateStatus);
 // Admin Routes (Assign/View)
 router.get("/admin/all", protectMasterAdmin, getAllProcurementRequests);
 router.get("/admin/reports", protectMasterAdmin, getVendorReports);
+router.get("/admin/rejected-stock", protectMasterAdmin, getRejectedStockReport);
 router.put("/admin/:requestId/status", protectMasterAdmin, adminUpdateProcurementRequest);
 router.post("/admin/from-order/:orderId", protectMasterAdmin, createProcurementFromOrder);
 

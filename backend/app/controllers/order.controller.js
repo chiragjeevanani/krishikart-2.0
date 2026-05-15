@@ -1633,7 +1633,7 @@ export const getAllOrders = async (req, res) => {
     const orders = await Order.find()
       .populate("items.productId")
       .populate("userId", "fullName mobile")
-      .populate("franchiseId", "franchiseName ownerName mobile cityArea")
+      .populate("franchiseId", "franchiseName ownerName mobile city")
       .populate("deliveryPartnerId", "fullName mobile")
       .sort({ createdAt: -1 });
 
@@ -2348,6 +2348,15 @@ export const getDispatchedOrders = async (req, res) => {
         paymentMethod: order.paymentMethod,
         status: order.orderStatus,
         orderStatus: order.orderStatus,
+        scheduledDate: order.scheduledDate,
+        scheduledDateFormatted: order.scheduledDate
+          ? new Date(order.scheduledDate).toLocaleDateString("en-IN", {
+              day: "2-digit",
+              month: "short",
+            })
+          : null,
+        deliveryShift: order.deliveryShift,
+        isPreOrder: order.isPreOrder,
         franchiseId: order.franchiseId,
         userId: order.userId,
         shippingAddress: order.shippingAddress,

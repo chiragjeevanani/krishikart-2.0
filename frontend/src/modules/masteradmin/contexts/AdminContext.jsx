@@ -284,10 +284,11 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
-    const updateFranchiseServiceArea = async (id, serviceHexagons, location) => {
+    const updateFranchiseServiceArea = async (id, serviceHexagons, location, categoryId) => {
         try {
             const response = await api.put(`/masteradmin/franchises/${id}/service-area`, { 
                 serviceHexagons,
+                categoryId,
                 location: location ? {
                     type: 'Point',
                     coordinates: [location.lng, location.lat]
@@ -303,6 +304,67 @@ export const AdminProvider = ({ children }) => {
             console.error('Update service area error:', error);
             toast.error(error.response?.data?.message || 'Update failed');
             return false;
+        }
+    };
+
+    const updateFranchiseCategories = async (id, categoryIds) => {
+        try {
+            const response = await api.put(`/masteradmin/franchises/${id}/categories`, { categoryIds });
+            if (response.data.success) {
+                toast.success('Categories updated successfully');
+                fetchPendingFranchises();
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Update categories error:', error);
+            toast.error(error.response?.data?.message || 'Update failed');
+            return false;
+        }
+    };
+
+    const updateFranchise = async (id, payload) => {
+        try {
+            const response = await api.put(`/masteradmin/franchises/${id}`, payload);
+            if (response.data.success) {
+                toast.success('Franchise updated successfully');
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Update franchise error:', error);
+            toast.error(error.response?.data?.message || 'Update failed');
+            return false;
+        }
+    };
+
+    const deleteFranchise = async (id) => {
+        try {
+            const response = await api.delete(`/masteradmin/franchises/${id}`);
+            if (response.data.success) {
+                toast.success('Franchise decommissioned successfully');
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Delete franchise error:', error);
+            toast.error(error.response?.data?.message || 'Delete failed');
+            return false;
+        }
+    };
+
+    const fetchOccupiedHexagonsByCategory = async (categoryId, excludeFranchiseId) => {
+        try {
+            const response = await api.get(`/masteradmin/franchises/occupied-hexagons/${categoryId}`, {
+                params: { excludeFranchiseId }
+            });
+            if (response.data.success) {
+                return response.data.result.occupiedHexagons || [];
+            }
+            return [];
+        } catch (error) {
+            console.error('Fetch occupied hexagons error:', error);
+            return [];
         }
     };
 
@@ -362,6 +424,10 @@ export const AdminProvider = ({ children }) => {
             createVendorByAdmin,
             createFranchiseByAdmin,
             updateFranchiseServiceArea,
+            updateFranchiseCategories,
+            updateFranchise,
+            deleteFranchise,
+            fetchOccupiedHexagonsByCategory,
             fetchFranchiseServiceMap,
             deliveryPartners,
             fetchDeliveryPartners,
