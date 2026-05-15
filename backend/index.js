@@ -8,7 +8,7 @@ import { createServer } from "http";
 import { initSocket } from "./app/lib/socket.js";
 import { startScheduler } from "./app/utils/scheduler.js";
 
-dotenv.config();
+dotenv.config({ override: true });
 const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOSTNAME || "0.0.0.0";

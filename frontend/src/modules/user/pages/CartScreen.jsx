@@ -1,5 +1,7 @@
 import { useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import api from '@/lib/axios'
+import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft,
@@ -11,7 +13,9 @@ import {
   ShieldCheck,
   Info,
   Truck,
-  ArrowRight
+  ArrowRight,
+  Star,
+  Sparkles
 } from 'lucide-react'
 import PageTransition from '../components/layout/PageTransition'
 import { Button } from '@/components/ui/button'
@@ -38,8 +42,32 @@ function CartItemImage({ src, alt }) {
 }
 
 export default function CartScreen() {
-  const { cartItems, updateQuantity, setQuantity, removeFromCart, cartTotal, getActivePrice, deliveryConstraints } = useCart()
+  const { cartItems, updateQuantity, setQuantity, removeFromCart, cartTotal, getActivePrice, deliveryConstraints, addToCart } = useCart()
   const navigate = useNavigate()
+  const [recommendations, setRecommendations] = useState([])
+  const [isRecLoading, setIsRecLoading] = useState(false)
+
+  // Fetch recommendations whenever cart items change
+  useEffect(() => {
+    const fetchRecs = async () => {
+      if (cartItems.length === 0) return;
+      
+      setIsRecLoading(true);
+      try {
+        const productIds = cartItems.map(item => item.id || item._id).join(',');
+        const response = await api.get(`/user/cart/recommendations?productIds=${productIds}`);
+        if (response.data.success) {
+          setRecommendations(response.data.results || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch recommendations:', error);
+      } finally {
+        setIsRecLoading(false);
+      }
+    };
+
+    fetchRecs();
+  }, [cartItems.length]); // Refetch only if item count changes to avoid spamming on quantity updates
 
   const deliveryFee = cartTotal >= parseFloat(deliveryConstraints.freeMov) ? 0 : parseFloat(deliveryConstraints.baseFee)
 
@@ -150,6 +178,52 @@ export default function CartScreen() {
                   </motion.div>
                 ))}
               </AnimatePresence>
+
+              {/* 💡 Cart Recommendations Engine */}
+              {recommendations.length > 0 && (
+                <div className="mt-12 mb-8">
+                  <div className="flex items-center gap-2 mb-5 px-1">
+                    <Sparkles size={18} className="text-amber-500 fill-amber-500" />
+                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">You Might Also Need</h3>
+                  </div>
+
+                  <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+                    <AnimatePresence>
+                      {recommendations.map((product, idx) => (
+                        <motion.div
+                          key={product._id}
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: idx * 0.1 }}
+                          className="w-48 shrink-0 bg-white rounded-2xl p-3 border border-slate-100 shadow-sm flex flex-col gap-3 group"
+                        >
+                          <div className="aspect-square rounded-xl overflow-hidden bg-slate-50 border border-slate-50">
+                            <CartItemImage src={product.primaryImage} alt={product.name} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-tight line-clamp-2 leading-tight h-7">
+                              {product.name}
+                            </h4>
+                            <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">
+                              ₹{product.price} <span className="text-[8px]">/ {product.unit}</span>
+                            </p>
+                          </div>
+                          <Button
+                            onClick={() => {
+                              addToCart(product);
+                              setRecommendations(prev => prev.filter(p => p._id !== product._id));
+                              toast.success(`${product.name} added to cart`);
+                            }}
+                            className="h-9 w-full rounded-xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-primary transition-all shadow-md group-active:scale-95"
+                          >
+                            <Plus size={14} className="mr-1" /> Add
+                          </Button>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              )}
 
             </div>
 

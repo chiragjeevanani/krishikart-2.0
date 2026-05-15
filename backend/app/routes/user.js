@@ -17,6 +17,7 @@ import {
     testPushByToken,
     makeOverdueTest
 } from "../controllers/user.auth.js";
+import { getCartRecommendations } from "../controllers/recommendation.controller.js";
 import {
     getCart,
     addToCart,
@@ -54,6 +55,7 @@ router.get("/cart", protect, getCart);
 router.post("/cart/add", protect, addToCart);
 router.put("/cart/update", protect, updateCartQuantity);
 router.delete("/cart/remove/:productId", protect, removeFromCart);
+router.get("/cart/recommendations", getCartRecommendations);
 
 // Wishlist Routes
 router.get("/wishlist", protect, getWishlist);
