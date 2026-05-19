@@ -27,8 +27,6 @@ import {
 } from 'lucide-react';
 import { useFranchiseOrders } from '../contexts/FranchiseOrdersContext';
 import { useInventory } from '../contexts/InventoryContext';
-import { useGRN } from '../contexts/GRNContext';
-import { useCOD } from '../contexts/CODContext';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useFranchiseAuth } from '../contexts/FranchiseAuthContext';
@@ -50,8 +48,6 @@ export default function DashboardScreen() {
     const { franchise } = useFranchiseAuth();
     const { stats, orders, refreshOrders } = useFranchiseOrders();
     const { getStockStats, refreshInventory } = useInventory();
-    const { purchaseOrders } = useGRN();
-    const { summary: codSummary } = useCOD();
     const [showKYCModal, setShowKYCModal] = useState(false);
     const [sendingPush, setSendingPush] = useState(false);
 
@@ -262,7 +258,7 @@ export default function DashboardScreen() {
                 </div>
             </div>
 
-            <div className="bg-white border-b border-slate-200 grid grid-cols-1 md:grid-cols-4 lg:grid-cols-7">
+            <div className="bg-white border-b border-slate-200 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5">
                 <MetricRow
                     label="Queued Orders"
                     value={stats.newOrders}
@@ -285,25 +281,10 @@ export default function DashboardScreen() {
                     icon={CheckCircle2}
                 />
                 <MetricRow
-                    label="Stock Health"
-                    value={inventoryStats.lowStockCount}
-                    icon={AlertTriangle}
-                />
-                <MetricRow
                     label="Est. Commission"
                     value={`₹${(stats.revenue * 0.1).toLocaleString()}`}
                     sub="10% of revenue"
                     icon={TrendingUp}
-                />
-                <MetricRow
-                    label="Incoming PO"
-                    value={purchaseOrders.length}
-                    icon={PackageCheck}
-                />
-                <MetricRow
-                    label="COD Liability"
-                    value={`₹${(codSummary?.totalToDeposit || 0).toLocaleString()}`}
-                    icon={Wallet}
                 />
             </div>
 
