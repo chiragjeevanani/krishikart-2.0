@@ -225,6 +225,8 @@ export function OrderProvider({ children }) {
                 shippingLocation: orderData.shippingLocation || null,
                 paymentMethod: orderData.paymentMethod,
                 deliveryShift: orderData.deliveryShift,
+                scheduledDate: orderData.scheduledDate,
+                isPreOrder: orderData.isPreOrder,
                 couponCode: orderData.couponCode || '',
                 discountAmount: orderData.discountAmount || 0,
                 donationAmount: orderData.donationAmount || 0,

@@ -161,8 +161,8 @@ export default function DashboardScreen() {
                 <div className="flex flex-col">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{val}</span>
                     {row.scheduledDate && (
-                        <span className="text-[9px] font-black text-primary bg-primary/5 px-1 rounded-sm mt-0.5 w-fit border border-primary/10">
-                            Target: {new Date(row.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                        <span className="text-[9px] font-black text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-md mt-1 w-fit border border-amber-200 animate-pulse shadow-sm">
+                            Target: {new Date(row.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', weekday: 'short' })}
                         </span>
                     )}
                 </div>

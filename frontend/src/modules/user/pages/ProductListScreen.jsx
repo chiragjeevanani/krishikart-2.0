@@ -62,6 +62,7 @@ export default function ProductListScreen() {
     const debouncedSearch = useDebounce(searchQuery, 300)
     const activeSidebarRef = useRef(null)
     const sidebarListRef = useRef(null)
+    const mainScrollRef = useRef(null)
     const [activeBarTop, setActiveBarTop] = useState(19)
     /** Per-item height (py-4 + icon 54 + gap-1.5 + label ~14 + py-4) so bar position can be set instantly on click */
     const SIDEBAR_ITEM_HEIGHT = 104
@@ -214,6 +215,13 @@ export default function ProductListScreen() {
         return () => { cancelAnimationFrame(raf); clearTimeout(t) }
     }, [selectedCategory, categories.length])
 
+    // Scroll products to top when category/subcategory changes
+    useEffect(() => {
+        if (mainScrollRef.current) {
+            mainScrollRef.current.scrollTo({ top: 0, behavior: 'auto' })
+        }
+    }, [selectedCategory, activeSubCategory])
+
     // Sidebar Categories
     const sidebarCategories = useMemo(() => {
         const cats = (categories || []).map(cat => ({
@@ -269,7 +277,7 @@ export default function ProductListScreen() {
 
     return (
         <PageTransition>
-            <div className="bg-white min-h-screen pb-32 flex flex-col">
+            <div className="bg-white h-screen flex flex-col overflow-hidden">
                 {/* Unified Header - Mobile Redesign */}
                 <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b border-slate-100/80 shadow-[0_1px_10px_rgba(0,0,0,0.04)] md:hidden">
                     <div className="flex items-center justify-between px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-3 h-16">
@@ -402,8 +410,6 @@ export default function ProductListScreen() {
                                         key={cat.id}
                                         ref={isActive ? activeSidebarRef : null}
                                         onClick={() => {
-                                            const idx = sidebarCategories.findIndex((c) => c.id === cat.id)
-                                            if (idx >= 0) setActiveBarTop(idx * SIDEBAR_ITEM_HEIGHT + 24)
                                             setSelectedCategory(cat.id)
                                         }}
                                         className={cn(
@@ -452,7 +458,7 @@ export default function ProductListScreen() {
                     </aside>
 
                     {/* Right Side - Products Area */}
-                    <main className="flex-1 bg-white ml-[85px] md:ml-0">
+                    <main ref={mainScrollRef} className="flex-1 bg-white ml-[85px] md:ml-0 overflow-y-auto no-scrollbar pb-32">
                         {/* Horizontal Filters & Subcategories Row */}
                         <div className="flex flex-col gap-3 px-4 py-4 border-b border-slate-50/50 sticky top-0 bg-white/95 backdrop-blur-sm z-30 md:hidden">
                              <div className="flex items-center gap-3 overflow-x-auto no-scrollbar py-1 pr-2">

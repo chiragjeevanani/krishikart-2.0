@@ -376,11 +376,15 @@ export const assignOrderToFranchise = async (orderId) => {
 
       emitToFranchise(franchise._id, "new_order", {
         orderId: order._id,
-        message: `New order auto-assigned: #${order._id.toString().slice(-6)}`,
+        message: order.isPreOrder 
+          ? `Advance Booking Assigned: #${order._id.toString().slice(-6)} for ${new Date(order.scheduledDate).toLocaleDateString()}`
+          : `New order auto-assigned: #${order._id.toString().slice(-6)}`,
         autoAccepted: true,
         showRejectOnly: true,
         franchiseAutoAccepted: true,
         orderStatus: "Accepted",
+        isPreOrder: order.isPreOrder,
+        scheduledDate: order.scheduledDate
       });
 
       console.log(

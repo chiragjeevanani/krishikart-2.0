@@ -38,6 +38,7 @@ import {
   LEGAL_CMS_DESCRIPTIONS,
 } from "../constants/legalCmsKeys.js";
 import { mapAdminNotificationForViewer } from "../utils/adminNotification.js";
+import { emitToDelivery } from "../lib/socket.js";
 
 /* ================= VENDOR MANAGEMENT ================= */
 
@@ -2383,6 +2384,27 @@ export const updateDeliveryStatus = async (req, res) => {
     }).select("-password");
     if (!partner) return handleResponse(res, 404, "Delivery partner not found");
 
+    if (isApproved === true) {
+      await sendNotificationToUser(
+        id,
+        {
+          title: "Account Approved! 🎉",
+          body: "Congratulations! Your delivery partner account has been approved. You can now go online and start earning.",
+          data: {
+            type: "account_approved",
+            notificationCategory: "status",
+            link: "/delivery/dashboard"
+          }
+        },
+        "delivery"
+      );
+      
+      emitToDelivery(id, "account_status", {
+        status: "approved",
+        message: "Your account has been approved by the administrator."
+      });
+    }
+
     return handleResponse(res, 200, `Delivery partner status updated`, partner);
   } catch (err) {
     console.error(err);
@@ -2417,9 +2439,49 @@ export const reviewDeliveryDocs = async (req, res) => {
       if (partner.pendingDocs.licenseImage) partner.licenseImage = partner.pendingDocs.licenseImage;
 
       partner.pendingDocs.status = "approved";
+
+      // Send notification for document approval
+      await sendNotificationToUser(
+        id,
+        {
+          title: "Documents Verified ✅",
+          body: "Your submitted documents have been verified and approved by the administrator.",
+          data: {
+            type: "docs_approved",
+            notificationCategory: "compliance",
+            link: "/delivery/profile"
+          }
+        },
+        "delivery"
+      );
+
+      emitToDelivery(id, "docs_status", {
+        status: "approved",
+        message: "Your updated documents have been approved."
+      });
     } else {
       partner.pendingDocs.status = "rejected";
       partner.pendingDocs.rejectionReason = reason;
+
+      // Send notification for document rejection
+      await sendNotificationToUser(
+        id,
+        {
+          title: "Documents Rejected ❌",
+          body: `Your document update request was rejected. Reason: ${reason || 'Please check your documents.'}`,
+          data: {
+            type: "docs_rejected",
+            notificationCategory: "compliance",
+            link: "/delivery/profile"
+          }
+        },
+        "delivery"
+      );
+
+      emitToDelivery(id, "docs_status", {
+        status: "rejected",
+        message: `Documents rejected: ${reason}`
+      });
     }
 
     await partner.save();

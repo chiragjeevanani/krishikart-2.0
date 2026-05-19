@@ -337,7 +337,11 @@ export const createOrder = async (req, res) => {
         orderGroupId,
         customerName: user.fullName,
         amount: order.totalAmount,
-        message: `New order placed by ${user.fullName}: ₹${order.totalAmount}`,
+        isPreOrder: order.isPreOrder,
+        scheduledDate: order.scheduledDate,
+        message: order.isPreOrder 
+          ? `Advance Booking by ${user.fullName}: ₹${order.totalAmount} for ${new Date(order.scheduledDate).toLocaleDateString()}`
+          : `New order placed by ${user.fullName}: ₹${order.totalAmount}`,
       });
     }
 

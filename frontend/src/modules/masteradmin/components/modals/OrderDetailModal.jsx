@@ -475,6 +475,17 @@ const OrderDetailModal = ({ isOpen, onClose, orderId, onProcure, onAllowPartial 
                                                     <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Audit</h3>
                                                 </div>
                                                 <div className="space-y-3">
+                                                    {(order.scheduledDateFormatted || order.scheduledDate) && (
+                                                        <div className="flex gap-3 mb-4 p-3 bg-indigo-50 border border-indigo-100 rounded-sm">
+                                                            <Clock size={16} className="text-indigo-600 shrink-0" />
+                                                            <div>
+                                                                <p className="text-[10px] font-black text-indigo-900 uppercase tracking-tight">Advance Booking / Target Date</p>
+                                                                <p className="text-[11px] font-black text-indigo-600 mt-1 uppercase tabular-nums">
+                                                                    {order.scheduledDateFormatted || new Date(order.scheduledDate).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                     <div className="flex gap-3">
                                                         <div className="w-1 h-1 rounded-full bg-amber-500 mt-1.5 shrink-0" />
                                                         <div>

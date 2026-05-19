@@ -191,13 +191,13 @@ export default function FranchiseOnboardingDrawer({ isOpen, onClose, onSave, ini
                                     Node profile
                                 </p>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <Input label="Franchise Name" value={form.franchiseName} onChange={(v) => setValue('franchiseName', v)} />
-                                    <Input label="Owner Name" value={form.ownerName} onChange={(v) => setValue('ownerName', v)} />
-                                    <Input label="Mobile" value={form.mobile} onChange={(v) => setValue('mobile', v.replace(/\D/g, '').slice(0, 10))} />
-                                    <Input label="Email (optional)" type="email" value={form.email} onChange={(v) => setValue('email', v)} />
+                                    <Input label="Franchise Name" required value={form.franchiseName} onChange={(v) => setValue('franchiseName', v)} />
+                                    <Input label="Owner Name" required value={form.ownerName} onChange={(v) => setValue('ownerName', v.replace(/[^a-zA-Z\s]/g, ''))} />
+                                    <Input label="Mobile" required value={form.mobile} onChange={(v) => setValue('mobile', v.replace(/\D/g, '').slice(0, 10))} />
+                                    <Input label="Email" value={form.email} onChange={(v) => setValue('email', v)} />
                                     <Input label="Area" value={form.area} onChange={(v) => setValue('area', v)} />
-                                    <Input label="City" value={form.city} onChange={(v) => setValue('city', v)} />
-                                    <Input label="State" value={form.state} onChange={(v) => setValue('state', v)} />
+                                    <Input label="City" required value={form.city} onChange={(v) => setValue('city', v.replace(/[^a-zA-Z\s]/g, ''))} />
+                                    <Input label="State" required value={form.state} onChange={(v) => setValue('state', v.replace(/[^a-zA-Z\s]/g, ''))} />
                                 </div>
                             </div>
 
@@ -259,8 +259,8 @@ export default function FranchiseOnboardingDrawer({ isOpen, onClose, onSave, ini
                                     <Input label="PAN Number" value={form.panNumber} onChange={(v) => setValue('panNumber', v.toUpperCase())} />
                                     {!isEdit && (
                                         <>
-                                            <FileField label="Aadhaar image / PDF" onChange={(f) => setValue('aadhaarImage', f)} file={form.aadhaarImage} />
-                                            <FileField label="PAN image / PDF" onChange={(f) => setValue('panImage', f)} file={form.panImage} />
+                                            <FileField label="Aadhaar image / PDF" required onChange={(f) => setValue('aadhaarImage', f)} file={form.aadhaarImage} />
+                                            <FileField label="PAN image / PDF" required onChange={(f) => setValue('panImage', f)} file={form.panImage} />
                                         </>
                                     )}
                                 </div>
@@ -288,7 +288,7 @@ export default function FranchiseOnboardingDrawer({ isOpen, onClose, onSave, ini
                                     {!isEdit && (
                                         <>
                                             <FileField label="FSSAI certificate" onChange={(f) => setValue('fssaiCertificate', f)} file={form.fssaiCertificate} />
-                                            <FileField label="Shop establishment" onChange={(f) => setValue('shopEstablishmentCertificate', f)} file={form.shopEstablishmentCertificate} />
+                                            <FileField label="Shop establishment" required onChange={(f) => setValue('shopEstablishmentCertificate', f)} file={form.shopEstablishmentCertificate} />
                                             <FileField label="GST certificate" onChange={(f) => setValue('gstCertificate', f)} file={form.gstCertificate} />
                                         </>
                                     )}
@@ -316,10 +316,12 @@ export default function FranchiseOnboardingDrawer({ isOpen, onClose, onSave, ini
     );
 }
 
-function Input({ label, value, onChange, type = 'text', inputMode, maxLength, placeholder }) {
+function Input({ label, value, onChange, type = 'text', inputMode, maxLength, placeholder, required }) {
     return (
         <div>
-            <label className="text-[11px] font-bold text-slate-600 block mb-1">{label}</label>
+            <label className="text-[11px] font-bold text-slate-600 block mb-1">
+                {label} {required && <span className="text-red-500">*</span>}
+            </label>
             <input
                 type={type}
                 inputMode={inputMode}
@@ -333,12 +335,12 @@ function Input({ label, value, onChange, type = 'text', inputMode, maxLength, pl
     );
 }
 
-function FileField({ label, file, onChange }) {
+function FileField({ label, file, onChange, required }) {
     return (
         <label className="border border-dashed border-slate-300 rounded p-3 cursor-pointer hover:bg-white bg-white block min-h-[88px]">
             <div className="flex items-center gap-2 text-slate-700">
                 <Upload size={14} />
-                <span className="text-xs font-bold">{label}</span>
+                <span className="text-xs font-bold">{label} {required && <span className="text-red-500">*</span>}</span>
             </div>
             <p className="text-[11px] text-slate-500 mt-2 truncate">{file?.name || 'Upload file'}</p>
             <input

@@ -373,10 +373,10 @@ const SignupScreen = () => {
                             </div>
                             <motion.button
                                 whileTap={{ scale: 0.96 }}
-                                onClick={() => navigate(ROUTES.DASHBOARD)}
+                                onClick={() => navigate(ROUTES.LOGIN)}
                                 className="w-full py-4 bg-slate-900 text-white rounded-3xl font-black text-sm shadow-xl shadow-slate-200 active:scale-95 transition-all"
                             >
-                                Go to Dashboard
+                                Go to Login
                             </motion.button>
                         </motion.div>
                     ) : (

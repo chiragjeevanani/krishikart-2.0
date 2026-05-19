@@ -113,7 +113,7 @@ export default function SignupScreen() {
   };
 
   const handleChange = (field, value) => {
-    if (field === "state") {
+    if (["ownerName", "city", "state"].includes(field)) {
       value = value.replace(/[^A-Za-z\s]/g, "");
     }
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -339,7 +339,7 @@ export default function SignupScreen() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] px-1">
-                        Shop Name
+                        Shop Name <span className="text-red-500">*</span>
                       </label>
                       <div className="relative group">
                         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors">
@@ -358,7 +358,7 @@ export default function SignupScreen() {
                     </div>
                     <div className="space-y-2">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] px-1">
-                        Owner Name
+                        Owner Name <span className="text-red-500">*</span>
                       </label>
                       <div className="relative group">
                         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors">
@@ -381,7 +381,7 @@ export default function SignupScreen() {
 
                   <div className="space-y-2">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] px-1">
-                      Mobile Number
+                      Mobile Number <span className="text-red-500">*</span>
                     </label>
                     <div className="relative group">
                       <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors">
@@ -509,7 +509,7 @@ export default function SignupScreen() {
 
                   <div className="space-y-2">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] px-1">
-                      Product Categories to Serve
+                      Product Categories to Serve <span className="text-red-500">*</span>
                     </label>
                     <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 bg-slate-50 border border-slate-200 rounded-sm">
                       {isLoadingCategories ? (

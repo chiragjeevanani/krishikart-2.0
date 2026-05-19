@@ -322,15 +322,11 @@ export default function DocumentationScreen() {
             nextErrors.panNumber = 'Enter a valid PAN in this format: ABCDE1234F.';
         }
 
-        if (!fssaiDigits) {
-            nextErrors.fssaiNumber = 'Enter your 14-digit FSSAI license number.';
-        } else if (!isValidFssai(fssaiDigits)) {
+        if (fssaiDigits && !isValidFssai(fssaiDigits)) {
             nextErrors.fssaiNumber = 'FSSAI number must contain exactly 14 digits.';
         }
 
-        if (!gstNumber) {
-            nextErrors.gstNumber = 'Enter your 15-character GST number.';
-        } else if (!isValidGst(gstNumber)) {
+        if (gstNumber && !isValidGst(gstNumber)) {
             nextErrors.gstNumber = 'Enter a valid GSTIN like 27ABCDE1234F1Z5.';
         }
 
@@ -340,15 +336,16 @@ export default function DocumentationScreen() {
         if (!formData.panImage && !previews.pan) {
             nextErrors.panImage = 'Upload a clear PAN card image.';
         }
-        if (!formData.fssaiCertificate && !previews.fssai) {
-            nextErrors.fssaiCertificate = 'Upload your FSSAI certificate.';
-        }
+        // FSSAI and GST are optional
+        // if (!formData.fssaiCertificate && !previews.fssai) {
+        //     nextErrors.fssaiCertificate = 'Upload your FSSAI certificate.';
+        // }
         if (!formData.shopEstablishmentCertificate && !previews.shopEstablishment) {
             nextErrors.shopEstablishmentCertificate = 'Upload your shop establishment certificate.';
         }
-        if (!formData.gstCertificate && !previews.gst) {
-            nextErrors.gstCertificate = 'Upload your GST certificate.';
-        }
+        // if (!formData.gstCertificate && !previews.gst) {
+        //     nextErrors.gstCertificate = 'Upload your GST certificate.';
+        // }
 
         return {
             nextErrors,
@@ -412,11 +409,11 @@ export default function DocumentationScreen() {
             return;
         }
         const fssaiDigits = String(formData.fssaiNumber || '').replace(/\D/g, '');
-        if (fssaiDigits.length !== 14) {
+        if (fssaiDigits && fssaiDigits.length !== 14) {
             toast.error('FSSAI number must be exactly 14 digits');
             return;
         }
-        if (!isValidGst(formData.gstNumber)) {
+        if (formData.gstNumber && !isValidGst(formData.gstNumber)) {
             toast.error(
                 'GSTIN must be a 15-character alphanumeric string (e.g. 22AAAAA0000A1Z5)',
             );
@@ -502,7 +499,7 @@ export default function DocumentationScreen() {
                     <div className="p-6 space-y-6">
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">
-                                Aadhaar Number
+                                Aadhaar Number <span className="text-red-500">*</span>
                             </label>
                             <input
                                 type="tel"
@@ -520,7 +517,7 @@ export default function DocumentationScreen() {
                         <DocUploadZone
                             preview={previews.aadhaar}
                             disabled={readOnly}
-                            title="National ID Image"
+                            title={<>National ID Image <span className="text-red-500">*</span></>}
                             subtitle="Upload Aadhaar Front/Back"
                             inputId="doc-aadhaar"
                             docName="aadhaar_card"
@@ -547,7 +544,7 @@ export default function DocumentationScreen() {
                     <div className="p-6 space-y-6">
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-0.5">
-                                PAN Card Number
+                                PAN Card Number <span className="text-red-500">*</span>
                             </label>
                             <input
                                 type="text"
@@ -572,7 +569,7 @@ export default function DocumentationScreen() {
                         <DocUploadZone
                             preview={previews.pan}
                             disabled={readOnly}
-                            title="PAN Card Image"
+                            title={<>PAN Card Image <span className="text-red-500">*</span></>}
                             subtitle="Upload PAN Card Image"
                             inputId="doc-pan"
                             docName="pan_card"
@@ -715,7 +712,7 @@ export default function DocumentationScreen() {
                             <DocUploadZone
                                 preview={previews.shopEstablishment}
                                 disabled={readOnly}
-                                title="Certificate Upload"
+                                title={<>Certificate Upload <span className="text-red-500">*</span></>}
                                 subtitle="Upload shop / establishment proof (Shop Act, Udyam, etc.)"
                                 inputId="doc-shop"
                                 docName="shop_establishment_certificate"

@@ -222,9 +222,9 @@ export default function OrdersScreen() {
                         <span className="font-bold text-slate-900 text-sm tracking-tight">{displayDate}</span>
                         <span className="text-xs text-slate-400 font-bold uppercase tracking-[0.05em] mt-0.5">{displayTime}</span>
                         {row.scheduledDateFormatted || row.scheduledDate ? (
-                             <span className="text-[8px] font-black text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-sm mt-1 w-fit border border-indigo-100 shadow-sm flex items-center gap-1">
-                                <Clock size={8} />
-                                Target: {row.scheduledDateFormatted || new Date(row.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                             <span className="text-[9px] font-black text-amber-700 bg-amber-50 px-2 py-1 rounded-md mt-2 w-fit border-2 border-amber-200 shadow-sm flex items-center gap-1.5 animate-pulse uppercase tracking-wider">
+                                <Clock size={10} strokeWidth={3} />
+                                Target: {row.scheduledDateFormatted || new Date(row.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', weekday: 'short' })}
                              </span>
                         ) : null}
                     </div>
@@ -238,10 +238,10 @@ export default function OrdersScreen() {
                 <div className="flex flex-col">
                     <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{val}</span>
                     {row.scheduledDateFormatted || row.scheduledDate ? (
-                        <div className="flex items-center gap-1 mt-0.5">
-                            <div className="w-1 h-1 rounded-full bg-indigo-500 animate-pulse" />
-                            <span className="text-[9px] font-black text-indigo-600 uppercase tracking-tight">
-                                Scheduled: {row.scheduledDateFormatted || new Date(row.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                        <div className="flex items-center gap-1 mt-1.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                            <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest border-b border-amber-200">
+                                ADVANCE BOOKING
                             </span>
                         </div>
                     ) : null}

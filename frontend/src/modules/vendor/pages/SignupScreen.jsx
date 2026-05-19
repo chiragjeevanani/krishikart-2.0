@@ -175,7 +175,7 @@ export default function SignupScreen() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                             <div className="space-y-1">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Name / Owner Name</label>
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Name / Owner Name <span className="text-red-500">*</span></label>
                                 <div className="relative group">
                                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors"><User size={14} /></div>
                                     <input name="fullName" type="text" required value={formData.fullName} onChange={handleChange} placeholder="Your Name" className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-10 pr-4 outline-none text-xs font-bold focus:ring-4 focus:ring-primary/5 transition-all text-slate-900" />
@@ -183,7 +183,7 @@ export default function SignupScreen() {
                             </div>
 
                             <div className="space-y-1">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Address <span className="text-red-500">*</span></label>
                                 <div className="relative group">
                                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors"><Mail size={14} /></div>
                                     <input name="email" type="email" required value={formData.email} onChange={handleChange} placeholder="vendor@kisaankart.com" className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-10 pr-4 outline-none text-xs font-bold focus:ring-4 focus:ring-primary/5 transition-all text-slate-900" />
@@ -191,7 +191,7 @@ export default function SignupScreen() {
                             </div>
 
                             <div className="space-y-1">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Phone Number</label>
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Phone Number <span className="text-red-500">*</span></label>
                                 <div className="relative group">
                                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors"><Phone size={14} /></div>
                                     <input name="mobile" type="tel" required value={formData.mobile} onChange={handleChange} placeholder="9876543210" maxLength={10} className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-10 pr-4 outline-none text-xs font-bold focus:ring-4 focus:ring-primary/5 transition-all text-slate-900 tracking-widest" />
@@ -199,7 +199,7 @@ export default function SignupScreen() {
                             </div>
 
                             <div className="space-y-1">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">City</label>
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">City <span className="text-red-500">*</span></label>
                                 <div className="relative group">
                                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors"><MapPin size={14} /></div>
                                     <input name="farmCity" type="text" required value={formData.farmCity} onChange={handleChange} placeholder="e.g. Indore" maxLength={50} className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-10 pr-4 outline-none text-xs font-bold focus:ring-4 focus:ring-primary/5 transition-all text-slate-900" />
@@ -207,7 +207,7 @@ export default function SignupScreen() {
                             </div>
 
                             <div className="space-y-1">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">State</label>
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">State <span className="text-red-500">*</span></label>
                                 <div className="relative group">
                                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors"><MapPin size={14} /></div>
                                     <input name="farmState" type="text" required value={formData.farmState} onChange={handleChange} placeholder="e.g. Madhya Pradesh" maxLength={50} className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-10 pr-4 outline-none text-xs font-bold focus:ring-4 focus:ring-primary/5 transition-all text-slate-900" />
@@ -307,7 +307,7 @@ export default function SignupScreen() {
 
                     {/* ── Password ── */}
                     <div className="space-y-1 md:col-span-2">
-                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Create Password</label>
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Create Password <span className="text-red-500">*</span></label>
                         <div className="relative group">
                             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors"><Lock size={14} /></div>
                             <input name="password" type="password" required value={formData.password} onChange={handleChange} placeholder="••••••••" className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-10 pr-4 outline-none text-xs font-bold focus:ring-4 focus:ring-primary/5 transition-all text-slate-900" />

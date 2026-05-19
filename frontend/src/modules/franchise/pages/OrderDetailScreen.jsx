@@ -66,7 +66,8 @@ export default function OrderDetailScreen() {
                         name: i.name || 'Item',
                         quantity: i.quantity ?? 0,
                         price: i.price ?? 0,
-                        isShortage: i.isShortage || false
+                        isShortage: i.isShortage || false,
+                        unit: i.unit || ''
                     })),
                     createdAt: o.createdAt,
                     time: o.time,
@@ -306,14 +307,14 @@ export default function OrderDetailScreen() {
                                     <span className="text-4xl font-black tracking-tighter tabular-nums leading-none">₹{(Number(order.total) || 0).toLocaleString()}</span>
                                 </div>
                                 <div className={cn(
-                                    "px-3 py-1 rounded-sm text-[10px] font-black uppercase tracking-widest border border-white/10",
+                                    "px-4 py-1.5 rounded-sm text-[14px] font-black uppercase tracking-widest border border-white/10",
                                     order.paymentMethod?.toUpperCase() === 'COD' 
                                         ? "bg-amber-500/20 text-amber-400 border-amber-500/30" 
                                         : "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
                                 )}>
                                     {order.paymentMethod?.toUpperCase() === 'COD' ? 'COD' : 'Online Payment'}
                                     {order.paymentMethod?.toUpperCase() !== 'COD' && (
-                                        <span className="ml-2 opacity-60 text-[8px]">({order.paymentMethod})</span>
+                                        <span className="ml-1 uppercase">({order.paymentMethod})</span>
                                     )}
                                 </div>
                             </div>
@@ -427,8 +428,9 @@ export default function OrderDetailScreen() {
                                 {(order.items || []).map((item, idx) => (
                                     <div key={idx} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors group">
                                         <div className="flex items-center gap-4">
-                                            <div className="w-8 h-8 rounded-sm bg-slate-50 border border-slate-100 text-[10px] font-black text-slate-400 flex items-center justify-center tabular-nums">
-                                                {Number(item.quantity) || 0}×
+                                            <div className="min-w-[40px] px-2 h-8 rounded-sm bg-slate-50 border border-slate-100 text-[10px] font-black text-slate-400 flex items-center justify-center tabular-nums gap-1">
+                                                <span>{Number(item.quantity) || 0}</span>
+                                                {item.unit && <span className="text-[8px] opacity-70 uppercase tracking-tighter">{item.unit}</span>}
                                             </div>
                                             <span className="text-[11px] font-black text-slate-900 uppercase tracking-tight">{item.name}</span>
                                             {item.isShortage && (
@@ -511,9 +513,9 @@ export default function OrderDetailScreen() {
                             <div className="flex items-center justify-between border-b border-slate-50 pb-4">
                                 <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Manage Order</h3>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[9px] font-black text-slate-400 uppercase">Payment:</span>
+                                    <span className="text-[12px] font-black text-slate-400 uppercase">Payment:</span>
                                     <span className={cn(
-                                        "text-[9px] font-black uppercase tracking-widest",
+                                        "text-[12px] font-black uppercase tracking-widest",
                                         order.paymentMethod?.toUpperCase() === 'COD' ? "text-amber-600" : "text-emerald-600"
                                     )}>
                                         {order.paymentMethod?.toUpperCase() === 'COD' ? 'Cash on Delivery' : 'Prepaid / Online'}

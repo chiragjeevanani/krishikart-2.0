@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState } from 'react';
 import api from '@/lib/axios';
 import { toast } from 'sonner';
-import { getSocket } from '@/lib/socket';
+import { getSocket, joinAdminDeliveryTracking } from '@/lib/socket';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
 import { useEffect } from 'react';
 
@@ -383,6 +383,20 @@ export const AdminProvider = ({ children }) => {
 
     useEffect(() => {
         const socket = getSocket();
+        joinAdminDeliveryTracking();
+
+        const handleNewOrder = (data) => {
+            console.log("New Order Received:", data);
+            playNotificationSound();
+            toast.success("New Order Arrived!", {
+                description: `${data.customerName || 'A customer'} placed an order for ₹${data.amount || '0'}`,
+                action: {
+                    label: "View Orders",
+                    onClick: () => window.location.href = '/masteradmin/orders'
+                },
+                duration: 5000
+            });
+        };
 
         const handleNewQuotation = (data) => {
             console.log("New Quotation Received:", data);
@@ -403,10 +417,12 @@ export const AdminProvider = ({ children }) => {
 
         socket.on('procurement_quote_received', handleNewQuotation);
         socket.on('new_vendor_category_request', handleNewVendorCategoryRequest);
+        socket.on('new_order_placed', handleNewOrder);
 
         return () => {
             socket.off('procurement_quote_received', handleNewQuotation);
             socket.off('new_vendor_category_request', handleNewVendorCategoryRequest);
+            socket.off('new_order_placed', handleNewOrder);
         };
     }, []);
 

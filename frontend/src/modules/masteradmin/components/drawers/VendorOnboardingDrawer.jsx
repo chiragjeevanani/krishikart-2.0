@@ -28,7 +28,7 @@ export default function VendorOnboardingDrawer({ isOpen, onClose, onSave }) {
             form.email &&
             form.mobile &&
             form.farmLocation &&
-            form.fssaiLicense &&
+            // fssaiLicense is now optional
             form.bankName &&
             form.accountHolderName &&
             form.accountNumber &&
@@ -108,10 +108,10 @@ export default function VendorOnboardingDrawer({ isOpen, onClose, onSave }) {
 
                     <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <Input label="Owner Name" value={form.fullName} onChange={(v) => handleChange('fullName', v)} />
-                            <Input label="Email" type="email" value={form.email} onChange={(v) => handleChange('email', v)} />
-                            <Input label="Mobile" value={form.mobile} onChange={(v) => handleChange('mobile', v.replace(/\D/g, '').slice(0, 10))} />
-                            <Input label="Farm / Shop Location" value={form.farmLocation} onChange={(v) => handleChange('farmLocation', v)} />
+                            <Input label="Owner Name" required value={form.fullName} onChange={(v) => handleChange('fullName', v.replace(/[^A-Za-z\s]/g, ""))} />
+                            <Input label="Email" required type="email" value={form.email} onChange={(v) => handleChange('email', v)} />
+                            <Input label="Mobile" required value={form.mobile} onChange={(v) => handleChange('mobile', v.replace(/\D/g, '').slice(0, 10))} />
+                            <Input label="Farm / Shop Location" required value={form.farmLocation} onChange={(v) => handleChange('farmLocation', v.replace(/[^A-Za-z\s,]/g, ""))} />
                             <Input label="FSSAI License" value={form.fssaiLicense} onChange={(v) => handleChange('fssaiLicense', v)} />
                             <Input label="Login Password (optional)" type="text" value={form.password} onChange={(v) => handleChange('password', v)} />
                         </div>
@@ -119,19 +119,19 @@ export default function VendorOnboardingDrawer({ isOpen, onClose, onSave }) {
                         <div className="border border-slate-200 rounded p-4">
                             <p className="text-xs font-bold text-slate-800 mb-3">Bank Details</p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <Input label="Bank Name" value={form.bankName} onChange={(v) => handleChange('bankName', v)} />
-                                <Input label="Account Holder" value={form.accountHolderName} onChange={(v) => handleChange('accountHolderName', v)} />
-                                <Input label="Account Number" value={form.accountNumber} onChange={(v) => handleChange('accountNumber', v)} />
-                                <Input label="IFSC Code" value={form.ifscCode} onChange={(v) => handleChange('ifscCode', v.toUpperCase())} />
+                                <Input label="Bank Name" required value={form.bankName} onChange={(v) => handleChange('bankName', v)} />
+                                <Input label="Account Holder" required value={form.accountHolderName} onChange={(v) => handleChange('accountHolderName', v)} />
+                                <Input label="Account Number" required value={form.accountNumber} onChange={(v) => handleChange('accountNumber', v)} />
+                                <Input label="IFSC Code" required value={form.ifscCode} onChange={(v) => handleChange('ifscCode', v.toUpperCase())} />
                             </div>
                         </div>
 
                         <div className="border border-slate-200 rounded p-4">
                             <p className="text-xs font-bold text-slate-800 mb-3">Required Documents</p>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <FileField label="Aadhaar" onChange={(f) => handleChange('aadharFile', f)} file={form.aadharFile} />
-                                <FileField label="PAN" onChange={(f) => handleChange('panFile', f)} file={form.panFile} />
-                                <FileField label="Shop Proof" onChange={(f) => handleChange('shopProofFile', f)} file={form.shopProofFile} />
+                                <FileField label="Aadhaar" required onChange={(f) => handleChange('aadharFile', f)} file={form.aadharFile} />
+                                <FileField label="PAN" required onChange={(f) => handleChange('panFile', f)} file={form.panFile} />
+                                <FileField label="Shop Proof" required onChange={(f) => handleChange('shopProofFile', f)} file={form.shopProofFile} />
                             </div>
                         </div>
                     </form>
@@ -154,10 +154,12 @@ export default function VendorOnboardingDrawer({ isOpen, onClose, onSave }) {
     );
 }
 
-function Input({ label, value, onChange, type = 'text' }) {
+function Input({ label, value, onChange, type = 'text', required }) {
     return (
         <div>
-            <label className="text-[11px] font-bold text-slate-600 block mb-1">{label}</label>
+            <label className="text-[11px] font-bold text-slate-600 block mb-1">
+                {label} {required && <span className="text-red-500">*</span>}
+            </label>
             <input
                 type={type}
                 value={value}
@@ -168,12 +170,12 @@ function Input({ label, value, onChange, type = 'text' }) {
     );
 }
 
-function FileField({ label, file, onChange }) {
+function FileField({ label, file, onChange, required }) {
     return (
         <label className="border border-dashed border-slate-300 rounded p-3 cursor-pointer hover:bg-slate-50">
             <div className="flex items-center gap-2 text-slate-700">
                 <Upload size={14} />
-                <span className="text-xs font-bold">{label}</span>
+                <span className="text-xs font-bold">{label} {required && <span className="text-red-500">*</span>}</span>
             </div>
             <p className="text-[11px] text-slate-500 mt-2 truncate">{file?.name || 'Upload file'}</p>
             <input
