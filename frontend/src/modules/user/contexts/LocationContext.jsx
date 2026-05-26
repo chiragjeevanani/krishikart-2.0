@@ -89,9 +89,11 @@ export function LocationProvider({ children }) {
         setFranchiseLocation(normalized);
         localStorage.setItem('kk_franchise_location', JSON.stringify(normalized));
 
-        // Always reverse-geocode fresh from coordinates
-        const addr = await reverseGeocode(lat, lng);
-        const finalAddr = addr || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        let finalAddr = loc.address;
+        if (!finalAddr) {
+            const addr = await reverseGeocode(lat, lng);
+            finalAddr = addr || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        }
 
         setFranchiseAddress(finalAddr);
         localStorage.setItem('kk_franchise_address', finalAddr);
@@ -99,17 +101,20 @@ export function LocationProvider({ children }) {
         setHasFranchisePinned(true);
         localStorage.setItem('kk_franchise_location_pinned', 'true');
 
-        // Sync with delivery location if it's not already pinned or if it's the same
-        // This prevents the user from being asked for location again at checkout
-        if (!hasDeliveryPinned) {
-            setDeliveryLocation(normalized);
-            setDeliveryAddress(finalAddr);
-            setHasDeliveryPinned(true);
-            localStorage.setItem('kk_delivery_location', JSON.stringify(normalized));
-            localStorage.setItem('kk_delivery_address', finalAddr);
-            localStorage.setItem('kk_delivery_location_pinned', 'true');
-            
-            // Also try to get components for structured address
+        // Always sync with delivery location when the user explicitly changes their pinned location.
+        // This ensures the checkout page reflects the location they are browsing in.
+        setDeliveryLocation(normalized);
+        setDeliveryAddress(finalAddr);
+        setHasDeliveryPinned(true);
+        localStorage.setItem('kk_delivery_location', JSON.stringify(normalized));
+        localStorage.setItem('kk_delivery_address', finalAddr);
+        localStorage.setItem('kk_delivery_location_pinned', 'true');
+        
+        // Also try to get components for structured address
+        if (loc.addressComponents) {
+            setDeliveryAddressComponents(loc.addressComponents);
+            localStorage.setItem('kk_delivery_address_components', JSON.stringify(loc.addressComponents));
+        } else {
             reverseGeocodeWithComponents(lat, lng).then(res => {
                 if (res) {
                     setDeliveryAddressComponents(res.addressComponents);
@@ -117,7 +122,7 @@ export function LocationProvider({ children }) {
                 }
             });
         }
-    }, [hasDeliveryPinned]);
+    }, []);
 
     const setPinnedDeliveryLocation = useCallback(async (loc) => {
         if (!loc) return;

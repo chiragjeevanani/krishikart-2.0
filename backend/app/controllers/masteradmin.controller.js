@@ -75,6 +75,8 @@ export const getAllVendors = async (req, res) => {
     const vendors = await Vendor.find(query)
       .select("-password -resetPasswordToken -resetPasswordExpires")
       .populate("products", "name category")
+      .populate("servedCategories", "name")
+      .populate("requestedCategories", "name")
       .sort({ updatedAt: -1 });
 
     return handleResponse(res, 200, "Vendors fetched successfully", vendors);
@@ -87,21 +89,30 @@ export const getAllVendors = async (req, res) => {
 export const updateVendorStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, approvedCategories } = req.body;
 
     if (!["pending", "active", "blocked"].includes(status)) {
       return handleResponse(res, 400, "Invalid status");
     }
 
-    const vendor = await Vendor.findByIdAndUpdate(
-      id,
-      { status },
-      { new: true },
-    ).select("-password");
+    const vendor = await Vendor.findById(id).select("-password");
 
     if (!vendor) {
       return handleResponse(res, 404, "Vendor not found");
     }
+
+    vendor.status = status;
+    if (status === "active") {
+      if (approvedCategories && Array.isArray(approvedCategories)) {
+        vendor.servedCategories = approvedCategories;
+        vendor.requestedCategories = [];
+      } else if (vendor.requestedCategories && vendor.requestedCategories.length > 0) {
+        vendor.servedCategories = vendor.requestedCategories;
+        vendor.requestedCategories = [];
+      }
+    }
+
+    await vendor.save();
 
     return handleResponse(
       res,
@@ -118,7 +129,7 @@ export const updateVendorStatus = async (req, res) => {
 export const getVendorDetails = async (req, res) => {
   try {
     const { id } = req.params;
-    const vendor = await Vendor.findById(id).select("-password");
+    const vendor = await Vendor.findById(id).select("-password").populate("servedCategories", "name");
 
     if (!vendor) {
       return handleResponse(res, 404, "Vendor not found");
@@ -127,6 +138,22 @@ export const getVendorDetails = async (req, res) => {
     return handleResponse(res, 200, "Vendor details fetched", vendor);
   } catch (err) {
     console.error(err);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+export const deleteVendor = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const vendor = await Vendor.findByIdAndDelete(id);
+
+    if (!vendor) {
+      return handleResponse(res, 404, "Vendor not found");
+    }
+
+    return handleResponse(res, 200, "Vendor deleted successfully");
+  } catch (err) {
+    console.error("Delete vendor error:", err);
     return handleResponse(res, 500, "Server error");
   }
 };
@@ -166,7 +193,7 @@ export const assignProductsToVendor = async (req, res) => {
 
 export const createVendorByAdmin = async (req, res) => {
   try {
-    const { fullName, email, mobile, farmLocation, fssaiLicense, password } =
+    const { fullName, email, mobile, farmLocation, fssaiLicense, password, servedCategories } =
       req.body;
 
     if (!fullName || !email || !mobile || !farmLocation || !fssaiLicense) {
@@ -255,6 +282,12 @@ export const createVendorByAdmin = async (req, res) => {
       req.files.shopProofFile[0].buffer,
       "vendors/shop_proof",
     );
+    const fssaiImage = req.files?.fssaiFile?.[0] 
+      ? await uploadToCloudinary(
+          req.files.fssaiFile[0].buffer,
+          "vendors/fssai",
+        )
+      : "";
 
     const generatedPassword =
       password?.trim() || `KK@${String(mobile).slice(-6)}`;
@@ -268,11 +301,13 @@ export const createVendorByAdmin = async (req, res) => {
       password: hashedPassword,
       profilePicture,
       fssaiLicense: String(fssaiLicense).trim(),
+      fssaiImage,
       bankDetails,
       aadharCard,
       panCard,
       shopEstablishmentProof,
       status: "active",
+      servedCategories: servedCategories ? (typeof servedCategories === 'string' ? JSON.parse(servedCategories) : servedCategories) : [],
     });
 
     const vendorObj = vendor.toObject();
@@ -611,6 +646,8 @@ export const getPendingKYCFranchises = async (req, res) => {
       query = { "kyc.status": { $ne: "unsubmitted" } };
     }
     const franchises = await Franchise.find(query)
+      .populate("requestedCategories", "name")
+      .populate("servedCategories", "name")
       .select("-password")
       .sort({ updatedAt: -1 });
     return handleResponse(res, 200, "KYC franchises fetched", franchises);
@@ -622,7 +659,9 @@ export const getPendingKYCFranchises = async (req, res) => {
 export const reviewFranchiseKYC = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, rejectionReason } = req.body; // status: verified or rejected
+    const { status, rejectionReason, approvedCategories } = req.body; // status: verified or rejected
+
+    console.log(`[KYC Review] Franchise ${id} | Status: ${status} | Approved Cats:`, approvedCategories);
 
     if (!["verified", "rejected"].includes(status)) {
       return handleResponse(res, 400, "Invalid status choice");
@@ -636,6 +675,14 @@ export const reviewFranchiseKYC = async (req, res) => {
       franchise.isVerified = true;
       franchise.kyc.verifiedAt = new Date();
       franchise.status = "active";
+      if (approvedCategories && Array.isArray(approvedCategories)) {
+        franchise.servedCategories = approvedCategories;
+        franchise.requestedCategories = [];
+      } else if (franchise.requestedCategories && franchise.requestedCategories.length > 0) {
+        // If they didn't explicitly send approvedCategories, just approve all requested
+        franchise.servedCategories = franchise.requestedCategories;
+        franchise.requestedCategories = [];
+      }
     } else {
       franchise.isVerified = false;
       franchise.kyc.rejectionReason = rejectionReason;
@@ -1076,6 +1123,22 @@ export const getCustomerDetails = async (req, res) => {
     return handleResponse(res, 200, "Customer details fetched", customer);
   } catch (err) {
     console.error(err);
+    return handleResponse(res, 500, "Server error");
+  }
+};
+
+export const deleteCustomer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const customer = await User.findByIdAndDelete(id);
+
+    if (!customer) {
+      return handleResponse(res, 404, "Customer not found");
+    }
+
+    return handleResponse(res, 200, "Customer deleted successfully");
+  } catch (err) {
+    console.error("Delete customer error:", err);
     return handleResponse(res, 500, "Server error");
   }
 };

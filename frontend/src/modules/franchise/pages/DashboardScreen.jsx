@@ -148,7 +148,7 @@ export default function DashboardScreen() {
             header: 'Amount',
             key: 'total',
             align: 'right',
-            render: (val) => <span className="text-[11px] font-black text-slate-900 tabular-nums">₹{(val || 0).toLocaleString()}</span>
+            render: (val) => <span className="text-[11px] font-black text-slate-900 tabular-nums">₹{Number(val || 0).toLocaleString()}</span>
         },
         {
             header: 'Delivery Slot',
@@ -156,7 +156,7 @@ export default function DashboardScreen() {
             render: (val, row) => (
                 <div className="flex flex-col">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{val}</span>
-                    {row.scheduledDate && (
+                    {row.scheduledDate && !isNaN(new Date(row.scheduledDate).getTime()) && (
                         <span className="text-[9px] font-black text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-md mt-1 w-fit border border-amber-200 animate-pulse shadow-sm">
                             Target: {new Date(row.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', weekday: 'short' })}
                         </span>

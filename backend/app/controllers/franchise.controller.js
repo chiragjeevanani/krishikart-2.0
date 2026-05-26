@@ -53,18 +53,24 @@ export const submitKYC = async (req, res) => {
       );
     }
 
-    const fssaiDigits = normalizeFssaiNumber(fssaiNumber);
-    if (!isValidFssaiNumber(fssaiDigits)) {
-      return handleResponse(res, 400, "FSSAI number must be exactly 14 digits");
+    let fssaiDigits = "";
+    if (fssaiNumber) {
+      fssaiDigits = normalizeFssaiNumber(fssaiNumber);
+      if (fssaiDigits && !isValidFssaiNumber(fssaiDigits)) {
+        return handleResponse(res, 400, "FSSAI number must be exactly 14 digits");
+      }
     }
 
-    const gstNorm = normalizeFranchiseGst14(gstNumber);
-    if (!isValidFranchiseGst14(gstNorm)) {
-      return handleResponse(
-        res,
-        400,
-        "GST number must be a valid 15-character GSTIN",
-      );
+    let gstNorm = "";
+    if (gstNumber) {
+      gstNorm = normalizeFranchiseGst14(gstNumber);
+      if (gstNorm && !isValidFranchiseGst14(gstNorm)) {
+        return handleResponse(
+          res,
+          400,
+          "GST number must be a valid 15-character GSTIN",
+        );
+      }
     }
 
     const kycData = {

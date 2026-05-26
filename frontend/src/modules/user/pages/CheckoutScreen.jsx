@@ -227,6 +227,22 @@ export default function CheckoutScreen() {
         }
     }
 
+    const extractStreetAddress = (fullAddress, components) => {
+        if (!fullAddress) return '';
+        let street = fullAddress;
+        street = street.replace(/,?\s*India$/i, '').trim();
+        if (components?.pincode) {
+            street = street.replace(new RegExp(`,?\\s*${components.pincode}$`, 'i'), '').trim();
+        }
+        if (components?.state) {
+            street = street.replace(new RegExp(`,?\\s*${components.state}$`, 'i'), '').trim();
+        }
+        if (components?.city) {
+            street = street.replace(new RegExp(`,?\\s*${components.city}$`, 'i'), '').trim();
+        }
+        return street.replace(/,\s*$/, '').trim();
+    }
+
     const persistAddressToProfile = async (fullAddress) => {
         if (!fullAddress) return
         await api.put('/user/update-profile', { address: fullAddress })
@@ -236,7 +252,8 @@ export default function CheckoutScreen() {
 
     const persistSavedAddresses = (addresses) => {
         setSavedAddresses(addresses)
-        localStorage.setItem(SAVED_ADDRESSES_KEY, JSON.stringify(addresses))
+        const key = user?._id ? `${SAVED_ADDRESSES_KEY}_${user._id}` : SAVED_ADDRESSES_KEY;
+        localStorage.setItem(key, JSON.stringify(addresses))
     }
 
     const upsertAddressByTag = (tag, details) => {
@@ -342,17 +359,30 @@ export default function CheckoutScreen() {
     }, [])
 
     useEffect(() => {
+        if (!user?._id) return;
         try {
-            const raw = localStorage.getItem(SAVED_ADDRESSES_KEY)
-            if (!raw) return
-            const parsed = JSON.parse(raw)
-            if (Array.isArray(parsed)) {
-                setSavedAddresses(parsed)
+            const userKey = `${SAVED_ADDRESSES_KEY}_${user._id}`;
+            const raw = localStorage.getItem(userKey);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                    setSavedAddresses(parsed);
+                }
+            } else {
+                // Fallback to legacy shared key and migrate to user key
+                const legacyRaw = localStorage.getItem(SAVED_ADDRESSES_KEY);
+                if (legacyRaw) {
+                    const parsed = JSON.parse(legacyRaw);
+                    if (Array.isArray(parsed)) {
+                        setSavedAddresses(parsed);
+                        localStorage.setItem(userKey, legacyRaw);
+                    }
+                }
             }
         } catch (error) {
-            console.error('Failed to parse saved addresses:', error)
+            console.error('Failed to parse saved addresses:', error);
         }
-    }, [])
+    }, [user?._id])
 
     useEffect(() => {
         if (!ctxDeliveryAddress) return;
@@ -360,11 +390,12 @@ export default function CheckoutScreen() {
 
         if (ctxDeliveryComponents) {
             setAddressDetails(prev => {
+                const streetAddress = extractStreetAddress(ctxDeliveryAddress, ctxDeliveryComponents);
                 const newDetails = {
                     ...prev,
                     city: ctxDeliveryComponents.city || prev.city,
                     state: ctxDeliveryComponents.state || prev.state,
-                    colony: ctxDeliveryComponents.area || prev.colony,
+                    colony: streetAddress || ctxDeliveryComponents.area || prev.colony,
                     pincode: ctxDeliveryComponents.pincode || prev.pincode,
                 };
                 
@@ -583,6 +614,16 @@ export default function CheckoutScreen() {
             toast.error("Please fill all the mandatory address fields (Flat/House No., Colony, City, State)");
             setIsEditingAddress(true);
             return;
+        }
+
+        if (ctxDeliveryComponents?.city) {
+            const manualCity = addressDetails.city.trim().toLowerCase();
+            const pinnedCity = ctxDeliveryComponents.city.trim().toLowerCase();
+            if (manualCity && !pinnedCity.includes(manualCity) && !manualCity.includes(pinnedCity)) {
+                toast.error(`pin location and city you entered is diifferent so you can not proceed further`);
+                setIsEditingAddress(true);
+                return;
+            }
         }
         if (!deliveryShift) {
             toast.error("Please select a delivery shift timing");
@@ -1318,10 +1359,11 @@ export default function CheckoutScreen() {
                                                             setAddressDetails(existing.details);
                                                         } else {
                                                             // If no existing address for this tag, reset to pinned location defaults
+                                                            const streetAddress = extractStreetAddress(ctxDeliveryAddress, ctxDeliveryComponents);
                                                             setAddressDetails({
                                                                 flat: '',
                                                                 floor: '',
-                                                                colony: ctxDeliveryComponents?.area || '',
+                                                                colony: streetAddress || ctxDeliveryComponents?.area || '',
                                                                 landmark: '',
                                                                 city: ctxDeliveryComponents?.city || 'Indore',
                                                                 state: ctxDeliveryComponents?.state || 'Madhya Pradesh',
@@ -1429,33 +1471,24 @@ export default function CheckoutScreen() {
                                             <input
                                                 type="text"
                                                 value={addressDetails.city}
-                                                onChange={(e) => {
-                                                    const val = e.target.value.replace(/[^a-zA-Z\s]/g, '');
-                                                    setAddressDetails(prev => ({ ...prev, city: val }));
-                                                }}
+                                                readOnly
                                                 placeholder="City *"
-                                                className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                                                className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-not-allowed opacity-70"
                                             />
                                             <input
                                                 type="text"
                                                 value={addressDetails.state}
-                                                onChange={(e) => {
-                                                    const val = e.target.value.replace(/[^a-zA-Z\s]/g, '');
-                                                    setAddressDetails(prev => ({ ...prev, state: val }));
-                                                }}
+                                                readOnly
                                                 placeholder="State *"
-                                                className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                                                className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-not-allowed opacity-70"
                                             />
                                         </div>
                                         <input
                                             type="text"
                                             value={addressDetails.pincode}
-                                            onChange={(e) => {
-                                                const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 6);
-                                                setAddressDetails(prev => ({ ...prev, pincode: val }));
-                                            }}
+                                            readOnly
                                             placeholder="Pincode (Optional)"
-                                            className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                                            className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-not-allowed opacity-70"
                                         />
                                     </div>
                                 </div>
@@ -1471,7 +1504,8 @@ export default function CheckoutScreen() {
                                                 const manualCity = addressDetails.city.trim().toLowerCase();
                                                 const pinnedCity = ctxDeliveryComponents.city.trim().toLowerCase();
                                                 if (manualCity && !pinnedCity.includes(manualCity) && !manualCity.includes(pinnedCity)) {
-                                                    toast.warning(`Address mismatch: Your manual city is '${addressDetails.city}', but the pinned location is in '${ctxDeliveryComponents.city}'. We will use '${addressDetails.city}' for delivery.`);
+                                                    toast.error(`pin location and city you entered is diifferent so you can not proceed further`);
+                                                    return;
                                                 }
                                             }
 

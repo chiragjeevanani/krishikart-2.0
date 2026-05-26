@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search,
     User,
@@ -12,7 +12,10 @@ import {
     RefreshCw,
     ShieldCheck,
     Smartphone,
-    Map
+    Map,
+    Eye,
+    Trash2,
+    X
 } from 'lucide-react';
 import api from '@/lib/axios';
 import { toast } from 'sonner';
@@ -24,6 +27,7 @@ export default function CustomerManagementScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [customers, setCustomers] = useState([]);
+    const [selectedCustomer, setSelectedCustomer] = useState(null);
 
     useEffect(() => {
         fetchCustomers();
@@ -49,6 +53,18 @@ export default function CustomerManagementScreen() {
         (customer.mobile || '').includes(searchTerm) ||
         (customer.email || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    const handleDelete = async (id) => {
+        if (!window.confirm("Are you sure you want to permanently delete this user? This action cannot be undone.")) return;
+        try {
+            await api.delete(`/masteradmin/customers/${id}`);
+            toast.success("Customer deleted successfully");
+            setCustomers(prev => prev.filter(c => c._id !== id));
+        } catch (error) {
+            console.error("Failed to delete customer:", error);
+            toast.error("Failed to delete customer");
+        }
+    };
 
     const customerColumns = [
         {
@@ -122,6 +138,28 @@ export default function CustomerManagementScreen() {
                     {isActive !== false ? 'Active' : 'Inactive'}
                 </div>
             )
+        },
+        {
+            header: 'Actions',
+            key: 'actions',
+            render: (_, row) => (
+                <div className="flex items-center gap-2">
+                    <button 
+                        onClick={() => setSelectedCustomer(row)}
+                        className="p-1.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors"
+                        title="View Full Data"
+                    >
+                        <Eye size={14} />
+                    </button>
+                    <button 
+                        onClick={() => handleDelete(row._id)}
+                        className="p-1.5 bg-rose-50 text-rose-600 rounded hover:bg-rose-100 transition-colors"
+                        title="Delete User"
+                    >
+                        <Trash2 size={14} />
+                    </button>
+                </div>
+            )
         }
     ];
 
@@ -179,6 +217,90 @@ export default function CustomerManagementScreen() {
                     </div>
                 </div>
             </div>
+
+            {/* View Customer Modal */}
+            <AnimatePresence>
+                {selectedCustomer && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]"
+                        >
+                            <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50">
+                                <div>
+                                    <h3 className="text-lg font-black text-slate-900">User Dossier</h3>
+                                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mt-1">ID: {selectedCustomer._id}</p>
+                                </div>
+                                <button
+                                    onClick={() => setSelectedCustomer(null)}
+                                    className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-full transition-colors"
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+                            
+                            <div className="p-6 overflow-y-auto custom-scrollbar flex flex-col gap-6">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="flex flex-col gap-1 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Full Name</span>
+                                        <span className="text-sm font-black text-slate-900">{selectedCustomer.fullName || 'N/A'}</span>
+                                    </div>
+                                    <div className="flex flex-col gap-1 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mobile Number</span>
+                                        <span className="text-sm font-black text-slate-900">{selectedCustomer.mobile || 'N/A'}</span>
+                                    </div>
+                                    <div className="flex flex-col gap-1 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Email Address</span>
+                                        <span className="text-sm font-black text-slate-900">{selectedCustomer.email || 'N/A'}</span>
+                                    </div>
+                                    <div className="flex flex-col gap-1 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</span>
+                                        <span className="text-sm font-black text-slate-900">{selectedCustomer.isActive !== false ? 'ACTIVE' : 'INACTIVE'}</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col gap-3">
+                                    <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-2">Financial & Usage</h4>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-[10px] font-bold text-slate-500 uppercase">Wallet Balance</span>
+                                            <span className="text-sm font-bold text-slate-900">₹{selectedCustomer.walletBalance || 0}</span>
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-[10px] font-bold text-slate-500 uppercase">Loyalty Coins</span>
+                                            <span className="text-sm font-bold text-slate-900">{selectedCustomer.loyaltyCoins || 0}</span>
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-[10px] font-bold text-slate-500 uppercase">Credit Limit</span>
+                                            <span className="text-sm font-bold text-slate-900">₹{selectedCustomer.creditLimit || 0}</span>
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-[10px] font-bold text-slate-500 uppercase">Used Credit</span>
+                                            <span className="text-sm font-bold text-slate-900 text-rose-600">₹{selectedCustomer.usedCredit || 0}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {selectedCustomer.address && (
+                                    <div className="flex flex-col gap-3">
+                                        <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-2">Primary Address</h4>
+                                        <p className="text-sm font-medium text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                            {selectedCustomer.address}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

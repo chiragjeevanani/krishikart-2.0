@@ -48,9 +48,9 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
-    const updateVendorStatus = async (id, status) => {
+    const updateVendorStatus = async (id, status, approvedCategories) => {
         try {
-            const response = await api.put(`/masteradmin/vendors/${id}/status`, { status });
+            const response = await api.put(`/masteradmin/vendors/${id}/status`, { status, approvedCategories });
             if (response.data.success) {
                 toast.success(`Vendor ${status === 'active' ? 'approved' : 'updated'}`);
                 setVendors(prev => prev.filter(v => String(v._id || v.id) !== String(id)));
@@ -64,9 +64,9 @@ export const AdminProvider = ({ children }) => {
         }
     };
 
-    const reviewFranchiseKYC = async (id, status, rejectionReason) => {
+    const reviewFranchiseKYC = async (id, status, rejectionReason, approvedCategories) => {
         try {
-            const response = await api.put(`/masteradmin/franchises/${id}/kyc-review`, { status, rejectionReason });
+            const response = await api.put(`/masteradmin/franchises/${id}/kyc-review`, { status, rejectionReason, approvedCategories });
             if (response.data.success) {
                 toast.success(`Franchise KYC ${status}`);
                 setFranchises(prev => prev.filter(f => String(f._id || f.id) !== String(id)));

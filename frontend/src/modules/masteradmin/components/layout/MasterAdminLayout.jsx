@@ -9,6 +9,28 @@ import NewQuotationAlert from '../modals/NewQuotationAlert';
 export default function MasterAdminLayout() {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const location = useLocation();
+
+    // Global Audio Unlocker (Modern Browser requirement)
+    useState(() => {
+        const unlockAudio = () => {
+            const context = new (window.AudioContext || window.webkitAudioContext)();
+            if (context.state === 'suspended') {
+                context.resume();
+            }
+            // Also play a silent buffer
+            const buffer = context.createBuffer(1, 1, 22050);
+            const source = context.createBufferSource();
+            source.buffer = buffer;
+            source.connect(context.destination);
+            source.start(0);
+
+            window.removeEventListener('click', unlockAudio);
+            window.removeEventListener('touchstart', unlockAudio);
+        };
+        window.addEventListener('click', unlockAudio);
+        window.addEventListener('touchstart', unlockAudio);
+    });
+
     const isLoginPage = location.pathname === '/masteradmin/login' ||
         location.pathname === '/masteradmin/forgot-password';
 

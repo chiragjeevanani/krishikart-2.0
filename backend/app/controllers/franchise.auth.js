@@ -178,6 +178,15 @@ export const registerFranchise = async (req, res) => {
           ...(gstNumber ? { gstNumber: normalizeFranchiseGst14(gstNumber) } : {}),
         },
       });
+
+      // Notify Admin of new franchise signup
+      try {
+        const { emitToAdmin } = await import('../lib/socket.js');
+        emitToAdmin("new_franchise_signup", {
+            franchiseId: franchise._id,
+            message: `New Franchise signed up: ${franchise.franchiseName} (${franchise.city})`
+        });
+      } catch(e) {}
     }
 
     if (isGlobalDefaultOtpEnabled()) {

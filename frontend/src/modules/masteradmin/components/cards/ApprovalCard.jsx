@@ -57,7 +57,17 @@ export default function ApprovalCard({ item, type, onApprove, onReject, onViewDo
 
             <div className="p-4 flex-1 space-y-4">
                 <div className="space-y-2">
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Audit Checklist</span>
+                    <div className="flex items-center justify-between">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Audit Checklist</span>
+                        <button 
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); onViewDoc(item); }}
+                            className="text-[9px] font-bold text-primary uppercase tracking-widest hover:underline flex items-center gap-1"
+                        >
+                            <ExternalLink size={10} />
+                            View Profile
+                        </button>
+                    </div>
                     <div className="space-y-1.5 grayscale group-hover:grayscale-0 transition-all">
                         {isVendor && [
                             { label: 'Aadhar Card', value: item.aadharCard },

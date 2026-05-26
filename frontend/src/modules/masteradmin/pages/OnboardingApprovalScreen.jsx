@@ -64,7 +64,7 @@ export default function OnboardingApprovalScreen() {
         (p.mobile || "").toLowerCase().includes(searchTerm.toLowerCase())
     ) : [];
 
-    const handleApprove = async (idOrItem) => {
+    const handleApprove = async (idOrItem, approvedCategories) => {
         let id = idOrItem;
         if (typeof idOrItem === 'object' && idOrItem !== null) {
             id = idOrItem._id ?? idOrItem.id;
@@ -73,10 +73,10 @@ export default function OnboardingApprovalScreen() {
         if (id == null || id === '') return;
         const idStr = String(id);
         if (activeTab === 'vendor') {
-            const success = await updateVendorStatus(idStr, 'active');
+            const success = await updateVendorStatus(idStr, 'active', approvedCategories);
             if (success) setSelectedItem(null);
         } else if (activeTab === 'franchise') {
-            const success = await reviewFranchiseKYC(idStr, 'verified');
+            const success = await reviewFranchiseKYC(idStr, 'verified', null, approvedCategories);
             if (success) setSelectedItem(null);
         } else if (activeTab === 'delivery') {
             const item = typeof idOrItem === 'object' ? idOrItem : deliveryPartners.find(p => String(p._id || p.id) === idStr);
@@ -274,8 +274,8 @@ export default function OnboardingApprovalScreen() {
                 onClose={() => setSelectedItem(null)}
                 item={selectedItem}
                 type={activeTab}
-                onApprove={(it) => handleApprove(it || selectedItem)}
-                onReject={(it) => handleReject(it || selectedItem)}
+                onApprove={(it, categories) => handleApprove(it || selectedItem, categories)}
+                onReject={(it, reason) => handleReject(it || selectedItem, reason)}
             />
         </div>
     );

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Autocomplete, useJsApiLoader } from '@react-google-maps/api'
 import { ArrowLeft, Crosshair, MapPin, Search, X } from 'lucide-react'
-import { geocodeAddressFrontend } from '@/lib/geo'
+import { geocodeAddressFrontend, extractAddressComponents } from '@/lib/geo'
 import { GOOGLE_MAPS_API_KEY, GOOGLE_MAPS_LIBRARIES, GOOGLE_MAPS_LOADER_ID } from '@/lib/mapsConfig'
 
 export default function LocationActionPopup({
@@ -65,9 +65,11 @@ export default function LocationActionPopup({
             place.name ||
             searchValue.trim()
 
+        const addressComponents = extractAddressComponents(place);
+
         setIsSubmitting(true)
         try {
-            await onManualLocationSelect({ lat, lng, address })
+            await onManualLocationSelect({ lat, lng, address, addressComponents })
             handleClose()
         } finally {
             setIsSubmitting(false)

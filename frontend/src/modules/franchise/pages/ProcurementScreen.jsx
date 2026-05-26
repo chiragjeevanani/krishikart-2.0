@@ -26,8 +26,11 @@ import api from '@/lib/axios';
 import { cn } from '@/lib/utils';
 import { useProcurement } from '../contexts/ProcurementContext';
 
+import { useFranchiseAuth } from '../contexts/FranchiseAuthContext';
+
 export default function ProcurementScreen() {
     const navigate = useNavigate();
+    const { franchise } = useFranchiseAuth();
     const { addRequest, cart, setCart, clearCart, procurementRequests } = useProcurement();
     const [searchTerm, setSearchTerm] = useState('');
     const [activeTab, setActiveTab] = useState('catalog');
@@ -62,10 +65,23 @@ export default function ProcurementScreen() {
                 ]);
 
                 if (prodRes.data.success) {
-                    setProducts(prodRes.data.results);
+                    let fetchedProducts = prodRes.data.results;
+                    if (franchise?.servedCategories?.length > 0) {
+                        const allowedCategoryIds = franchise.servedCategories.map(c => typeof c === 'object' ? (c._id || c.id)?.toString() : c?.toString());
+                        fetchedProducts = fetchedProducts.filter(p => {
+                            const pCatId = (p.category?._id || p.category?.id || p.category)?.toString();
+                            return allowedCategoryIds.includes(pCatId);
+                        });
+                    }
+                    setProducts(fetchedProducts);
                 }
                 if (catRes.data.success) {
-                    setCategories(['All', ...catRes.data.results.map(c => c.name)]);
+                    let fetchedCategories = catRes.data.results;
+                    if (franchise?.servedCategories?.length > 0) {
+                        const allowedCategoryIds = franchise.servedCategories.map(c => typeof c === 'object' ? (c._id || c.id)?.toString() : c?.toString());
+                        fetchedCategories = fetchedCategories.filter(c => allowedCategoryIds.includes((c._id || c.id)?.toString()));
+                    }
+                    setCategories(['All', ...fetchedCategories.map(c => c.name)]);
                 }
             } catch (error) {
                 console.error("Failed to fetch procurement data", error);
@@ -74,7 +90,7 @@ export default function ProcurementScreen() {
             }
         };
         fetchData();
-    }, []);
+    }, [franchise]);
 
     const filteredProducts = products.filter(p => {
         const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -340,12 +356,15 @@ export default function ProcurementScreen() {
                     ) : (
                         <div className="space-y-4 max-w-4xl mx-auto">
                             {procurementRequests && procurementRequests.length > 0 ? (
-                                procurementRequests.map(request => (
-                                    <div key={request._id} className="bg-white border border-slate-200 p-4 rounded-sm hover:shadow-lg transition-shadow">
+                                procurementRequests.map((request, reqIdx) => {
+                                    if (!request) return null;
+                                    const reqId = request._id || request.id || '';
+                                    return (
+                                    <div key={reqId || reqIdx} className="bg-white border border-slate-200 p-4 rounded-sm hover:shadow-lg transition-shadow">
                                         <div className="flex justify-between items-start mb-4">
                                             <div>
-                                                <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider mb-1">Request #{request._id.slice(-6)}</h3>
-                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{new Date(request.createdAt).toLocaleDateString()}</p>
+                                                <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider mb-1">Request #{reqId ? reqId.toString().slice(-6) : 'PENDING'}</h3>
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{request.createdAt && !isNaN(new Date(request.createdAt).getTime()) ? new Date(request.createdAt).toLocaleDateString() : 'N/A'}</p>
                                             </div>
                                             <span className={cn(
                                                 "px-2 py-1 text-[9px] font-black uppercase tracking-widest rounded-sm border",
@@ -354,7 +373,7 @@ export default function ProcurementScreen() {
                                                         request.status === 'completed' ? "bg-emerald-50 text-emerald-600 border-emerald-200" :
                                                             "bg-slate-50 text-slate-400 border-slate-200"
                                             )}>
-                                                {request.status.replace('_', ' ')}
+                                                {(request.status || 'unknown').replace('_', ' ')}
                                             </span>
                                         </div>
                                         <div className="bg-slate-50 border border-slate-100 rounded-sm p-3">
@@ -374,7 +393,7 @@ export default function ProcurementScreen() {
                                             </div>
                                         </div>
                                     </div>
-                                ))
+                                )})
                             ) : (
                                 <div className="text-center py-20">
                                     <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">

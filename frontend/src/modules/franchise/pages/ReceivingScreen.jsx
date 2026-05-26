@@ -221,16 +221,7 @@ const ReceivingScreen = () => {
             label: '',
             render: (_, row) => (
                 <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => {
-                            setDocType('INVOICE');
-                            setSelectedPO(row);
-                            setIsDocOpen(true);
-                        }}
-                        className="p-1 px-3 rounded-sm border border-slate-200 text-[10px] font-black text-slate-500 hover:bg-slate-50 transition-all uppercase flex items-center gap-2"
-                    >
-                        <FileText size={12} /> View Invoice
-                    </button>
+
                     <button
                         onClick={() => handleSelectPO(row)}
                         className="p-1 px-4 bg-slate-900 text-white rounded-sm text-[10px] font-black hover:bg-slate-800 transition-all uppercase tracking-widest"
