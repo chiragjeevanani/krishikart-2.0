@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, X, Bell, ArrowRight, Package, MapPin, CreditCard } from 'lucide-react';
+import { ShoppingBag, X, Bell, ArrowRight, Package, MapPin, CreditCard, Clock } from 'lucide-react';
 import { useFranchiseOrders } from '../../contexts/FranchiseOrdersContext';
 import { useNavigate } from 'react-router-dom';
 import api from '@/lib/axios';
@@ -164,11 +164,11 @@ const NewOrderAlert = () => {
                             </div>
                         </div>
                         {/* Scheduled Date Row */}
-                        {(orderDetail?.isPreOrder || newOrderData?.isPreOrder) && (
+                        {(orderDetail?.isPreOrder || newOrderData?.isPreOrder) && (orderDetail?.scheduledDateFormatted || newOrderData?.scheduledDateFormatted || orderDetail?.scheduledDate || newOrderData?.scheduledDate) && (
                             <div className="bg-indigo-50 px-4 py-2 flex items-center gap-2 border-b border-indigo-100">
                                 <Clock size={12} className="text-indigo-600" />
                                 <span className="text-[10px] font-black text-indigo-700 uppercase tracking-widest">
-                                    Scheduled for: {orderDetail?.scheduledDateFormatted || newOrderData?.scheduledDateFormatted || new Date(orderDetail?.scheduledDate || newOrderData?.scheduledDate).toLocaleDateString()}
+                                    Scheduled for: {orderDetail?.scheduledDateFormatted || newOrderData?.scheduledDateFormatted || (!isNaN(new Date(orderDetail?.scheduledDate || newOrderData?.scheduledDate).getTime()) ? new Date(orderDetail?.scheduledDate || newOrderData?.scheduledDate).toLocaleDateString() : 'Pending')}
                                 </span>
                             </div>
                         )}

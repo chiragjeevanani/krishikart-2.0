@@ -397,6 +397,15 @@ export const createProcurementRequest = async (req, res) => {
 
         await procurementRequest.save();
 
+        // Notify Admin
+        try {
+            emitToAdmin('new_procurement_request', {
+                requestId: procurementRequest._id,
+                message: `New procurement request from Franchise for ${items.length} items.`,
+                franchiseId
+            });
+        } catch(e) {}
+
         // Update Order status if linked
         if (req.body.orderId) {
             const order = await Order.findById(req.body.orderId);

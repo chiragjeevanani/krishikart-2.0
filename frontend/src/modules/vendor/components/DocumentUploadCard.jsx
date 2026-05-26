@@ -10,9 +10,11 @@ import {
     Loader2,
     Eye,
     Trash2,
-    Pencil
+    Pencil,
+    Camera
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { openFlutterCamera } from '@/lib/flutterCamera';
 
 export default function DocumentUploadCard({ title, icon: Icon, status: initialStatus, fileName: initialFileName, uploadDate: initialUploadDate, url, fieldName, onUpload }) {
     const [status, setStatus] = useState(initialStatus || 'not_uploaded');
@@ -22,6 +24,14 @@ export default function DocumentUploadCard({ title, icon: Icon, status: initialS
     const [isUploading, setIsUploading] = useState(false);
     const [progress, setProgress] = useState(0);
     const fileInputRef = useRef(null);
+
+    const handleFlutterCamera = async () => {
+        const file = await openFlutterCamera();
+        if (file) {
+            // Fake an event object to reuse the same upload logic
+            handleFileSelect({ target: { files: [file], value: '' } });
+        }
+    };
 
     const handleFileSelect = async (e) => {
         const file = e.target.files[0];
@@ -195,13 +205,26 @@ export default function DocumentUploadCard({ title, icon: Icon, status: initialS
                     </div>
                 </div>
             ) : status === 'not_uploaded' ? (
-                <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full flex-1 py-4 border-2 border-dashed border-slate-100 rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/[0.02] transition-all group/btn"
-                >
-                    <Upload size={18} className="text-slate-300 group-hover/btn:text-primary transition-colors" />
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover/btn:text-primary transition-colors">Select & Upload File</span>
-                </button>
+                <div className="w-full flex-1 flex gap-2">
+                    {window.flutter_inappwebview && (
+                        <button
+                            onClick={handleFlutterCamera}
+                            className="flex-1 py-4 border-2 border-dashed border-slate-100 rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/[0.02] transition-all group/btn"
+                        >
+                            <Camera size={18} className="text-slate-300 group-hover/btn:text-primary transition-colors" />
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover/btn:text-primary transition-colors">Camera</span>
+                        </button>
+                    )}
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex-1 py-4 border-2 border-dashed border-slate-100 rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/[0.02] transition-all group/btn"
+                    >
+                        <Upload size={18} className="text-slate-300 group-hover/btn:text-primary transition-colors" />
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover/btn:text-primary transition-colors">
+                            {window.flutter_inappwebview ? "Gallery" : "Select File"}
+                        </span>
+                    </button>
+                </div>
             ) : (
                 <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100/50 flex-1">
                     <div className="w-8 h-8 bg-white border border-slate-100 rounded-lg flex items-center justify-center text-primary shrink-0">

@@ -1,6 +1,9 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '@/lib/axios';
 import { useFCM } from '@/hooks/useFCM';
+import { getSocket, joinAdminDeliveryTracking } from '@/lib/socket';
+import { useNotificationSound } from '@/hooks/useNotificationSound';
+import { toast } from 'sonner';
 
 const MasterAdminAuthContext = createContext();
 
@@ -62,6 +65,62 @@ export function MasterAdminAuthProvider({ children }) {
         localStorage.removeItem('masterAdminToken');
         localStorage.removeItem('masterAdminData');
     };
+
+    // Socket Setup for Admin Notifications
+    const { playNotificationSound } = useNotificationSound();
+
+    useEffect(() => {
+        if (admin) {
+            joinAdminDeliveryTracking();
+            const socket = getSocket();
+
+            const handleNewProcurement = (data) => {
+                playNotificationSound();
+                toast.success('New Procurement Request', {
+                    description: data.message || 'A new procurement request has arrived.',
+                    duration: 10000,
+                    action: {
+                        label: 'View',
+                        onClick: () => window.location.href = '/masteradmin/assignment'
+                    }
+                });
+            };
+
+            const handleNewVendor = (data) => {
+                playNotificationSound();
+                toast.info('New Vendor Registration', {
+                    description: data.message || 'A new vendor is pending approval.',
+                    duration: 10000,
+                    action: {
+                        label: 'Review',
+                        onClick: () => window.location.href = '/masteradmin/approvals?type=vendor'
+                    }
+                });
+            };
+
+            const handleNewFranchise = (data) => {
+                playNotificationSound();
+                toast.info('New Franchise Registration', {
+                    description: data.message || 'A new franchise is pending approval.',
+                    duration: 10000,
+                    action: {
+                        label: 'Review',
+                        onClick: () => window.location.href = '/masteradmin/approvals?type=franchise'
+                    }
+                });
+            };
+
+            socket.on('new_procurement_request', handleNewProcurement);
+            socket.on('new_vendor_signup', handleNewVendor);
+            socket.on('new_franchise_signup', handleNewFranchise);
+
+            return () => {
+                socket.off('new_procurement_request', handleNewProcurement);
+                socket.off('new_vendor_signup', handleNewVendor);
+                socket.off('new_franchise_signup', handleNewFranchise);
+            };
+        }
+    }, [admin, playNotificationSound]);
 
     const hasPermission = (permissionKey) => {
         if (!admin) return false;

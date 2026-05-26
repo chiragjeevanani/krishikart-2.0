@@ -47,6 +47,11 @@ const vendorSchema = new mongoose.Schema(
       default: "",
     },
 
+    fssaiImage: {
+      type: String,
+      default: "",
+    },
+
     shopEstablishmentProof: {
       type: String,
       default: "",

@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ShieldCheck, XCircle, FileText, Calendar, Building, User, Mail, Phone, MapPin, ExternalLink, Download, AlertCircle, CheckCircle2, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 function DocPreviewModal({ isOpen, onClose, url, title }) {
     if (!isOpen || !url) return null;
@@ -66,6 +66,27 @@ export default function ApprovalDetailDrawer({ isOpen, onClose, item, type, onAp
     const [isProcessing, setIsProcessing] = useState(false);
     const [downloadingId, setDownloadingId] = useState(null);
     const [activePreview, setActivePreview] = useState({ url: null, title: '' });
+    const [approvedCategories, setApprovedCategories] = useState([]);
+
+    useEffect(() => {
+        if (isOpen && item && (isFranchise || isVendor)) {
+            const reqCats = item.requestedCategories || [];
+            const srvCats = item.servedCategories || [];
+            
+            // Combine both arrays, removing duplicates based on _id or string value
+            const combined = [...reqCats, ...srvCats].reduce((acc, current) => {
+                const id = current._id || current;
+                if (!acc.find(item => (item._id || item) === id)) {
+                    acc.push(current);
+                }
+                return acc;
+            }, []);
+            
+            setApprovedCategories(combined.map(c => c._id || c));
+        } else {
+            setApprovedCategories([]);
+        }
+    }, [isOpen, item, isFranchise, isVendor]);
 
     if (!isOpen || !item) return null;
 
@@ -119,7 +140,7 @@ export default function ApprovalDetailDrawer({ isOpen, onClose, item, type, onAp
         setIsProcessing(true);
         try {
             const fn = action === 'approve' ? onApprove : onReject;
-            const result = typeof fn === 'function' ? await Promise.resolve(fn(item)) : undefined;
+            const result = typeof fn === 'function' ? await Promise.resolve(fn(item, approvedCategories)) : undefined;
             if (result !== false) onClose();
         } finally {
             setIsProcessing(false);
@@ -130,7 +151,7 @@ export default function ApprovalDetailDrawer({ isOpen, onClose, item, type, onAp
         { type: 'Aadhar Card', fileName: item.aadharCard ? 'aadhar_upload.pdf' : 'Not Uploaded', url: item.aadharCard },
         { type: 'PAN Card', fileName: item.panCard ? 'pan_upload.pdf' : 'Not Uploaded', url: item.panCard },
         { type: 'Shop Proof', fileName: item.shopEstablishmentProof ? 'shop_proof.pdf' : 'Not Uploaded', url: item.shopEstablishmentProof },
-        { type: 'FSSAI License', fileName: item.fssaiLicense || 'Not Provided', url: null }
+        ...((item.fssaiLicense || item.fssaiImage) ? [{ type: 'FSSAI License', fileName: item.fssaiLicense || (item.fssaiImage ? 'fssai_license.pdf' : 'Not Provided'), url: item.fssaiImage }] : [])
     ] :
         isFranchise ? [
             { type: 'Aadhaar Card', fileName: `Aadhaar: ${item.kyc?.aadhaarNumber || 'N/A'}`, url: item.kyc?.aadhaarImage, submitted: !!item.kyc?.aadhaarImage },
@@ -279,20 +300,48 @@ export default function ApprovalDetailDrawer({ isOpen, onClose, item, type, onAp
                                                 </p>
                                             </div>
                                         </div>
-                                    </div>
-
-                                    {/* Business Profile */}
-                                    <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm">
-                                        <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight mb-6">Business Profile</h4>
-                                        <div className="space-y-4">
-                                            <p className="text-sm text-slate-500 font-medium leading-relaxed">
-                                                This entity has been active in the regional supply chain. Their specialized in high-volume perishable procurement and have maintained a good delivery score.
-                                            </p>
-                                            <div className="pt-4 border-t border-slate-50 flex gap-4">
-                                                <span className="px-4 py-2 bg-slate-50 rounded-xl text-[10px] font-black text-slate-500 uppercase">Tier 1 Partner</span>
-                                                <span className="px-4 py-2 bg-slate-50 rounded-xl text-[10px] font-black text-slate-500 uppercase">{item.farmLocation ? 'Verified Address' : 'Pending Verification'}</span>
+                                        
+                                        {(isFranchise || isVendor) && (
+                                            <div className="mt-8 pt-8 border-t border-slate-100">
+                                                <h5 className="text-sm font-black text-slate-900 uppercase tracking-tight mb-2">Requested Categories</h5>
+                                                {((item.requestedCategories && item.requestedCategories.length > 0) || (item.servedCategories && item.servedCategories.length > 0)) ? (
+                                                    <>
+                                                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Click to select which categories to approve</p>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {[...(item.requestedCategories || []), ...(item.servedCategories || [])].reduce((acc, current) => {
+                                                                const id = current._id || current;
+                                                                if (!acc.find(c => (c._id || c) === id)) {
+                                                                    acc.push(current);
+                                                                }
+                                                                return acc;
+                                                            }, []).map(cat => {
+                                                                const catId = cat._id || cat;
+                                                                const isApproved = approvedCategories.includes(catId);
+                                                                return (
+                                                                    <button
+                                                                        key={catId}
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            setApprovedCategories(prev => 
+                                                                                isApproved ? prev.filter(id => id !== catId) : [...prev, catId]
+                                                                            );
+                                                                        }}
+                                                                        className={cn(
+                                                                            "px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-colors cursor-pointer",
+                                                                            isApproved ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-400 border-slate-200 hover:border-slate-300"
+                                                                        )}
+                                                                    >
+                                                                        {cat.name || 'Unknown Category'}
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <p className="text-xs text-slate-500 font-medium italic mt-2">No categories were selected during registration.</p>
+                                                )}
                                             </div>
-                                        </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -362,45 +411,45 @@ export default function ApprovalDetailDrawer({ isOpen, onClose, item, type, onAp
                                         </div>
                                         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-primary/10 transition-colors" />
                                     </div>
-
-                                    <div className="bg-slate-900 p-8 rounded-[40px] text-white shadow-2xl relative overflow-hidden">
-                                        <div className="relative z-10 flex flex-col items-center text-center">
-                                            <div className="w-16 h-16 bg-white/10 rounded-[20px] flex items-center justify-center mb-6">
-                                                <CheckCircle2 size={32} className="text-primary" />
-                                            </div>
-                                            <h4 className="text-xl font-black italic uppercase">Final Approval</h4>
-                                            <p className="text-xs text-white/40 font-medium mt-2 leading-relaxed max-w-[200px]">
-                                                By approving, you grant full network access to this entity.
-                                            </p>
-                                            <div className="w-full h-px bg-white/10 my-8" />
-                                            <div className="grid grid-cols-1 w-full gap-4">
-                                                <button
-                                                    onClick={() => handleAction('approve')}
-                                                    disabled={isProcessing}
-                                                    className="w-full py-5 bg-primary text-white rounded-3xl font-black uppercase tracking-widest text-xs hover:bg-emerald-600 transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-3 disabled:opacity-50"
-                                                >
-                                                    {isProcessing ? (
-                                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                    ) : (
-                                                        <>
-                                                            <ShieldCheck size={18} />
-                                                            Verify Entry
-                                                        </>
-                                                    )}
-                                                </button>
-                                                <button
-                                                    onClick={() => handleAction('reject')}
-                                                    disabled={isProcessing}
-                                                    className="w-full py-4 text-[10px] font-black text-white/40 uppercase tracking-[0.2em] hover:text-red-400 transition-colors"
-                                                >
-                                                    Reject Application
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary/10 rounded-full blur-3xl -ml-24 -mb-24" />
-                                    </div>
                                 </div>
                             </div>
+                        </div>
+                        {/* Sticky Action Footer */}
+                        <div className="bg-white p-6 border-t border-slate-100 sticky bottom-0 z-10 flex items-center justify-end gap-4 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)]">
+                            <button
+                                type="button"
+                                disabled={isProcessing}
+                                onClick={async () => {
+                                    setIsProcessing(true);
+                                    await onReject(item);
+                                    setIsProcessing(false);
+                                }}
+                                className="px-6 py-4 rounded-xl text-xs font-black uppercase tracking-[0.15em] text-slate-500 hover:text-white hover:bg-rose-500 hover:shadow-lg hover:shadow-rose-500/25 transition-all disabled:opacity-50"
+                            >
+                                Reject Application
+                            </button>
+                            <button
+                                type="button"
+                                disabled={isProcessing}
+                                onClick={async () => {
+                                    setIsProcessing(true);
+                                    await onApprove(item, approvedCategories);
+                                    setIsProcessing(false);
+                                }}
+                                className="px-8 py-4 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-[0.15em] shadow-xl shadow-slate-200 transition-all hover:scale-105 active:scale-95 disabled:bg-slate-300 disabled:shadow-none flex items-center gap-3"
+                            >
+                                {isProcessing ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        Processing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckCircle2 size={16} />
+                                        Verify & Approve
+                                    </>
+                                )}
+                            </button>
                         </div>
                     </motion.div>
                 </div>

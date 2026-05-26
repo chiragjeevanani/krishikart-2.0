@@ -2,7 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import BottomNav from '../navigation/BottomNav';
 import Sidebar from '../navigation/Sidebar';
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import NewAssignmentAlert from '../modals/NewAssignmentAlert';
 import VendorStatusAlert from '../modals/VendorStatusAlert';
 import { useVendorAuth } from '../../contexts/VendorAuthContext';
@@ -17,6 +17,28 @@ export default function VendorLayout() {
         statusAlertData
     } = useVendorAuth();
     const location = useLocation();
+
+    // Global Audio Unlocker (Modern Browser requirement)
+    useState(() => {
+        const unlockAudio = () => {
+            const context = new (window.AudioContext || window.webkitAudioContext)();
+            if (context.state === 'suspended') {
+                context.resume();
+            }
+            // Also play a silent buffer
+            const buffer = context.createBuffer(1, 1, 22050);
+            const source = context.createBufferSource();
+            source.buffer = buffer;
+            source.connect(context.destination);
+            source.start(0);
+
+            window.removeEventListener('click', unlockAudio);
+            window.removeEventListener('touchstart', unlockAudio);
+        };
+        window.addEventListener('click', unlockAudio);
+        window.addEventListener('touchstart', unlockAudio);
+    });
+
     const isAuthPage = location.pathname === '/vendor/login' ||
         location.pathname === '/vendor/signup' ||
         location.pathname === '/vendor/forgot-password' ||

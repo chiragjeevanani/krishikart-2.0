@@ -135,7 +135,7 @@ export function FranchiseOrdersProvider({ children }) {
             hotelImage: (o.items && o.items[0]?.image) || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&q=80",
             status: (o.orderStatus || '').toLowerCase(),
             total: o.totalAmount,
-            items: (o.items || []).map(i => ({
+            items: (Array.isArray(o.items) ? o.items : []).map(i => ({
                 id: i.productId || i.product,
                 productId: i.productId || i.product,
                 name: i.name || 'Unnamed Product',
@@ -153,7 +153,7 @@ export function FranchiseOrdersProvider({ children }) {
             paymentMode: o.paymentMethod || "Prepaid",
             timeline: [
                 { status: 'Order Placed', time: o.time || 'N/A', completed: true },
-                ...(o.statusHistory || []).map(h => ({
+                ...(Array.isArray(o.statusHistory) ? o.statusHistory : []).map(h => ({
                     status: h.status,
                     time: h.updatedAt || o.time,
                     completed: true

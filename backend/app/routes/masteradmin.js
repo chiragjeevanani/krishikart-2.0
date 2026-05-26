@@ -26,6 +26,7 @@ import {
   getAllVendors,
   updateVendorStatus,
   getVendorDetails,
+  deleteVendor,
   createFranchiseByAdmin,
   getAllFranchises,
   getFranchiseDetails,
@@ -45,6 +46,7 @@ import {
   getAllCustomers,
   getCustomerDetails,
   updateCustomerCredit,
+  deleteCustomer,
   assignProductsToVendor,
   getGlobalInventoryMonitoring,
   getFranchiseInventoryDetails,
@@ -80,6 +82,7 @@ import {
   updateFAQ,
   deleteFAQ,
 } from "../controllers/masteradmin.controller.js";
+import { getComprehensiveReports } from "../controllers/reports.controller.js";
 
 import {
   protectMasterAdmin,
@@ -124,6 +127,7 @@ router.post(
     { name: "aadharFile", maxCount: 1 },
     { name: "panFile", maxCount: 1 },
     { name: "shopProofFile", maxCount: 1 },
+    { name: "fssaiFile", maxCount: 1 },
   ]),
   createVendorByAdmin,
 );
@@ -144,6 +148,12 @@ router.put(
   protectMasterAdmin,
   requirePermission("products"),
   assignProductsToVendor,
+);
+router.delete(
+  "/vendors/:id",
+  protectMasterAdmin,
+  requirePermission("vendors"),
+  deleteVendor,
 );
 router.get(
   "/vendors/category-requests/pending",
@@ -289,6 +299,12 @@ router.put(
   requirePermission("credit"),
   updateCustomerCredit,
 );
+router.delete(
+  "/customers/:id",
+  protectMasterAdmin,
+  requirePermission("credit"),
+  deleteCustomer,
+);
 
 /* 📊 Inventory Monitoring */
 router.get(
@@ -424,6 +440,7 @@ router.delete("/recommendations/:id", protectMasterAdmin, requirePermission("pro
 router.patch("/recommendations/:id/toggle", protectMasterAdmin, requirePermission("products"), toggleRecommendationStatus);
 
 router.get("/returns", protectMasterAdmin, getAllReturnRequests);
+router.get("/reports/comprehensive", protectMasterAdmin, requirePermission("dashboard"), getComprehensiveReports);
 router.get("/dashboard/stats", protectMasterAdmin, getAdminDashboardStats);
 router.get("/search", protectMasterAdmin, globalSearch);
 router.post("/test-notification", protectMasterAdmin, testPushNotification);

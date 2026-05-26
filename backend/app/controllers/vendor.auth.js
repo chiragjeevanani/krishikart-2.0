@@ -108,8 +108,18 @@ export const registerVendor = async (req, res) => {
             aadharCard: aadharCardUrl,
             panCard: panCardUrl,
             shopEstablishmentProof: shopProofUrl,
-            servedCategories: categoryList
+            requestedCategories: categoryList,
+            servedCategories: []
         });
+
+        // Notify Admin of new vendor signup
+        try {
+            const { emitToAdmin } = await import('../lib/socket.js');
+            emitToAdmin("new_vendor_signup", {
+                vendorId: vendor._id,
+                message: `New Vendor signed up: ${vendor.fullName} (${vendor.farmLocation})`
+            });
+        } catch(e) {}
 
         return handleResponse(res, 201, "Vendor registered successfully", {
             id: vendor._id,

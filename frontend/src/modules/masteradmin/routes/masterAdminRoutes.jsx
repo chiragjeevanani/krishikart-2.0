@@ -71,6 +71,7 @@ const LegalPagesManagement = lazy(() => import("../pages/LegalPagesManagementScr
 const GlobalServiceMap = lazy(() => import("../pages/GlobalServiceMap"));
 const CustomerManagement = lazy(() => import("../pages/CustomerManagementScreen"));
 const RejectionsReport = lazy(() => import("../pages/RejectionReportsScreen"));
+const GlobalReports = lazy(() => import("../pages/GlobalReportsScreen"));
 
 const AdminRootRedirect = () => {
   const { isAuthenticated, loading } = useMasterAdminAuth();
@@ -292,6 +293,11 @@ export const masterAdminRoutes = (
           path="rejections"
           element={<PermissionRoute permissionKey="vendor-reports" />}>
           <Route index element={<RejectionsReport />} />
+        </Route>
+        <Route
+          path="global-reports"
+          element={<PermissionRoute permissionKey="dashboard" />}>
+          <Route index element={<GlobalReports />} />
         </Route>
         <Route
           path="vendor-economics"

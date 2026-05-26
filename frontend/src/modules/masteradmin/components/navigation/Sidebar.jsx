@@ -81,28 +81,28 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
           permissionKey: "dashboard",
         },
         {
+          icon: BarChart3,
+          label: "Global Reports",
+          path: "/masteradmin/global-reports",
+          permissionKey: "dashboard",
+        },
+        {
           icon: ShoppingBag,
           label: "Orders",
           path: "/masteradmin/orders",
           permissionKey: "orders",
         },
-        /* {
+        {
           icon: UserCheck,
           label: "Assign Vendors",
           path: "/masteradmin/assignment",
           permissionKey: "assignment",
-        }, */
+        },
         {
           icon: Truck,
           label: "Delivery Tracking",
           path: "/masteradmin/delivery",
           permissionKey: "delivery",
-        },
-        {
-          icon: Undo2,
-          label: "Returns",
-          path: "/masteradmin/returns",
-          permissionKey: "returns",
         },
       ],
     },

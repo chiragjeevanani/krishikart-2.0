@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Loader2, Save, Upload, X } from 'lucide-react';
 
 const initialState = {
@@ -13,14 +13,29 @@ const initialState = {
     accountNumber: '',
     ifscCode: '',
     password: '',
+    servedCategories: [],
     aadharFile: null,
     panFile: null,
     shopProofFile: null,
+    fssaiFile: null,
 };
+
+import api from '@/lib/axios';
 
 export default function VendorOnboardingDrawer({ isOpen, onClose, onSave }) {
     const [form, setForm] = useState(initialState);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [categories, setCategories] = useState([]);
+
+    useEffect(() => {
+        if (isOpen) {
+            api.get('/categories').then(res => {
+                if (res.data.success) {
+                    setCategories(res.data.result || res.data.results || []);
+                }
+            }).catch(err => console.error(err));
+        }
+    }, [isOpen]);
 
     const canSubmit = useMemo(() => {
         return Boolean(
@@ -65,6 +80,11 @@ export default function VendorOnboardingDrawer({ isOpen, onClose, onSave }) {
         payload.append('aadharFile', form.aadharFile);
         payload.append('panFile', form.panFile);
         payload.append('shopProofFile', form.shopProofFile);
+        if (form.fssaiFile) payload.append('fssaiFile', form.fssaiFile);
+        
+        if (form.servedCategories.length > 0) {
+            payload.append('servedCategories', JSON.stringify(form.servedCategories));
+        }
 
         setIsSubmitting(true);
         const created = await onSave(payload);
@@ -126,12 +146,45 @@ export default function VendorOnboardingDrawer({ isOpen, onClose, onSave }) {
                             </div>
                         </div>
 
+                        {categories.length > 0 && (
+                            <div className="border border-slate-200 rounded p-4">
+                                <p className="text-xs font-bold text-slate-800 mb-3">Served Categories</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {categories.map(cat => {
+                                        const isSelected = form.servedCategories.includes(cat._id);
+                                        return (
+                                            <button
+                                                key={cat._id}
+                                                type="button"
+                                                onClick={() => {
+                                                    handleChange(
+                                                        'servedCategories',
+                                                        isSelected
+                                                            ? form.servedCategories.filter(id => id !== cat._id)
+                                                            : [...form.servedCategories, cat._id]
+                                                    );
+                                                }}
+                                                className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-colors ${
+                                                    isSelected 
+                                                    ? 'bg-slate-900 text-white border-slate-900' 
+                                                    : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
+                                                }`}
+                                            >
+                                                {cat.name}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
                         <div className="border border-slate-200 rounded p-4">
                             <p className="text-xs font-bold text-slate-800 mb-3">Required Documents</p>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                 <FileField label="Aadhaar" required onChange={(f) => handleChange('aadharFile', f)} file={form.aadharFile} />
                                 <FileField label="PAN" required onChange={(f) => handleChange('panFile', f)} file={form.panFile} />
                                 <FileField label="Shop Proof" required onChange={(f) => handleChange('shopProofFile', f)} file={form.shopProofFile} />
+                                <FileField label="FSSAI File" onChange={(f) => handleChange('fssaiFile', f)} file={form.fssaiFile} />
                             </div>
                         </div>
                     </form>

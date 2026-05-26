@@ -13,14 +13,7 @@ export function getBrowseLocationParams(locationCtx) {
         hasFranchisePinned,
     } = locationCtx;
 
-    if (
-        hasDeliveryPinned &&
-        deliveryLocation != null &&
-        Number.isFinite(Number(deliveryLocation.lat)) &&
-        Number.isFinite(Number(deliveryLocation.lng))
-    ) {
-        return { coords: deliveryLocation, hasPinned: true };
-    }
+    // Prioritize franchiseLocation (which is updated by the top bar location picker)
     if (
         hasFranchisePinned &&
         franchiseLocation != null &&
@@ -28,6 +21,15 @@ export function getBrowseLocationParams(locationCtx) {
         Number.isFinite(Number(franchiseLocation.lng))
     ) {
         return { coords: franchiseLocation, hasPinned: true };
+    }
+    // Fallback to deliveryLocation if franchiseLocation is missing
+    if (
+        hasDeliveryPinned &&
+        deliveryLocation != null &&
+        Number.isFinite(Number(deliveryLocation.lat)) &&
+        Number.isFinite(Number(deliveryLocation.lng))
+    ) {
+        return { coords: deliveryLocation, hasPinned: true };
     }
     return { coords: null, hasPinned: false };
 }

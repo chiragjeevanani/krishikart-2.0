@@ -54,9 +54,10 @@ const SettingItem = ({ icon: Icon, label, value, color, onClick }) => (
 
 const EditProfileModal = ({ isOpen, onClose, vendorData, onUpdate }) => {
     const [categories, setCategories] = useState([]);
-    const [selectedCategories, setSelectedCategories] = useState(
-        (vendorData?.servedCategories || []).map(c => typeof c === 'object' ? c._id : c)
-    );
+    const [selectedCategories, setSelectedCategories] = useState([
+        ...(vendorData?.servedCategories?.map(c => typeof c === 'object' ? c._id : c) || []),
+        ...(vendorData?.requestedCategories?.map(c => typeof c === 'object' ? c._id : c) || [])
+    ]);
     const [formData, setFormData] = useState({
         fullName: vendorData?.fullName || '',
         mobile: vendorData?.mobile || '',

@@ -19,8 +19,12 @@ import {
     CheckCircle2,
     Clock,
     UserPlus,
-    BarChart3
+    BarChart3,
+    Eye,
+    Trash2
 } from 'lucide-react';
+import api from '@/lib/axios';
+import { toast } from 'sonner';
 import { useAdmin } from '../contexts/AdminContext';
 import { cn } from '@/lib/utils';
 import VendorOnboardingDrawer from '../components/drawers/VendorOnboardingDrawer';
@@ -73,6 +77,19 @@ export default function VendorManagementScreen() {
         return matchesSearch && matchesStatus;
     });
 
+    const handleDeleteVendor = async (id, e) => {
+        e.stopPropagation();
+        if (!window.confirm("Are you sure you want to permanently delete this vendor? This action cannot be undone.")) return;
+        try {
+            await api.delete(`/masteradmin/vendors/${id}`);
+            toast.success("Vendor deleted successfully");
+            fetchVendors();
+        } catch (error) {
+            console.error("Failed to delete vendor:", error);
+            toast.error("Failed to delete vendor");
+        }
+    };
+
     const vendorColumns = [
         {
             header: 'Vendor Name',
@@ -122,15 +139,22 @@ export default function VendorManagementScreen() {
             key: 'actions',
             render: (_, row) => (
                 <div className="flex items-center gap-2">
-                    <button
+                    <button 
                         onClick={(e) => {
                             e.stopPropagation();
-                            setProductDrawerVendor(row);
+                            setSelectedVendor(row);
                         }}
-                        className="px-3 py-1.5 bg-slate-900 text-white rounded-sm hover:bg-slate-800 transition-colors flex items-center gap-2 shadow-sm group"
+                        className="p-1.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors"
+                        title="View Vendor Details"
                     >
-                        <Package size={12} className="text-slate-200 group-hover:text-white" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest">Assign Items</span>
+                        <Eye size={14} />
+                    </button>
+                    <button 
+                        onClick={(e) => handleDeleteVendor(row._id, e)}
+                        className="p-1.5 bg-rose-50 text-rose-600 rounded hover:bg-rose-100 transition-colors"
+                        title="Delete Vendor"
+                    >
+                        <Trash2 size={14} />
                     </button>
                 </div>
             )
