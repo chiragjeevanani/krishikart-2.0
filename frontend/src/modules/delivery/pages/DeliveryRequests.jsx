@@ -8,13 +8,12 @@ import { ROUTES } from '../utils/constants';
 import { useDeliveryOrders } from '../contexts/DeliveryOrderContext';
 
 const DeliveryRequests = () => {
-    const { dispatchedOrders: requests, loading: refreshing, fetchDispatchedOrders: handleRefresh, rejectTask } = useDeliveryOrders();
+    const { availableRequests: requests, loading: refreshing, fetchDispatchedOrders: handleRefresh, rejectTask, setActiveDeliveryId } = useDeliveryOrders();
     const navigate = useNavigate();
 
     const handleAccept = (id) => {
         // In this flow, "Accept" just navigates to the active delivery.
-        // We'll store the ID in localStorage or state to simulate "active"
-        localStorage.setItem('activeDeliveryId', id);
+        setActiveDeliveryId(id);
         navigate(ROUTES.ACTIVE);
     };
 

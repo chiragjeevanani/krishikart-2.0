@@ -404,10 +404,10 @@ export default function PackingScreen() {
                                 </div>
 
                                 <div className="flex items-start gap-4 p-6 bg-slate-900 text-white rounded-[32px] shadow-2xl relative overflow-hidden group">
-                                    <div className="absolute top-0 right-0 w-24 h-24 bg-primary/20 rounded-full blur-2xl -mr-12 -mt-12 transition-all group-hover:bg-primary/30" />
-                                    <ShieldCheck size={24} className="text-primary shrink-0 mt-0.5" />
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/20 rounded-full blur-2xl -mr-12 -mt-12 transition-all group-hover:bg-emerald-500/30" />
+                                    <ShieldCheck size={24} className="text-emerald-400 shrink-0 mt-0.5" />
                                     <div className="relative">
-                                        <p className="text-[11px] font-black uppercase tracking-widest text-primary mb-1">Compliance Check</p>
+                                        <p className="text-[11px] font-black uppercase tracking-widest text-emerald-400 mb-1">Compliance Check</p>
                                         <p className="text-[11px] font-bold text-slate-400 leading-relaxed uppercase tracking-tight">Weight data is synchronized with the digital manifest for Node audit.</p>
                                     </div>
                                 </div>

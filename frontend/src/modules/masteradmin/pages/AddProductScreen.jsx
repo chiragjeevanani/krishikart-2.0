@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCatalog } from '../contexts/CatalogContext';
+import { toast } from 'sonner';
 
 const INITIAL_FORM_DATA = {
     name: '',
@@ -58,7 +59,7 @@ const INITIAL_FORM_DATA = {
 
 export default function AddProductScreen() {
     const navigate = useNavigate();
-    const { categories, subcategories, addCategory, addSubcategory, getSubcategoriesByCategory, addProduct } = useCatalog();
+    const { products, categories, subcategories, addCategory, addSubcategory, getSubcategoriesByCategory, addProduct } = useCatalog();
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -178,6 +179,25 @@ export default function AddProductScreen() {
         if (!formData.name || !formData.category || !formData.price || !formData.primaryFile) {
             alert('Please fill at least Name, Category, Price and Primary Image.');
             return;
+        }
+
+        // Local duplicate name check under the same category
+        const duplicateName = products.some(p => {
+            const catId = typeof p.category === 'object' ? p.category?._id : p.category;
+            return p.name.trim().toLowerCase() === formData.name.trim().toLowerCase() && catId === formData.category;
+        });
+        if (duplicateName) {
+            toast.error("A product with this name already exists in this category. Please choose a unique name.");
+            return;
+        }
+
+        // Local duplicate SKU code check
+        if (formData.skuCode && formData.skuCode.trim()) {
+            const duplicateSku = products.some(p => p.skuCode && p.skuCode.trim().toUpperCase() === formData.skuCode.trim().toUpperCase());
+            if (duplicateSku) {
+                toast.error("A product with this SKU code already exists. Please choose a unique SKU code.");
+                return;
+            }
         }
 
         setIsSaving(true);

@@ -2308,7 +2308,7 @@ export const getDispatchedOrders = async (req, res) => {
       deliveryPartnerId: partnerId,
     })
       .populate("userId", "fullName mobile address")
-      .populate("franchiseId", "franchiseName city area mobile location")
+      .populate("franchiseId", "franchiseName city area mobile location formattedAddress")
       .sort({ updatedAt: -1 });
 
     // Map to format delivery app expects
@@ -2334,11 +2334,15 @@ export const getDispatchedOrders = async (req, res) => {
         distance = d < 1 ? `${(d * 1000).toFixed(0)}m` : `${d.toFixed(1)}km`;
       }
 
+      const franchiseAddr = order.franchiseId?.formattedAddress || 
+        [order.franchiseId?.area, order.franchiseId?.city].filter(Boolean).join(', ') || 
+        "N/A";
+
       return {
         id: order._id,
         _id: order._id,
         franchise: order.franchiseId?.franchiseName || "Kisaankart Store",
-        franchiseAddress: order.franchiseId?.address || "N/A",
+        franchiseAddress: franchiseAddr,
         customerName: order.userId?.fullName || "Customer",
         customerAddress: order.shippingAddress,
         distance: distance,
@@ -2357,6 +2361,7 @@ export const getDispatchedOrders = async (req, res) => {
           ? new Date(order.scheduledDate).toLocaleDateString("en-IN", {
               day: "2-digit",
               month: "short",
+              timeZone: "Asia/Kolkata",
             })
           : null,
         deliveryShift: order.deliveryShift,
@@ -2419,16 +2424,19 @@ export const getDeliveryOrderHistory = async (req, res) => {
       deliveryPartnerId: partnerId,
     })
       .populate("userId", "fullName")
-      .populate("franchiseId", "franchiseName address")
+      .populate("franchiseId", "franchiseName formattedAddress area city")
       .sort({ updatedAt: -1 });
 
     const formatted = orders.map((order) => {
       const dateObj = new Date(order.updatedAt);
+      const franchiseAddr = order.franchiseId?.formattedAddress || 
+        [order.franchiseId?.area, order.franchiseId?.city].filter(Boolean).join(', ') || 
+        "N/A";
       return {
         id: order._id,
         customer: order.userId?.fullName || "Customer",
-        franchiseName: order.franchiseId?.shopName || "Kisaankart Store",
-        franchiseAddress: order.franchiseId?.address || "N/A",
+        franchiseName: order.franchiseId?.franchiseName || "Kisaankart Store",
+        franchiseAddress: franchiseAddr,
         items: order.items,
         numberOfPackages: order.numberOfPackages || 0,
         status: "delivered",
@@ -2436,11 +2444,13 @@ export const getDeliveryOrderHistory = async (req, res) => {
           day: "2-digit",
           month: "short",
           year: "numeric",
+          timeZone: "Asia/Kolkata",
         }),
         rawDate: dateObj.toISOString(),
         time: dateObj.toLocaleTimeString("en-IN", {
           hour: "2-digit",
           minute: "2-digit",
+          timeZone: "Asia/Kolkata",
         }),
       };
     });

@@ -17,10 +17,10 @@ export const createCategory = async (req, res) => {
       return handleResponse(res, 400, "Category name is required");
     }
 
-    const nameNorm = capitalizeFirst(name);
+    const nameNorm = capitalizeFirst(name.trim());
     const exists = await Category.findOne({ name: nameNorm });
     if (exists) {
-      return handleResponse(res, 400, "Category already exists");
+      return handleResponse(res, 400, "A category with this name already exists. Please choose a unique name.");
     }
 
     let imageUrl = "";
@@ -38,6 +38,9 @@ export const createCategory = async (req, res) => {
     return handleResponse(res, 201, "Category created successfully", category);
   } catch (err) {
     console.error("Create Category Error:", err);
+    if (err.code === 11000) {
+      return handleResponse(res, 400, "A category with this name already exists. Please choose a unique name.");
+    }
     return handleResponse(res, 500, "Server error: " + err.message);
   }
 };
@@ -84,7 +87,14 @@ export const updateCategory = async (req, res) => {
       return handleResponse(res, 404, "Category not found");
     }
 
-    if (name) category.name = capitalizeFirst(name);
+    if (name) {
+      const nameNorm = capitalizeFirst(name.trim());
+      const exists = await Category.findOne({ name: nameNorm, _id: { $ne: id } });
+      if (exists) {
+        return handleResponse(res, 400, "A category with this name already exists. Please choose a unique name.");
+      }
+      category.name = nameNorm;
+    }
     if (description !== undefined) category.description = description;
     if (isVisible !== undefined) category.isVisible = isVisible;
     if (adminCommission !== undefined)
@@ -98,6 +108,10 @@ export const updateCategory = async (req, res) => {
 
     return handleResponse(res, 200, "Category updated", category);
   } catch (err) {
+    console.error("Update Category Error:", err);
+    if (err.code === 11000) {
+      return handleResponse(res, 400, "A category with this name already exists. Please choose a unique name.");
+    }
     return handleResponse(res, 500, "Server error");
   }
 };

@@ -1,0 +1,70 @@
+Software Requirements Specification (SRS)
+Product Name: Krishikart
+Date: 2026-05-29
+
+1. Introduction
+1.1 Purpose
+This document outlines the detailed software requirements for Krishikart, an integrated multi-sided e-commerce, localized distribution, and delivery platform designed for B2B and B2C agricultural/grocery supply.
+1.2 Scope
+Krishikart provides independent modules for end users (customers), local franchises (hubs), delivery partners, vendors (sellers), and a centralized master admin. The system covers complex workflows including inventory distribution, point-of-sale (POS) systems for offline sales, wallet/credit limit tracking, procurement, returns, and multi-vendor split-order routing.
+
+2. Technology Stack
+2.1 Frontend
+- Framework: React 19 (managed via Vite)
+- Routing: React Router DOM v7
+- State Management/Context: Dedicated React Contexts per module (e.g., WalletContext, FranchiseOrdersContext, CODContext).
+- UI/Styling: TailwindCSS v4, Radix UI Primitives, Framer Motion.
+- Core Integrations: Google Maps API (@react-google-maps/api) for Location Picker, Socket.io-client for real-time order tracking, Firebase SDK for push notifications.
+
+2.2 Backend
+- Framework: Node.js with Express.js 5
+- Database: MongoDB utilizing Mongoose ORM.
+- Real-time Features: Socket.io for live delivery tracking and assignment updates.
+- Third-party Integrations: Razorpay for primary payment processing, Cloudinary for asset storage.
+
+3. Core Modules & Actors
+3.1 Customer (User) Module
+- Store & Catalog: Supports browsing by category, product lists, detailed product views, and predictive search.
+- Advanced Cart & Checkout: Integrates split-order logic (if an order spans multiple categories or fulfillment hubs, the backend divides it into child orders).
+- Digital Wallet & Credit: Users possess a wallet system that logs transactions (Added, Paid, Refund, Credit Used, Loyalty Bonus). It includes a B2B feature tracking 'Credit Limit', 'Used Credit', and 'Credit Overdue Dates'.
+- Order Tracking: Real-time tracking of standard orders and specialized tracking for split orders (SplitOrderTrackingScreen).
+- Profiles & Onboarding: Accommodates both standard consumers and business entities (GST, FSSAI, Business Type).
+
+3.2 Franchise (Local Hub) Module
+- Order Fulfillment: Dashboard for processing assigned orders, handling partial fulfillments (including recording shortages).
+- Inventory & GRN: Local stock management, receiving stock via Goods Receipt Notes (GRN).
+- Point of Sale (POS): In-store POS system optimized for weighing and direct walk-in sales.
+- Delivery Dispatch: Assigning orders to local delivery personnel.
+- Procurement: Sending automated procurement requests back to vendors or the main warehouse when stock is low.
+- Financial Management: Handling COD Cash remittance workflows from delivery personnel.
+- Returns Management: Approving/rejecting return requests, recording franchise review reasons, and dispatching pickups.
+
+3.3 Vendor Module
+- Store Customization: Vendors can configure up to 5 promotional banners for their digital storefront and flag "Signature Products".
+- Inventory Management: Adding, updating, and syncing product stock tailored to their specific store.
+- Order Tracking: Real-time visibility into the orders corresponding to their products.
+
+3.4 Delivery Partner Module
+- Real-time Assignments: Partners receive order assignments and can navigate to the user's location.
+- Status Management: Updating the delivery cycle statuses ("Accepted", "Out for Delivery", "Delivered").
+- Cash-on-Delivery (COD) Tracking: Logging collected cash and submitting remittance reports to the Franchise.
+
+3.5 Master Admin Module
+- Platform Oversight: Managing platform-wide settings across Categories, Subcategories, Global Coupons, and User notifications.
+- Financial Reconciliation: Overseeing payouts to Franchises, Delivery partners, and settling the central ledger.
+- Master Analytics: Aggregated reports on demand and geographical data mapping.
+
+4. Functional Requirements
+4.1 Authentication & Authorization
+- Decentralized JWT-based authentication via isolated auth guards (UserAuthGuard, FranchiseAuthGuard, MasterAdminAuthGuard).
+- Strict validation workflows (OTP login) and secondary verification steps for Franchises (FranchiseVerificationGuard).
+
+4.2 Database Architecture (Mongoose Models)
+- Orders: Robust schema storing item specifics (shortages, bulk rates), multi-payment method combinations (e.g., 'Wallet + Online'), and split order links (orderGroupId). Also stores 'Bilty' logistics tracking details.
+- Users: Centralized model accommodating wallet transactions and B2B configurations.
+- Returns: Integrated directly into the Order schema, handling statuses from 'pending' to 'pickup_completed' with nested reviews.
+
+5. Non-Functional Requirements
+- Geographic Intelligence: `shippingLocation` utilizes MongoDB "2dsphere" indexing for efficient franchise auto-assignment.
+- Fault Tolerance in Assignments: The system logs assignment attempts including rejections ("unresponsive", "rejected") to trigger fallback auto-assignment algorithms.
+- Lazy Loading: Extensive use of React `lazy` and `Suspense` across modules (especially Franchise) to maintain high performance and low initial payload.

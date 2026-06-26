@@ -439,9 +439,27 @@ export const submitDocumentUpdate = async (req, res) => {
       submittedAt: new Date()
     };
 
-    if (aadharNumber) updateData.aadharNumber = aadharNumber;
-    if (panNumber) updateData.panNumber = panNumber;
-    if (licenseNumber) updateData.licenseNumber = licenseNumber;
+    if (aadharNumber) {
+      const cleanAadhar = aadharNumber.toString().trim();
+      if (!/^\d{12}$/.test(cleanAadhar)) {
+        return handleResponse(res, 400, "Aadhaar card number must be exactly 12 numeric digits");
+      }
+      updateData.aadharNumber = cleanAadhar;
+    }
+    if (panNumber) {
+      const cleanPan = panNumber.toString().trim().toUpperCase();
+      if (!/^[A-Z]{5}\d{4}[A-Z]{1}$/.test(cleanPan)) {
+        return handleResponse(res, 400, "PAN card number must be in the format: AAAAA9999A (e.g. ABCDE1234F)");
+      }
+      updateData.panNumber = cleanPan;
+    }
+    if (licenseNumber) {
+      const cleanLicense = licenseNumber.toString().replace(/[\s.-]/g, '').toUpperCase();
+      if (!/^[A-Z]{2}\d{13}$/.test(cleanLicense)) {
+        return handleResponse(res, 400, "Driving License must start with a 2-letter state code followed by 13 digits (e.g., MH1220180004567)");
+      }
+      updateData.licenseNumber = cleanLicense;
+    }
 
     if (req.files?.aadharImage?.[0]) {
       updateData.aadharImage = await uploadToCloudinary(req.files.aadharImage[0].buffer, "delivery/pending/aadhar");

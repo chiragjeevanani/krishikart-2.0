@@ -68,6 +68,20 @@ export const createProduct = async (req, res) => {
             return handleResponse(res, 400, "Required fields: name, category, and price");
         }
 
+        const nameNorm = capitalizeFirst(name.trim());
+        const existsName = await Product.findOne({ name: nameNorm, category });
+        if (existsName) {
+            return handleResponse(res, 400, "A product with this name already exists in this category. Please choose a unique name.");
+        }
+
+        if (skuCode) {
+            const skuNorm = normalizeSkuCode(skuCode);
+            const existsSku = await Product.findOne({ skuCode: skuNorm });
+            if (existsSku) {
+                return handleResponse(res, 400, "A product with this SKU code already exists. Please choose a unique SKU code.");
+            }
+        }
+
         let primaryImageUrl = "";
         let galleryImages = [];
 
@@ -110,7 +124,7 @@ export const createProduct = async (req, res) => {
         }
 
         const product = await Product.create({
-            name: capitalizeFirst(name),
+            name: nameNorm,
             skuCode: normalizeSkuCode(skuCode) || undefined,
             category: isNull(category) ? null : category,
             subcategory: isNull(subcategory) ? null : subcategory,
@@ -163,6 +177,9 @@ export const createProduct = async (req, res) => {
         return handleResponse(res, 201, "Product created and activated across network", product);
     } catch (err) {
         console.error("Create Product Error:", err);
+        if (err.code === 11000) {
+            return handleResponse(res, 400, "A product with this name or SKU code already exists. Please choose unique values.");
+        }
         return handleResponse(res, 500, "Server error: " + err.message);
     }
 };
@@ -305,6 +322,33 @@ export const updateProduct = async (req, res) => {
             return handleResponse(res, 404, "Product entry not found");
         }
 
+        const isNull = (val) => val === undefined || val === null || val === "" || val === "null" || val === "undefined";
+
+        // Check for duplicates
+        if (updateData.skuCode) {
+            const skuNorm = normalizeSkuCode(updateData.skuCode);
+            const existsSku = await Product.findOne({ skuCode: skuNorm, _id: { $ne: id } });
+            if (existsSku) {
+                return handleResponse(res, 400, "A product with this SKU code already exists. Please choose a unique SKU code.");
+            }
+        }
+
+        if (updateData.name !== undefined || updateData.category !== undefined) {
+            const nameToCheck = updateData.name !== undefined ? capitalizeFirst(updateData.name.trim()) : product.name;
+            const categoryToCheck = updateData.category !== undefined ? (isNull(updateData.category) ? null : updateData.category) : product.category;
+            
+            if (nameToCheck && categoryToCheck) {
+                const existsName = await Product.findOne({ 
+                    name: nameToCheck, 
+                    category: categoryToCheck, 
+                    _id: { $ne: id } 
+                });
+                if (existsName) {
+                    return handleResponse(res, 400, "A product with this name already exists in this category. Please choose a unique name.");
+                }
+            }
+        }
+
         // Handle File Uploads for Updates
         if (req.files) {
             if (req.files.primaryImage && req.files.primaryImage[0]) {
@@ -361,16 +405,19 @@ export const updateProduct = async (req, res) => {
         }
 
         // Sanitize ObjectId fields to prevent CastError for empty/null strings
-        const isNull = (val) => val === undefined || val === null || val === "" || val === "null" || val === "undefined";
         if (isNull(updateData.category)) updateData.category = null;
         if (isNull(updateData.subcategory)) updateData.subcategory = null;
 
-        if (updateData.name !== undefined) updateData.name = capitalizeFirst(updateData.name);
+        if (updateData.name !== undefined) updateData.name = capitalizeFirst(updateData.name.trim());
 
         const updatedProduct = await Product.findByIdAndUpdate(id, updateData, { new: true });
 
         return handleResponse(res, 200, "Product record updated", updatedProduct);
     } catch (err) {
+        console.error("Update Product Error:", err);
+        if (err.code === 11000) {
+            return handleResponse(res, 400, "A product with this name or SKU code already exists. Please choose unique values.");
+        }
         return handleResponse(res, 500, "Server error: " + err.message);
     }
 };

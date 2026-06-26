@@ -341,11 +341,11 @@ export default function ProductListScreen() {
                                                          Category <ChevronDown size={12} strokeWidth={3} />
                                                      </button>
                                                  </SheetTrigger>
-                                                <SheetContent side="bottom" className="rounded-t-[32px] max-h-[80vh] overflow-y-auto">
-                                                    <SheetHeader className="mb-6">
+                                                <SheetContent side="bottom" className="rounded-t-[32px] max-h-[80vh] overflow-y-auto p-5 gap-0">
+                                                    <SheetHeader className="p-0 mb-4">
                                                         <SheetTitle className="text-xl font-black">All Categories</SheetTitle>
                                                     </SheetHeader>
-                                                    <div className="grid grid-cols-4 gap-4 py-4">
+                                                    <div className="grid grid-cols-4 gap-4 pb-4">
                                                         {sidebarCategories.map((cat) => (
                                                             <SheetClose asChild key={cat.id}>
                                                                 <button

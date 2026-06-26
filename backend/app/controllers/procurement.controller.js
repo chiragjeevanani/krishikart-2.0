@@ -132,16 +132,17 @@ export const vendorSubmitQuotation = async (req, res) => {
         // Socket Notifications
         emitToAdmin('procurement_quote_received', {
             requestId: request._id,
-            message: `A new quote from vendor for procurement #${request._id.toString().slice(-6)}`
+            message: `A new quote of ₹${totalQuoted} from vendor for procurement #${request._id.toString().slice(-6)}`
         });
         await createAdminNotification({
             type: 'procurement_quote_received',
             title: 'Vendor Quote Received',
-            message: `A vendor submitted a quote for procurement #${request._id.toString().slice(-6)}.`,
+            message: `A vendor submitted a quote of ₹${totalQuoted} for procurement #${request._id.toString().slice(-6)}.`,
             link: '/masteradmin/quotations',
             meta: {
                 requestId: request._id.toString(),
                 orderId: request.orderId?.toString?.() || '',
+                amount: totalQuoted
             }
         });
 

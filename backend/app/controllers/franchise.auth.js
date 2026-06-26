@@ -583,7 +583,7 @@ export const updateFranchiseProfile = async (req, res) => {
                   title: "Category Profile Update",
                   message: msg,
                   type: "approvals",
-                  link: "/approvals/categories",
+                  link: "/masteradmin/category-approvals",
                   meta: { franchiseId: franchise._id, type: 'category_request' }
               });
           } catch (err) {

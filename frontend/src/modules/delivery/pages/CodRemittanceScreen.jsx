@@ -226,7 +226,7 @@ export default function CodRemittanceScreen() {
                                     />
                                     <div>
                                         <p className="text-xs font-bold text-slate-900">#{String(order.orderId).slice(-6)}</p>
-                                        <p className="text-[11px] text-slate-500">{new Date(order.collectedAt).toLocaleString()}</p>
+                                        <p className="text-[11px] text-slate-500">{order.collectedAt && !isNaN(new Date(order.collectedAt).getTime()) ? new Date(order.collectedAt).toLocaleString() : 'N/A'}</p>
                                     </div>
                                 </div>
                                 <p className="text-sm font-black text-slate-900">Rs {Number(order.amount || 0).toFixed(2)}</p>
@@ -280,7 +280,7 @@ export default function CodRemittanceScreen() {
                         {history.map((r) => (
                             <div key={r._id} className="p-3 rounded-xl border border-slate-200 flex items-center justify-between">
                                 <div>
-                                    <p className="text-xs font-bold text-slate-900">{new Date(r.createdAt).toLocaleString()}</p>
+                                    <p className="text-xs font-bold text-slate-900">{r.createdAt && !isNaN(new Date(r.createdAt).getTime()) ? new Date(r.createdAt).toLocaleString() : 'N/A'}</p>
                                     <p className="text-[11px] text-slate-500">{r.paymentMethod.toUpperCase()} {r.referenceNo ? `• ${r.referenceNo}` : ''}</p>
                                 </div>
                                 <div className="text-right">

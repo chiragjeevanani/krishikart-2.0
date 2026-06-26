@@ -55,8 +55,8 @@ const SettingItem = ({ icon: Icon, label, value, color, onClick }) => (
 const EditProfileModal = ({ isOpen, onClose, vendorData, onUpdate }) => {
     const [categories, setCategories] = useState([]);
     const [selectedCategories, setSelectedCategories] = useState([
-        ...(vendorData?.servedCategories?.map(c => typeof c === 'object' ? c._id : c) || []),
-        ...(vendorData?.requestedCategories?.map(c => typeof c === 'object' ? c._id : c) || [])
+        ...(vendorData?.servedCategories?.map(c => (c && typeof c === 'object') ? c._id : c).filter(Boolean) || []),
+        ...(vendorData?.requestedCategories?.map(c => (c && typeof c === 'object') ? c._id : c).filter(Boolean) || [])
     ]);
     const [formData, setFormData] = useState({
         fullName: vendorData?.fullName || '',
@@ -265,20 +265,47 @@ const EditProfileModal = ({ isOpen, onClose, vendorData, onUpdate }) => {
                     <div className="pt-4 border-t border-slate-100">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Served Categories</label>
                         <div className="flex flex-wrap gap-2 mt-2">
-                            {categories.map((cat) => (
-                                <button
-                                    key={cat._id}
-                                    type="button"
-                                    onClick={() => toggleCategory(cat._id)}
-                                    className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all border-2 ${
-                                        selectedCategories.includes(cat._id)
-                                            ? "bg-primary border-primary text-white"
-                                            : "bg-slate-50 border-slate-100 text-slate-400"
-                                    }`}
-                                >
-                                    {cat.name}
-                                </button>
-                            ))}
+                            {categories.map((cat) => {
+                                const catId = cat._id;
+                                const isInitiallyServed = vendorData?.servedCategories?.some(
+                                    c => ((c && typeof c === 'object') ? c._id : c) === catId
+                                );
+                                const isInitiallyRequested = vendorData?.requestedCategories?.some(
+                                    c => ((c && typeof c === 'object') ? c._id : c) === catId
+                                );
+                                const isSelected = selectedCategories.includes(catId);
+
+                                let btnClass = "bg-slate-50 border-slate-100 text-slate-400";
+                                let badgeText = "";
+
+                                if (isSelected) {
+                                    if (isInitiallyServed) {
+                                        btnClass = "bg-emerald-600 border-emerald-600 text-white hover:bg-emerald-700";
+                                        badgeText = " ✓ Active";
+                                    } else if (isInitiallyRequested) {
+                                        btnClass = "bg-amber-50 border-amber-300 text-amber-700 border-dashed hover:bg-amber-100/50";
+                                        badgeText = " ⏳ Pending";
+                                    } else {
+                                        btnClass = "bg-slate-900 border-slate-900 text-white hover:bg-slate-800";
+                                        badgeText = " ➕ Request";
+                                    }
+                                }
+
+                                return (
+                                    <button
+                                        key={catId}
+                                        type="button"
+                                        onClick={() => toggleCategory(catId)}
+                                        className={cn(
+                                            "px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all border-2 flex items-center gap-1",
+                                            btnClass
+                                        )}
+                                    >
+                                        {cat.name}
+                                        {badgeText && <span className="opacity-80 text-[8px] font-black tracking-normal">{badgeText}</span>}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
 
@@ -480,6 +507,39 @@ export default function ProfileScreen() {
                         <DocumentUploadCard title="PAN Card" icon={CreditCard} status={vendor.panCard ? "verified" : "pending"} url={vendor.panCard} fieldName="panFile" onUpload={handleProfileUpdate} />
                         <DocumentUploadCard title="Shop Proof" icon={Store} status={vendor.shopEstablishmentProof ? "verified" : "pending"} url={vendor.shopEstablishmentProof} fieldName="shopProofFile" onUpload={handleProfileUpdate} />
                         <DocumentUploadCard title="FSSAI License" icon={FileCheck} status={vendor.fssaiLicense ? "verified" : "pending"} url={vendor.fssaiLicense} fieldName="fssaiLicense" onUpload={handleProfileUpdate} />
+                    </div>
+                </section>
+
+                <section className="space-y-4">
+                    <div className="flex items-center gap-2 mb-4 ml-2">
+                        <Award size={14} className="text-slate-400" />
+                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Served Categories</h3>
+                    </div>
+                    <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm">
+                        {((vendor.servedCategories && vendor.servedCategories.length > 0) || (vendor.requestedCategories && vendor.requestedCategories.length > 0)) ? (
+                            <div className="flex flex-wrap gap-2">
+                                {vendor.servedCategories?.map(cat => {
+                                    const name = (cat && typeof cat === 'object') ? cat.name : cat;
+                                    return (
+                                        <span key={(cat?._id || cat)} className="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                            {name}
+                                        </span>
+                                    );
+                                })}
+                                {vendor.requestedCategories?.map(cat => {
+                                    const name = (cat && typeof cat === 'object') ? cat.name : cat;
+                                    return (
+                                        <span key={(cat?._id || cat)} className="px-3 py-1.5 bg-amber-50 text-amber-700 border border-dashed border-amber-300 rounded-xl text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                            {name} (Pending Approval)
+                                        </span>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <p className="text-xs text-slate-400 font-bold uppercase tracking-wider py-2">No categories assigned or requested yet.</p>
+                        )}
                     </div>
                 </section>
 

@@ -196,11 +196,11 @@ export const createVendorByAdmin = async (req, res) => {
     const { fullName, email, mobile, farmLocation, fssaiLicense, password, servedCategories } =
       req.body;
 
-    if (!fullName || !email || !mobile || !farmLocation || !fssaiLicense) {
+    if (!fullName || !email || !mobile || !farmLocation) {
       return handleResponse(
         res,
         400,
-        "fullName, email, mobile, farmLocation and fssaiLicense are required",
+        "fullName, email, mobile, and farmLocation are required",
       );
     }
 
@@ -300,7 +300,7 @@ export const createVendorByAdmin = async (req, res) => {
       farmLocation: String(farmLocation).trim(),
       password: hashedPassword,
       profilePicture,
-      fssaiLicense: String(fssaiLicense).trim(),
+      fssaiLicense: fssaiLicense ? String(fssaiLicense).trim() : "",
       fssaiImage,
       bankDetails,
       aadharCard,

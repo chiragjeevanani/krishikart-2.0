@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Tags, Home, ChevronRight, Layers, Plus, X, Pencil, Trash2, Info, Upload, Image as ImageIcon } from 'lucide-react';
 import { useCatalog } from '../contexts/CatalogContext';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function CategoryManagementScreen() {
     const { categories, addCategory, deleteCategory, updateCategory, isLoading: contextLoading } = useCatalog();
@@ -22,6 +23,11 @@ export default function CategoryManagementScreen() {
 
     const handleAdd = async () => {
         if (!newCat.name.trim()) return;
+        const duplicate = categories.some(cat => cat.name.trim().toLowerCase() === newCat.name.trim().toLowerCase());
+        if (duplicate) {
+            toast.error("A category with this name already exists. Please choose a unique name.");
+            return;
+        }
         setIsSubmitting(true);
         try {
             await addCategory(newCat);
@@ -36,6 +42,11 @@ export default function CategoryManagementScreen() {
 
     const handleUpdate = async () => {
         if (!editCat.name.trim()) return;
+        const duplicate = categories.some(cat => cat._id !== editCat.id && cat.name.trim().toLowerCase() === editCat.name.trim().toLowerCase());
+        if (duplicate) {
+            toast.error("A category with this name already exists. Please choose a unique name.");
+            return;
+        }
         setIsSubmitting(true);
         try {
             await updateCategory(editCat.id, editCat);

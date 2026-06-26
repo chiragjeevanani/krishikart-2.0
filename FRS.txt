@@ -1,0 +1,93 @@
+Functional Requirements Specification (FRS)
+Product Name: Krishikart
+Date: 2026-05-29
+
+1. Introduction
+This Functional Requirements Specification (FRS) details the functional behavior, workflows, and operations of the Krishikart platform. This document expands upon the SRS by providing explicit "System Shall" statements categorized by the primary actors: Customer (User), Franchise (Local Hub), Vendor (Seller), Delivery Partner, and Master Admin.
+
+2. User (Customer) Requirements
+2.1 Authentication and Profile
+- FRS-USR-01: The system shall allow users to register and authenticate via mobile number and OTP.
+- FRS-USR-02: The system shall support distinct user profiles, including B2C (Standard) and B2B (Business). B2B profiles shall require GST, FSSAI, and Business Type details.
+- FRS-USR-03: The system shall allow users to manage multiple delivery addresses.
+
+2.2 Catalog & Discovery
+- FRS-USR-04: The system shall display products organized by categories and subcategories.
+- FRS-USR-05: The system shall provide a predictive search functionality to find products by name or keywords.
+- FRS-USR-06: The system shall support displaying "Signature Products" configured globally or by specific vendors.
+- FRS-USR-07: The system shall display personalized product recommendations to users.
+
+2.3 Cart & Checkout
+- FRS-USR-08: The system shall allow users to add, update, or remove items from a digital cart.
+- FRS-USR-09: The system shall calculate cart totals dynamically, including base price, applicable taxes, handling fees, and delivery charges.
+- FRS-USR-10: The system shall enforce subscription-based benefits (e.g., waiving delivery fees or handling charges) dynamically at checkout based on active plan limits.
+- FRS-USR-11: The system shall allow users to apply valid discount coupons.
+- FRS-USR-12: The system shall split user orders spanning multiple categories or distinct franchise fulfillments into separate "child orders" linked by a single `orderGroupId`.
+
+2.4 Payments & Wallet
+- FRS-USR-13: The system shall support multiple payment methods: Cash on Delivery (COD), Online Payment (Razorpay), Wallet balance, and Credit Limit.
+- FRS-USR-14: The system shall maintain a digital Wallet for each user, tracking "Added", "Paid", "Refund", and "Credit Used" transactions.
+- FRS-USR-15: The system shall support a B2B Credit Limit feature, tracking maximum credit allowed, used credit, and overdue dates.
+- FRS-USR-16: The system shall automatically compute and credit estimated subscription cashback to the user's wallet upon order delivery settlement.
+
+2.5 Order Tracking & Returns
+- FRS-USR-17: The system shall provide real-time status updates (e.g., Pending, Processing, Out for Delivery, Delivered) via Socket.io.
+- FRS-USR-18: The system shall allow users to view their historical orders and distinct tracking for split orders.
+- FRS-USR-19: The system shall allow users to initiate return requests for delivered items, specifying reasons and uploading images if necessary.
+
+3. Franchise (Local Hub) Requirements
+3.1 Order Fulfillment
+- FRS-FRN-01: The system shall automatically route incoming customer orders to the nearest capable franchise based on geographic "2dsphere" indexing.
+- FRS-FRN-02: The system shall allow franchises to accept or reject assigned orders.
+- FRS-FRN-03: The system shall allow franchises to process items for fulfillment, including recording item shortages if stock is unavailable.
+- FRS-FRN-04: The system shall allow franchises to mark orders as "Ready for Dispatch".
+
+3.2 Inventory & Procurement
+- FRS-FRN-05: The system shall track local inventory levels for the franchise in real-time.
+- FRS-FRN-06: The system shall allow franchises to process Goods Receipt Notes (GRN) to update local stock.
+- FRS-FRN-07: The system shall enable franchises to raise automated Procurement Requests to vendors or the central warehouse when local stock falls below a threshold.
+
+3.3 Point of Sale (POS)
+- FRS-FRN-08: The system shall provide an in-store POS interface for walk-in customers.
+- FRS-FRN-09: The POS system shall support weight-based item additions and dynamic pricing calculations.
+
+3.4 Delivery & Logistics Management
+- FRS-FRN-10: The system shall allow franchises to manually assign or rely on auto-assignment of "Ready" orders to available local delivery partners.
+- FRS-FRN-11: The system shall allow franchises to receive and verify Cash on Delivery (COD) remittances from delivery partners at the end of their shifts.
+- FRS-FRN-12: The system shall allow franchises to review user return requests, approve/reject them, and dispatch delivery personnel for pickup.
+
+4. Vendor (Seller) Requirements
+4.1 Storefront Management
+- FRS-VND-01: The system shall allow vendors to customize their digital storefront by uploading and managing up to 5 promotional carousel banners.
+- FRS-VND-02: The system shall allow vendors to flag specific items as "Signature Products" via product-level boolean toggles.
+
+4.2 Inventory & Procurement
+- FRS-VND-03: The system shall allow vendors to add new products, update existing product details, and manage their master inventory.
+- FRS-VND-04: The system shall allow vendors to view and fulfill incoming Procurement Requests from various franchises.
+
+5. Delivery Partner Requirements
+5.1 Assignment & Navigation
+- FRS-DEL-01: The system shall notify delivery partners of new order assignments.
+- FRS-DEL-02: The system shall allow delivery partners to accept or reject assignments within a timeout window.
+- FRS-DEL-03: The system shall integrate mapping capabilities to navigate partners to the customer's delivery address.
+
+5.2 Status & Cash Management
+- FRS-DEL-04: The system shall allow partners to update live order statuses (e.g., "Out for Delivery", "Delivered", "Failed").
+- FRS-DEL-05: The system shall track the total COD cash collected by the delivery partner.
+- FRS-DEL-06: The system shall allow partners to submit COD remittance reports to their corresponding franchise.
+
+6. Master Admin Requirements
+6.1 Platform Configuration
+- FRS-ADM-01: The system shall allow the Master Admin to create, update, and manage Categories and Subcategories globally.
+- FRS-ADM-02: The system shall allow the Admin to define global settings, including base delivery radii, default delivery fees, and minimum order values.
+- FRS-ADM-03: The system shall allow the Admin to create and manage global discount coupons and promotional logic.
+
+6.2 User & Entity Management
+- FRS-ADM-04: The system shall allow the Admin to view, edit, and suspend profiles for Customers, Franchises, Vendors, and Delivery Partners.
+- FRS-ADM-05: The system shall allow the Admin to approve franchise and vendor onboarding applications.
+
+6.3 Financials & Analytics
+- FRS-ADM-06: The system shall provide detailed financial ledgers, tracking platform revenue, and calculating required payouts to franchises and delivery partners.
+- FRS-ADM-07: The system shall allow the Admin to process and record Franchise Commissions and Admin Payouts.
+- FRS-ADM-08: The system shall generate comprehensive analytics reports, including demand mapping (geocoded delivery slots) and overall sales metrics.
+- FRS-ADM-09: The system shall enforce data-validation safeguards on CSV exports (e.g., preventing empty file generation for analytics data).

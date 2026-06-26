@@ -152,16 +152,16 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC' }) {
                             {/* Items Table */}
                             <div className="space-y-4">
                                 <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest ml-1">Consignment Manifest</h3>
-                                <div className="border border-slate-100 rounded-3xl overflow-hidden shadow-sm">
-                                    <table className="w-full text-left">
+                                <div className="border border-slate-100 rounded-3xl overflow-x-auto shadow-sm">
+                                    <table className="w-full min-w-[600px] text-left">
                                         <thead>
                                             <tr className="bg-slate-50/50 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
-                                                <th className="px-6 py-4">Item Details</th>
-                                                <th className="px-6 py-4 text-center">Quantity</th>
+                                                <th className="px-6 py-4 whitespace-nowrap">Item Details</th>
+                                                <th className="px-6 py-4 text-center whitespace-nowrap">Quantity</th>
                                                 {(!isBilty) && (
                                                     <>
-                                                        <th className="px-6 py-4 text-right">Unit Price</th>
-                                                        <th className="px-6 py-4 text-right">Total</th>
+                                                        <th className="px-6 py-4 text-right whitespace-nowrap">Unit Price</th>
+                                                        <th className="px-6 py-4 text-right whitespace-nowrap">Total</th>
                                                     </>
                                                 )}
                                             </tr>
@@ -169,16 +169,16 @@ export default function DocumentViewer({ isOpen, onClose, data, type = 'DC' }) {
                                         <tbody className="divide-y divide-slate-50">
                                             {(data.items || []).map((item, idx) => (
                                                 <tr key={idx} className="hover:bg-slate-50/50 border-b border-slate-50 last:border-0">
-                                                    <td className="px-6 py-4 font-black text-slate-900 text-xs tracking-tight uppercase">{item.name}</td>
-                                                    <td className="px-6 py-4 text-center font-black text-slate-900 tabular-nums">
+                                                    <td className="px-6 py-4 font-black text-slate-900 text-xs tracking-tight uppercase whitespace-nowrap">{item.name}</td>
+                                                    <td className="px-6 py-4 text-center font-black text-slate-900 tabular-nums whitespace-nowrap">
                                                         {item.quantity || item.qty} {item.unit}
                                                     </td>
                                                     {(!isBilty) && (
                                                         <>
-                                                            <td className="px-6 py-4 text-right text-slate-400 font-black text-[11px] tabular-nums">
+                                                            <td className="px-6 py-4 text-right text-slate-400 font-black text-[11px] tabular-nums whitespace-nowrap">
                                                                 ₹{item.quotedPrice || item.price || '0.00'}
                                                             </td>
-                                                            <td className="px-6 py-4 text-right font-black text-slate-900 text-[13px] tabular-nums tracking-tight">
+                                                            <td className="px-6 py-4 text-right font-black text-slate-900 text-[13px] tabular-nums tracking-tight whitespace-nowrap">
                                                                 ₹{((item.quantity || item.qty) * (item.quotedPrice || item.price || 0)).toLocaleString()}
                                                             </td>
                                                         </>

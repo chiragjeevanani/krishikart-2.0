@@ -16,15 +16,14 @@ import DocumentViewer from '../../vendor/components/documents/DocumentViewer';
 
 const ActiveDelivery = () => {
     const navigate = useNavigate();
-    const { dispatchedOrders, loading, updateStatus } = useDeliveryOrders();
+    const { dispatchedOrders, loading, updateStatus, activeDeliveryId, setActiveDeliveryId } = useDeliveryOrders();
     const [isUpdating, setIsUpdating] = useState(false);
     const [isDocOpen, setIsDocOpen] = useState(false);
 
     const order = useMemo(() => {
-        const activeOrderId = localStorage.getItem('activeDeliveryId');
-        if (!activeOrderId) return null;
-        return dispatchedOrders.find(o => o.id === activeOrderId) || null;
-    }, [dispatchedOrders]);
+        if (!activeDeliveryId) return null;
+        return (dispatchedOrders || []).find(o => o && (o.id === activeDeliveryId || o._id === activeDeliveryId)) || null;
+    }, [dispatchedOrders, activeDeliveryId]);
 
     // Current order status from backend: 'Dispatched' or 'Delivered'
     const currentStatus = order?.orderStatus || 'Dispatched';
@@ -35,7 +34,7 @@ const ActiveDelivery = () => {
         setIsUpdating(true);
         await updateStatus(order.id, 'Delivered');
         setIsUpdating(false);
-        localStorage.removeItem('activeDeliveryId');
+        setActiveDeliveryId(null);
         navigate(ROUTES.DASHBOARD);
     };
 
@@ -102,7 +101,7 @@ const ActiveDelivery = () => {
                         {(order.scheduledDate || order.scheduledDateFormatted) && (
                             <div className="mt-1 flex items-center gap-1.5">
                                 <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50/50 px-1 rounded">
-                                    Target: {order.scheduledDateFormatted || new Date(order.scheduledDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                                    Target: {order.scheduledDateFormatted || (order.scheduledDate && !isNaN(new Date(order.scheduledDate).getTime()) ? new Date(order.scheduledDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : 'N/A')}
                                 </span>
                                 <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50/50 px-1 rounded">
                                     Slot: {order.deliveryShift || 'Standard'}

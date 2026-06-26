@@ -106,7 +106,7 @@ export default function ReturnPickupsScreen() {
                                     <div className="flex items-start justify-between gap-3">
                                         <div>
                                             <p className="text-sm font-black text-foreground">Order #{pickup.orderId?.slice(-6)} | Request #{(pickup.requestIndex || 0) + 1}</p>
-                                            <p className="text-xs text-muted-foreground font-semibold mt-1">{new Date(pickup.requestedAt).toLocaleString()}</p>
+                                            <p className="text-xs text-muted-foreground font-semibold mt-1">{pickup.requestedAt && !isNaN(new Date(pickup.requestedAt).getTime()) ? new Date(pickup.requestedAt).toLocaleString() : 'N/A'}</p>
                                         </div>
                                         <span className={cn(
                                             'text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-sm border',

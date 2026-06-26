@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Sprout, Mail, Lock, Loader2, ArrowRight, User, Phone, MapPin, FileText, CreditCard, Building2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Sprout, Mail, Lock, Loader2, ArrowRight, User, Phone, MapPin, FileText, CreditCard, Building2, Camera, Upload, X } from 'lucide-react';
 import api from '../../../lib/axios';
+import { openFlutterCamera } from '../../../lib/flutterCamera';
 
 export default function SignupScreen() {
     const navigate = useNavigate();
@@ -25,6 +26,15 @@ export default function SignupScreen() {
         panFile: null,
         shopProofFile: null,
     });
+
+    const [activeUploadField, setActiveUploadField] = useState(null);
+
+    const handleCameraCapture = async (name) => {
+        const file = await openFlutterCamera();
+        if (file) {
+            setFormData(prev => ({ ...prev, [name]: file }));
+        }
+    };
 
     useEffect(() => {
         const fetchCategories = async () => {
@@ -130,7 +140,16 @@ export default function SignupScreen() {
             <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
                 {label} <span className="text-slate-300 font-medium normal-case">(optional)</span>
             </label>
-            <div onClick={() => fileRef.current?.click()} className="relative group cursor-pointer border-2 border-dashed border-slate-200 rounded-xl p-3 hover:border-primary/50 transition-colors bg-slate-50">
+            <div 
+                onClick={() => {
+                    if (window.flutter_inappwebview) {
+                        setActiveUploadField({ name, label, fileRef, Icon });
+                    } else {
+                        fileRef.current?.click();
+                    }
+                }} 
+                className="relative group cursor-pointer border-2 border-dashed border-slate-200 rounded-xl p-3 hover:border-primary/50 transition-colors bg-slate-50"
+            >
                 <input ref={fileRef} name={name} type="file" accept="image/*,application/pdf" onChange={handleChange} className="hidden" />
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-slate-400 group-hover:text-primary transition-colors">
@@ -331,6 +350,70 @@ export default function SignupScreen() {
                     <button onClick={() => navigate('/vendor/login')} className="mt-1 text-primary font-black text-[10px] hover:underline">Login to Dashboard</button>
                 </div>
             </motion.div>
+
+            <AnimatePresence>
+                {activeUploadField && (
+                    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ opacity: 0, y: 100 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 100 }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+                            className="bg-white w-full max-w-sm rounded-t-[32px] sm:rounded-[32px] p-6 shadow-2xl border border-slate-100"
+                        >
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <h3 className="text-sm font-black text-slate-900 tracking-tight">Upload {activeUploadField.label}</h3>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Select Document Source</p>
+                                </div>
+                                <button 
+                                    type="button"
+                                    onClick={() => setActiveUploadField(null)} 
+                                    className="p-2 bg-slate-50 rounded-full hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-900"
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <button
+                                    type="button"
+                                    onClick={async () => {
+                                        const name = activeUploadField.name;
+                                        setActiveUploadField(null);
+                                        await handleCameraCapture(name);
+                                    }}
+                                    className="p-5 border border-slate-100 rounded-2xl flex flex-col items-center justify-center gap-3 hover:border-primary/20 hover:bg-primary/[0.02] transition-all group/btn bg-slate-50/50"
+                                >
+                                    <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center text-slate-400 group-hover/btn:text-primary transition-colors border border-slate-100">
+                                        <Camera size={22} />
+                                    </div>
+                                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Take Photo</span>
+                                    <span className="text-[8px] font-medium text-slate-400 text-center">Use Device Camera</span>
+                                </button>
+                                
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const ref = activeUploadField.fileRef;
+                                        setActiveUploadField(null);
+                                        setTimeout(() => {
+                                            ref.current?.click();
+                                        }, 100);
+                                    }}
+                                    className="p-5 border border-slate-100 rounded-2xl flex flex-col items-center justify-center gap-3 hover:border-primary/20 hover:bg-primary/[0.02] transition-all group/btn bg-slate-50/50"
+                                >
+                                    <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center text-slate-400 group-hover/btn:text-primary transition-colors border border-slate-100">
+                                        <Upload size={22} />
+                                    </div>
+                                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Choose File</span>
+                                    <span className="text-[8px] font-medium text-slate-400 text-center">Gallery or Files</span>
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

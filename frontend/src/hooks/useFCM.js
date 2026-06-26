@@ -48,7 +48,7 @@ export const useFCM = (isAuthenticated, userType) => {
 
                 // 2. Show native notification via Service Worker registration
                 // Force Action Center visibility with high priority flags
-                if (Notification.permission === 'granted') {
+                if (typeof window !== 'undefined' && 'Notification' in window && window.Notification && window.Notification.permission === 'granted') {
                     try {
                         const registration = await navigator.serviceWorker.ready;
                         registration.showNotification(payload.notification.title || 'Kisaankart', {

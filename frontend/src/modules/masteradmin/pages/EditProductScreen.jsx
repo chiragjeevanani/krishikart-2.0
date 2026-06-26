@@ -209,6 +209,25 @@ export default function EditProductScreen() {
             return;
         }
 
+        // Local duplicate name check under the same category (excluding current product)
+        const duplicateName = products.some(p => {
+            const catId = typeof p.category === 'object' ? p.category?._id : p.category;
+            return p._id !== id && p.name.trim().toLowerCase() === formData.name.trim().toLowerCase() && catId === formData.category;
+        });
+        if (duplicateName) {
+            toast.error("A product with this name already exists in this category. Please choose a unique name.");
+            return;
+        }
+
+        // Local duplicate SKU code check (excluding current product)
+        if (formData.skuCode && formData.skuCode.trim()) {
+            const duplicateSku = products.some(p => p._id !== id && p.skuCode && p.skuCode.trim().toUpperCase() === formData.skuCode.trim().toUpperCase());
+            if (duplicateSku) {
+                toast.error("A product with this SKU code already exists. Please choose a unique SKU code.");
+                return;
+            }
+        }
+
         setIsSaving(true);
         try {
             const payload = { ...formData };

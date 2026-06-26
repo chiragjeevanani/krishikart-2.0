@@ -69,7 +69,7 @@ export default function AppLayout() {
             </main>
 
             {/* Desktop Footer */}
-            <DesktopFooter />
+            {!hideBottomNav && <DesktopFooter />}
 
             {/* Mobile Navigation - Restored to Global Fixed */}
             {!hideBottomNav && (

@@ -303,7 +303,7 @@ export const updateVendorProfile = async (req, res) => {
                             title: "Vendor Category Profile Update",
                             message: msg,
                             type: "approvals",
-                            link: "/approvals/categories",
+                            link: "/masteradmin/category-approvals",
                             meta: { vendorId: vendor._id, type: 'vendor_category_request' }
                         });
 
@@ -315,7 +315,7 @@ export const updateVendorProfile = async (req, res) => {
                             requestedCategories: addedRequests, // Array of category IDs
                             requestedCount: addedRequests.length,
                             message: msg,
-                            link: "/approvals/categories"
+                            link: "/masteradmin/category-approvals"
                         });
                     } catch (err) {
                         console.error("Admin notification failed:", err);
@@ -359,7 +359,8 @@ export const updateVendorProfile = async (req, res) => {
 
         await vendor.save();
 
-        return handleResponse(res, 200, "Profile updated successfully", vendor);
+        const populatedVendor = await Vendor.findById(vendor._id).populate("servedCategories requestedCategories", "name image");
+        return handleResponse(res, 200, "Profile updated successfully", populatedVendor);
 
     } catch (err) {
         console.error("Update Error:", err);

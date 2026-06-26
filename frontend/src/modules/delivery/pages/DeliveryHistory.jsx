@@ -25,6 +25,16 @@ const DeliveryHistory = () => {
         fetchHistory();
     }, []);
 
+    const safeGetLocalDateStr = (dateStr) => {
+        if (!dateStr) return '';
+        try {
+            const d = new Date(dateStr);
+            return isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-CA');
+        } catch (_) {
+            return '';
+        }
+    };
+
     const filteredHistory = history.filter(item => {
         const matchesSearch = item.customer?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             item.franchiseName?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -33,8 +43,8 @@ const DeliveryHistory = () => {
         if (dateFilter) {
             // Compare local YYYY-MM-DD reliably without UTC offset issues
             const localTargetStr = item.rawDate
-                ? new Date(item.rawDate).toLocaleDateString('en-CA')
-                : new Date(item.date).toLocaleDateString('en-CA');
+                ? safeGetLocalDateStr(item.rawDate)
+                : safeGetLocalDateStr(item.date);
             matchesDate = localTargetStr === dateFilter;
         }
 

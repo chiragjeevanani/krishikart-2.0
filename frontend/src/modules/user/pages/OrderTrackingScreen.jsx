@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useRef } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Package, Truck, CheckCircle2, ShoppingBag, Zap, ClipboardList, ShieldCheck, Radio } from 'lucide-react'
 import PageTransition from '../components/layout/PageTransition'
@@ -19,11 +19,16 @@ const stepMappings = [
 export default function OrderTrackingScreen() {
     const navigate = useNavigate()
     const { id } = useParams()
-    const { orders, updateOrderStatus, getOrderById, syncOrderById } = useOrders()
+    const location = useLocation()
+    const { orders, updateOrderStatus, getOrderById, syncOrderById, fetchMyOrders } = useOrders()
     const [isUpdating, setIsUpdating] = useState(false)
     const [orderDetails, setOrderDetails] = useState(null)
     const [isLive, setIsLive] = useState(true)
     const pollingRef = useRef(null)
+
+    const handleBack = () => {
+        navigate('/home', { replace: true })
+    }
 
     const orderFromContext = useMemo(() => orders.find((item) => item._id === id), [orders, id])
     const order = orderFromContext || orderDetails
@@ -114,7 +119,7 @@ export default function OrderTrackingScreen() {
                 {/* Header */}
                 <div className="bg-white/90 backdrop-blur-xl px-4 py-2 pt-[max(0.75rem,env(safe-area-inset-top))] border-b border-slate-100/80 sticky top-0 z-40 flex items-center justify-between">
                     <div className="flex items-center gap-3 py-1">
-                        <button onClick={() => navigate(-1)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-50 text-slate-600 active:scale-95 transition-transform">
+                        <button onClick={handleBack} className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-50 text-slate-600 active:scale-95 transition-transform">
                             <ArrowLeft size={18} />
                         </button>
                         <div className="flex flex-col">

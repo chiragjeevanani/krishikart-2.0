@@ -10,7 +10,7 @@ export default function NotificationSettingsScreen() {
 
     // Combine and sort notifications newest first
     const notifications = [
-        ...dispatchedOrders.map(order => ({
+        ...(dispatchedOrders || []).filter(Boolean).map(order => ({
             id: order._id || order.id,
             type: 'delivery',
             title: 'New Delivery Task',
@@ -19,20 +19,12 @@ export default function NotificationSettingsScreen() {
             time: order.assignedAt || order.createdAt || order.date,
             raw: order,
         })),
-        ...returnPickups.map(pickup => ({
-            id: pickup._id || pickup.id,
-            type: 'return',
-            title: 'Return Pickup',
-            subtitle: `Pickup from ${pickup.customerName || pickup.customer || 'Customer'}`,
-            meta: pickup.address || pickup.customerAddress || '',
-            time: pickup.createdAt || pickup.date,
-            raw: pickup,
-        })),
     ].sort((a, b) => new Date(b.time || 0) - new Date(a.time || 0));
 
     const formatTime = (ts) => {
         if (!ts) return '';
         const date = new Date(ts);
+        if (isNaN(date.getTime())) return '';
         const now = new Date();
         const diffMs = now - date;
         const diffMins = Math.floor(diffMs / 60000);

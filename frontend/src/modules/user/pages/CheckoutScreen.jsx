@@ -48,6 +48,11 @@ const DELIVERY_SHIFT_SLOTS = [
     { label: '6 PM - 8 PM', start: [18, 0] }
 ]
 
+function getISTDate(date = new Date()) {
+    const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
+    return new Date(utc + (3600000 * 5.5));
+}
+
 function getShiftStartDate(shiftLabel, baseDate = new Date()) {
     const slot = DELIVERY_SHIFT_SLOTS.find((s) => s.label === shiftLabel)
     if (!slot) return null
@@ -60,39 +65,46 @@ function getShiftStartDate(shiftLabel, baseDate = new Date()) {
 function isDeliveryShiftSelectable(shiftLabel, targetDate, now = new Date()) {
     if (!targetDate) return true;
     
-    // Normalize dates to midnight for comparison
-    const tDate = new Date(targetDate);
-    const nDate = new Date(now);
-    tDate.setHours(0, 0, 0, 0);
-    nDate.setHours(0, 0, 0, 0);
+    const nowIST = getISTDate(now);
+    const tDateIST = getISTDate(new Date(targetDate));
+    
+    // Normalize dates to midnight in IST for comparison
+    tDateIST.setHours(0, 0, 0, 0);
+    
+    const todayIST = new Date(nowIST);
+    todayIST.setHours(0, 0, 0, 0);
 
     // If target date is in the future, all shifts are selectable
-    if (tDate.getTime() > nDate.getTime()) {
+    if (tDateIST.getTime() > todayIST.getTime()) {
         return true;
     }
 
-    // If target date is in the past (should not happen with getNext7Days), no shifts are selectable
-    if (tDate.getTime() < nDate.getTime()) {
+    // If target date is in the past, no shifts are selectable
+    if (tDateIST.getTime() < todayIST.getTime()) {
         return false;
     }
 
     // It's today
-    const hour = now.getHours();
-    // From 6 PM (18:00) onwards — all slots enabled for ordering (typically next-day delivery)
+    const hour = nowIST.getHours();
+    // From 6 PM (18:00) onwards — no slots selectable for today. Next-day slots open (handled by startOffset in getNext7Days)
     if (hour >= 18) {
-        return true;
+        return false;
     }
     
-    const start = getShiftStartDate(shiftLabel, now);
+    const start = getShiftStartDate(shiftLabel, nowIST);
     if (!start) return false;
-    return now.getTime() < start.getTime();
+    return nowIST.getTime() < start.getTime();
 }
 
 const getNext7Days = () => {
     const days = [];
+    const nowIST = getISTDate();
+    // If it's after 6 PM (18:00) IST, the first delivery day is tomorrow
+    const startOffset = nowIST.getHours() >= 18 ? 1 : 0;
     for (let i = 0; i < 7; i++) {
-        const d = new Date();
-        d.setDate(d.getDate() + i);
+        const d = new Date(nowIST);
+        d.setDate(nowIST.getDate() + (startOffset + i));
+        d.setHours(0, 0, 0, 0);
         days.push(d);
     }
     return days;
@@ -629,7 +641,7 @@ export default function CheckoutScreen() {
             toast.error("Please select a delivery shift timing");
             return;
         }
-        if (!isDeliveryShiftSelectable(deliveryShift)) {
+        if (!isDeliveryShiftSelectable(deliveryShift, selectedDate)) {
             toast.error("This delivery slot is no longer available. Please pick a later time.");
             setDeliveryShift('');
             return;
@@ -750,7 +762,7 @@ export default function CheckoutScreen() {
                         {lastPlacement?.orders?.map((order, idx) => (
                             <Button
                                 key={order._id || idx}
-                                onClick={() => navigate(`/track-order/${order._id}`)}
+                                onClick={() => navigate(`/track-order/${order._id}`, { replace: true, state: { fromCheckout: true } })}
                                 className="w-full h-16 md:h-14 rounded-3xl md:rounded-lg bg-primary text-xl font-black md:font-bold md:text-lg shadow-lg shadow-green-100 active:scale-95 transition-all"
                             >
                                 {lastPlacement.orders.length > 1 ? `Track Order ${idx + 1}` : 'Track My Order'}
@@ -758,7 +770,7 @@ export default function CheckoutScreen() {
                         ))}
                     </div>
                     <Button
-                        onClick={() => navigate('/orders')}
+                        onClick={() => navigate('/orders', { replace: true })}
                         variant="outline"
                         className="mt-4 w-full max-w-md h-14 rounded-3xl md:rounded-lg text-slate-500 font-bold border-slate-200"
                     >

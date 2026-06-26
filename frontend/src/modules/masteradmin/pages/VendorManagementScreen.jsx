@@ -352,8 +352,8 @@ export default function VendorManagementScreen() {
                 onClose={() => setSelectedVendor(null)}
                 item={selectedVendor}
                 type="vendor"
-                onApprove={async (item) => {
-                    await updateVendorStatus(item._id, 'active');
+                onApprove={async (item, approvedCategories) => {
+                    await updateVendorStatus(item._id, 'active', approvedCategories);
                     setSelectedVendor(null);
                     fetchVendors();
                 }}

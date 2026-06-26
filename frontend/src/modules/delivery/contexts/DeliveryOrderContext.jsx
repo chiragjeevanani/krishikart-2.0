@@ -12,6 +12,20 @@ export function DeliveryOrderProvider({ children }) {
     const [dispatchedOrders, setDispatchedOrders] = useState([]);
     const [returnPickups, setReturnPickups] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [activeDeliveryId, setActiveDeliveryIdState] = useState(() => localStorage.getItem('activeDeliveryId'));
+
+    const setActiveDeliveryId = (id) => {
+        if (id) {
+            localStorage.setItem('activeDeliveryId', id);
+        } else {
+            localStorage.removeItem('activeDeliveryId');
+        }
+        setActiveDeliveryIdState(id);
+    };
+
+    const availableRequests = useMemo(() => {
+        return dispatchedOrders.filter(o => o.id !== activeDeliveryId);
+    }, [dispatchedOrders, activeDeliveryId]);
 
     // Alert State
     const [isAlertOpen, setIsAlertOpen] = useState(false);
@@ -112,11 +126,14 @@ export function DeliveryOrderProvider({ children }) {
         }
     }, [delivery]);
 
-    const taskCount = useMemo(() => dispatchedOrders.length + returnPickups.length, [dispatchedOrders, returnPickups]);
+    const taskCount = useMemo(() => availableRequests.length, [availableRequests]);
 
     return (
         <DeliveryOrderContext.Provider value={{
             dispatchedOrders,
+            availableRequests,
+            activeDeliveryId,
+            setActiveDeliveryId,
             returnPickups,
             loading,
             taskCount,

@@ -29,7 +29,7 @@ export default function VendorOnboardingDrawer({ isOpen, onClose, onSave }) {
 
     useEffect(() => {
         if (isOpen) {
-            api.get('/categories').then(res => {
+            api.get('/catalog/categories').then(res => {
                 if (res.data.success) {
                     setCategories(res.data.result || res.data.results || []);
                 }
@@ -147,8 +147,8 @@ export default function VendorOnboardingDrawer({ isOpen, onClose, onSave }) {
                         </div>
 
                         {categories.length > 0 && (
-                            <div className="border border-slate-200 rounded p-4">
-                                <p className="text-xs font-bold text-slate-800 mb-3">Served Categories</p>
+                            <div className="border border-slate-200 rounded-[20px] p-5 bg-slate-50/30">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3 ml-1">Served Categories</label>
                                 <div className="flex flex-wrap gap-2">
                                     {categories.map(cat => {
                                         const isSelected = form.servedCategories.includes(cat._id);
@@ -164,12 +164,13 @@ export default function VendorOnboardingDrawer({ isOpen, onClose, onSave }) {
                                                             : [...form.servedCategories, cat._id]
                                                     );
                                                 }}
-                                                className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-colors ${
+                                                className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all duration-200 border-2 active:scale-95 flex items-center gap-1.5 ${
                                                     isSelected 
-                                                    ? 'bg-slate-900 text-white border-slate-900' 
-                                                    : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
+                                                    ? 'bg-slate-900 border-slate-900 text-white shadow-md shadow-slate-900/10' 
+                                                    : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200 hover:text-slate-600'
                                                 }`}
                                             >
+                                                {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
                                                 {cat.name}
                                             </button>
                                         );

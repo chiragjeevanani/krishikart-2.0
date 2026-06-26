@@ -17,7 +17,11 @@ export { firebaseConfig };
 
 export const requestFCMToken = async () => {
     try {
-        const permission = await Notification.requestPermission();
+        if (typeof window === 'undefined' || typeof window.Notification === 'undefined') {
+            console.warn("[FCM] Notifications are not supported in this environment");
+            return null;
+        }
+        const permission = await window.Notification.requestPermission();
 
         if (permission === 'granted') {
             const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {

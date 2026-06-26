@@ -98,12 +98,21 @@ const Dashboard = () => {
     };
 
     // Use local YYYY-MM-DD for reliable date comparison (same approach as DeliveryHistory page)
+    const safeGetLocalDateStr = (dateStr) => {
+        if (!dateStr) return '';
+        try {
+            const d = new Date(dateStr);
+            return isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-CA');
+        } catch (_) {
+            return '';
+        }
+    };
     const todayStr = new Date().toLocaleDateString('en-CA'); // 'en-CA' gives YYYY-MM-DD
     const completedCount = history.filter(item => {
         const itemDate = item.rawDate
-            ? new Date(item.rawDate).toLocaleDateString('en-CA')
+            ? safeGetLocalDateStr(item.rawDate)
             : item.date
-                ? new Date(item.date).toLocaleDateString('en-CA')
+                ? safeGetLocalDateStr(item.date)
                 : null;
         return itemDate === todayStr;
     }).length;
@@ -241,9 +250,9 @@ const Dashboard = () => {
                     {(() => {
                         const todayItems = history.filter(item => {
                             const itemDate = item.rawDate
-                                ? new Date(item.rawDate).toLocaleDateString('en-CA')
+                                ? safeGetLocalDateStr(item.rawDate)
                                 : item.date
-                                    ? new Date(item.date).toLocaleDateString('en-CA')
+                                    ? safeGetLocalDateStr(item.date)
                                     : null;
                             return itemDate === todayStr;
                         });
