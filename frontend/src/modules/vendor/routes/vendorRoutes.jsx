@@ -17,8 +17,9 @@ import ReceivablesReportScreen from '../pages/ReceivablesReportScreen';
 import RejectionReportsScreen from '../pages/RejectionReportsScreen';
 import QuotationHistoryScreen from '../pages/QuotationHistoryScreen';
 import SignupScreen from '../pages/SignupScreen';
-import TermsScreen from '../pages/TermsScreen';
-import HelpSupportScreen from '../pages/HelpSupportScreen';
+import TermsScreen from '../pages/TermsScreen'
+import HelpSupportScreen from '../pages/HelpSupportScreen'
+import PrivacyPolicyScreen from '../pages/PrivacyPolicyScreen';
 import { VendorInventoryProvider } from '../contexts/VendorInventoryContext';
 import { VendorAuthProvider } from '../contexts/VendorAuthContext';
 import VendorAuthGuard from '../components/auth/VendorAuthGuard';
@@ -38,6 +39,7 @@ export const vendorRoutes = (
         <Route path="forgot-password" element={<ForgotPasswordScreen />} />
         <Route path="signup" element={<SignupScreen />} />
         <Route path="terms" element={<TermsScreen />} />
+            <Route path="privacy" element={<PrivacyPolicyScreen />} />
 
         {/* Protected Routes */}
         <Route element={<VendorAuthGuard />}>

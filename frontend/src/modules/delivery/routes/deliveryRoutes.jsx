@@ -18,6 +18,7 @@ const VehicleInfo = lazy(() => import('../pages/VehicleInfoScreen'));
 const HelpSupport = lazy(() => import('../pages/HelpSupportScreen'));
 const NotificationSettings = lazy(() => import('../pages/NotificationSettingsScreen'));
 const PrivacySecurity = lazy(() => import('../pages/PrivacySecurityScreen'));
+const PrivacyPolicy = lazy(() => import('../pages/PrivacyPolicyScreen'));
 const ReturnPickupsScreen = lazy(() => import('../pages/ReturnPickupsScreen'));
 const CodRemittanceScreen = lazy(() => import('../pages/CodRemittanceScreen'));
 
@@ -60,6 +61,7 @@ export const deliveryRoutes = (
         <Route path="login" element={withSuspense(DeliveryPartnerLogin)} />
         <Route path="signup" element={withSuspense(DeliveryPartnerSignup)} />
         <Route path="terms" element={withSuspense(TermsScreen)} />
+        <Route path="privacy-policy" element={withSuspense(PrivacyPolicy)} />
         <Route element={<ProtectedDeliveryRoute />}>
             <Route element={<DeliveryLayout />}>
                 <Route path="dashboard" element={withSuspense(Dashboard)} />

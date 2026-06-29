@@ -28,6 +28,7 @@ import WishlistScreen from './modules/user/pages/WishlistScreen'
 import CreditInfoScreen from './modules/user/pages/CreditInfoScreen'
 import LocationMapPicker from './modules/user/pages/LocationMapPicker'
 import TermsScreen from './modules/user/pages/TermsScreen'
+import PrivacyPolicyScreen from './modules/user/pages/PrivacyPolicyScreen'
 import { WishlistProvider } from './modules/user/contexts/WishlistContext'
 import { FilterProvider } from './modules/user/contexts/FilterContext'
 import { LocationProvider } from './modules/user/contexts/LocationContext'
@@ -64,6 +65,7 @@ const FranchisePaymentSettings = lazy(() => import('./modules/franchise/pages/Pa
 const FranchiseReports = lazy(() => import('./modules/franchise/pages/ReportsScreen'));
 const FranchiseTerms = lazy(() => import('./modules/franchise/pages/TermsScreen'));
 const FranchiseHelpSupport = lazy(() => import('./modules/franchise/pages/HelpSupportScreen'));
+const FranchisePrivacyPolicy = lazy(() => import('./modules/franchise/pages/PrivacyPolicyScreen'));
 const FranchiseForgotPassword = lazy(() => import('./modules/franchise/pages/ForgotPasswordScreen'));
 
 // Master Admin Module Imports
@@ -135,8 +137,9 @@ function App() {
       }>
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/splash" element={<SplashScreen />} />
-          <Route path="/terms" element={<TermsScreen />} />
+            <Route path="/splash" element={<SplashScreen />} />
+            <Route path="/terms" element={<TermsScreen />} />
+            <Route path="/privacy" element={<PrivacyPolicyScreen />} />
           <Route path="/login" element={<UserProviders><LoginScreen /></UserProviders>} />
 
           {/* User Module */}
@@ -181,6 +184,7 @@ function App() {
             <Route path="signup" element={<FranchiseSignup />} />
             <Route path="forgot-password" element={<FranchiseForgotPassword />} />
             <Route path="terms" element={<FranchiseTerms />} />
+            <Route path="privacy" element={<FranchisePrivacyPolicy />} />
             <Route element={<FranchiseAuthGuard />}>
               <Route element={<FranchiseVerificationGuard />}>
               <Route element={<FranchiseLayout />}>
