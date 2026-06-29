@@ -62,6 +62,7 @@ export const deliveryRoutes = (
         <Route path="signup" element={withSuspense(DeliveryPartnerSignup)} />
         <Route path="terms" element={withSuspense(TermsScreen)} />
         <Route path="privacy-policy" element={withSuspense(PrivacyPolicy)} />
+        <Route path="help" element={withSuspense(HelpSupport)} />
         <Route element={<ProtectedDeliveryRoute />}>
             <Route element={<DeliveryLayout />}>
                 <Route path="dashboard" element={withSuspense(Dashboard)} />
@@ -76,7 +77,6 @@ export const deliveryRoutes = (
                 <Route path="completion" element={withSuspense(DeliveryCompletion)} />
                 <Route path="assignment" element={withSuspense(B2BAssignment)} />
                 <Route path="vehicle" element={withSuspense(VehicleInfo)} />
-                <Route path="help" element={withSuspense(HelpSupport)} />
                 <Route path="documents" element={withSuspense(MyDocumentsScreen)} />
                 <Route path="notifications" element={withSuspense(NotificationSettings)} />
                 <Route path="privacy" element={withSuspense(PrivacySecurity)} />

@@ -151,6 +151,8 @@ function App() {
               <Route path="/products/:category" element={<ProductListScreen />} />
               <Route path="/search" element={<ProductListScreen />} />
               <Route path="/product/:id" element={<ProductDetailScreen />} />
+              <Route path="/help-support" element={<HelpSupportScreen />} />
+              <Route path="/about" element={<AboutScreen />} />
               
               {/* Protected User Routes */}
               <Route element={<UserAuthGuard />}>
@@ -171,8 +173,6 @@ function App() {
                 <Route path="/wishlist" element={<WishlistScreen />} />
                 <Route path="/location-picker" element={<LocationMapPicker />} />
                 <Route path="/verification" element={<VerificationScreen />} />
-                <Route path="/help-support" element={<HelpSupportScreen />} />
-                <Route path="/about" element={<AboutScreen />} />
               </Route>
             </Route>
           </Route>
@@ -185,6 +185,7 @@ function App() {
             <Route path="forgot-password" element={<FranchiseForgotPassword />} />
             <Route path="terms" element={<FranchiseTerms />} />
             <Route path="privacy" element={<FranchisePrivacyPolicy />} />
+            <Route path="help-support" element={<FranchiseHelpSupport />} />
             <Route element={<FranchiseAuthGuard />}>
               <Route element={<FranchiseVerificationGuard />}>
               <Route element={<FranchiseLayout />}>
@@ -202,7 +203,6 @@ function App() {
                 <Route path="profile" element={<FranchiseProfile />} />
                 <Route path="payment-settings" element={<FranchisePaymentSettings />} />
                 <Route path="documentation" element={<DocumentationScreen />} />
-                <Route path="help-support" element={<FranchiseHelpSupport />} />
               </Route>
               </Route>
             </Route>

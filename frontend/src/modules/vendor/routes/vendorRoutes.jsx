@@ -41,6 +41,7 @@ export const vendorRoutes = (
         <Route path="terms" element={<TermsScreen />} />
             <Route path="privacy" element={<PrivacyPolicyScreen />} />
 
+        <Route path="help-support" element={<HelpSupportScreen />} />
         {/* Protected Routes */}
         <Route element={<VendorAuthGuard />}>
             <Route index element={<DashboardScreen />} />
@@ -58,7 +59,6 @@ export const vendorRoutes = (
             <Route path="rejected-stock" element={<RejectionReportsScreen />} />
             <Route path="payments" element={<Navigate to="/vendor/reports" replace />} />
             <Route path="profile" element={<ProfileScreen />} />
-            <Route path="help-support" element={<HelpSupportScreen />} />
         </Route>
     </Route>
 );
